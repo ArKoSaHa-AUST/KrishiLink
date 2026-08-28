@@ -240,6 +240,12 @@ a:hover {
     font-weight: 600;
     letter-spacing: 0.01em;
     border: 1px solid transparent;
+    border-radius: 50rem;
+    padding: 0.28rem 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    line-height: 1.2;
 }
 
 .krishi-badge-pending {
@@ -264,6 +270,45 @@ a:hover {
     background-color: var(--krishi-status-rejected-bg);
     color: var(--krishi-status-rejected-text);
     border-color: var(--krishi-status-rejected-border);
+}
+
+/* Equipment Card Visual Anchor & Gallery */
+.krishi-equipment-img-box {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    min-height: 200px;
+    background-color: #f1f5f2;
+    overflow: hidden;
+}
+
+.krishi-equipment-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.krishi-card:hover .krishi-equipment-img-box img {
+    transform: scale(1.06);
+}
+
+/* Green Range Slider Accent */
+.form-range::-webkit-slider-thumb {
+    background-color: var(--krishi-primary);
+}
+.form-range::-webkit-slider-thumb:active {
+    background-color: var(--krishi-primary-hover);
+}
+.form-range::-moz-range-thumb {
+    background-color: var(--krishi-primary);
+}
+
+/* Custom Checkbox Green Theme */
+.form-check-input:checked {
+    background-color: var(--krishi-primary) !important;
+    border-color: var(--krishi-primary) !important;
 }
 
 /* ==========================================================================

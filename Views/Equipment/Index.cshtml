@@ -241,8 +241,8 @@
                          style="cursor: pointer;" onclick="location.href='@Url.Action("Details", "Equipment", new { id = item.Id })'">
                         
                         <!-- Equipment Image & Badges -->
-                        <div class="position-relative bg-light text-center overflow-hidden" style="height: 190px;">
-                            <img src="@item.ImageUrl" class="card-img-top object-fit-cover w-100 h-100" alt="@item.Name" loading="lazy" />
+                        <div class="krishi-equipment-img-box">
+                            <img src="@item.ImageUrl" alt="@item.Name" loading="lazy" />
                             
                             <!-- Category Pill -->
                             <div class="position-absolute top-0 start-0 m-2.5">
@@ -251,25 +251,25 @@
                                 </span>
                             </div>
 
-                            <!-- Availability Badge -->
+                            <!-- Availability Badge (Dashboard consistent) -->
                             <div class="position-absolute top-0 end-0 m-2.5">
                                 @if (item.IsAvailable)
                                 {
-                                    <span class="badge bg-success shadow-sm rounded-pill px-2.5 py-1 small fw-semibold">
-                                        <i class="bi bi-check-circle-fill me-1"></i>Available
+                                    <span class="krishi-badge krishi-badge-available shadow-sm">
+                                        <i class="bi bi-check-circle-fill"></i> Available
                                     </span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-secondary shadow-sm rounded-pill px-2.5 py-1 small fw-semibold">
-                                        <i class="bi bi-clock-fill me-1"></i>Booked
+                                    <span class="krishi-badge krishi-badge-unavailable shadow-sm">
+                                        <i class="bi bi-clock-fill"></i> Booked
                                     </span>
                                 }
                             </div>
 
                             <!-- Distance Badge -->
                             <div class="position-absolute bottom-0 start-0 m-2">
-                                <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2 py-0.5 small" style="font-size: 0.75rem;">
+                                <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2.5 py-1 small" style="font-size: 0.75rem;">
                                     <i class="bi bi-compass me-1"></i>@item.DistanceKm.ToString("0.0") km away
                                 </span>
                             </div>
@@ -629,8 +629,8 @@
                              style="cursor: pointer;" onclick="location.href='${item.detailsUrl}'">
                             
                             <!-- Equipment Image & Badges -->
-                            <div class="position-relative bg-light text-center overflow-hidden" style="height: 190px;">
-                                <img src="${item.imageUrl}" class="card-img-top object-fit-cover w-100 h-100" alt="${item.name}" loading="lazy" />
+                            <div class="krishi-equipment-img-box">
+                                <img src="${item.imageUrl}" alt="${item.name}" loading="lazy" />
                                 
                                 <div class="position-absolute top-0 start-0 m-2.5">
                                     <span class="badge bg-white text-dark shadow-sm rounded-pill px-2.5 py-1 small fw-semibold opacity-95">
@@ -640,13 +640,13 @@
 
                                 <div class="position-absolute top-0 end-0 m-2.5">
                                     ${item.isAvailable 
-                                        ? `<span class="badge bg-success shadow-sm rounded-pill px-2.5 py-1 small fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Available</span>`
-                                        : `<span class="badge bg-secondary shadow-sm rounded-pill px-2.5 py-1 small fw-semibold"><i class="bi bi-clock-fill me-1"></i>Booked</span>`
+                                        ? `<span class="krishi-badge krishi-badge-available shadow-sm"><i class="bi bi-check-circle-fill"></i> Available</span>`
+                                        : `<span class="krishi-badge krishi-badge-unavailable shadow-sm"><i class="bi bi-clock-fill"></i> Booked</span>`
                                     }
                                 </div>
 
                                 <div class="position-absolute bottom-0 start-0 m-2">
-                                    <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2 py-0.5 small" style="font-size: 0.75rem;">
+                                    <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2.5 py-1 small" style="font-size: 0.75rem;">
                                         <i class="bi bi-compass me-1"></i>${item.distanceKmFormatted}
                                     </span>
                                 </div>
