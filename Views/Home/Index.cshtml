@@ -7,7 +7,7 @@
         Name = "Mahindra 575 DI Tractor",
         Category = "Heavy Machinery",
         Location = "Bogra Sadar, Bogra",
-        Price = "৳1,500 / Day",
+        Price = "Tk 1,500 / Day",
         Status = "Available",
         DetailUrl = "#"
     };
@@ -17,7 +17,7 @@
         Name = "Green Grain Cold Storage",
         Category = "Cold Storage Facility",
         Location = "Dinajpur Sadar",
-        Price = "৳500 / Ton / Month",
+        Price = "Tk 500 / Ton / Month",
         Status = "Pending",
         DetailUrl = "#"
     };
@@ -27,7 +27,7 @@
         Name = "Harvester Combined Model X",
         Category = "Harvesting",
         Location = "Rangpur",
-        Price = "৳3,000 / Day",
+        Price = "Tk 3,000 / Day",
         Status = "Unavailable",
         DetailUrl = "#"
     };
@@ -40,13 +40,13 @@
             <p class="text-muted mb-0">Testing design tokens, green/white palette, partial views, and JS modal components.</p>
         </div>
         <button type="button" class="btn btn-krishi-primary px-3 py-2 fw-semibold" onclick="KrishiModal.confirm({ title: 'Foundation Test Modal', body: 'This is a test call for the reusable confirmation modal.', confirmText: 'Proceed', cancelText: 'Close', onConfirm: function() { alert('Confirmed!'); } })">
-            <i class="bi bi-window-plus me-1"></i> Test Modal Trigger
+            Test Modal Trigger
         </button>
     </div>
 
     <!-- Status Badges Demonstration -->
     <div class="card krishi-card mb-4 p-3">
-        <h6 class="fw-bold text-dark mb-3"><i class="bi bi-tag-fill text-success me-2"></i>Status Badges Component Test (`_StatusBadge.cshtml`)</h6>
+        <h6 class="fw-bold text-dark mb-3">Status Badges Component Test (`_StatusBadge.cshtml`)</h6>
         <div class="d-flex flex-wrap gap-3 align-items-center">
             <partial name="_StatusBadge" model='"Pending"' />
             <partial name="_StatusBadge" model='"Accepted"' />
@@ -59,7 +59,7 @@
 
     <!-- Equipment/Godown Cards Demonstration -->
     <div class="mb-4">
-        <h6 class="fw-bold text-dark mb-3"><i class="bi bi-grid-3x3-gap-fill text-success me-2"></i>Reusable Cards Test (`_EquipmentCard.cshtml`)</h6>
+        <h6 class="fw-bold text-dark mb-3">Reusable Cards Test (`_EquipmentCard.cshtml`)</h6>
         <div class="row g-4">
             <div class="col-12 col-md-6 col-lg-4">
                 <partial name="_EquipmentCard" model="sampleEquipment" />

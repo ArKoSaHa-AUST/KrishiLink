@@ -7,7 +7,7 @@
 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4 pb-3 border-bottom" style="border-color: var(--krishi-border-color) !important;">
     <div>
         <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">
-            <i class="bi bi-sun-fill me-2" style="color: var(--krishi-accent);"></i>Smart Crop Advisory
+            Smart Crop Advisory
         </h2>
         <p class="mb-0 text-muted">
             Get personalized, rule-based crop recommendations and cultivation guides customized for your soil, region, and season.
@@ -16,14 +16,12 @@
     @if (Model.HasSubmitted)
     {
         <button type="button" class="btn btn-krishi-outline rounded-pill px-3 py-2 btn-sm fw-semibold flex-shrink-0" onclick="scrollToForm()">
-            <i class="bi bi-pencil-square me-1"></i> Edit Farm Details
+            Edit Farm Details
         </button>
     }
 </div>
 
-<!-- ============================================================
-     STEP 1: FARM DETAILS FORM
-     ============================================================ -->
+<!-- STEP 1: FARM DETAILS FORM -->
 <div class="card krishi-card border-0 shadow-sm p-4 mb-5" id="advisoryFormCard" style="border-radius: var(--krishi-radius-lg);">
     <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
         <div class="d-flex align-items-center justify-content-center rounded-circle text-white fw-bold"
@@ -37,7 +35,7 @@
             <!-- Location -->
             <div class="col-12 col-md-6 col-lg-4">
                 <label asp-for="Location" class="form-label small fw-bold text-dark">
-                    <i class="bi bi-geo-alt-fill text-danger me-1"></i>Region / Location <span class="text-danger">*</span>
+                    Region / Location <span class="text-danger">*</span>
                 </label>
                 <select asp-for="Location" class="form-select form-select-lg rounded-3 fs-6">
                     <option value="Bogra, Rajshahi Division">Bogra, Rajshahi Division</option>
@@ -52,7 +50,7 @@
             <!-- Season -->
             <div class="col-12 col-md-6 col-lg-4">
                 <label asp-for="Season" class="form-label small fw-bold text-dark">
-                    <i class="bi bi-calendar3 text-success me-1"></i>Cropping Season <span class="text-danger">*</span>
+                    Cropping Season <span class="text-danger">*</span>
                 </label>
                 <select asp-for="Season" class="form-select form-select-lg rounded-3 fs-6">
                     <option value="Rabi (Winter)">Rabi (Winter - Nov to Mar)</option>
@@ -64,7 +62,7 @@
             <!-- Soil Type -->
             <div class="col-12 col-md-6 col-lg-4">
                 <label asp-for="SoilType" class="form-label small fw-bold text-dark">
-                    <i class="bi bi-layers-fill text-success me-1"></i>Soil Type <span class="text-danger">*</span>
+                    Soil Type <span class="text-danger">*</span>
                 </label>
                 <select asp-for="SoilType" class="form-select form-select-lg rounded-3 fs-6">
                     <option value="Clay Loam">Clay Loam (Atel-Doash)</option>
@@ -79,7 +77,7 @@
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <label asp-for="SoilPh" class="form-label small fw-bold text-dark mb-0">
-                        <i class="bi bi-moisture text-success me-1"></i>Soil pH Level <span class="text-muted">(Optional)</span>
+                        Soil pH Level <span class="text-muted">(Optional)</span>
                     </label>
                     <span id="phValueBadge" class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">pH 6.5</span>
                 </div>
@@ -94,7 +92,7 @@
             <!-- Land Size -->
             <div class="col-12 col-md-6 col-lg-4">
                 <label asp-for="LandSizeDecimal" class="form-label small fw-bold text-dark">
-                    <i class="bi bi-aspect-ratio text-success me-1"></i>Land Size <span class="text-muted">(Decimal / Shatangsho)</span>
+                    Land Size <span class="text-muted">(Decimal / Shatangsho)</span>
                 </label>
                 <div class="input-group input-group-lg rounded-3 overflow-hidden">
                     <input asp-for="LandSizeDecimal" type="number" class="form-control fs-6" placeholder="e.g. 50" min="1" step="1" />
@@ -105,17 +103,17 @@
             <!-- Irrigation Availability (Toggle) -->
             <div class="col-12 col-md-6 col-lg-4">
                 <label class="form-label small fw-bold text-dark mb-2">
-                    <i class="bi bi-droplet-fill text-primary me-1"></i>Assured Irrigation Available?
+                    Assured Irrigation Available?
                 </label>
                 <div class="btn-group w-100" role="group" aria-label="Irrigation toggle">
                     <input type="radio" class="btn-check" name="HasIrrigation" id="irrigationYes" value="true" @(Model.HasIrrigation ? "checked" : "") />
                     <label class="btn btn-outline-success py-2.5 fw-semibold" for="irrigationYes">
-                        <i class="bi bi-check-circle-fill me-1"></i> Yes (Pump / Canal)
+                        Yes (Pump / Canal)
                     </label>
 
                     <input type="radio" class="btn-check" name="HasIrrigation" id="irrigationNo" value="false" @(!Model.HasIrrigation ? "checked" : "") />
                     <label class="btn btn-outline-secondary py-2.5 fw-semibold" for="irrigationNo">
-                        <i class="bi bi-x-circle-fill me-1"></i> No (Rainfed)
+                        No (Rainfed)
                     </label>
                 </div>
             </div>
@@ -125,12 +123,12 @@
         <!-- Submit Button & Loading State -->
         <div class="mt-4 pt-3 border-top text-end">
             <button type="submit" id="getRecommendationBtn" class="btn btn-krishi-primary px-5 py-3 rounded-pill fw-bold fs-6 d-inline-flex align-items-center gap-2 shadow-sm">
-                <i class="bi bi-magic me-1"></i> Get Recommendation
+                Get Recommendation
             </button>
         </div>
     </form>
 
-    <!-- Simulating "Analyzing your farm details..." Loading Overlay -->
+    <!-- Simulating Loading Overlay -->
     <div id="analyzingOverlay" class="d-none position-relative text-center py-5">
         <div class="spinner-border text-success mb-3" role="status" style="width: 3rem; height: 3rem;">
             <span class="visually-hidden">Loading...</span>
@@ -140,9 +138,7 @@
     </div>
 </div>
 
-<!-- ============================================================
-     STEP 2: RESULTS & RECOMMENDED CROPS
-     ============================================================ -->
+<!-- STEP 2: RESULTS & RECOMMENDED CROPS -->
 @if (Model.HasSubmitted)
 {
     <div id="resultsSection" class="mb-5">
@@ -151,7 +147,7 @@
                  style="width: 32px; height: 32px; background-color: var(--krishi-accent); font-size: 0.9rem;">2</div>
             <h5 class="fw-bold mb-0 text-dark">Top Recommended Crops for Your Farm</h5>
             <span class="badge rounded-pill bg-success-subtle text-success ms-auto px-3 py-1.5 fw-semibold">
-                <i class="bi bi-check-circle-fill me-1"></i>Rule-Based Advisory Active
+                Rule-Based Advisory Active
             </span>
         </div>
 
@@ -160,9 +156,6 @@
         {
             <div class="card border-0 shadow-sm mb-4 rounded-3 overflow-hidden" style="background-color: #fffbeb; border-left: 5px solid #f59e0b !important;">
                 <div class="card-body p-3 p-md-4 d-flex align-items-start gap-3">
-                    <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 44px; height: 44px; background-color: #fef3c7; color: #d97706;">
-                        <i class="bi @Model.WeatherAlert.IconClass fs-4"></i>
-                    </div>
                     <div class="flex-grow-1">
                         <div class="d-flex align-items-center gap-2 mb-1">
                             <span class="badge bg-warning text-dark font-monospace small px-2 py-0.5">@Model.WeatherAlert.BadgeText</span>
@@ -178,7 +171,6 @@
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
             <p class="text-muted small mb-0">Found <strong>@Model.RecommendedCrops.Count</strong> top matching crops suitable for @Model.Season in @Model.Location.</p>
             <button type="button" id="saveRecommendationBtn" class="btn btn-krishi-outline rounded-pill px-4 py-2 fw-semibold d-inline-flex align-items-center gap-2" onclick="saveRecommendation(this)">
-                <i class="bi bi-bookmark-plus-fill text-success" id="saveBtnIcon"></i>
                 <span id="saveBtnText">Save this Recommendation</span>
             </button>
         </div>
@@ -192,32 +184,25 @@
                         <!-- Card Header Summary -->
                         <div class="card-body p-4 bg-white border-bottom">
                             <div class="row align-items-center g-3">
-                                <div class="col-auto">
-                                    <div class="d-flex align-items-center justify-content-center rounded-circle"
-                                         style="width: 64px; height: 64px; background: linear-gradient(135deg, var(--krishi-primary-light), #e8f5e9);">
-                                        <i class="bi @crop.IconClass fs-2" style="color: var(--krishi-primary);"></i>
-                                    </div>
-                                </div>
                                 <div class="col">
                                     <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                                         <h4 class="fw-bold text-dark mb-0">@crop.CropName</h4>
                                         <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-semibold">
-                                            <i class="bi bi-percent me-0.5"></i>@crop.MatchPercentage% Match
+                                            @crop.MatchPercentage% Match
                                         </span>
                                         <span class="text-muted small fst-italic">(@crop.ScientificName)</span>
                                     </div>
                                     <p class="text-secondary small mb-1">
-                                        <i class="bi bi-check2-circle text-success me-1"></i>@crop.MatchReason
+                                        @crop.MatchReason
                                     </p>
                                     <span class="badge bg-light text-dark border px-2.5 py-1 small">
-                                        <i class="bi bi-speedometer2 text-success me-1"></i>Expected Yield: <strong>@crop.YieldEstimate</strong>
+                                        Expected Yield: <strong>@crop.YieldEstimate</strong>
                                     </span>
                                 </div>
                                 <div class="col-12 col-md-auto text-md-end">
                                     <button class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-semibold text-nowrap d-flex align-items-center gap-2"
                                             type="button" data-bs-toggle="collapse" data-bs-target="#guideCollapse-@crop.Id" aria-expanded="false" aria-controls="guideCollapse-@crop.Id">
                                         <span>View Cultivation Guide</span>
-                                        <i class="bi bi-chevron-down small"></i>
                                     </button>
                                 </div>
                             </div>
@@ -227,7 +212,7 @@
                         <div class="collapse" id="guideCollapse-@crop.Id">
                             <div class="card-body p-4 bg-light">
                                 <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
-                                    <i class="bi bi-book-half text-success"></i>Complete Cultivation Guide & Advisory
+                                    Complete Cultivation Guide & Advisory
                                 </h6>
 
                                 <div class="row g-3">
@@ -235,7 +220,7 @@
                                     <div class="col-12 col-md-6">
                                         <div class="p-3 bg-white rounded-3 border h-100">
                                             <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
-                                                <i class="bi bi-calendar-event text-success me-1"></i>Growing Season & Window
+                                                Growing Season & Window
                                             </span>
                                             <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.GrowingSeason</p>
                                         </div>
@@ -245,7 +230,7 @@
                                     <div class="col-12 col-md-6">
                                         <div class="p-3 bg-white rounded-3 border h-100">
                                             <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
-                                                <i class="bi bi-droplet text-primary me-1"></i>Water & Soil Requirements
+                                                Water & Soil Requirements
                                             </span>
                                             <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.WaterAndSoilRequirements</p>
                                         </div>
@@ -255,7 +240,7 @@
                                     <div class="col-12 col-md-6">
                                         <div class="p-3 bg-white rounded-3 border h-100">
                                             <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
-                                                <i class="bi bi-hourglass-split text-warning me-1"></i>Harvest Duration
+                                                Harvest Duration
                                             </span>
                                             <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.GrowingDuration</p>
                                         </div>
@@ -265,7 +250,7 @@
                                     <div class="col-12 col-md-6">
                                         <div class="p-3 bg-white rounded-3 border h-100">
                                             <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
-                                                <i class="bi bi-box-seam text-success me-1"></i>Recommended Fertilizer Application
+                                                Recommended Fertilizer Application
                                             </span>
                                             <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.FertilizerNeeds</p>
                                         </div>
@@ -275,7 +260,7 @@
                                     <div class="col-12 col-md-6">
                                         <div class="p-3 bg-white rounded-3 border h-100">
                                             <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
-                                                <i class="bi bi-bug text-danger me-1"></i>Common Pests & Disease Care
+                                                Common Pests & Disease Care
                                             </span>
                                             <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.CommonPestsAndDiseases</p>
                                         </div>
@@ -285,7 +270,7 @@
                                     <div class="col-12 col-md-6">
                                         <div class="p-3 bg-white rounded-3 border h-100">
                                             <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
-                                                <i class="bi bi-shield-exclamation text-warning me-1"></i>Key Precautions
+                                                Key Precautions
                                             </span>
                                             <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.Precautions</p>
                                         </div>
@@ -321,15 +306,13 @@
         }
 
         function saveRecommendation(btn) {
-            const icon = document.getElementById('saveBtnIcon');
             const text = document.getElementById('saveBtnText');
             if (btn) {
                 btn.disabled = true;
                 btn.classList.remove('btn-krishi-outline');
                 btn.classList.add('btn-success');
             }
-            if (icon) icon.className = 'bi bi-check-circle-fill me-1';
-            if (text) text.textContent = 'Recommendation Saved to Dashboard ✓';
+            if (text) text.textContent = 'Recommendation Saved to Dashboard';
 
             window.KrishiModal.confirm({
                 title: 'Recommendation Saved!',
@@ -337,7 +320,6 @@
                 confirmText: 'Go to Dashboard',
                 cancelText: 'Stay on Page',
                 confirmClass: 'btn-krishi-primary',
-                iconClass: 'bi-bookmark-check-fill text-success',
                 onConfirm: function () {
                     window.location.href = '@Url.Action("Dashboard", "Farmer")';
                 }
@@ -349,7 +331,6 @@
             if (card) card.scrollIntoView({ behavior: 'smooth' });
         }
 
-        // Auto-scroll to results if submitted
         document.addEventListener('DOMContentLoaded', function () {
             const resultsSection = document.getElementById('resultsSection');
             if (resultsSection && @Model.HasSubmitted.ToString().ToLower()) {

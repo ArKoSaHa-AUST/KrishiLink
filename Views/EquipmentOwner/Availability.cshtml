@@ -23,20 +23,20 @@
         <div class="col">
             <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                 <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-semibold">
-                    <i class="bi bi-tag-fill me-1"></i>@Model.Category
+                    @Model.Category
                 </span>
                 <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small">
-                    <i class="bi bi-geo-alt-fill text-danger me-1"></i>@Model.Location
+                    @Model.Location
                 </span>
             </div>
             <h3 class="fw-bold text-dark mb-1">@Model.EquipmentName</h3>
             <p class="text-muted small mb-0">
-                Daily Rate: <strong class="text-success">@Model.DailyRate</strong> • Set maintenance & blackout dates for your equipment.
+                Daily Rate: <strong class="text-success">@Model.DailyRate</strong> - Set maintenance & blackout dates for your equipment.
             </p>
         </div>
         <div class="col-12 col-md-auto text-md-end">
             <a asp-controller="EquipmentOwner" asp-action="Index" class="btn btn-krishi-outline rounded-pill px-4 py-2 text-nowrap fw-semibold">
-                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+                Back to Dashboard
             </a>
         </div>
     </div>
@@ -44,7 +44,6 @@
 
 <!-- Success Alert Banner -->
 <div id="saveSuccessAlert" class="alert alert-success border-0 shadow-sm rounded-3 mb-4 d-none align-items-center gap-3">
-    <i class="bi bi-check-circle-fill display-6 text-success"></i>
     <div>
         <h6 class="fw-bold mb-1 text-success-emphasis">Availability Updated Successfully!</h6>
         <p class="mb-0 small text-success-emphasis">Your availability calendar changes have been saved. Farmers will see updated availability immediately.</p>
@@ -58,7 +57,7 @@
     <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
         <div>
             <h5 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
-                <i class="bi bi-calendar-range-fill text-success"></i>Availability Calendar — @Model.MonthName
+                Availability Calendar - @Model.MonthName
             </h5>
             <p class="text-muted small mb-0">Click on available dates to select and mark them as unavailable (maintenance) or vice versa.</p>
         </div>
@@ -80,7 +79,7 @@
         </div>
     </div>
 
-    <!-- SELECTION ACTION BAR (Appears dynamically when 1+ dates selected) -->
+    <!-- SELECTION ACTION BAR -->
     <div id="selectionActionBar" class="alert bg-success-subtle border-success-subtle rounded-3 p-3 mb-4 d-none align-items-center justify-content-between flex-wrap gap-2 shadow-sm">
         <div class="d-flex align-items-center gap-2">
             <span id="selectedCountBadge" class="badge bg-success text-white rounded-pill px-3 py-1.5 fs-6 fw-bold">0 Dates Selected</span>
@@ -88,10 +87,10 @@
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
             <button type="button" class="btn btn-secondary btn-sm rounded-pill px-3 py-2 fw-semibold" onclick="markSelectedDates('blocked')">
-                <i class="bi bi-slash-circle me-1"></i> Mark as Unavailable
+                Mark as Unavailable
             </button>
             <button type="button" class="btn btn-success btn-sm rounded-pill px-3 py-2 fw-semibold" onclick="markSelectedDates('available')">
-                <i class="bi bi-check-circle me-1"></i> Mark as Available
+                Mark as Available
             </button>
             <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold" onclick="clearSelection()">
                 Clear Selection
@@ -119,13 +118,11 @@
                 var daysInMonth = DateTime.DaysInMonth(DateTime.Today.Year, DateTime.Today.Month);
                 int startOffset = (int)firstDayOfMonth.DayOfWeek;
 
-                // Blank cells for offset
                 for (int b = 0; b < startOffset; b++)
                 {
-                    <div class="col p-3 text-muted opacity-25">•</div>
+                    <div class="col p-3 text-muted opacity-25"></div>
                 }
 
-                // Month days
                 for (int day = 1; day <= daysInMonth; day++)
                 {
                     var currentDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, day);
@@ -141,7 +138,7 @@
                              title="Booked by Farmer (Locked)">
                             <div class="small">@day</div>
                             <span class="badge bg-primary text-white rounded-pill font-monospace" style="font-size: 0.65rem;">
-                                <i class="bi bi-lock-fill me-0.5"></i>Booked
+                                Booked
                             </span>
                         </div>
                     }
@@ -159,7 +156,7 @@
                              data-date="@dateStr" onclick="toggleDateSelection(this)" title="Click to select date">
                             <div class="small">@day</div>
                             <span class="badge bg-secondary text-white rounded-pill date-status-tag" style="font-size: 0.65rem;">
-                                <i class="bi bi-tools me-0.5"></i>Blocked
+                                Blocked
                             </span>
                         </div>
                     }
@@ -179,10 +176,10 @@
     <!-- SAVE CHANGES ACTION BUTTON -->
     <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span class="text-muted small">
-            <i class="bi bi-info-circle text-success me-1"></i>Unsaved changes will revert if you leave without saving.
+            Unsaved changes will revert if you leave without saving.
         </span>
         <button type="button" id="saveAvailabilityBtn" class="btn btn-krishi-primary rounded-pill px-5 py-3 fw-bold fs-6 shadow-sm d-inline-flex align-items-center gap-2" onclick="confirmSaveAvailability()">
-            <i class="bi bi-floppy-fill me-1"></i> Save Changes
+            Save Changes
         </button>
     </div>
 </div>
@@ -256,7 +253,7 @@
                     cell.className = 'col p-2 p-sm-3 rounded-3 bg-secondary-subtle border border-secondary text-secondary fw-semibold calendar-day-cell cursor-pointer owner-date-cell blocked';
                     if (tag) {
                         tag.className = 'badge bg-secondary text-white rounded-pill date-status-tag';
-                        tag.innerHTML = '<i class="bi bi-tools me-0.5"></i>Blocked';
+                        tag.textContent = 'Blocked';
                     }
                 } else if (status === 'available') {
                     cell.className = 'col p-2 p-sm-3 rounded-3 bg-white border border-success text-success fw-bold calendar-day-cell cursor-pointer owner-date-cell available';
@@ -276,7 +273,6 @@
                 confirmText: 'Save Changes',
                 cancelText: 'Cancel',
                 confirmClass: 'btn-krishi-primary',
-                iconClass: 'bi-calendar-check-fill text-success',
                 onConfirm: function () {
                     const alertDiv = document.getElementById('saveSuccessAlert');
                     if (alertDiv) {

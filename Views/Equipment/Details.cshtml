@@ -16,7 +16,6 @@
 
 <!-- Page Header & Action State Alert -->
 <div id="requestSuccessAlert" class="alert alert-success border-0 shadow-sm rounded-3 mb-4 d-none align-items-center gap-3">
-    <i class="bi bi-check-circle-fill display-6 text-success"></i>
     <div>
         <h6 class="fw-bold mb-1 text-success-emphasis">Rental Request Submitted Successfully!</h6>
         <p class="mb-0 small text-success-emphasis">Your request has been sent to <strong>@Model.OwnerName</strong>. You will receive a notification as soon as the request is accepted.</p>
@@ -57,10 +56,10 @@
         <div class="card krishi-card p-4 mb-4 border-0 shadow-sm">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                 <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold">
-                    <i class="bi bi-tag-fill me-1"></i>@Model.Category
+                    @Model.Category
                 </span>
                 <span class="text-muted small d-flex align-items-center gap-1">
-                    <i class="bi bi-geo-alt-fill text-danger"></i>@Model.Location
+                    @Model.Location
                 </span>
             </div>
 
@@ -83,26 +82,23 @@
             </div>
 
             <!-- Description -->
-            <h5 class="fw-bold text-dark mb-2"><i class="bi bi-info-circle text-success me-2"></i>Equipment Description</h5>
+            <h5 class="fw-bold text-dark mb-2">Equipment Description</h5>
             <p class="text-secondary leading-relaxed mb-4">@Model.Description</p>
 
             <!-- Owner Info Card -->
             <div class="p-3 rounded-3 border bg-white d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 52px; height: 52px;">
-                        <i class="bi bi-person-fill"></i>
-                    </div>
                     <div>
                         <h6 class="fw-bold mb-0 text-dark">@Model.OwnerName</h6>
                         <div class="d-flex align-items-center gap-2 small text-muted">
-                            <span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>@Model.OwnerRating</span>
+                            <span class="text-success fw-semibold">Rating: @Model.OwnerRating</span>
                             <span>(@Model.TotalReviews reviews)</span>
-                            <span>• Member since @Model.OwnerMemberSince</span>
+                            <span>Member since @Model.OwnerMemberSince</span>
                         </div>
                     </div>
                 </div>
                 <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill small">
-                    <i class="bi bi-patch-check-fill text-success me-1"></i>Verified Owner
+                    Verified Owner
                 </span>
             </div>
         </div>
@@ -111,7 +107,7 @@
         <div class="card krishi-card p-4 mb-4 border-0 shadow-sm">
             <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                 <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                    <i class="bi bi-calendar3 text-success"></i>Current Availability Calendar
+                    Current Availability Calendar
                 </h5>
                 <!-- Legend -->
                 <div class="d-flex gap-3 small">
@@ -151,13 +147,11 @@
                         var daysInMonth = DateTime.DaysInMonth(DateTime.Today.Year, DateTime.Today.Month);
                         int startOffset = (int)firstDayOfMonth.DayOfWeek;
 
-                        // Blank cells for offset
                         for (int b = 0; b < startOffset; b++)
                         {
-                            <div class="col p-2 text-muted opacity-25">•</div>
+                            <div class="col p-2 text-muted opacity-25"></div>
                         }
 
-                        // Month days
                         for (int day = 1; day <= daysInMonth; day++)
                         {
                             var currentDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, day);
@@ -189,7 +183,7 @@
             <div class="card krishi-card border-0 shadow p-4" style="border-radius: var(--krishi-radius-lg);">
                 <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
                     <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                        <i class="bi bi-send-fill text-success"></i>Rental Request Form
+                        Rental Request Form
                     </h5>
                     <span class="fs-5 fw-bold text-success">@Model.DailyRate</span>
                 </div>
@@ -198,7 +192,7 @@
                     <!-- Start Date -->
                     <div class="mb-3">
                         <label for="startDateInput" class="form-label small fw-bold text-dark">
-                            <i class="bi bi-calendar-event text-success me-1"></i>Start Date <span class="text-danger">*</span>
+                            Start Date <span class="text-danger">*</span>
                         </label>
                         <input type="date" class="form-control form-control-lg rounded-3" id="startDateInput" required
                                min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="validateDates()" />
@@ -207,12 +201,12 @@
                     <!-- End Date -->
                     <div class="mb-3">
                         <label for="endDateInput" class="form-label small fw-bold text-dark">
-                            <i class="bi bi-calendar-check text-success me-1"></i>End Date <span class="text-danger">*</span>
+                            End Date <span class="text-danger">*</span>
                         </label>
                         <input type="date" class="form-control form-control-lg rounded-3" id="endDateInput" required
                                min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="validateDates()" />
                         <div id="dateValidationError" class="form-text text-danger d-none mt-1">
-                            <i class="bi bi-exclamation-triangle-fill me-1"></i>End Date must be after Start Date and not overlap booked dates.
+                            End Date must be after Start Date and not overlap booked dates.
                         </div>
                     </div>
 
@@ -224,27 +218,26 @@
                         </div>
                         <div class="d-flex justify-content-between fw-bold fs-6 mt-1">
                             <span>Estimated Rental Fee:</span>
-                            <span id="summaryTotalFee">৳0</span>
+                            <span id="summaryTotalFee">Tk 0</span>
                         </div>
                     </div>
 
                     <!-- Optional Note -->
                     <div class="mb-4">
                         <label for="noteInput" class="form-label small fw-bold text-dark">
-                            <i class="bi bi-pencil-square text-success me-1"></i>Note to Owner <span class="text-muted">(Optional)</span>
+                            Note to Owner <span class="text-muted">(Optional)</span>
                         </label>
                         <textarea class="form-control rounded-3" id="noteInput" rows="3" placeholder="e.g. Need operator, location details, or specific crop field details..."></textarea>
                     </div>
 
                     <!-- Submit Button -->
                     <button type="submit" id="submitRequestBtn" class="btn btn-krishi-primary w-100 py-3 rounded-pill fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm fs-6">
-                        <i class="bi bi-send-check-fill fs-5" id="btnIcon"></i>
                         <span id="btnText">Send Rental Request</span>
                     </button>
                 </form>
 
                 <p class="text-muted small text-center mb-0 mt-3">
-                    <i class="bi bi-shield-check text-success me-1"></i>No immediate payment required. Owner will confirm availability.
+                    No immediate payment required. Owner will confirm availability.
                 </p>
             </div>
         </div>
@@ -259,14 +252,13 @@
             <span class="fw-bold text-success fs-5">@Model.DailyRate</span>
         </div>
         <button type="button" id="mobileRequestBtn" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-bold" onclick="scrollToRequestForm()">
-            <i class="bi bi-send-fill me-1"></i> Request Equipment
+            Request Equipment
         </button>
     </div>
 </div>
 
 @section Scripts {
     <script>
-        // Parsed booked dates array for client-side overlap checks
         const bookedDates = @Html.Raw(bookedDatesJson);
 
         function switchMainImage(imgUrl, btnElement) {
@@ -327,7 +319,6 @@
                 return false;
             }
 
-            // Check if any date in range overlaps with bookedDates
             let curr = new Date(startDate);
             let hasOverlap = false;
             let daysCount = 0;
@@ -353,12 +344,11 @@
             errorDiv.classList.add('d-none');
             submitBtn.disabled = false;
 
-            // Show cost summary calculation
             const summaryDaysCount = document.getElementById('summaryDaysCount');
             const summaryTotalFee = document.getElementById('summaryTotalFee');
             if (summaryDaysCount && summaryTotalFee) {
                 summaryDaysCount.textContent = `${daysCount} Day${daysCount > 1 ? 's' : ''}`;
-                summaryTotalFee.textContent = `৳${(daysCount * 1500).toLocaleString()}`;
+                summaryTotalFee.textContent = `Tk ${(daysCount * 1500).toLocaleString()}`;
                 costBox.classList.remove('d-none');
             }
 
@@ -379,19 +369,15 @@
             const startVal = document.getElementById('startDateInput').value;
             const endVal = document.getElementById('endDateInput').value;
 
-            // Trigger global reusable confirmation modal shell (_Modal.cshtml)
             window.KrishiModal.confirm({
                 title: 'Confirm Rental Request',
                 body: `Are you sure you want to send a rental request for <strong>@Model.Name</strong> from <strong>${startVal}</strong> to <strong>${endVal}</strong>?`,
                 confirmText: 'Send Request',
                 cancelText: 'Cancel',
                 confirmClass: 'btn-krishi-primary',
-                iconClass: 'bi-question-circle-fill text-success',
                 onConfirm: function () {
-                    // Update button state to "Request Sent ✓" (disabled)
                     const submitBtn = document.getElementById('submitRequestBtn');
                     const btnText = document.getElementById('btnText');
-                    const btnIcon = document.getElementById('btnIcon');
                     const mobileBtn = document.getElementById('mobileRequestBtn');
 
                     if (submitBtn) {
@@ -399,16 +385,14 @@
                         submitBtn.classList.remove('btn-krishi-primary');
                         submitBtn.classList.add('btn-secondary');
                     }
-                    if (btnText) btnText.textContent = 'Request Sent ✓';
-                    if (btnIcon) btnIcon.className = 'bi bi-check-circle-fill me-1';
+                    if (btnText) btnText.textContent = 'Request Submitted';
                     if (mobileBtn) {
                         mobileBtn.disabled = true;
-                        mobileBtn.textContent = 'Request Sent ✓';
+                        mobileBtn.textContent = 'Request Submitted';
                         mobileBtn.classList.remove('btn-krishi-primary');
                         mobileBtn.classList.add('btn-secondary');
                     }
 
-                    // Show success alert banner
                     const alertDiv = document.getElementById('requestSuccessAlert');
                     if (alertDiv) {
                         alertDiv.classList.remove('d-none');

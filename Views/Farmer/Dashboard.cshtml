@@ -7,31 +7,24 @@
 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4 pb-3 border-bottom" style="border-color: var(--krishi-border-color) !important;">
     <div>
         <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">
-            <i class="bi bi-leaf-fill me-2" style="color: var(--krishi-accent);"></i>Welcome back, @Model.FarmerName
+            Welcome back, @Model.FarmerName
         </h2>
         <p class="mb-0" style="color: var(--krishi-text-muted);">
             Here's your farming overview for today. Manage bookings, explore equipment, and get crop advice.
         </p>
     </div>
     <a asp-controller="Bookings" asp-action="Index" class="btn btn-krishi-outline rounded-pill px-3 py-2 d-flex align-items-center gap-2 fw-semibold flex-shrink-0">
-        <i class="bi bi-journal-check"></i>
         <span>All Bookings</span>
     </a>
 </div>
 
-<!-- ═══════════════════════════════════════════
-     SECTION 1: Quick Action Cards (Row of 3)
-     ═══════════════════════════════════════════ -->
+<!-- Quick Action Cards (Row of 3) -->
 <div class="row g-3 g-lg-4 mb-5">
     <!-- Find Equipment -->
     <div class="col-12 col-md-4">
         <a asp-controller="Equipment" asp-action="Index" class="text-decoration-none">
             <div class="card border-0 shadow-sm h-100 text-center p-4 krishi-action-card" style="border-radius: var(--krishi-radius-lg); background-color: var(--krishi-surface); border: 1px solid var(--krishi-border-color) !important;">
-                <div class="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle"
-                     style="width: 68px; height: 68px; background-color: var(--krishi-primary-light);">
-                    <i class="bi bi-tools fs-2" style="color: var(--krishi-primary);"></i>
-                </div>
-                <h5 class="fw-bold mb-2" style="color: var(--krishi-text-primary);">Find Equipment</h5>
+                <h5 class="fw-bold mb-2 text-success">Find Equipment</h5>
                 <p class="small mb-0" style="color: var(--krishi-text-muted);">Browse tractors, tillers, harvesters & more for rent near you.</p>
             </div>
         </a>
@@ -40,11 +33,7 @@
     <div class="col-12 col-md-4">
         <a asp-controller="Godown" asp-action="Index" class="text-decoration-none">
             <div class="card border-0 shadow-sm h-100 text-center p-4 krishi-action-card" style="border-radius: var(--krishi-radius-lg); background-color: var(--krishi-surface); border: 1px solid var(--krishi-border-color) !important;">
-                <div class="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle"
-                     style="width: 68px; height: 68px; background-color: var(--krishi-primary-light);">
-                    <i class="bi bi-building fs-2" style="color: var(--krishi-primary);"></i>
-                </div>
-                <h5 class="fw-bold mb-2" style="color: var(--krishi-text-primary);">Find Storage</h5>
+                <h5 class="fw-bold mb-2 text-success">Find Storage</h5>
                 <p class="small mb-0" style="color: var(--krishi-text-muted);">Secure cold-storage and warehouses for your harvest across Bangladesh.</p>
             </div>
         </a>
@@ -53,23 +42,16 @@
     <div class="col-12 col-md-4">
         <a asp-controller="Advisory" asp-action="Index" class="text-decoration-none">
             <div class="card border-0 shadow-sm h-100 text-center p-4 krishi-action-card" style="border-radius: var(--krishi-radius-lg); background-color: var(--krishi-surface); border: 1px solid var(--krishi-border-color) !important;">
-                <div class="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle"
-                     style="width: 68px; height: 68px; background-color: var(--krishi-primary-light);">
-                    <i class="bi bi-sun fs-2" style="color: var(--krishi-primary);"></i>
-                </div>
-                <h5 class="fw-bold mb-2" style="color: var(--krishi-text-primary);">Get Crop Advice</h5>
+                <h5 class="fw-bold mb-2 text-success">Get Crop Advice</h5>
                 <p class="small mb-0" style="color: var(--krishi-text-muted);">Personalized crop recommendations based on your soil, climate & region.</p>
             </div>
         </a>
     </div>
 </div>
 
-<!-- ═══════════════════════════════════════════
-     SECTION 2: Active Bookings Summary
-     ═══════════════════════════════════════════ -->
+<!-- Active Bookings Summary -->
 <div class="mb-5">
     <div class="d-flex align-items-center gap-2 mb-3">
-        <i class="bi bi-calendar2-check fs-5" style="color: var(--krishi-primary);"></i>
         <h5 class="fw-bold mb-0" style="color: var(--krishi-text-primary);">Active Bookings</h5>
         <span class="badge rounded-pill ms-1" style="background-color: var(--krishi-primary-light); color: var(--krishi-primary); font-size: 0.78rem;">
             @Model.ActiveBookings.Count
@@ -97,26 +79,19 @@
                         {
                             <tr>
                                 <td class="ps-3 py-3">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="d-flex align-items-center justify-content-center rounded flex-shrink-0"
-                                             style="width: 38px; height: 38px; background-color: var(--krishi-primary-light);">
-                                            <i class="bi @(booking.BookingType == "Godown" ? "bi-building" : "bi-tools")" style="color: var(--krishi-primary);"></i>
-                                        </div>
-                                        <div>
-                                            <span class="fw-semibold d-block" style="color: var(--krishi-text-primary);">@booking.ItemName</span>
-                                            <span class="small d-md-none" style="color: var(--krishi-text-muted);">@booking.BookingType · @booking.DateRange</span>
-                                        </div>
+                                    <div>
+                                        <span class="fw-semibold d-block" style="color: var(--krishi-text-primary);">@booking.ItemName</span>
+                                        <span class="small d-md-none" style="color: var(--krishi-text-muted);">@booking.BookingType · @booking.DateRange</span>
                                     </div>
                                 </td>
                                 <td class="d-none d-md-table-cell py-3">
                                     <span class="badge rounded-pill px-2 py-1 small fw-medium"
                                           style="background-color: @(booking.BookingType == "Godown" ? "var(--krishi-status-pending-bg)" : "var(--krishi-primary-light)"); color: @(booking.BookingType == "Godown" ? "var(--krishi-status-pending-text)" : "var(--krishi-primary)");">
-                                        <i class="bi @(booking.BookingType == "Godown" ? "bi-building" : "bi-tools") me-1"></i>@booking.BookingType
+                                        @booking.BookingType
                                     </span>
                                 </td>
                                 <td class="d-none d-lg-table-cell py-3">
-                                    <span class="small d-flex align-items-center gap-1" style="color: var(--krishi-text-muted);">
-                                        <i class="bi bi-geo-alt-fill text-danger flex-shrink-0"></i>
+                                    <span class="small" style="color: var(--krishi-text-muted);">
                                         @booking.Location
                                     </span>
                                 </td>
@@ -127,8 +102,8 @@
                                     <partial name="_StatusBadge" model="@booking.Status" />
                                 </td>
                                 <td class="py-3 pe-3 text-end">
-                                    <a href="@(booking.DetailUrl ?? "#")" class="btn btn-sm btn-krishi-outline rounded-pill px-2.5 py-1" title="View booking details" aria-label="View details for @booking.ItemName">
-                                        <i class="bi bi-arrow-right-short fs-5"></i>
+                                    <a href="@(booking.DetailUrl ?? "#")" class="btn btn-sm btn-krishi-outline rounded-pill px-3 py-1" title="View booking details" aria-label="View details for @booking.ItemName">
+                                        Details
                                     </a>
                                 </td>
                             </tr>
@@ -142,32 +117,25 @@
     {
         <!-- Empty state -->
         <div class="card border-0 shadow-sm text-center py-5 px-4" style="border-radius: var(--krishi-radius-md); border: 1px solid var(--krishi-border-color) !important; background-color: var(--krishi-surface);">
-            <div class="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle"
-                 style="width: 72px; height: 72px; background-color: var(--krishi-primary-light);">
-                <i class="bi bi-calendar2-x fs-2" style="color: var(--krishi-accent);"></i>
-            </div>
             <h6 class="fw-bold mb-2" style="color: var(--krishi-text-primary);">No active bookings yet</h6>
             <p class="mb-3" style="color: var(--krishi-text-muted);">Start by finding equipment or storage to rent for your farm.</p>
             <div class="d-flex justify-content-center gap-2 flex-wrap">
                 <a asp-controller="Equipment" asp-action="Index" class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-semibold">
-                    <i class="bi bi-tools me-1"></i> Find Equipment
+                    Find Equipment
                 </a>
                 <a asp-controller="Godown" asp-action="Index" class="btn btn-krishi-outline rounded-pill px-4 py-2 fw-semibold">
-                    <i class="bi bi-building me-1"></i> Find Storage
+                    Find Storage
                 </a>
             </div>
         </div>
     }
 </div>
 
-<!-- ═══════════════════════════════════════════
-     SECTION 3: Two-Column — Crop Recommendation + Recent Activity
-     ═══════════════════════════════════════════ -->
+<!-- Two-Column — Crop Recommendation + Recent Activity -->
 <div class="row g-4 mb-4">
     <!-- Recommended Crops Widget -->
     <div class="col-12 col-lg-5">
         <div class="d-flex align-items-center gap-2 mb-3">
-            <i class="bi bi-sun-fill fs-5" style="color: var(--krishi-primary);"></i>
             <h5 class="fw-bold mb-0" style="color: var(--krishi-text-primary);">Crop Recommendation</h5>
         </div>
 
@@ -176,14 +144,10 @@
             <div class="card border-0 shadow-sm h-100" style="border-radius: var(--krishi-radius-md); border: 1px solid var(--krishi-border-color) !important; background-color: var(--krishi-surface);">
                 <div class="card-body p-4 d-flex flex-column">
                     <div class="d-flex align-items-start gap-3 mb-3">
-                        <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
-                             style="width: 50px; height: 50px; background: linear-gradient(135deg, var(--krishi-primary-light), var(--krishi-primary-subtle));">
-                            <i class="bi bi-flower2 fs-4" style="color: var(--krishi-primary);"></i>
-                        </div>
                         <div>
                             <h6 class="fw-bold mb-1" style="color: var(--krishi-text-primary);">@Model.SavedRecommendation.CropName</h6>
                             <span class="badge rounded-pill px-2 py-1 small fw-medium" style="background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
-                                <i class="bi bi-calendar3 me-1"></i>@Model.SavedRecommendation.Season
+                                @Model.SavedRecommendation.Season
                             </span>
                         </div>
                     </div>
@@ -191,7 +155,6 @@
                         @Model.SavedRecommendation.Summary
                     </p>
                     <a href="@(Model.SavedRecommendation.GuideUrl ?? "#")" class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-semibold d-flex align-items-center justify-content-center gap-1 mt-auto">
-                        <i class="bi bi-book"></i>
                         <span>View Full Guide</span>
                     </a>
                 </div>
@@ -202,14 +165,10 @@
             <!-- Empty state: no recommendation -->
             <div class="card border-0 shadow-sm h-100 text-center" style="border-radius: var(--krishi-radius-md); border: 1px solid var(--krishi-border-color) !important; background-color: var(--krishi-surface);">
                 <div class="card-body p-4 d-flex flex-column align-items-center justify-content-center">
-                    <div class="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle"
-                         style="width: 64px; height: 64px; background-color: var(--krishi-primary-light);">
-                        <i class="bi bi-sun fs-2" style="color: var(--krishi-accent);"></i>
-                    </div>
                     <h6 class="fw-bold mb-2" style="color: var(--krishi-text-primary);">No recommendations yet</h6>
                     <p class="small mb-3" style="color: var(--krishi-text-muted);">Get personalized crop advice based on your region and soil type.</p>
                     <a asp-controller="Advisory" asp-action="Index" class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-semibold">
-                        <i class="bi bi-sun me-1"></i> Get Crop Advice
+                        Get Crop Advice
                     </a>
                 </div>
             </div>
@@ -219,7 +178,6 @@
     <!-- Recent Activity Feed -->
     <div class="col-12 col-lg-7">
         <div class="d-flex align-items-center gap-2 mb-3">
-            <i class="bi bi-activity fs-5" style="color: var(--krishi-primary);"></i>
             <h5 class="fw-bold mb-0" style="color: var(--krishi-text-primary);">Recent Activity</h5>
         </div>
 
@@ -231,16 +189,12 @@
                         @foreach (var activity in Model.RecentActivity)
                         {
                             <li class="list-group-item border-0 px-4 py-3 d-flex align-items-start gap-3" style="border-bottom: 1px solid var(--krishi-border-color) !important;">
-                                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
-                                     style="width: 40px; height: 40px; background-color: var(--krishi-primary-light);">
-                                    <i class="bi @activity.IconClass @activity.IconColor"></i>
-                                </div>
                                 <div class="flex-grow-1">
                                     <p class="mb-1 small fw-medium" style="color: var(--krishi-text-primary); line-height: 1.5;">
                                         @activity.Description
                                     </p>
                                     <span class="small" style="color: var(--krishi-text-muted);">
-                                        <i class="bi bi-clock me-1"></i>@activity.TimeAgo
+                                        @activity.TimeAgo
                                     </span>
                                 </div>
                             </li>
@@ -253,10 +207,6 @@
         {
             <!-- Empty state: no activity -->
             <div class="card border-0 shadow-sm text-center py-5 px-4" style="border-radius: var(--krishi-radius-md); border: 1px solid var(--krishi-border-color) !important; background-color: var(--krishi-surface);">
-                <div class="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle"
-                     style="width: 64px; height: 64px; background-color: var(--krishi-primary-light);">
-                    <i class="bi bi-clock-history fs-2" style="color: var(--krishi-accent);"></i>
-                </div>
                 <h6 class="fw-bold mb-2" style="color: var(--krishi-text-primary);">No recent activity</h6>
                 <p class="small mb-0" style="color: var(--krishi-text-muted);">Your recent actions like booking requests and advisory lookups will appear here.</p>
             </div>
@@ -264,12 +214,7 @@
     </div>
 </div>
 
-@* ═══════════════════════════════════════════
-   Page-specific CSS — scoped to Dashboard only,
-   no modifications to site.css or shared partials.
-   ═══════════════════════════════════════════ *@
 <style>
-    /* Quick Action Card hover interaction (slight scale-up per spec) */
     .krishi-action-card {
         transition: transform 0.22s ease, box-shadow 0.22s ease;
         cursor: pointer;
@@ -278,16 +223,12 @@
         transform: translateY(-4px) scale(1.015);
         box-shadow: var(--krishi-shadow-md) !important;
     }
-
-    /* Booking table row hover */
     .table-hover tbody tr {
         transition: background-color 0.15s ease;
     }
     .table-hover tbody tr:hover {
         background-color: var(--krishi-primary-light) !important;
     }
-
-    /* Activity list item hover */
     .list-group-item {
         transition: background-color 0.15s ease;
     }

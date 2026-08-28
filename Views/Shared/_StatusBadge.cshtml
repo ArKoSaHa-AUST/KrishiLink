@@ -8,17 +8,16 @@
     var status = string.IsNullOrWhiteSpace(Model) ? "Available" : Model.Trim();
     var normalizedStatus = status.ToLowerInvariant();
 
-    var (badgeClass, iconClass) = normalizedStatus switch
+    var badgeClass = normalizedStatus switch
     {
-        "pending" => ("krishi-badge-pending", "bi-clock-history"),
-        "accepted" or "available" or "approved" => ("krishi-badge-available", "bi-check-circle-fill"),
-        "completed" or "done" => ("krishi-badge-completed", "bi-check2-all"),
-        "rejected" or "unavailable" or "cancelled" or "canceled" => ("krishi-badge-unavailable", "bi-x-circle-fill"),
-        _ => ("krishi-badge-completed", "bi-info-circle-fill")
+        "pending" => "krishi-badge-pending",
+        "accepted" or "available" or "approved" => "krishi-badge-available",
+        "completed" or "done" => "krishi-badge-completed",
+        "rejected" or "unavailable" or "cancelled" or "canceled" => "krishi-badge-unavailable",
+        _ => "krishi-badge-completed"
     };
 }
 
-<span class="krishi-badge @badgeClass d-inline-flex align-items-center gap-1 rounded-pill px-2.5 py-1 text-nowrap">
-    <i class="bi @iconClass"></i>
+<span class="krishi-badge @badgeClass d-inline-flex align-items-center rounded-pill px-2.5 py-1 text-nowrap">
     <span>@status</span>
 </span>
