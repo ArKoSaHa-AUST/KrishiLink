@@ -7,6 +7,7 @@ namespace KrishiLink.Models.Entities
         public string FullName { get; set; } = string.Empty;
         public string UserRole { get; set; } = string.Empty; // "Farmer", "EquipmentOwner", "GodownOwner"
         public string? Location { get; set; }
+        public string? BusinessOrFarmName { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

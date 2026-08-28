@@ -1,3 +1,7 @@
+@using Microsoft.AspNetCore.Identity
+@using KrishiLink.Models.Entities
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -38,7 +42,6 @@
                 <!-- Desktop Navigation Items -->
                 <div class="collapse navbar-collapse d-none d-lg-flex" id="navbarMain">
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1 ms-3">
-                        @* Navigation links - placeholder for future @if (User.Identity.IsAuthenticated) check *@
                         <li class="nav-item">
                             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "") d-flex align-items-center gap-1.5" asp-controller="Home" asp-action="Index">
                                 <span>Home</span>
@@ -63,37 +66,56 @@
 
                     <!-- Desktop Right Side Auth Navigation -->
                     <div class="d-flex align-items-center gap-2">
-                        @*
-                            AUTH STATE PLACEHOLDER COMMENT FOR IDENTITY INTEGRATION:
-                            
-                            @if (User.Identity != null && User.Identity.IsAuthenticated)
-                            {
-                                <div class="dropdown">
-                                    <button class="btn btn-outline-light rounded-pill px-3 py-1.5 d-flex align-items-center gap-2 dropdown-toggle" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <span class="fw-medium">@User.Identity.Name</span>
-                                        <span class="badge bg-warning text-dark rounded-pill">Farmer</span>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="userMenuDropdown">
-                                        <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile">My Profile</a></li>
-                                        <li><a class="dropdown-item" asp-controller="Bookings" asp-action="Index">My Bookings</a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <form asp-controller="Account" asp-action="Logout" method="post">
-                                                <button type="submit" class="dropdown-item text-danger">Logout</button>
-                                            </form>
-                                        </li>
-                                    </ul>
-                                </div>
-                            }
-                            else
-                            {
-                        *@
-                        <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light btn-sm rounded-pill px-3 py-1.5 fw-medium">Login</a>
-                        <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm">Register</a>
-                        <a asp-controller="Farmer" asp-action="Dashboard" class="btn btn-outline-light btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 text-white ms-1" style="width: 34px; height: 34px;" title="Farmer Dashboard" aria-label="Farmer Dashboard">
-                            <span class="fw-bold small">D</span>
-                        </a>
-                        @* } *@
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            var currentUser = await UserManager.GetUserAsync(User);
+                            var roleDisplay = currentUser?.UserRole ?? "Farmer";
+                            var dashboardController = roleDisplay == "EquipmentOwner" ? "EquipmentOwner" : (roleDisplay == "GodownOwner" ? "GodownOwner" : "Farmer");
+                            var dashboardAction = roleDisplay == "Farmer" ? "Dashboard" : "Index";
+
+                            <div class="dropdown">
+                                <button class="btn btn-outline-light rounded-pill px-3 py-1.5 d-flex align-items-center gap-2 dropdown-toggle" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-person-circle fs-6"></i>
+                                    <span class="fw-medium">@(currentUser?.FullName ?? User.Identity?.Name)</span>
+                                    <span class="badge bg-light text-success rounded-pill px-2 py-0.5">@roleDisplay</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2 rounded-3" aria-labelledby="userMenuDropdown">
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="@dashboardController" asp-action="@dashboardAction">
+                                            <i class="bi bi-speedometer2 text-success"></i>
+                                            <span>Dashboard</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="Bookings" asp-action="Index">
+                                            <i class="bi bi-calendar2-check text-success"></i>
+                                            <span>My Bookings</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="Account" asp-action="Profile">
+                                            <i class="bi bi-person-gear text-success"></i>
+                                            <span>My Profile</span>
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form asp-controller="Account" asp-action="Logout" method="post" class="px-2">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="dropdown-item text-danger rounded-2 d-flex align-items-center gap-2 py-1.5">
+                                                <i class="bi bi-box-arrow-right"></i>
+                                                <span>Logout</span>
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light btn-sm rounded-pill px-3 py-1.5 fw-medium">Login</a>
+                            <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm">Register</a>
+                        }
                     </div>
                 </div>
 
@@ -108,38 +130,56 @@
                     </div>
                     <div class="offcanvas-body d-flex flex-column justify-content-between p-4">
                         <ul class="navbar-nav me-auto mb-3 gap-2">
-                            @* Navigation links placeholder for mobile *@
                             <li class="nav-item">
                                 <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Home" asp-action="Index">
-                                    Home
+                                    <i class="bi bi-house-door"></i> Home
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Equipment" asp-action="Index">
-                                    Equipment
+                                    <i class="bi bi-truck"></i> Equipment
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Godown" asp-action="Index">
-                                    Godowns
+                                    <i class="bi bi-building"></i> Godowns
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Advisory" asp-action="Index">
-                                    Crop Advisory
+                                    <i class="bi bi-cloud-sun"></i> Crop Advisory
                                 </a>
                             </li>
                         </ul>
 
                         <div class="border-top border-secondary pt-3 mt-auto">
-                            @* Auth placeholder for mobile *@
-                            <div class="d-grid gap-2">
-                                <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light rounded-pill py-2 fw-medium">Login</a>
-                                <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success rounded-pill py-2 fw-bold">Register</a>
-                                <a asp-controller="Farmer" asp-action="Dashboard" class="btn btn-outline-light rounded-pill py-2 fw-medium d-flex align-items-center justify-content-center gap-2">
-                                    <i class="bi bi-person-circle me-1"></i> Farmer Dashboard
-                                </a>
-                            </div>
+                            @if (SignInManager.IsSignedIn(User))
+                            {
+                                var currentUser = await UserManager.GetUserAsync(User);
+                                var roleDisplay = currentUser?.UserRole ?? "Farmer";
+                                var dashboardController = roleDisplay == "EquipmentOwner" ? "EquipmentOwner" : (roleDisplay == "GodownOwner" ? "GodownOwner" : "Farmer");
+                                var dashboardAction = roleDisplay == "Farmer" ? "Dashboard" : "Index";
+
+                                <div class="text-white mb-2 small">
+                                    Signed in as <strong class="text-warning">@(currentUser?.FullName ?? User.Identity?.Name)</strong> (@roleDisplay)
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <a asp-controller="@dashboardController" asp-action="@dashboardAction" class="btn btn-light text-success rounded-pill py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
+                                        <i class="bi bi-speedometer2"></i> Dashboard
+                                    </a>
+                                    <form asp-controller="Account" asp-action="Logout" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-outline-danger w-100 rounded-pill py-2 fw-medium">Logout</button>
+                                    </form>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="d-grid gap-2">
+                                    <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light rounded-pill py-2 fw-medium">Login</a>
+                                    <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success rounded-pill py-2 fw-bold">Register</a>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>

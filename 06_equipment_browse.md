@@ -22,5 +22,6 @@ Let a farmer discover and filter available equipment for rent.
 - Grid becomes single column on mobile, filters collapse into a "Filters" button that opens a bottom sheet
 
 ## Design Notes
+- UI Theme: Agriculture-related green and white color palette — crisp white background and card surfaces with vibrant agricultural green highlights, green filter accents, and green primary action buttons
 - Equipment images are the primary visual anchor on each card — keep them large and consistent aspect ratio
 - Availability badge uses color coding consistent with dashboard status badges
