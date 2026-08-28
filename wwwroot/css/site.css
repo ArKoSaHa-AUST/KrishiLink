@@ -77,6 +77,33 @@ body.krishi-body-gradient {
     background-attachment: fixed;
 }
 
+/* Owner dashboard: summary cards & pending request rows */
+.krishi-summary-card {
+    min-width: 220px;
+}
+
+.krishi-summary-icon {
+    width: 48px;
+    height: 48px;
+}
+
+.krishi-summary-value {
+    color: var(--krishi-text-primary);
+}
+
+.krishi-summary-label {
+    color: var(--krishi-text-muted);
+}
+
+.pending-request-row {
+    transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.pending-request-row.row-leaving {
+    opacity: 0;
+    transform: translateX(24px);
+}
+
 a {
     color: var(--krishi-primary);
     text-decoration: none;
@@ -554,4 +581,4 @@ a:hover {
         width: calc(50% - 6px);
         height: 105px;
     }
-}
+}

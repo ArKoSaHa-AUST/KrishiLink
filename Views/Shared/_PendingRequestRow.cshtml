@@ -1,0 +1,35 @@
+@model KrishiLink.Models.ViewModels.PendingRequestItem
+@*
+    Shared row for an incoming rental request with inline Accept/Reject.
+    Used by the Equipment Owner Dashboard widget and the full Requests page.
+    Host page must define applyDecision(id, decision, btn) and promptReject(id, btn).
+*@
+<div class="p-3 px-4 border-bottom d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 pending-request-row" data-request-id="@Model.Id">
+    <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 42px; height: 42px;">
+            @Model.FarmerName[0]
+        </div>
+        <div>
+            <span class="fw-semibold d-block" style="color: var(--krishi-text-primary);">@Model.FarmerName</span>
+            <span class="small d-block" style="color: var(--krishi-text-muted);">
+                <i class="bi bi-tools me-1 text-success"></i>@Model.EquipmentName
+                <span class="mx-1">·</span>
+                <i class="bi bi-calendar-range me-1 text-success"></i>@Model.DateRange
+            </span>
+            @if (!string.IsNullOrEmpty(Model.Note))
+            {
+                <span class="small fst-italic" style="color: var(--krishi-text-muted);">"@Model.Note"</span>
+            }
+        </div>
+    </div>
+    <div class="d-flex gap-2 flex-shrink-0">
+        <button type="button" class="btn btn-krishi-primary btn-sm rounded-pill px-3 fw-semibold"
+                onclick="applyDecision(@Model.Id, 'accept', this)">
+            <i class="bi bi-check-lg"></i> Accept
+        </button>
+        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold"
+                onclick="promptReject(@Model.Id, this)">
+            <i class="bi bi-x-lg"></i> Reject
+        </button>
+    </div>
+</div>

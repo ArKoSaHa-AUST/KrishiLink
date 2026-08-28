@@ -1,13 +1,68 @@
 using KrishiLink.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KrishiLink.Controllers
 {
+    [Authorize(Roles = "EquipmentOwner")]
     public class EquipmentOwnerController : Controller
     {
         public IActionResult Index()
         {
-            return View();
+            var model = new EquipmentOwnerDashboardViewModel
+            {
+                OwnerName = User.Identity?.Name ?? "Owner",
+                TotalListings = 5,
+                ActiveRentals = 2,
+                Listings = new List<OwnerListingItem>
+                {
+                    new() { Id = 1, Name = "Mahindra 575 DI Heavy Tractor", Category = "Tractor", Status = "Rented", DailyRate = "৳1,500 / Day",
+                            ImageUrl = "https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?auto=format&fit=crop&w=600&q=80" },
+                    new() { Id = 2, Name = "Kubota DC-70 Combine Harvester", Category = "Harvester", Status = "Available", DailyRate = "৳4,200 / Day",
+                            ImageUrl = "https://images.unsplash.com/photo-1591086429666-871b06bcccb4?auto=format&fit=crop&w=600&q=80" },
+                    new() { Id = 3, Name = "ACI Power Tiller 12HP", Category = "Tiller", Status = "Available", DailyRate = "৳800 / Day",
+                            ImageUrl = "https://images.unsplash.com/photo-1530267981375-f0de937f5f13?auto=format&fit=crop&w=600&q=80" },
+                    new() { Id = 4, Name = "Honda WB30X Irrigation Pump", Category = "Irrigation", Status = "Unavailable", DailyRate = "৳350 / Day",
+                            ImageUrl = "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=600&q=80" },
+                    new() { Id = 5, Name = "TAFE 45DI Rotavator", Category = "Tiller", Status = "Available", DailyRate = "৳950 / Day",
+                            ImageUrl = "https://images.unsplash.com/photo-1595246140625-573b715d11dc?auto=format&fit=crop&w=600&q=80" }
+                },
+                PendingRequestItems = new List<PendingRequestItem>
+                {
+                    new() { Id = 101, FarmerName = "Rahim Uddin", EquipmentName = "Kubota DC-70 Combine Harvester",
+                            DateRange = "02 Sep – 06 Sep 2026", Note = "Need it for 5 acres of Aman paddy harvest." },
+                    new() { Id = 102, FarmerName = "Karim Mia", EquipmentName = "ACI Power Tiller 12HP",
+                            DateRange = "05 Sep – 07 Sep 2026" },
+                    new() { Id = 103, FarmerName = "Fatema Begum", EquipmentName = "Mahindra 575 DI Heavy Tractor",
+                            DateRange = "10 Sep – 12 Sep 2026", Note = "Land preparation before potato season." }
+                }
+            };
+
+            return View(model);
+        }
+
+        /// <summary>
+        /// POST: /EquipmentOwner/RespondRequest
+        /// Handles inline Accept/Reject from the dashboard pending requests widget.
+        /// An optional reject reason is forwarded to the farmer.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult RespondRequest(int id, string decision, string? reason = null)
+        {
+            var accepted = string.Equals(decision, "accept", StringComparison.OrdinalIgnoreCase);
+            return Json(new { success = true, message = $"Request #{id} {(accepted ? "accepted" : "rejected")}." });
+        }
+
+        /// <summary>
+        /// GET: /EquipmentOwner/PendingCount
+        /// Lightweight polling endpoint so the dashboard can animate counts
+        /// when new rental requests arrive. Returns sample data until DB wiring.
+        /// </summary>
+        [HttpGet]
+        public IActionResult PendingCount()
+        {
+            return Json(new { count = 3 });
         }
 
         /// <summary>

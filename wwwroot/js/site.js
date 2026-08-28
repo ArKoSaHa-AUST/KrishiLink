@@ -84,6 +84,83 @@ window.showConfirmModal = function (title, body, onConfirm, confirmText, confirm
 };
 
 /**
+ * Global stacking toast helper. Each call creates its own toast element,
+ * so rapid successive events never overwrite each other.
+ * @param {string} message Toast message text
+ * @param {Object} [options]
+ * @param {string} [options.iconClass] Bootstrap icon classes (default: success check)
+ * @param {number} [options.delay] Auto-hide delay in ms (default: 4000)
+ * @param {string} [options.actionText] Optional action button label (e.g. "Undo")
+ * @param {Function} [options.onAction] Called when the action button is clicked
+ * @param {Function} [options.onClosed] Called when the toast closes WITHOUT the action being clicked
+ */
+window.KrishiToast = {
+    show: function (message, options) {
+        options = options || {};
+        let container = document.getElementById('krishiToastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'krishiToastContainer';
+            container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            container.style.zIndex = '1080';
+            document.body.appendChild(container);
+        }
+
+        const toastEl = document.createElement('div');
+        toastEl.className = 'toast border-0 shadow rounded-3';
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
+        const actionHtml = options.actionText
+            ? `<button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 ms-auto flex-shrink-0 toast-action-btn">${options.actionText}</button>`
+            : '';
+        toastEl.innerHTML = `<div class="toast-body d-flex align-items-center gap-2 fw-semibold">
+                <i class="bi ${options.iconClass || 'bi-check-circle-fill text-success'} fs-5"></i>
+                <span>${message}</span>${actionHtml}
+            </div>`;
+        container.appendChild(toastEl);
+
+        const bsToast = new bootstrap.Toast(toastEl, { delay: options.delay || 4000 });
+        let actionClicked = false;
+
+        const actionBtn = toastEl.querySelector('.toast-action-btn');
+        if (actionBtn) {
+            actionBtn.addEventListener('click', function () {
+                actionClicked = true;
+                if (typeof options.onAction === 'function') options.onAction();
+                bsToast.hide();
+            });
+        }
+
+        toastEl.addEventListener('hidden.bs.toast', function () {
+            if (!actionClicked && typeof options.onClosed === 'function') options.onClosed();
+            toastEl.remove();
+        });
+
+        bsToast.show();
+        return bsToast;
+    }
+};
+
+/**
+ * Global animated number counter (simple number transition via rAF).
+ */
+window.KrishiCount = {
+    animate: function (el, to, duration) {
+        if (!el) return;
+        const from = Number(el.textContent) || 0;
+        const start = performance.now();
+        duration = duration || 400;
+        function tick(now) {
+            const p = Math.min((now - start) / duration, 1);
+            el.textContent = Math.round(from + (to - from) * p);
+            if (p < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    }
+};
+
+/**
  * Mobile Navbar Collapse & Interactive Enhancements
  */
 document.addEventListener('DOMContentLoaded', function () {
