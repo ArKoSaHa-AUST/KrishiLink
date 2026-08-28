@@ -25,48 +25,66 @@ window.KrishiModal = {
             return;
         }
 
-        const titleEl = document.getElementById(`${modalId}Title`);
-        const bodyEl = document.getElementById(`${modalId}Body`);
-        const iconEl = document.getElementById(`${modalId}Icon`);
-        const confirmBtn = document.getElementById(`${modalId}ConfirmBtn`);
-        const cancelBtn = document.getElementById(`${modalId}CancelBtn`);
+        const apply = function () {
+            const titleEl = document.getElementById(`${modalId}Title`);
+            const bodyEl = document.getElementById(`${modalId}Body`);
+            const iconEl = document.getElementById(`${modalId}Icon`);
+            const confirmBtn = document.getElementById(`${modalId}ConfirmBtn`);
+            const cancelBtn = document.getElementById(`${modalId}CancelBtn`);
 
-        if (titleEl) titleEl.textContent = options.title || 'Confirm Action';
-        if (bodyEl) {
-            if (options.body) {
-                bodyEl.innerHTML = typeof options.body === 'string' && options.body.startsWith('<') 
-                    ? options.body 
-                    : `<p class="text-secondary mb-0">${options.body}</p>`;
-            } else {
-                bodyEl.innerHTML = '<p class="text-secondary mb-0">Are you sure you want to proceed with this action?</p>';
-            }
-        }
-        if (cancelBtn) cancelBtn.textContent = options.cancelText || 'Cancel';
-
-        if (iconEl) {
-            iconEl.className = `bi ${options.iconClass || 'bi-question-circle-fill text-success'}`;
-        }
-
-        if (confirmBtn) {
-            confirmBtn.textContent = options.confirmText || 'Confirm';
-            confirmBtn.className = `btn rounded-pill px-4 fw-semibold ${options.confirmClass || 'btn-krishi-primary'}`;
-
-            // Replace element with clone to clear prior event listeners
-            const newConfirmBtn = confirmBtn.cloneNode(true);
-            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-
-            const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-
-            newConfirmBtn.addEventListener('click', function () {
-                if (typeof options.onConfirm === 'function') {
-                    options.onConfirm();
+            if (titleEl) titleEl.textContent = options.title || 'Confirm Action';
+            if (bodyEl) {
+                if (options.body) {
+                    bodyEl.innerHTML = typeof options.body === 'string' && options.body.startsWith('<')
+                        ? options.body
+                        : `<p class="text-secondary mb-0">${options.body}</p>`;
+                } else {
+                    bodyEl.innerHTML = '<p class="text-secondary mb-0">Are you sure you want to proceed with this action?</p>';
                 }
-                bsModal.hide();
-            });
-        }
+            }
+            if (cancelBtn) cancelBtn.textContent = options.cancelText || 'Cancel';
 
-        const bsModalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
-        bsModalInstance.show();
+            if (iconEl) {
+                iconEl.className = `bi ${options.iconClass || 'bi-question-circle-fill text-success'}`;
+            }
+
+            if (confirmBtn) {
+                confirmBtn.textContent = options.confirmText || 'Confirm';
+                confirmBtn.className = `btn rounded-pill px-4 fw-semibold ${options.confirmClass || 'btn-krishi-primary'}`;
+
+                // Replace element with clone to clear prior event listeners
+                const newConfirmBtn = confirmBtn.cloneNode(true);
+                confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+                const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+                newConfirmBtn.addEventListener('click', function () {
+                    if (typeof options.onConfirm === 'function') {
+                        options.onConfirm();
+                    }
+                    bsModal.hide();
+                    // Bootstrap no-ops hide() while the show transition is running
+                    // (e.g. throttled background tabs) — retry once it settles.
+                    setTimeout(function () {
+                        if (modalEl.classList.contains('show')) bsModal.hide();
+                    }, 450);
+                });
+            }
+
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        };
+
+        // Bootstrap swallows show() while a hide transition is running.
+        // If the modal is open or still animating out, wait for it to fully
+        // close before re-populating and showing it again.
+        const isOpen = modalEl.classList.contains('show');
+        const isClosing = !isOpen && getComputedStyle(modalEl).display !== 'none';
+        if (isOpen || isClosing) {
+            modalEl.addEventListener('hidden.bs.modal', apply, { once: true });
+            if (isOpen) bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+        } else {
+            apply();
+        }
     }
 };
 
@@ -159,6 +177,52 @@ window.KrishiCount = {
             if (p < 1) requestAnimationFrame(tick);
         }
         requestAnimationFrame(tick);
+    }
+};
+
+/**
+ * Shared rental/booking request decision helpers.
+ * Used by the owner dashboards and the full request list pages.
+ * Pages must contain a `#antiForgeryForm` with the anti-forgery token.
+ */
+window.KrishiRequests = {
+    /** POST a decision (accept/reject/undo) as form data; resolves the JSON body or throws. */
+    post: async function (url, payload) {
+        const token = document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]')?.value || '';
+        const body = new URLSearchParams(Object.assign({}, payload, { __RequestVerificationToken: token }));
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString()
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || 'Request failed');
+        return data;
+    },
+
+    /** Accept confirmation modal: "Accept this rental request from [Farmer]?" */
+    confirmAccept: function (farmerName, onConfirm) {
+        KrishiModal.confirm({
+            title: 'Accept Rental Request',
+            body: `Accept this rental request from <strong>${farmerName}</strong>? They will be notified immediately.`,
+            confirmText: 'Yes, Accept',
+            onConfirm: onConfirm
+        });
+    },
+
+    /** Reject modal with a short, optional reason field. Calls onConfirm(reason). */
+    promptReject: function (farmerName, onConfirm) {
+        KrishiModal.confirm({
+            title: 'Reject Rental Request',
+            body: `<p class="text-secondary small mb-2">Reject this request from <strong>${farmerName}</strong>? Optionally tell them why — it helps them adjust:</p>
+                   <textarea id="krishiRejectReason" class="form-control form-control-sm" rows="2"
+                             placeholder="e.g. Equipment is already booked for those dates (optional)"></textarea>`,
+            confirmText: 'Reject Request',
+            confirmClass: 'btn-danger',
+            onConfirm: function () {
+                onConfirm(document.getElementById('krishiRejectReason')?.value.trim() || '');
+            }
+        });
     }
 };
 

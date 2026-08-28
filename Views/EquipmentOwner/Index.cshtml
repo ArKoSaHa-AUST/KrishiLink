@@ -79,7 +79,7 @@
         <div id="pendingRequestsList">
             @foreach (var req in Model.PendingRequestItems)
             {
-                <partial name="_PendingRequestRow" model="req" />
+                <partial name="_RequestRow" model="req" />
             }
         </div>
 
@@ -181,16 +181,7 @@
             KrishiCount.animate(document.getElementById('activeRentalsCount'), activeRentalsValue);
         }
 
-        async function postDecision(id, decision, reason) {
-            const token = document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]').value;
-            const res = await fetch('@Url.Action("RespondRequest", "EquipmentOwner")', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `id=${id}&decision=${decision}&reason=${encodeURIComponent(reason || '')}&__RequestVerificationToken=${encodeURIComponent(token)}`
-            });
-            const data = await res.json();
-            if (!data.success) throw new Error();
-        }
+        const RESPOND_URL = '@Url.Action("RespondRequest", "EquipmentOwner")';
 
         // Optimistic decision with an Undo window: the row leaves immediately,
         // and the POST is only sent if the toast closes without Undo.
@@ -222,7 +213,7 @@
                 },
                 onClosed: async function () {
                     try {
-                        await postDecision(id, decision, reason);
+                        await KrishiRequests.post(RESPOND_URL, { id, decision, reason: reason || '' });
                         row.remove();
                     } catch {
                         // Roll the optimistic update back on failure
@@ -238,18 +229,8 @@
 
         // Reject flow: optional reason prompt first, then the same optimistic path
         function promptReject(id, btn) {
-            KrishiModal.confirm({
-                title: 'Reject Rental Request',
-                body: `<p class="text-secondary small mb-2">Optionally tell the farmer why — it helps them adjust their request:</p>
-                       <textarea id="rejectReasonInput" class="form-control form-control-sm" rows="2"
-                                 placeholder="e.g. Equipment is already booked for those dates (optional)"></textarea>`,
-                confirmText: 'Reject Request',
-                confirmClass: 'btn-danger',
-                onConfirm: function () {
-                    const reason = document.getElementById('rejectReasonInput')?.value.trim() || '';
-                    applyDecision(id, 'reject', btn, reason);
-                }
-            });
+            const farmer = btn.closest('.request-row').dataset.farmerName;
+            KrishiRequests.promptReject(farmer, reason => applyDecision(id, 'reject', btn, reason));
         }
 
         // Poll for newly arrived requests and animate the counts up
