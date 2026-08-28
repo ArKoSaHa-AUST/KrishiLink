@@ -71,6 +71,12 @@ body {
     line-height: 1.6;
 }
 
+/* Opt-in page background: slight light greenish gradient */
+body.krishi-body-gradient {
+    background: linear-gradient(160deg, #f1f9f3 0%, var(--krishi-primary-light) 45%, #f8faf7 100%);
+    background-attachment: fixed;
+}
+
 a {
     color: var(--krishi-primary);
     text-decoration: none;

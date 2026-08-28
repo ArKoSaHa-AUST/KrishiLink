@@ -22,7 +22,7 @@
     <!-- Custom site styling -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100 @ViewData["BodyClass"]">
     <!-- Header & Sticky Top Navbar -->
     <header class="sticky-top">
         <nav class="navbar navbar-expand-lg navbar-dark navbar-krishi shadow-sm py-2.5">
