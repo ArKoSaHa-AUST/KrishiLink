@@ -35,6 +35,30 @@ namespace KrishiLink.DAL
             builder.Entity<Transaction>()
                 .Property(t => t.Amount)
                 .HasPrecision(18, 2);
+
+            builder.Entity<EquipmentBooking>()
+                .HasOne(b => b.Equipment)
+                .WithMany()
+                .HasForeignKey(b => b.EquipmentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<EquipmentBooking>()
+                .HasOne(b => b.Farmer)
+                .WithMany()
+                .HasForeignKey(b => b.FarmerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<GodownBooking>()
+                .HasOne(b => b.Godown)
+                .WithMany()
+                .HasForeignKey(b => b.GodownId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<GodownBooking>()
+                .HasOne(b => b.Farmer)
+                .WithMany()
+                .HasForeignKey(b => b.FarmerId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

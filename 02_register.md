@@ -24,6 +24,7 @@ Let a new user create an account under one of three roles: Farmer, Equipment Own
 - Button shows a loading spinner briefly on submit, then success checkmark before redirect
 
 ## Design Notes
+- UI Theme: Agriculture-related green and white color palette — clean white card containers and backgrounds paired with agricultural green primary buttons, green active tabs, and crisp green accents
 - Keep the form short — only ask what's needed for MVP roles
 - Role tabs use distinct icons (tractor / warehouse / plant) so illiterate-friendly recognition is possible
 - Mobile-first: single column, large input fields

@@ -240,6 +240,12 @@ a:hover {
     font-weight: 600;
     letter-spacing: 0.01em;
     border: 1px solid transparent;
+    border-radius: 50rem;
+    padding: 0.28rem 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    line-height: 1.2;
 }
 
 .krishi-badge-pending {
@@ -264,6 +270,45 @@ a:hover {
     background-color: var(--krishi-status-rejected-bg);
     color: var(--krishi-status-rejected-text);
     border-color: var(--krishi-status-rejected-border);
+}
+
+/* Equipment Card Visual Anchor & Gallery */
+.krishi-equipment-img-box {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    min-height: 200px;
+    background-color: #f1f5f2;
+    overflow: hidden;
+}
+
+.krishi-equipment-img-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.krishi-card:hover .krishi-equipment-img-box img {
+    transform: scale(1.06);
+}
+
+/* Green Range Slider Accent */
+.form-range::-webkit-slider-thumb {
+    background-color: var(--krishi-primary);
+}
+.form-range::-webkit-slider-thumb:active {
+    background-color: var(--krishi-primary-hover);
+}
+.form-range::-moz-range-thumb {
+    background-color: var(--krishi-primary);
+}
+
+/* Custom Checkbox Green Theme */
+.form-check-input:checked {
+    background-color: var(--krishi-primary) !important;
+    border-color: var(--krishi-primary) !important;
 }
 
 /* ==========================================================================
@@ -299,3 +344,208 @@ a:hover {
     padding: 0.75rem 1rem;
     font-size: 1.05rem;
 }
+
+/* ==========================================================================
+   Skeleton Shimmer Loader
+   ========================================================================== */
+.krishi-skeleton-card {
+    background-color: var(--krishi-surface);
+    border: 1px solid var(--krishi-border-color);
+    border-radius: var(--krishi-radius-md);
+    overflow: hidden;
+}
+
+.krishi-shimmer {
+    background: linear-gradient(90deg, #f0f2f0 25%, #e4e8e4 50%, #f0f2f0 75%);
+    background-size: 200% 100%;
+    animation: krishiShimmer 1.5s infinite ease-in-out;
+}
+
+@keyframes krishiShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.krishi-skeleton-img {
+    height: 190px;
+    width: 100%;
+}
+
+.krishi-skeleton-line {
+    height: 14px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.krishi-skeleton-line-title {
+    height: 20px;
+    width: 80%;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.krishi-skeleton-btn {
+    height: 38px;
+    border-radius: var(--krishi-radius-md);
+    width: 100%;
+}
+
+/* Mobile Bottom Sheet Filter styling */
+.krishi-bottom-sheet {
+    border-top-left-radius: 1.5rem !important;
+    border-top-right-radius: 1.5rem !important;
+    max-height: 85vh !important;
+    border-top: 2px solid var(--krishi-primary) !important;
+    background-color: var(--krishi-bg) !important;
+}
+
+.krishi-sheet-handle {
+    width: 48px;
+    height: 5px;
+    background-color: #cbd5e1;
+    border-radius: 10px;
+    margin: 0 auto 12px auto;
+}
+
+/* ==========================================================================
+   Booking History & Status Timeline Styles
+   ========================================================================== */
+.krishi-nav-pills .nav-link {
+    color: var(--krishi-text-primary);
+    font-weight: 600;
+    border-radius: 50rem;
+    padding: 0.5rem 1.25rem;
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.krishi-nav-pills .nav-link.active {
+    background-color: var(--krishi-primary) !important;
+    color: #ffffff !important;
+    box-shadow: var(--krishi-shadow-sm);
+}
+
+.booking-timeline {
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.booking-timeline::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: 8px;
+    width: 2px;
+    background: var(--krishi-border-color);
+}
+
+.booking-timeline-step {
+    position: relative;
+    padding-bottom: 1.25rem;
+}
+
+.booking-timeline-step:last-child {
+    padding-bottom: 0;
+}
+
+.booking-timeline-node {
+    position: absolute;
+    left: -1.5rem;
+    top: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 3px solid #cbd5e1;
+    z-index: 2;
+}
+
+.booking-timeline-step.step-done .booking-timeline-node {
+    background: var(--krishi-primary);
+    border-color: var(--krishi-primary-subtle);
+}
+
+.booking-timeline-step.step-active .booking-timeline-node {
+    background: #f59e0b;
+    border-color: #fef3c7;
+    animation: pulseNode 1.8s infinite;
+}
+
+.booking-timeline-step.step-rejected .booking-timeline-node {
+    background: #ef4444;
+    border-color: #fee2e2;
+}
+
+@keyframes pulseNode {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* ==========================================================================
+   Equipment / Godown Listing Form & Image Upload Dropzone
+   ========================================================================== */
+.krishi-upload-dropzone {
+    border: 2px dashed #52b788;
+    border-radius: var(--krishi-radius-md);
+    background-color: #f8faf7;
+    padding: 2.25rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease-in-out;
+}
+
+.krishi-upload-dropzone:hover,
+.krishi-upload-dropzone.dragover {
+    border-color: var(--krishi-primary);
+    background-color: var(--krishi-primary-light);
+    transform: translateY(-2px);
+}
+
+.krishi-image-preview-card {
+    position: relative;
+    width: 130px;
+    height: 98px;
+    border-radius: var(--krishi-radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--krishi-border-color);
+    background: #ffffff;
+    box-shadow: var(--krishi-shadow-sm);
+    transition: transform 0.2s ease;
+}
+
+.krishi-image-preview-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--krishi-shadow-md);
+}
+
+.krishi-preview-remove-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: rgba(239, 68, 68, 0.9);
+    color: #ffffff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    z-index: 3;
+}
+
+.krishi-preview-remove-btn:hover {
+    background-color: #dc2626;
+}
+
+@media (max-width: 575.98px) {
+    .krishi-image-preview-card {
+        width: calc(50% - 6px);
+        height: 105px;
+    }
+}

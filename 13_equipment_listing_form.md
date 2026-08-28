@@ -20,5 +20,6 @@ Let an equipment owner add a new piece of equipment or edit an existing listing.
 - Type dropdown uses icons next to each option for quick recognition
 
 ## Design Notes
+- UI Theme: Agriculture-related green and white color palette — clean white form container with green input focus borders, agricultural green upload drag-and-drop dropzone, and prominent green save button
 - Keep form to a single scrollable page rather than multi-step wizard — this is a simple data-entry task
 - Mobile: image upload area is large and tap-friendly

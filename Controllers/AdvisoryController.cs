@@ -27,6 +27,7 @@ namespace KrishiLink.Controllers
         /// Processes farmer's land inputs and generates rule-based recommendations.
         /// </summary>
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Index(CropAdvisoryViewModel model)
         {
             PopulateSampleRecommendations(model);

@@ -21,5 +21,6 @@ Give the farmer a single place to track all past and current equipment rentals a
 - Empty state per tab: "No godown bookings yet" with CTA to Godown Browse
 
 ## Design Notes
+- UI Theme: Agriculture-related green and white color palette — crisp white table/card backgrounds with subtle green headers, green navigation pills/tabs, and agricultural green status indicators
 - This page is about clarity and trust — farmers should be able to tell at a glance what's happening with each request
 - Keep status timeline simple: Requested → Accepted/Rejected → Completed

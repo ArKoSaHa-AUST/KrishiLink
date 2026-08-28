@@ -21,4 +21,5 @@ Let a farmer discover and compare storage (godown) options.
 - Empty state and loading skeletons mirror Equipment Browse page
 
 ## Design Notes
+- UI Theme: Agriculture-related green and white color palette — mirrors 06's layout with clean white cards, soft green borders, and nature-green action elements
 - Reuse the same card/grid/filter component pattern as Equipment Browse — keeps the app feeling consistent and reduces the learning curve between the two browse flows

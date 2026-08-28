@@ -1,6 +1,491 @@
+@model KrishiLink.Models.ViewModels.RegisterViewModel
 @{
-    ViewData["Title"] = "Register";
+    ViewData["Title"] = "Register - Create Account";
 }
-<div class="container py-4">
-    <h2>Register Placeholder</h2>
+
+<div class="row justify-content-center py-3 py-md-4">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+        <!-- Main Card -->
+        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden register-card">
+            <!-- Header Banner -->
+            <div class="px-4 pt-4 pb-3 text-center border-bottom bg-light-subtle" style="background: linear-gradient(180deg, #eef7f2 0%, #ffffff 100%);">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-2 p-2.5 shadow-sm" style="background-color: var(--krishi-primary-subtle); color: var(--krishi-primary); width: 54px; height: 54px;">
+                    <i class="bi bi-person-plus-fill fs-4"></i>
+                </div>
+                <h3 class="fw-bold mb-1" style="color: var(--krishi-primary);">Join KrishiLink</h3>
+                <p class="text-muted small mb-0">Create your account to access equipment, storage, and crop advisory.</p>
+            </div>
+
+            <div class="card-body p-4 p-md-4">
+                <!-- Role Selector at Top (3 Tabs / Pills) -->
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-uppercase text-muted mb-2 d-block text-center">
+                        Select Your Account Role
+                    </label>
+                    <div class="role-selector-grid">
+                        <!-- Role: Farmer -->
+                        <button type="button" 
+                                class="role-card-pill @(Model.Role == "Farmer" ? "active" : "")" 
+                                data-role="Farmer"
+                                id="roleTabFarmer"
+                                title="Farmer Account">
+                            <div class="role-icon-wrap">
+                                <i class="bi bi-flower1"></i>
+                            </div>
+                            <span class="role-title">Farmer</span>
+                            <span class="role-sub">Rent & Advisory</span>
+                        </button>
+
+                        <!-- Role: Equipment Owner -->
+                        <button type="button" 
+                                class="role-card-pill @(Model.Role == "EquipmentOwner" ? "active" : "")" 
+                                data-role="EquipmentOwner"
+                                id="roleTabEquipmentOwner"
+                                title="Equipment Owner Account">
+                            <div class="role-icon-wrap">
+                                <i class="bi bi-truck"></i>
+                            </div>
+                            <span class="role-title">Equipment Owner</span>
+                            <span class="role-sub">List Machinery</span>
+                        </button>
+
+                        <!-- Role: Godown Owner -->
+                        <button type="button" 
+                                class="role-card-pill @(Model.Role == "GodownOwner" ? "active" : "")" 
+                                data-role="GodownOwner"
+                                id="roleTabGodownOwner"
+                                title="Godown Owner Account">
+                            <div class="role-icon-wrap">
+                                <i class="bi bi-building"></i>
+                            </div>
+                            <span class="role-title">Godown Owner</span>
+                            <span class="role-sub">List Storage</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Registration Form -->
+                <form asp-action="Register" method="post" id="registerForm" novalidate>
+                    @Html.AntiForgeryToken()
+
+                    <!-- Hidden input bound to ViewModel Role -->
+                    <input type="hidden" asp-for="Role" id="selectedRoleInput" />
+
+                    <!-- Server-Side Error Alert -->
+                    @if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty]?.Errors.Count > 0)
+                    {
+                        <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2">
+                            <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+                            <div>
+                                @foreach (var error in ViewData.ModelState[string.Empty]!.Errors)
+                                {
+                                    <div>@error.ErrorMessage</div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Full Name -->
+                    <div class="mb-3">
+                        <label asp-for="FullName" class="form-label fw-semibold small text-dark mb-1">
+                            Full Name <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                <i class="bi bi-person"></i>
+                            </span>
+                            <input asp-for="FullName" 
+                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2" 
+                                   placeholder="e.g. Rahim Uddin" 
+                                   autocomplete="name" 
+                                   required />
+                        </div>
+                        <span asp-validation-for="FullName" class="text-danger small mt-1 d-block ms-2"></span>
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div class="mb-3">
+                        <label asp-for="PhoneNumber" class="form-label fw-semibold small text-dark mb-1">
+                            Phone Number <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                <i class="bi bi-telephone"></i>
+                            </span>
+                            <input asp-for="PhoneNumber" 
+                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2" 
+                                   placeholder="017XXXXXXXX" 
+                                   autocomplete="tel" 
+                                   type="tel"
+                                   id="phoneInput"
+                                   required />
+                        </div>
+                        <span asp-validation-for="PhoneNumber" class="text-danger small mt-1 d-block ms-2" id="phoneError"></span>
+                    </div>
+
+                    <!-- Email (Optional) -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label asp-for="Email" class="form-label fw-semibold small text-dark mb-0">Email Address</label>
+                            <span class="text-muted small" style="font-size: 0.75rem;">Optional</span>
+                        </div>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                <i class="bi bi-envelope"></i>
+                            </span>
+                            <input asp-for="Email" 
+                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2" 
+                                   placeholder="name@example.com" 
+                                   autocomplete="email" 
+                                   type="email" />
+                        </div>
+                        <span asp-validation-for="Email" class="text-danger small mt-1 d-block ms-2"></span>
+                    </div>
+
+                    <!-- Location (Searchable / Dropdown selection) -->
+                    <div class="mb-3">
+                        <label asp-for="Location" class="form-label fw-semibold small text-dark mb-1">
+                            Location (District / Upazila) <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                <i class="bi bi-geo-alt"></i>
+                            </span>
+                            <input asp-for="Location" 
+                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2" 
+                                   list="locationSuggestions" 
+                                   placeholder="Type or select District (e.g. Bogra, Dinajpur)" 
+                                   autocomplete="address-level2" 
+                                   required />
+                            <datalist id="locationSuggestions">
+                                <option value="Bogra Sadar, Bogra" />
+                                <option value="Sherpur, Bogra" />
+                                <option value="Dinajpur Sadar, Dinajpur" />
+                                <option value="Birganj, Dinajpur" />
+                                <option value="Rangpur Sadar, Rangpur" />
+                                <option value="Mithapukur, Rangpur" />
+                                <option value="Rajshahi Sadar, Rajshahi" />
+                                <option value="Paba, Rajshahi" />
+                                <option value="Natore Sadar, Natore" />
+                                <option value="Pabna Sadar, Pabna" />
+                                <option value="Naogaon Sadar, Naogaon" />
+                                <option value="Sirajganj Sadar, Sirajganj" />
+                                <option value="Mymensingh Sadar, Mymensingh" />
+                                <option value="Jessore Sadar, Jessore" />
+                                <option value="Comilla Sadar, Comilla" />
+                                <option value="Gazipur Sadar, Gazipur" />
+                                <option value="Dhaka North, Dhaka" />
+                                <option value="Dhaka South, Dhaka" />
+                            </datalist>
+                        </div>
+                        <span asp-validation-for="Location" class="text-danger small mt-1 d-block ms-2"></span>
+                    </div>
+
+                    <!-- Conditional Field: Business/Farm Name (For Equipment Owner & Godown Owner) -->
+                    <div class="mb-3 conditional-business-field @(Model.Role == "Farmer" ? "d-none" : "")" id="businessNameSection">
+                        <label asp-for="BusinessOrFarmName" class="form-label fw-semibold small text-dark mb-1" id="businessLabel">
+                            @(Model.Role == "GodownOwner" ? "Storage Facility / Godown Name" : "Business / Equipment Farm Name")
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                <i class="bi bi-shop"></i>
+                            </span>
+                            <input asp-for="BusinessOrFarmName" 
+                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2" 
+                                   id="businessNameInput"
+                                   placeholder="e.g. Green Agro Farm or Dinajpur Cold Storage" />
+                        </div>
+                        <span asp-validation-for="BusinessOrFarmName" class="text-danger small mt-1 d-block ms-2"></span>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label fw-semibold small text-dark mb-1">
+                            Password <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            <input asp-for="Password" 
+                                   type="password" 
+                                   class="form-control border-start-0 border-end-0 py-2" 
+                                   placeholder="At least 6 characters" 
+                                   id="passwordInput"
+                                   autocomplete="new-password" 
+                                   required />
+                            <button type="button" 
+                                    class="input-group-text bg-white text-muted border-start-0 rounded-end-pill pe-3 toggle-password-btn" 
+                                    data-target="passwordInput"
+                                    aria-label="Toggle password visibility">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-1 ms-2">
+                            <span asp-validation-for="Password" class="text-danger small" id="passwordError"></span>
+                            <span class="text-muted small ms-auto" id="passwordLengthHint" style="font-size: 0.75rem;">Min. 6 chars</span>
+                        </div>
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="mb-4">
+                        <label asp-for="ConfirmPassword" class="form-label fw-semibold small text-dark mb-1">
+                            Confirm Password <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                <i class="bi bi-shield-check"></i>
+                            </span>
+                            <input asp-for="ConfirmPassword" 
+                                   type="password" 
+                                   class="form-control border-start-0 border-end-0 py-2" 
+                                   placeholder="Re-enter password" 
+                                   id="confirmPasswordInput"
+                                   autocomplete="new-password" 
+                                   required />
+                            <button type="button" 
+                                    class="input-group-text bg-white text-muted border-start-0 rounded-end-pill pe-3 toggle-password-btn" 
+                                    data-target="confirmPasswordInput"
+                                    aria-label="Toggle confirm password visibility">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="ConfirmPassword" class="text-danger small mt-1 d-block ms-2" id="confirmPasswordError"></span>
+                    </div>
+
+                    <!-- Primary Submit Button -->
+                    <div class="d-grid mb-3">
+                        <button type="submit" 
+                                class="btn btn-krishi btn-lg py-2.5 rounded-pill fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2" 
+                                id="submitBtn">
+                            <span class="btn-spinner spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <i class="bi bi-check2-circle fs-5 btn-icon"></i>
+                            <span class="btn-text">Create Account</span>
+                        </button>
+                    </div>
+
+                    <!-- Secondary Link -->
+                    <div class="text-center pt-2 border-top">
+                        <p class="small text-muted mb-0">
+                            Already have an account? 
+                            <a asp-controller="Account" asp-action="Login" class="fw-bold text-decoration-none ms-1" style="color: var(--krishi-primary);">
+                                Login here
+                            </a>
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Role Benefits Helper -->
+        <div class="text-center mt-3 text-muted small">
+            <span class="d-inline-flex align-items-center gap-1.5">
+                <i class="bi bi-shield-lock-fill text-success"></i> Safe & Verified Agricultural Community
+            </span>
+        </div>
+    </div>
 </div>
+
+<style>
+/* Register Specific Styles */
+.register-card {
+    border: 1px solid var(--krishi-border-color);
+    box-shadow: 0 10px 25px rgba(45, 106, 79, 0.08) !important;
+}
+
+.role-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+}
+
+.role-card-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem 0.25rem;
+    border: 2px solid var(--krishi-border-color);
+    background-color: #ffffff;
+    border-radius: var(--krishi-radius-md);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--krishi-text-primary);
+    text-align: center;
+    user-select: none;
+}
+
+.role-card-pill:hover {
+    border-color: var(--krishi-accent);
+    background-color: var(--krishi-primary-light);
+    transform: translateY(-2px);
+}
+
+.role-card-pill.active {
+    border-color: var(--krishi-primary);
+    background-color: var(--krishi-primary-light);
+    box-shadow: 0 0 0 2px rgba(45, 106, 79, 0.2);
+}
+
+.role-icon-wrap {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #f0f5f2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    color: var(--krishi-primary);
+    margin-bottom: 0.35rem;
+    transition: all 0.2s ease;
+}
+
+.role-card-pill.active .role-icon-wrap {
+    background-color: var(--krishi-primary);
+    color: #ffffff;
+}
+
+.role-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 0.15rem;
+}
+
+.role-sub {
+    font-size: 0.68rem;
+    color: var(--krishi-text-muted);
+}
+
+.role-card-pill.active .role-sub {
+    color: var(--krishi-primary-hover);
+    font-weight: 500;
+}
+
+.toggle-password-btn {
+    cursor: pointer;
+    background: transparent;
+}
+.toggle-password-btn:hover {
+    color: var(--krishi-primary) !important;
+}
+
+.btn-krishi {
+    background-color: var(--krishi-primary);
+    border-color: var(--krishi-primary);
+    transition: all 0.2s ease;
+}
+.btn-krishi:hover {
+    background-color: var(--krishi-primary-hover);
+    border-color: var(--krishi-primary-hover);
+    transform: translateY(-1px);
+}
+
+.input-group .form-control:focus {
+    z-index: 3;
+}
+
+/* Smooth transition for conditional field */
+#businessNameSection {
+    transition: all 0.3s ease-in-out;
+}
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+            // 1. Role Tabs Selection Logic
+            $('.role-card-pill').on('click', function () {
+                $('.role-card-pill').removeClass('active');
+                $(this).addClass('active');
+
+                const selectedRole = $(this).data('role');
+                $('#selectedRoleInput').val(selectedRole);
+
+                // Handle conditional business name field
+                if (selectedRole === 'EquipmentOwner' || selectedRole === 'GodownOwner') {
+                    $('#businessNameSection').removeClass('d-none');
+                    if (selectedRole === 'GodownOwner') {
+                        $('#businessLabel').text('Storage Facility / Godown Name');
+                        $('#businessNameInput').attr('placeholder', 'e.g. Dinajpur Modern Cold Storage');
+                    } else {
+                        $('#businessLabel').text('Business / Equipment Farm Name');
+                        $('#businessNameInput').attr('placeholder', 'e.g. Green Agro Machinery');
+                    }
+                } else {
+                    $('#businessNameSection').addClass('d-none');
+                }
+            });
+
+            // Check role from query string on load if present
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryRole = urlParams.get('role');
+            if (queryRole) {
+                const targetTab = $(`.role-card-pill[data-role="${queryRole}"]`);
+                if (targetTab.length > 0) {
+                    targetTab.trigger('click');
+                }
+            }
+
+            // 2. Show/Hide Password Toggle
+            $('.toggle-password-btn').on('click', function () {
+                const targetId = $(this).data('target');
+                const targetInput = $('#' + targetId);
+                const icon = $(this).find('i');
+
+                if (targetInput.attr('type') === 'password') {
+                    targetInput.attr('type', 'text');
+                    icon.removeClass('bi-eye').addClass('bi-eye-slash');
+                } else {
+                    targetInput.attr('type', 'password');
+                    icon.removeClass('bi-eye-slash').addClass('bi-eye');
+                }
+            });
+
+            // 3. Inline Live Validation
+            // Phone validation
+            $('#phoneInput').on('input', function () {
+                const phoneVal = $(this).val().trim();
+                const phoneRegex = /^(?:\+?880|0)?1[3-9]\d{8}$/;
+                if (phoneVal.length > 0 && !phoneRegex.test(phoneVal)) {
+                    $('#phoneError').text('Enter a valid 11-digit Bangladeshi number (e.g. 017XXXXXXXX)');
+                } else {
+                    $('#phoneError').text('');
+                }
+            });
+
+            // Password confirmation validation
+            $('#confirmPasswordInput, #passwordInput').on('input', function () {
+                const pass = $('#passwordInput').val();
+                const confirmPass = $('#confirmPasswordInput').val();
+
+                if (confirmPass.length > 0 && pass !== confirmPass) {
+                    $('#confirmPasswordError').text('Passwords do not match.');
+                } else {
+                    $('#confirmPasswordError').text('');
+                }
+            });
+
+            // 4. Submit Button Loading Interaction
+            $('#registerForm').on('submit', function (e) {
+                const form = $(this);
+                if (form.valid()) {
+                    const submitBtn = $('#submitBtn');
+                    const spinner = submitBtn.find('.btn-spinner');
+                    const icon = submitBtn.find('.btn-icon');
+                    const text = submitBtn.find('.btn-text');
+
+                    spinner.removeClass('d-none');
+                    icon.addClass('d-none');
+                    text.text('Creating Account...');
+                    submitBtn.prop('disabled', true);
+
+                    // Form submits to server
+                    return true;
+                }
+            });
+        });
+    </script>
+}
