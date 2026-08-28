@@ -25,6 +25,7 @@
             <div class="container">
                 <!-- Brand / Logo -->
                 <a class="navbar-brand fw-bold text-white d-flex align-items-center gap-2" asp-controller="Home" asp-action="Index">
+                    <img src="~/images/dp.png" alt="KrishiLink Logo" class="rounded-circle object-fit-cover bg-white p-0.5" style="width: 32px; height: 32px;" />
                     <span>KrishiLink</span>
                 </a>
 
@@ -89,6 +90,9 @@
                         *@
                         <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light btn-sm rounded-pill px-3 py-1.5 fw-medium">Login</a>
                         <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm">Register</a>
+                        <a asp-controller="Farmer" asp-action="Dashboard" class="btn btn-outline-light btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 text-white ms-1" style="width: 34px; height: 34px;" title="Farmer Dashboard" aria-label="Farmer Dashboard">
+                            <span class="fw-bold small">D</span>
+                        </a>
                         @* } *@
                     </div>
                 </div>
@@ -97,6 +101,7 @@
                 <div class="offcanvas offcanvas-end offcanvas-krishi d-lg-none" tabindex="-1" id="krishiMobileNav" aria-labelledby="krishiMobileNavLabel">
                     <div class="offcanvas-header text-white">
                         <h5 class="offcanvas-title d-flex align-items-center gap-2 fw-bold" id="krishiMobileNavLabel">
+                            <img src="~/images/dp.png" alt="KrishiLink Logo" class="rounded-circle object-fit-cover bg-white p-0.5" style="width: 28px; height: 28px;" />
                             KrishiLink
                         </h5>
                         <button type="button" class="btn-close btn-close-white text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
@@ -131,6 +136,9 @@
                             <div class="d-grid gap-2">
                                 <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light rounded-pill py-2 fw-medium">Login</a>
                                 <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success rounded-pill py-2 fw-bold">Register</a>
+                                <a asp-controller="Farmer" asp-action="Dashboard" class="btn btn-outline-light rounded-pill py-2 fw-medium d-flex align-items-center justify-content-center gap-2">
+                                    <i class="bi bi-person-circle me-1"></i> Farmer Dashboard
+                                </a>
                             </div>
                         </div>
                     </div>
