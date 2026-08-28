@@ -3,6 +3,7 @@
     ViewData["Title"] = Model.Name;
     ViewData["BodyClass"] = "krishi-body-gradient";
     var primaryImage = Model.ImageUrls.FirstOrDefault() ?? "";
+    var bookingRequested = TempData.Peek("SuccessMessage") != null;
 }
 
 <!-- Breadcrumb Navigation -->
@@ -20,8 +21,11 @@
     <div class="alert alert-success border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-3">
         <i class="bi bi-check-circle-fill fs-4 text-success"></i>
         <div>
-            <h6 class="fw-bold mb-0 text-success-emphasis">Booking Request Sent Successfully!</h6>
-            <p class="mb-0 small text-success-emphasis">@TempData["SuccessMessage"]</p>
+            <h6 class="fw-bold mb-0 text-success-emphasis">Booking Requested ✓</h6>
+            <p class="mb-1 small text-success-emphasis">@TempData["SuccessMessage"]</p>
+            <a asp-controller="Bookings" asp-action="Index" class="small fw-semibold text-success">
+                View Booking History <i class="bi bi-arrow-right"></i>
+            </a>
         </div>
     </div>
 }
@@ -170,7 +174,7 @@
                         </div>
                         <div class="form-text small" id="remainingCapacityText">
                             <i class="bi bi-info-circle text-success me-1"></i>
-                            <span id="remainingCapacityNumber">@(Model.AvailableCapacityTons - Model.RequestedCapacityTons)</span> Tons will remain available after this booking.
+                            <span id="remainingCapacityNumber">@((Model.AvailableCapacityTons - Model.RequestedCapacityTons).ToString("N0"))</span>/@Model.AvailableCapacityTons.ToString("N0") Tons available after this booking.
                         </div>
                         <div class="text-danger small d-none mt-1" id="capacityErrorMsg">
                             <i class="bi bi-x-circle me-1"></i> Requested capacity exceeds available space (@Model.AvailableCapacityTons Tons).
@@ -200,9 +204,18 @@
 
                     <!-- Action Button -->
                     <div class="d-grid pt-2">
-                        <button type="submit" class="btn btn-krishi-primary py-2.5 fw-bold rounded-3 shadow-sm" id="submitBookingBtn">
-                            <i class="bi bi-box-seam me-1.5"></i> Book Storage
-                        </button>
+                        @if (bookingRequested)
+                        {
+                            <button type="button" class="btn btn-success py-2.5 fw-bold rounded-3" disabled>
+                                <i class="bi bi-check-circle-fill me-1.5"></i> Booking Requested ✓
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="submit" class="btn btn-krishi-primary py-2.5 fw-bold rounded-3 shadow-sm" id="submitBookingBtn">
+                                <i class="bi bi-box-seam me-1.5"></i> Book Storage
+                            </button>
+                        }
                     </div>
 
                     <p class="text-muted small text-center mt-3 mb-0" style="font-size: 0.78rem;">
@@ -250,8 +263,39 @@
             } else {
                 if (errorMsg) errorMsg.classList.add('d-none');
                 if (submitBtn) submitBtn.disabled = false;
-                if (remainingSpan) remainingSpan.innerText = remaining.toString();
+                if (remainingSpan) remainingSpan.innerText = remaining.toLocaleString();
             }
         }
+
+        // Intercept submit: show a confirmation modal with a booking summary before posting
+        document.getElementById('godownBookingForm')?.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const form = this;
+            if (!form.reportValidity()) return;
+
+            const capacity = document.getElementById('requestedCapacityInput').value;
+            const start = document.getElementById('startDateInput').value;
+            const end = document.getElementById('endDateInput').value;
+
+            if (end <= start) {
+                KrishiModal.confirm({
+                    title: 'Invalid Dates',
+                    body: 'End date must be after the start date. Please adjust the booking duration.',
+                    confirmText: 'OK'
+                });
+                return;
+            }
+
+            KrishiModal.confirm({
+                title: 'Confirm Storage Booking',
+                body: `<ul class="list-unstyled mb-0 d-flex flex-column gap-2 small">
+                           <li><i class="bi bi-building text-success me-2"></i><strong>Godown:</strong> @Model.Name</li>
+                           <li><i class="bi bi-box-seam text-success me-2"></i><strong>Capacity:</strong> ${capacity} Tons</li>
+                           <li><i class="bi bi-calendar-range text-success me-2"></i><strong>Duration:</strong> ${start} → ${end}</li>
+                       </ul>`,
+                confirmText: 'Confirm Booking',
+                onConfirm: function () { form.submit(); }
+            });
+        });
     </script>
 }
