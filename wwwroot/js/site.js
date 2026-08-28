@@ -211,12 +211,13 @@ window.KrishiRequests = {
     },
 
     /** Reject modal with a short, optional reason field. Calls onConfirm(reason). */
-    promptReject: function (farmerName, onConfirm) {
+    promptReject: function (farmerName, onConfirm, opts) {
+        opts = opts || {};
         KrishiModal.confirm({
-            title: 'Reject Rental Request',
+            title: opts.title || 'Reject Rental Request',
             body: `<p class="text-secondary small mb-2">Reject this request from <strong>${farmerName}</strong>? Optionally tell them why — it helps them adjust:</p>
                    <textarea id="krishiRejectReason" class="form-control form-control-sm" rows="2"
-                             placeholder="e.g. Equipment is already booked for those dates (optional)"></textarea>`,
+                             placeholder="${opts.placeholder || 'e.g. Equipment is already booked for those dates (optional)'}"></textarea>`,
             confirmText: 'Reject Request',
             confirmClass: 'btn-danger',
             onConfirm: function () {
