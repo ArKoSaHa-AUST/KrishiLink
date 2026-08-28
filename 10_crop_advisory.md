@@ -26,5 +26,7 @@ Let a farmer input their land/season details and receive a rule-based crop recom
 - Weather warning strip is visually distinct (amber background, icon) but not alarming
 
 ## Design Notes
+- **UI Theme**: Follow the farmer-focused agricultural aesthetic — **green (`--krishi-primary: #2d6a4f`) as the dominant accent** (form controls, buttons, result cards, active states) and **white/off-white (`--krishi-bg: #f8faf7`) as the base background**. All colors are defined as CSS custom properties in `wwwroot/css/site.css`; use them everywhere instead of hardcoding hex values. Avoid corporate blue entirely.
+- Use the shared `_Layout.cshtml` (sticky green navbar, green footer), `_StatusBadge.cshtml` for weather warning indicators, and `btn-krishi-primary` / `btn-krishi-outline` for all buttons.
 - This page should feel like the "smart" centerpiece of the app — clean, card-based, not a wall of text
 - Icons for each crop (simple line icons) help scannability over relying on farmer to read crop names only

@@ -22,5 +22,7 @@ Show full details of one piece of equipment and let the farmer submit a rental r
 - Button changes to "Request Sent ✓" (disabled) after successful submission, preventing duplicate requests
 
 ## Design Notes
+- **UI Theme**: Follow the farmer-focused agricultural aesthetic — **green (`--krishi-primary: #2d6a4f`) as the dominant accent** (buttons, active states, form highlights, calendar selection) and **white/off-white (`--krishi-bg: #f8faf7`) as the base background**. All colors are defined as CSS custom properties in `wwwroot/css/site.css`; use them everywhere instead of hardcoding hex values. Avoid corporate blue entirely.
+- Use the shared `_Layout.cshtml` (sticky green navbar, green footer), `_StatusBadge.cshtml` for availability indicators, `_Modal.cshtml` for the rental confirmation dialog, and `btn-krishi-primary` / `btn-krishi-outline` for all buttons.
 - Keep request form always visible/sticky on desktop so farmer doesn't need to scroll back up
 - Mobile: form appears as a sticky bottom bar with a "Request This Equipment" button that expands the form
