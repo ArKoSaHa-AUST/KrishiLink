@@ -1,0 +1,41 @@
+## ASP.NET Core & .NET gitignore for KrishiLink
+
+# Build outputs
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio & IDE files
+.vs/
+.vscode/
+.idea/
+*.user
+*.userosscache
+*.suo
+*.userhost
+*.userlibraries
+*.sln.docstates
+
+# ASP.NET local / sensitive settings
+appsettings.Development.json
+appsettings.Local.json
+*.Development.json
+*.secret.json
+
+# Database & temp files
+*.mdf
+*.ldf
+*.db
+*.sqlite
+*.sqlite3
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Never ignore markdown documentation files
+!*.md
