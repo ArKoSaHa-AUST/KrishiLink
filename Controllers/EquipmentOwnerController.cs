@@ -57,6 +57,7 @@ namespace KrishiLink.Controllers
         /// Handles creation or updating of equipment listing.
         /// </summary>
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Save(EquipmentListingViewModel model)
         {
             if (!ModelState.IsValid)
@@ -117,6 +118,7 @@ namespace KrishiLink.Controllers
         /// Saves updated availability calendar changes.
         /// </summary>
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult SaveAvailability(ManageAvailabilityViewModel model)
         {
             TempData["SuccessMessage"] = "Equipment availability calendar updated successfully!";

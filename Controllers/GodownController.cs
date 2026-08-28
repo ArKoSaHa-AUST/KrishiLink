@@ -343,6 +343,7 @@ namespace KrishiLink.Controllers
         /// Handles godown booking request.
         /// </summary>
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult SubmitBooking(GodownDetailViewModel model)
         {
             TempData["SuccessMessage"] = $"Storage space request ({model.RequestedCapacityTons} Tons) sent to the godown owner! You will be notified once confirmed.";

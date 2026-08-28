@@ -324,6 +324,7 @@ namespace KrishiLink.Controllers
         /// Handles rental request submission.
         /// </summary>
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult SubmitRequest(EquipmentDetailViewModel model)
         {
             TempData["SuccessMessage"] = "Rental request sent to owner! You will be notified once accepted.";
