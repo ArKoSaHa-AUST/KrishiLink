@@ -481,4 +481,64 @@ a:hover {
     0% { transform: scale(1); }
     50% { transform: scale(1.2); }
     100% { transform: scale(1); }
+}
+
+/* ==========================================================================
+   Equipment / Godown Listing Form & Image Upload Dropzone
+   ========================================================================== */
+.krishi-upload-dropzone {
+    border: 2px dashed #52b788;
+    border-radius: var(--krishi-radius-md);
+    background-color: #f8faf7;
+    padding: 2.25rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease-in-out;
+}
+
+.krishi-upload-dropzone:hover,
+.krishi-upload-dropzone.dragover {
+    border-color: var(--krishi-primary);
+    background-color: var(--krishi-primary-light);
+    transform: translateY(-2px);
+}
+
+.krishi-image-preview-card {
+    position: relative;
+    width: 130px;
+    height: 98px;
+    border-radius: var(--krishi-radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--krishi-border-color);
+    background: #ffffff;
+    box-shadow: var(--krishi-shadow-sm);
+    transition: transform 0.2s ease;
+}
+
+.krishi-image-preview-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--krishi-shadow-md);
+}
+
+.krishi-preview-remove-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: rgba(239, 68, 68, 0.9);
+    color: #ffffff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    z-index: 3;
+}
+
+.krishi-preview-remove-btn:hover {
+    background-color: #dc2626;
 }

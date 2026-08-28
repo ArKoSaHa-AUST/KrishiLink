@@ -33,8 +33,8 @@
 <div class="row justify-content-center">
     <div class="col-12 col-xl-10">
         
-        <form asp-controller="EquipmentOwner" asp-action="Save" method="post" id="equipmentListingForm" enctype="multipart/form-data">
-            <input type="hidden" asp-for="Id" />
+        <form asp-controller="EquipmentOwner" asp-action="Save" method="post" id="equipmentListingForm" enctype="multipart/form-data" onsubmit="return validateListingForm(event)">
+            <input type="hidden" asp-for="Id" id="equipmentId" />
 
             <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4">
                 
@@ -55,7 +55,7 @@
                         <label asp-for="Name" class="form-label fw-semibold text-dark small">
                             Equipment / Machine Title <span class="text-danger">*</span>
                         </label>
-                        <input asp-for="Name" class="form-control py-2.5" placeholder="e.g. Mahindra 575 DI Heavy Tractor" required />
+                        <input asp-for="Name" class="form-control py-2.5" id="equipmentNameInput" placeholder="e.g. Mahindra 575 DI Heavy Tractor" required />
                         <span asp-validation-for="Name" class="text-danger small"></span>
                         <div class="form-text small text-muted">Include brand name, model, and horsepower for higher renter trust.</div>
                     </div>
@@ -65,7 +65,7 @@
                         <label asp-for="Category" class="form-label fw-semibold text-dark small">
                             Machinery Category <span class="text-danger">*</span>
                         </label>
-                        <select asp-for="Category" class="form-select py-2.5" required>
+                        <select asp-for="Category" class="form-select py-2.5" id="equipmentCategorySelect" required>
                             <option value="">-- Select Category --</option>
                             <option value="Tractor">🚜 Tractor</option>
                             <option value="Power Tiller">⚙️ Power Tiller</option>
@@ -84,7 +84,7 @@
                         <label asp-for="Description" class="form-label fw-semibold text-dark small">
                             Description &amp; Key Specifications <span class="text-danger">*</span>
                         </label>
-                        <textarea asp-for="Description" class="form-control" rows="4" 
+                        <textarea asp-for="Description" class="form-control" id="equipmentDescInput" rows="4" 
                                   placeholder="Detail the engine capacity (HP), compatible implements, fuel consumption, driver/operator availability, and operational condition..." required></textarea>
                         <span asp-validation-for="Description" class="text-danger small"></span>
                     </div>
@@ -98,7 +98,7 @@
                             <span class="input-group-text bg-light text-success border-end-0">
                                 <i class="bi bi-geo-alt-fill"></i>
                             </span>
-                            <input asp-for="Location" class="form-control border-start-0 py-2.5" placeholder="e.g. Bogra Sadar, Bogra" required />
+                            <input asp-for="Location" class="form-control border-start-0 py-2.5" id="equipmentLocationInput" placeholder="e.g. Bogra Sadar, Bogra" required />
                         </div>
                         <span asp-validation-for="Location" class="text-danger small"></span>
                     </div>
@@ -132,11 +132,11 @@
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-success fw-bold">৳</span>
-                            <input type="number" asp-for="DailyRate" class="form-control py-2.5" min="1" step="50" placeholder="1500" required />
+                            <input type="number" asp-for="DailyRate" class="form-control py-2.5" id="dailyRateInput" min="1" step="50" placeholder="1500" required />
                             <span class="input-group-text bg-light text-muted">/ Day</span>
                         </div>
                         <span asp-validation-for="DailyRate" class="text-danger small"></span>
-                        <div class="form-text small text-muted">Standard 8-hour daily operational rental rate.</div>
+                        <div class="form-text small text-muted">Standard 8-hour daily operational rental rate. Must be greater than 0.</div>
                     </div>
 
                     <!-- Hourly Rate -->
@@ -146,38 +146,58 @@
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-success fw-bold">৳</span>
-                            <input type="number" asp-for="HourlyRate" class="form-control py-2.5" min="0" step="10" placeholder="250" />
+                            <input type="number" asp-for="HourlyRate" class="form-control py-2.5" id="hourlyRateInput" min="0" step="10" placeholder="250" />
                             <span class="input-group-text bg-light text-muted">/ Hour</span>
                         </div>
                         <span asp-validation-for="HourlyRate" class="text-danger small"></span>
                         <div class="form-text small text-muted">Leave blank if only daily rentals are supported.</div>
                     </div>
 
-                    <!-- Section 3: Equipment Photos Placeholder (Handled in detail in list2.md) -->
+                    <!-- Section 3: Interactive Drag-and-Drop Image Uploader -->
                     <div class="col-12 pt-2">
-                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
-                            <span class="badge bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                                <i class="bi bi-images"></i>
-                            </span>
-                            <h5 class="fw-bold text-dark mb-0">3. Machinery Photos</h5>
+                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                    <i class="bi bi-images"></i>
+                                </span>
+                                <h5 class="fw-bold text-dark mb-0">3. Machinery Photos <span class="text-danger">*</span></h5>
+                            </div>
+                            <span class="text-muted small">At least 1 photo required (PNG, JPG, WebP)</span>
                         </div>
 
-                        <!-- Existing Images (if edit mode) -->
-                        @if (Model.ExistingImageUrls.Any())
-                        {
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold text-dark small mb-2">Current Active Photos</label>
-                                <div class="d-flex flex-wrap gap-3">
-                                    @foreach (var img in Model.ExistingImageUrls)
-                                    {
-                                        <div class="position-relative border rounded-3 overflow-hidden shadow-sm" style="width: 120px; height: 90px;">
-                                            <img src="@img" alt="Equipment photo" class="w-100 h-100 object-fit-cover" />
-                                            <input type="hidden" name="ExistingImageUrls" value="@img" />
-                                        </div>
-                                    }
-                                </div>
+                        <!-- Dropzone Component -->
+                        <div class="krishi-upload-dropzone mb-3" id="dropzoneArea" onclick="document.getElementById('equipmentImageFileInput').click()">
+                            <input type="file" id="equipmentImageFileInput" name="imageFiles" multiple accept="image/png, image/jpeg, image/webp" class="d-none" onchange="handleFileSelect(this.files)" />
+                            <div class="mb-2">
+                                <i class="bi bi-cloud-arrow-up text-success" style="font-size: 2.5rem;"></i>
                             </div>
-                        }
+                            <h6 class="fw-bold text-dark mb-1">Drag &amp; drop equipment photos here, or <span class="text-success text-decoration-underline">browse files</span></h6>
+                            <p class="text-muted small mb-0">High-quality photos of the front, side, and engine bay increase rental bookings.</p>
+                        </div>
+
+                        <!-- Image Validation Alert -->
+                        <div class="alert alert-danger d-none py-2 px-3 small rounded-3 mb-3" id="imageValidationAlert">
+                            <i class="bi bi-exclamation-triangle-fill me-1.5"></i> Please upload at least one photo of the equipment before saving.
+                        </div>
+
+                        <!-- Live Preview Cards Container -->
+                        <div class="d-flex flex-wrap gap-3" id="imagePreviewsContainer">
+                            
+                            <!-- Existing Images (if edit mode) -->
+                            @for (int i = 0; i < Model.ExistingImageUrls.Count; i++)
+                            {
+                                var imgUrl = Model.ExistingImageUrls[i];
+                                <div class="krishi-image-preview-card existing-image-card" id="existingCard_@i">
+                                    <img src="@imgUrl" alt="Equipment photo" class="w-100 h-100 object-fit-cover" />
+                                    <input type="hidden" name="ExistingImageUrls" value="@imgUrl" />
+                                    <button type="button" class="krishi-preview-remove-btn" onclick="removeExistingImage(@i)" title="Remove photo">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                            }
+
+                        </div>
+
                     </div>
 
                 </div>
@@ -187,7 +207,7 @@
                     <a asp-controller="EquipmentOwner" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-semibold w-100 w-sm-auto order-2 order-sm-1">
                         Cancel
                     </a>
-                    <button type="submit" class="btn btn-krishi-primary rounded-pill px-5 py-2.5 fw-bold shadow-sm w-100 w-sm-auto order-1 order-sm-2">
+                    <button type="submit" class="btn btn-krishi-primary rounded-pill px-5 py-2.5 fw-bold shadow-sm w-100 w-sm-auto order-1 order-sm-2" id="submitListingBtn">
                         <i class="bi bi-check2-circle me-1.5"></i> @Model.SubmitButtonText
                     </button>
                 </div>
@@ -201,4 +221,97 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // Track uploaded files in memory
+        let selectedFiles = [];
+
+        const dropzone = document.getElementById('dropzoneArea');
+
+        // Drag-and-drop event listeners
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('dragover');
+            }, false);
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files.length > 0) {
+                handleFileSelect(dt.files);
+            }
+        }, false);
+
+        function handleFileSelect(files) {
+            const container = document.getElementById('imagePreviewsContainer');
+            const alertBox = document.getElementById('imageValidationAlert');
+            if (alertBox) alertBox.classList.add('d-none');
+
+            Array.from(files).forEach(file => {
+                if (!file.type.startsWith('image/')) return;
+
+                selectedFiles.push(file);
+                const fileIndex = selectedFiles.length - 1;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const card = document.createElement('div');
+                    card.className = 'krishi-image-preview-card new-image-card';
+                    card.id = 'previewCard_' + fileIndex;
+
+                    card.innerHTML = `
+                        <img src="${e.target.result}" alt="New Upload" class="w-100 h-100 object-fit-cover" />
+                        <button type="button" class="krishi-preview-remove-btn" onclick="removeNewImage(${fileIndex})" title="Remove photo">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    `;
+                    container.appendChild(card);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function removeNewImage(index) {
+            const card = document.getElementById('previewCard_' + index);
+            if (card) card.remove();
+            selectedFiles[index] = null; // Mark as deleted
+        }
+
+        function removeExistingImage(index) {
+            const card = document.getElementById('existingCard_' + index);
+            if (card) card.remove();
+        }
+
+        function validateListingForm(e) {
+            const dailyRate = Number(document.getElementById('dailyRateInput')?.value || 0);
+            const existingCount = document.querySelectorAll('.existing-image-card').length;
+            const newCount = selectedFiles.filter(f => f !== null).length;
+            const alertBox = document.getElementById('imageValidationAlert');
+
+            if (dailyRate <= 0) {
+                alert('Daily rental rate must be greater than 0.');
+                return false;
+            }
+
+            if (existingCount + newCount === 0) {
+                if (alertBox) {
+                    alertBox.classList.remove('d-none');
+                    alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return false;
+            }
+
+            return true;
+        }
+    </script>
 }
