@@ -1,6 +1,7 @@
 @model KrishiLink.Models.ViewModels.GodownDetailViewModel
 @{
     ViewData["Title"] = Model.Name;
+    ViewData["BodyClass"] = "krishi-body-gradient";
     var primaryImage = Model.ImageUrls.FirstOrDefault() ?? "";
 }
 
@@ -200,7 +201,7 @@
                     <!-- Action Button -->
                     <div class="d-grid pt-2">
                         <button type="submit" class="btn btn-krishi-primary py-2.5 fw-bold rounded-3 shadow-sm" id="submitBookingBtn">
-                            <i class="bi bi-box-seam me-1.5"></i> Request Storage Booking
+                            <i class="bi bi-box-seam me-1.5"></i> Book Storage
                         </button>
                     </div>
 
