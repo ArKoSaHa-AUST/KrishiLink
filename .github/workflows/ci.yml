@@ -19,13 +19,20 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
-        cache: true
+
+    - name: Cache NuGet Packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
 
     - name: Restore Dependencies
       run: dotnet restore KrishiLink.csproj
 
     - name: Verify Code Formatting
-      run: dotnet format --verify-no-changes --verbosity diagnostic
+      run: dotnet format --verify-no-changes
 
     - name: Audit Vulnerable NuGet Packages
       run: dotnet list package --vulnerable --include-transitive
