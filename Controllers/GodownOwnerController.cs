@@ -28,15 +28,18 @@ namespace KrishiLink.Controllers
                 Godowns = godowns,
                 PendingRequestItems = new List<GodownBookingRequestItem>
                 {
-                    new() { Id = 201, FarmerName = "Rahim Uddin", GodownName = "Green Grain Cold Storage Facility",
+                    new() { Id = 201, FarmerName = "Rahim Uddin", GodownId = 1, GodownName = "Green Grain Cold Storage Facility",
                             RequestedCapacityTons = 25, DateRange = "02 Sep – 30 Nov 2026",
+                            RequestedOn = DateTime.Now.AddHours(-3),
                             Note = "BRRI-28 paddy bags, moisture tested." },
-                    new() { Id = 202, FarmerName = "Salma Akter", GodownName = "Dinajpur AgriHub Warehouse",
-                            RequestedCapacityTons = 40, DateRange = "05 Sep – 05 Dec 2026" },
-                    new() { Id = 203, FarmerName = "Motaleb Hossain", GodownName = "Green Grain Cold Storage Facility",
-                            RequestedCapacityTons = 60, DateRange = "10 Sep – 10 Oct 2026",
+                    new() { Id = 202, FarmerName = "Salma Akter", GodownId = 2, GodownName = "Dinajpur AgriHub Warehouse",
+                            RequestedCapacityTons = 40, DateRange = "05 Sep – 05 Dec 2026",
+                            RequestedOn = DateTime.Now.AddHours(-9) },
+                    new() { Id = 203, FarmerName = "Motaleb Hossain", GodownId = 1, GodownName = "Green Grain Cold Storage Facility",
+                            RequestedCapacityTons = 200, DateRange = "10 Sep – 10 Oct 2026",
+                            RequestedOn = DateTime.Now.AddHours(-30),
                             Note = "Potato harvest, needs 2-8°C climate control." }
-                }
+                }.OrderByDescending(r => r.RequestedOn).ToList()
             };
 
             return View(model);
@@ -58,6 +61,17 @@ namespace KrishiLink.Controllers
                 _ => "updated"
             };
             return Json(new { success = true, message = $"Booking request #{id} {verb}." });
+        }
+
+        /// <summary>
+        /// GET: /GodownOwner/PendingCount
+        /// Lightweight polling endpoint for new-booking-request notifications.
+        /// Returns sample data until DB wiring.
+        /// </summary>
+        [HttpGet]
+        public IActionResult PendingCount()
+        {
+            return Json(new { count = 3 });
         }
 
         public IActionResult Create()

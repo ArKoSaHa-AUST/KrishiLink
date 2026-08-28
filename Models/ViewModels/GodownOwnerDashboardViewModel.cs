@@ -38,9 +38,16 @@ namespace KrishiLink.Models.ViewModels
     {
         public int Id { get; set; }
         public string FarmerName { get; set; } = string.Empty;
+        public int GodownId { get; set; }
         public string GodownName { get; set; } = string.Empty;
         public double RequestedCapacityTons { get; set; }
         public string DateRange { get; set; } = string.Empty;
         public string? Note { get; set; }
+
+        /// <summary>When the farmer submitted the request (drives sorting and "time ago").</summary>
+        public DateTime RequestedOn { get; set; }
+
+        /// <summary>Compact relative timestamp, e.g. "2h ago". Empty when RequestedOn is unset.</summary>
+        public string TimeAgo => TimeAgoFormatter.Format(RequestedOn);
     }
 }

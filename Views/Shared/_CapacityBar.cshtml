@@ -1,0 +1,27 @@
+@model KrishiLink.Models.ViewModels.OwnerGodownItem
+@*
+    Shared capacity utilization block: occupied label, color-coded progress bar
+    (green → amber near full → red when full), and remaining-capacity line.
+    Class hooks (.occupied-line, .util-percent, .available-line) allow live JS updates.
+*@
+@{
+    var barClass = Model.UtilizationPercent >= 95 ? "bg-danger" : Model.UtilizationPercent >= 70 ? "bg-warning" : "bg-success";
+}
+<div class="d-flex justify-content-between small mb-1">
+    <span class="fw-semibold occupied-line" style="color: var(--krishi-text-primary);">@Model.OccupiedTons.ToString("N0") / @Model.TotalCapacityTons.ToString("N0") Tons occupied</span>
+    <span class="fw-bold util-percent" style="color: var(--krishi-text-muted);">@Model.UtilizationPercent%</span>
+</div>
+<div class="progress" role="progressbar" aria-label="Capacity utilization for @Model.Name"
+     aria-valuenow="@Model.UtilizationPercent" aria-valuemin="0" aria-valuemax="100" style="height: 10px;">
+    <div class="progress-bar @barClass" style="width: @Model.UtilizationPercent%;"></div>
+</div>
+<span class="small d-block mt-1 available-line" style="color: var(--krishi-text-muted);">
+    @if (Model.AvailableCapacityTons > 0)
+    {
+        <i class="bi bi-box-seam text-success me-1"></i>@Model.AvailableCapacityTons.ToString("N0") <text>Tons still available</text>
+    }
+    else
+    {
+        <i class="bi bi-slash-circle text-danger me-1"></i><text>Fully booked — no new capacity</text>
+    }
+</span>

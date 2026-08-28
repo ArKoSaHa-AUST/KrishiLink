@@ -1,10 +1,13 @@
 @model KrishiLink.Models.ViewModels.GodownOwnerDashboardViewModel
+@using System.Text.Json
 @{
     ViewData["Title"] = "Godown Owner Dashboard";
     ViewData["BodyClass"] = "krishi-body-gradient";
     var occupiedPercent = Model.TotalCapacityTons > 0 ? (int)Math.Round(Model.OccupiedCapacityTons / Model.TotalCapacityTons * 100) : 0;
-    // green → amber near full → red when full
-    var barClassFor = (int percent) => percent >= 95 ? "bg-danger" : percent >= 70 ? "bg-warning" : "bg-success";
+    var summaryBarClass = occupiedPercent >= 95 ? "bg-danger" : occupiedPercent >= 70 ? "bg-warning" : "bg-success";
+    var godownsJson = JsonSerializer.Serialize(Model.Godowns.ToDictionary(
+        g => g.Id,
+        g => new { total = g.TotalCapacityTons, available = g.AvailableCapacityTons }));
 }
 
 <!-- Dashboard Welcome Header -->
@@ -47,8 +50,15 @@
                 <i class="bi bi-box-seam fs-4" style="color: var(--krishi-primary);"></i>
             </div>
             <div class="flex-grow-1">
-                <span class="fs-3 fw-bold d-block lh-1 krishi-summary-value">@Model.OccupiedCapacityTons.ToString("N0") <span class="fs-6 fw-normal" style="color: var(--krishi-text-muted);">/ @Model.TotalCapacityTons.ToString("N0") Tons</span></span>
-                <span class="small krishi-summary-label">Occupied Capacity (@occupiedPercent%)</span>
+                <span class="fs-3 fw-bold d-block lh-1 krishi-summary-value">
+                    <span id="summaryOccupied">@Model.OccupiedCapacityTons.ToString("N0")</span>
+                    <span class="fs-6 fw-normal" style="color: var(--krishi-text-muted);">/ @Model.TotalCapacityTons.ToString("N0") Tons</span>
+                </span>
+                <span class="small krishi-summary-label">Occupied Capacity (<span id="summaryOccupiedPct">@occupiedPercent</span>%)</span>
+                <div class="progress mt-1" role="progressbar" aria-label="Overall capacity utilization"
+                     aria-valuenow="@occupiedPercent" aria-valuemin="0" aria-valuemax="100" style="height: 4px;">
+                    <div class="progress-bar @summaryBarClass" id="summaryOccupiedBar" style="width: @occupiedPercent%;"></div>
+                </div>
             </div>
         </div>
     </a>
@@ -58,7 +68,7 @@
                 <i class="bi bi-hourglass-split fs-4" style="color: var(--krishi-status-pending-text);"></i>
             </div>
             <div>
-                <span class="fs-3 fw-bold d-block lh-1 krishi-summary-value" id="pendingCount">@Model.PendingRequests</span>
+                <span class="fs-3 fw-bold d-block lh-1 krishi-summary-value" id="pendingCount" aria-live="polite">@Model.PendingRequests</span>
                 <span class="small krishi-summary-label">Pending Booking Requests</span>
             </div>
         </div>
@@ -81,38 +91,7 @@
         <div id="pendingRequestsList">
             @foreach (var req in Model.PendingRequestItems)
             {
-                <div class="p-3 px-4 border-bottom d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 pending-request-row"
-                     data-request-id="@req.Id" data-farmer-name="@req.FarmerName">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 42px; height: 42px;">
-                            @req.FarmerName[0]
-                        </div>
-                        <div>
-                            <span class="fw-semibold d-block" style="color: var(--krishi-text-primary);">@req.FarmerName</span>
-                            <span class="small d-block" style="color: var(--krishi-text-muted);">
-                                <i class="bi bi-building me-1 text-success"></i>@req.GodownName
-                                <span class="mx-1">·</span>
-                                <i class="bi bi-box-seam me-1 text-success"></i>@req.RequestedCapacityTons.ToString("N0") Tons
-                                <span class="mx-1">·</span>
-                                <i class="bi bi-calendar-range me-1 text-success"></i>@req.DateRange
-                            </span>
-                            @if (!string.IsNullOrEmpty(req.Note))
-                            {
-                                <span class="small fst-italic" style="color: var(--krishi-text-muted);">"@req.Note"</span>
-                            }
-                        </div>
-                    </div>
-                    <div class="request-actions flex-shrink-0">
-                        <button type="button" class="btn btn-krishi-primary btn-sm rounded-pill px-3 fw-semibold"
-                                onclick="applyDecision(@req.Id, 'accept', this)">
-                            <i class="bi bi-check-lg"></i> Accept
-                        </button>
-                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold"
-                                onclick="promptReject(@req.Id, this)">
-                            <i class="bi bi-x-lg"></i> Reject
-                        </button>
-                    </div>
-                </div>
+                <partial name="_BookingRequestRow" model="req" />
             }
         </div>
 
@@ -153,31 +132,20 @@
         <div class="row g-3 g-lg-4">
             @foreach (var g in Model.Godowns)
             {
-                var barClass = barClassFor(g.UtilizationPercent);
                 <div class="col-12 col-md-6 col-lg-4">
                     <a asp-controller="GodownOwner" asp-action="Edit" asp-route-id="@g.Id" class="text-decoration-none">
-                        <div class="card krishi-card border-0 shadow-sm h-100 p-3">
+                        <div class="card krishi-card border-0 shadow-sm h-100 p-3 godown-card @(g.AvailableCapacityTons <= 0 ? "godown-card-full" : "")" data-godown-id="@g.Id">
                             <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
                                 <div>
                                     <span class="small text-uppercase fw-semibold" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@g.StorageType</span>
                                     <h6 class="fw-bold mb-0" style="color: var(--krishi-text-primary);">@g.Name</h6>
                                 </div>
-                                <span class="krishi-badge @(g.Status == "Active" ? "krishi-badge-available" : g.Status == "Full" ? "krishi-badge-unavailable" : "krishi-badge-completed")">@g.Status</span>
+                                <span class="krishi-badge g-status-badge @(g.Status == "Active" ? "krishi-badge-available" : g.Status == "Full" ? "krishi-badge-unavailable" : "krishi-badge-completed")">@g.Status</span>
                             </div>
 
                             <!-- Capacity utilization: the card's visual anchor -->
                             <div class="mt-3">
-                                <div class="d-flex justify-content-between small mb-1">
-                                    <span class="fw-semibold" style="color: var(--krishi-text-primary);">@g.OccupiedTons.ToString("N0") / @g.TotalCapacityTons.ToString("N0") Tons occupied</span>
-                                    <span class="fw-bold" style="color: var(--krishi-text-muted);">@g.UtilizationPercent%</span>
-                                </div>
-                                <div class="progress" role="progressbar" aria-label="Capacity utilization for @g.Name"
-                                     aria-valuenow="@g.UtilizationPercent" aria-valuemin="0" aria-valuemax="100" style="height: 10px;">
-                                    <div class="progress-bar @barClass" style="width: @g.UtilizationPercent%;"></div>
-                                </div>
-                                <span class="small d-block mt-1" style="color: var(--krishi-text-muted);">
-                                    <i class="bi bi-box-seam text-success me-1"></i>@g.AvailableCapacityTons.ToString("N0") Tons still available
-                                </span>
+                                <partial name="_CapacityBar" model="g" />
                             </div>
 
                             <span class="small fw-semibold mt-3 text-success">
@@ -196,7 +164,9 @@
 @section Scripts {
     <script>
         const RESPOND_URL = '@Url.Action("RespondRequest", "GodownOwner")';
-        const UNDO_DELAY_MS = 5000;
+        // Live capacity state per godown, seeded from the server
+        const GODOWNS = @Html.Raw(godownsJson);
+        const fmt = n => Number(n).toLocaleString();
 
         function refreshPendingUI() {
             const remaining = document.querySelectorAll('.pending-request-row:not(.d-none)').length;
@@ -205,42 +175,100 @@
             document.getElementById('noPendingState').classList.toggle('d-none', remaining > 0);
         }
 
-        // Same optimistic Accept/Reject + Undo pattern as the Equipment Owner Dashboard
-        function applyDecision(id, decision, btn, reason) {
+        function barClassFor(pct) {
+            return pct >= 95 ? 'bg-danger' : pct >= 70 ? 'bg-warning' : 'bg-success';
+        }
+
+        // Re-renders a godown card's capacity bar, badge, and availability line from GODOWNS
+        function updateGodownCard(id) {
+            const g = GODOWNS[id];
+            const card = document.querySelector(`.godown-card[data-godown-id="${id}"]`);
+            if (!g || !card) return;
+            const occupied = g.total - g.available;
+            const pct = g.total > 0 ? Math.round(occupied / g.total * 100) : 0;
+
+            card.querySelector('.occupied-line').textContent = `${fmt(occupied)} / ${fmt(g.total)} Tons occupied`;
+            card.querySelector('.util-percent').textContent = pct + '%';
+            const bar = card.querySelector('.progress-bar');
+            bar.style.width = pct + '%';
+            bar.className = 'progress-bar ' + barClassFor(pct);
+            bar.parentElement.setAttribute('aria-valuenow', pct);
+            card.querySelector('.available-line').innerHTML = g.available > 0
+                ? `<i class="bi bi-box-seam text-success me-1"></i>${fmt(g.available)} Tons still available`
+                : `<i class="bi bi-slash-circle text-danger me-1"></i>Fully booked — no new capacity`;
+
+            const badge = card.querySelector('.g-status-badge');
+            badge.textContent = g.available > 0 ? 'Active' : 'Full';
+            badge.className = 'krishi-badge g-status-badge ' + (g.available > 0 ? 'krishi-badge-available' : 'krishi-badge-unavailable');
+            card.classList.toggle('godown-card-full', g.available <= 0);
+        }
+
+        function updateSummaryBar() {
+            let occupied = 0, total = 0;
+            Object.values(GODOWNS).forEach(g => { occupied += g.total - g.available; total += g.total; });
+            const pct = total > 0 ? Math.round(occupied / total * 100) : 0;
+            document.getElementById('summaryOccupied').textContent = fmt(occupied);
+            document.getElementById('summaryOccupiedPct').textContent = pct;
+            const bar = document.getElementById('summaryOccupiedBar');
+            bar.style.width = pct + '%';
+            bar.className = 'progress-bar ' + barClassFor(pct);
+            bar.parentElement.setAttribute('aria-valuenow', pct);
+        }
+
+        // Per-row fits/exceeds indicator against live availability
+        function refreshFitIndicators() {
+            document.querySelectorAll('.pending-request-row').forEach(row => {
+                const g = GODOWNS[row.dataset.godownId];
+                const cap = Number(row.dataset.capacity);
+                const el = row.querySelector('.fit-indicator');
+                if (!g || !el) return;
+                if (cap <= g.available) {
+                    el.style.color = 'var(--krishi-status-accepted-text)';
+                    el.innerHTML = `<i class="bi bi-check-circle me-1"></i>${fmt(cap)} / ${fmt(g.available)} Tons free — fits available space`;
+                } else {
+                    el.style.color = 'var(--krishi-status-rejected-text)';
+                    el.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>Exceeds available space (only ${fmt(g.available)} Tons free)`;
+                }
+            });
+        }
+
+        // Accept immediately updates capacity everywhere; Undo/failure reverses it
+        function applyCapacityChange(godownId, deltaOccupiedTons) {
+            const g = GODOWNS[godownId];
+            if (!g) return;
+            g.available -= deltaOccupiedTons;
+            updateGodownCard(godownId);
+            updateSummaryBar();
+            refreshFitIndicators();
+        }
+
+        function applyDecision(id, decision, btn, reason, skipGuard) {
             const row = btn.closest('.pending-request-row');
             const accepted = decision === 'accept';
-            let undone = false;
+            const godownId = row.dataset.godownId;
+            const cap = Number(row.dataset.capacity);
+            const g = GODOWNS[godownId];
 
-            row.querySelectorAll('button').forEach(b => b.disabled = true);
-            row.classList.add('row-leaving');
-            setTimeout(() => {
-                if (!undone) {
-                    row.classList.add('d-none');
-                    refreshPendingUI();
-                }
-            }, 350);
+            // Capacity guard: accepting more than the godown has free needs explicit confirmation
+            if (accepted && !skipGuard && g && cap > g.available) {
+                KrishiModal.confirm({
+                    title: 'Exceeds Available Capacity',
+                    body: `This booking needs <strong>${fmt(cap)} Tons</strong>, but only <strong>${fmt(g.available)} Tons</strong> are free in this godown. Accept anyway?`,
+                    confirmText: 'Accept Anyway',
+                    confirmClass: 'btn-danger',
+                    iconClass: 'bi-exclamation-triangle-fill text-danger',
+                    onConfirm: () => applyDecision(id, decision, btn, reason, true)
+                });
+                return;
+            }
 
-            KrishiToast.show(accepted ? 'Booking request accepted ✓' : 'Booking request rejected', {
-                iconClass: accepted ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger',
-                actionText: 'Undo',
-                delay: UNDO_DELAY_MS,
-                onAction: function () {
-                    undone = true;
-                    row.classList.remove('row-leaving', 'd-none');
-                    row.querySelectorAll('button').forEach(b => b.disabled = false);
-                    refreshPendingUI();
-                },
-                onClosed: async function () {
-                    try {
-                        await KrishiRequests.post(RESPOND_URL, { id, decision, reason: reason || '' });
-                        row.remove();
-                    } catch {
-                        row.classList.remove('row-leaving', 'd-none');
-                        row.querySelectorAll('button').forEach(b => b.disabled = false);
-                        refreshPendingUI();
-                        KrishiToast.show('Could not save the decision. Please try again.', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
-                    }
-                }
+            KrishiRequests.optimisticDecision({
+                url: RESPOND_URL, id, decision, reason, row,
+                acceptedMsg: 'Booking request accepted ✓',
+                rejectedMsg: 'Booking request rejected',
+                onApply: () => { if (accepted) applyCapacityChange(godownId, cap); },
+                onRowHidden: refreshPendingUI,
+                onRevert: () => { if (accepted) applyCapacityChange(godownId, -cap); refreshPendingUI(); }
             });
         }
 
@@ -250,5 +278,16 @@
                 reason => applyDecision(id, 'reject', btn, reason),
                 { title: 'Reject Booking Request', placeholder: 'e.g. Requested capacity is not available for those dates (optional)' });
         }
+
+        // Notify when new booking requests arrive
+        KrishiRequests.watchPendingCount('@Url.Action("PendingCount", "GodownOwner")', @Model.PendingRequests, delta => {
+            const countEl = document.getElementById('pendingCount');
+            KrishiCount.animate(countEl, Number(countEl.textContent) + delta);
+            const badge = document.getElementById('pendingBadge');
+            badge.textContent = Number(badge.textContent) + delta;
+            KrishiToast.show(`${delta} new booking request${delta > 1 ? 's' : ''} received`, { iconClass: 'bi-bell-fill text-success' });
+        });
+
+        refreshFitIndicators();
     </script>
 }

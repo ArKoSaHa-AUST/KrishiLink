@@ -1,5 +1,18 @@
 namespace KrishiLink.Models.ViewModels
 {
+    /// <summary>Shared compact relative-time formatting for request rows, e.g. "2h ago".</summary>
+    public static class TimeAgoFormatter
+    {
+        public static string Format(DateTime from)
+        {
+            if (from == default) return string.Empty;
+            var span = DateTime.Now - from;
+            if (span.TotalMinutes < 60) return $"{Math.Max(1, (int)span.TotalMinutes)}m ago";
+            if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
+            return $"{(int)span.TotalDays}d ago";
+        }
+    }
+
     /// <summary>
     /// ViewModel for the full Equipment Rental Requests page (owner decision view).
     /// </summary>
@@ -40,16 +53,6 @@ namespace KrishiLink.Models.ViewModels
         public string Location { get; set; } = string.Empty;
 
         /// <summary>Compact relative timestamp, e.g. "2h ago". Empty when RequestedOn is unset.</summary>
-        public string TimeAgo
-        {
-            get
-            {
-                if (RequestedOn == default) return string.Empty;
-                var span = DateTime.Now - RequestedOn;
-                if (span.TotalMinutes < 60) return $"{Math.Max(1, (int)span.TotalMinutes)}m ago";
-                if (span.TotalHours < 24) return $"{(int)span.TotalHours}h ago";
-                return $"{(int)span.TotalDays}d ago";
-            }
-        }
+        public string TimeAgo => TimeAgoFormatter.Format(RequestedOn);
     }
 }

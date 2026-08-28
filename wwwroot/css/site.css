@@ -104,6 +104,11 @@ body.krishi-body-gradient {
     transform: translateX(24px);
 }
 
+/* Godown owner dashboard: fully-booked cards are visually muted */
+.godown-card-full {
+    opacity: 0.78;
+}
+
 /* Rental requests page: full-width Accept/Reject on mobile stacked cards */
 .request-actions {
     width: 100%;

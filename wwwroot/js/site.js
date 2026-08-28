@@ -121,6 +121,7 @@ window.KrishiToast = {
             container.id = 'krishiToastContainer';
             container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
             container.style.zIndex = '1080';
+            container.setAttribute('aria-live', 'polite');
             document.body.appendChild(container);
         }
 
@@ -224,6 +225,63 @@ window.KrishiRequests = {
                 onConfirm(document.getElementById('krishiRejectReason')?.value.trim() || '');
             }
         });
+    },
+
+    /**
+     * Optimistic accept/reject with an Undo toast: the row leaves immediately
+     * and the POST fires only if the toast closes without Undo.
+     * opts: { url, id, decision, reason, row, acceptedMsg, rejectedMsg,
+     *         onApply(), onRowHidden(), onRevert(), undoDelay }
+     */
+    optimisticDecision: function (opts) {
+        const row = opts.row;
+        const accepted = opts.decision === 'accept';
+        let undone = false;
+
+        row.querySelectorAll('button').forEach(b => b.disabled = true);
+        row.classList.add('row-leaving');
+        if (typeof opts.onApply === 'function') opts.onApply();
+        setTimeout(function () {
+            if (!undone) {
+                row.classList.add('d-none');
+                if (typeof opts.onRowHidden === 'function') opts.onRowHidden();
+            }
+        }, 350);
+
+        const revert = function () {
+            row.classList.remove('row-leaving', 'd-none');
+            row.querySelectorAll('button').forEach(b => b.disabled = false);
+            if (typeof opts.onRevert === 'function') opts.onRevert();
+        };
+
+        KrishiToast.show(accepted ? (opts.acceptedMsg || 'Request accepted ✓') : (opts.rejectedMsg || 'Request rejected'), {
+            iconClass: accepted ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger',
+            actionText: 'Undo',
+            delay: opts.undoDelay || 5000,
+            onAction: function () { undone = true; revert(); },
+            onClosed: async function () {
+                try {
+                    await KrishiRequests.post(opts.url, { id: opts.id, decision: opts.decision, reason: opts.reason || '' });
+                    row.remove();
+                } catch {
+                    revert();
+                    KrishiToast.show('Could not save the decision. Please try again.', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
+                }
+            }
+        });
+    },
+
+    /** Poll a {count} JSON endpoint and call onIncrease(delta) when new requests arrive. */
+    watchPendingCount: function (url, initialCount, onIncrease, intervalMs) {
+        let last = initialCount;
+        setInterval(async function () {
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.count > last && typeof onIncrease === 'function') onIncrease(data.count - last);
+                last = data.count;
+            } catch { /* offline or logged out — silently skip this cycle */ }
+        }, intervalMs || 20000);
     }
 };
 
