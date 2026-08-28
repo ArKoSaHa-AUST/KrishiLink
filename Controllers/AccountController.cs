@@ -68,8 +68,8 @@ namespace KrishiLink.Controllers
             }
 
             // Check if email already registered if provided
-            var emailAddress = !string.IsNullOrWhiteSpace(model.Email) 
-                ? model.Email.Trim() 
+            var emailAddress = !string.IsNullOrWhiteSpace(model.Email)
+                ? model.Email.Trim()
                 : $"{model.PhoneNumber.Trim()}@krishilink.local";
 
             var existingByEmail = await _userManager.FindByEmailAsync(emailAddress);
@@ -97,8 +97,8 @@ namespace KrishiLink.Controllers
                 FullName = model.FullName.Trim(),
                 UserRole = model.Role,
                 Location = model.Location.Trim(),
-                BusinessOrFarmName = (model.Role == "EquipmentOwner" || model.Role == "GodownOwner") 
-                    ? model.BusinessOrFarmName?.Trim() 
+                BusinessOrFarmName = (model.Role == "EquipmentOwner" || model.Role == "GodownOwner")
+                    ? model.BusinessOrFarmName?.Trim()
                     : null,
                 CreatedAt = DateTime.UtcNow
             };
