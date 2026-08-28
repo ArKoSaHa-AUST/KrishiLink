@@ -1,0 +1,14 @@
+# Default owners for repository
+* @ArKoSaHa-AUST
+
+# Data Access Layer & DbContext
+/DAL/ @ArKoSaHa-AUST
+
+# Business Logic Layer
+/BLL/ @ArKoSaHa-AUST
+
+# Controllers
+/Controllers/ @ArKoSaHa-AUST
+
+# CI/CD Workflows & Governance
+/.github/ @ArKoSaHa-AUST

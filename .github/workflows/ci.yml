@@ -1,0 +1,46 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    name: Build, Test & Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        cache: true
+
+    - name: Restore Dependencies
+      run: dotnet restore KrishiLink.csproj
+
+    - name: Verify Code Formatting
+      run: dotnet format --verify-no-changes --verbosity diagnostic
+
+    - name: Audit Vulnerable NuGet Packages
+      run: dotnet list package --vulnerable --include-transitive
+
+    - name: Secret & Sensitive Key Scanner
+      run: |
+        echo "Scanning codebase for hardcoded connection strings or API keys..."
+        if grep -riE "(Password=[^;\"'\s]{4,}|User Id=[^;\"'\s]{4,}|AccountKey=[^;\"'\s]{4,}|api_key[ ='\"]+[A-Za-z0-9_\-]{16,})" --exclude-dir={bin,obj,.git} .; then
+          echo "ERROR: Potential hardcoded secret or credentials detected in code!"
+          exit 1
+        fi
+        echo "Secret scan passed cleanly."
+
+    - name: Build Project (Release)
+      run: dotnet build KrishiLink.csproj --configuration Release --no-restore
+
+    - name: Run Unit Tests
+      run: dotnet test KrishiLink.csproj --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"

@@ -1,0 +1,33 @@
+name: CD Deploy Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy-production:
+    name: Deploy to Production Environment
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://krishilink.example.com
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Publish Production Release Bundle
+      run: dotnet publish KrishiLink.csproj --configuration Release --output ./publish
+
+    - name: Deploy Placeholder Step
+      env:
+        DB_CONNECTION_STRING: ${{ secrets.PROD_DB_CONNECTION_STRING }}
+      run: |
+        echo "Verified GitHub Environment 'production' approval gate."
+        echo "Production release bundle prepared in ./publish."
+        echo "Ready for production deployment."
