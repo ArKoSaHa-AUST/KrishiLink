@@ -405,4 +405,80 @@ a:hover {
     background-color: #cbd5e1;
     border-radius: 10px;
     margin: 0 auto 12px auto;
+}
+
+/* ==========================================================================
+   Booking History & Status Timeline Styles
+   ========================================================================== */
+.krishi-nav-pills .nav-link {
+    color: var(--krishi-text-primary);
+    font-weight: 600;
+    border-radius: 50rem;
+    padding: 0.5rem 1.25rem;
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.krishi-nav-pills .nav-link.active {
+    background-color: var(--krishi-primary) !important;
+    color: #ffffff !important;
+    box-shadow: var(--krishi-shadow-sm);
+}
+
+.booking-timeline {
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.booking-timeline::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: 8px;
+    width: 2px;
+    background: var(--krishi-border-color);
+}
+
+.booking-timeline-step {
+    position: relative;
+    padding-bottom: 1.25rem;
+}
+
+.booking-timeline-step:last-child {
+    padding-bottom: 0;
+}
+
+.booking-timeline-node {
+    position: absolute;
+    left: -1.5rem;
+    top: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 3px solid #cbd5e1;
+    z-index: 2;
+}
+
+.booking-timeline-step.step-done .booking-timeline-node {
+    background: var(--krishi-primary);
+    border-color: var(--krishi-primary-subtle);
+}
+
+.booking-timeline-step.step-active .booking-timeline-node {
+    background: #f59e0b;
+    border-color: #fef3c7;
+    animation: pulseNode 1.8s infinite;
+}
+
+.booking-timeline-step.step-rejected .booking-timeline-node {
+    background: #ef4444;
+    border-color: #fee2e2;
+}
+
+@keyframes pulseNode {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
 }
