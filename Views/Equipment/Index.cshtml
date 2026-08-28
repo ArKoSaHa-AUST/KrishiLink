@@ -23,367 +23,730 @@
         </div>
         <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
             <div class="d-inline-flex flex-column align-items-lg-end bg-white bg-opacity-10 border border-white border-opacity-25 rounded-3 p-3 text-white text-start">
-                <span class="small text-white-50">Available Machinery</span>
-                <span class="fs-4 fw-bold">@Model.EquipmentList.Count Verified Items</span>
-                <span class="small text-white-50"><i class="bi bi-shield-check text-warning me-1"></i>Owner-verified listings</span>
+                <span class="small text-white-50">Verified Machinery</span>
+                <span class="fs-4 fw-bold" id="heroListingCount">@Model.EquipmentList.Count Available Items</span>
+                <span class="small text-white-50"><i class="bi bi-shield-check text-warning me-1"></i>Live availability</span>
             </div>
         </div>
     </div>
-    <!-- Decorative background circle -->
-    <div class="position-absolute end-0 bottom-0 opacity-10" style="transform: translate(20%, 20%);">
+    <!-- Decorative background icon -->
+    <div class="position-absolute end-0 bottom-0 opacity-10" style="transform: translate(20%, 20%); pointer-events: none;">
         <i class="bi bi-truck" style="font-size: 20rem; color: #fff;"></i>
     </div>
 </div>
 
-<!-- Main Content Area: Sidebar + Grid -->
-<form method="get" asp-controller="Equipment" asp-action="Index" id="equipmentFilterForm">
-    <div class="row g-4">
-        
-        <!-- ==========================================
-             LEFT SIDEBAR: FILTERS
-             ========================================== -->
-        <div class="col-12 col-lg-4 col-xl-3">
+<!-- Mobile Sticky Filter Bar (< lg) -->
+<div class="d-lg-none mb-3">
+    <div class="d-flex gap-2">
+        <button class="btn btn-krishi-primary flex-grow-1 d-flex justify-content-between align-items-center py-2.5 px-3 rounded-3 shadow-sm" 
+                type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileFilterBottomSheet" aria-controls="mobileFilterBottomSheet">
+            <span class="d-flex align-items-center gap-2 fw-semibold">
+                <i class="bi bi-sliders2"></i> Filter Equipment
+            </span>
+            <span class="badge bg-white text-success rounded-pill px-2.5 py-1" id="mobileFilterBadge">
+                @(activeFiltersCount > 0 ? $"{activeFiltersCount} active" : "Filters")
+            </span>
+        </button>
+        <button type="button" class="btn btn-outline-secondary rounded-3 px-3" onclick="resetAllFilters()" title="Reset Filters">
+            <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    
+    <!-- ==========================================
+         DESKTOP LEFT SIDEBAR: FILTERS (>= lg)
+         ========================================== -->
+    <div class="col-12 col-lg-4 col-xl-3 d-none d-lg-block">
+        <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 sticky-top" style="top: 85px; z-index: 10;">
             
-            <!-- Mobile Filter Toggle Button -->
-            <div class="d-lg-none mb-3">
-                <button class="btn btn-outline-success w-100 d-flex justify-content-between align-items-center py-2.5 rounded-3 shadow-sm bg-white" 
-                        type="button" data-bs-toggle="collapse" data-bs-target="#filterSidebarCollapse" 
-                        aria-expanded="false" aria-controls="filterSidebarCollapse">
-                    <span class="d-flex align-items-center gap-2 fw-semibold text-dark">
-                        <i class="bi bi-sliders2 text-success"></i> Filter Equipment
-                        @if (activeFiltersCount > 0)
-                        {
-                            <span class="badge bg-success rounded-pill">@activeFiltersCount active</span>
-                        }
-                    </span>
-                    <i class="bi bi-chevron-down text-muted"></i>
+            <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-sliders text-success fs-5"></i>
+                    <h5 class="fw-bold mb-0 text-dark">Filters</h5>
+                </div>
+                <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0 fw-semibold clear-filters-btn @(activeFiltersCount > 0 ? "" : "d-none")" onclick="resetAllFilters()">
+                    <i class="bi bi-x-circle me-1"></i>Clear Filters
                 </button>
             </div>
 
-            <!-- Filter Container (Collapsible on Mobile, Fixed Sidebar on Desktop) -->
-            <div class="collapse d-lg-block" id="filterSidebarCollapse">
-                <div class="card krishi-card border-0 shadow-sm rounded-4 p-3 p-xl-4 sticky-top" style="top: 80px; z-index: 10;">
-                    
-                    <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-sliders text-success fs-5"></i>
-                            <h5 class="fw-bold mb-0 text-dark">Filters</h5>
-                        </div>
-                        @if (activeFiltersCount > 0)
-                        {
-                            <a asp-controller="Equipment" asp-action="Index" class="btn btn-link btn-sm text-danger text-decoration-none p-0 fw-semibold">
-                                <i class="bi bi-x-circle me-1"></i>Clear All
-                            </a>
-                        }
-                    </div>
-
-                    <!-- 1. Equipment Type / Category Filter -->
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2.5 d-flex justify-content-between align-items-center">
-                            <span>Equipment Type</span>
-                            <span class="badge bg-light text-muted border">@Model.AvailableCategories.Count</span>
-                        </label>
-                        <div class="d-flex flex-column gap-2" style="max-height: 220px; overflow-y: auto;">
-                            @foreach (var category in Model.AvailableCategories)
-                            {
-                                var isChecked = Model.SelectedCategories.Contains(category);
-                                <div class="form-check custom-checkbox">
-                                    <input class="form-check-input filter-trigger" type="checkbox" name="selectedCategories" 
-                                           value="@category" id="cat_@category.Replace(" ", "_").Replace("/", "_")" @(isChecked ? "checked" : "") />
-                                    <label class="form-check-label text-secondary small user-select-none d-flex justify-content-between" for="cat_@category.Replace(" ", "_").Replace("/", "_")">
-                                        <span>@category</span>
-                                    </label>
-                                </div>
-                            }
-                        </div>
-                    </div>
-
-                    <!-- 2. Location Filter -->
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="locationSelect">
-                            Location / District
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0 text-muted">
-                                <i class="bi bi-geo-alt-fill text-success"></i>
-                            </span>
-                            <select class="form-select border-start-0 filter-trigger" id="locationSelect" name="location">
-                                <option value="">All Locations (Bangladesh)</option>
-                                @foreach (var loc in Model.AvailableLocations)
-                                {
-                                    <option value="@loc" selected="@(Model.Location == loc ? "selected" : null)">@loc</option>
-                                }
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- 3. Price Range Slider (Daily Rate) -->
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0" for="priceRangeSlider">
-                                Max Daily Rate
+            <!-- 1. Equipment Type / Category Filter -->
+            <div class="mb-4">
+                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2.5 d-flex justify-content-between align-items-center">
+                    <span>Equipment Type</span>
+                    <span class="badge bg-light text-muted border">@Model.AvailableCategories.Count</span>
+                </label>
+                <div class="d-flex flex-column gap-2" style="max-height: 220px; overflow-y: auto;">
+                    @foreach (var category in Model.AvailableCategories)
+                    {
+                        var isChecked = Model.SelectedCategories.Contains(category);
+                        <div class="form-check custom-checkbox">
+                            <input class="form-check-input filter-input desktop-cat-filter" type="checkbox" name="selectedCategories" 
+                                   value="@category" id="desk_cat_@category.Replace(" ", "_").Replace("/", "_")" @(isChecked ? "checked" : "") onchange="onFilterChanged()" />
+                            <label class="form-check-label text-secondary small user-select-none d-flex justify-content-between" for="desk_cat_@category.Replace(" ", "_").Replace("/", "_")">
+                                <span>@category</span>
                             </label>
-                            <span class="badge bg-success-subtle text-success fw-bold px-2 py-1" id="priceDisplay">
-                                ৳@((Model.SelectedMaxPrice ?? Model.MaxPrice).ToString("N0")) / day
-                            </span>
                         </div>
-                        <input type="range" class="form-range" id="priceRangeSlider" name="selectedMaxPrice"
-                               min="@Model.MinPrice" max="@Model.MaxPrice" step="100" 
-                               value="@(Model.SelectedMaxPrice ?? Model.MaxPrice)" 
-                               oninput="document.getElementById('priceDisplay').innerText = '৳' + Number(this.value).toLocaleString() + ' / day'"
-                               onchange="this.form.submit()" />
-                        <div class="d-flex justify-content-between small text-muted">
-                            <span>৳@Model.MinPrice.ToString("N0")</span>
-                            <span>৳@Model.MaxPrice.ToString("N0")</span>
-                        </div>
-                    </div>
-
-                    <!-- 4. Availability Date Picker -->
-                    <div class="mb-4">
-                        <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="availDateInput">
-                            Required Date
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0 text-muted">
-                                <i class="bi bi-calendar3 text-success"></i>
-                            </span>
-                            <input type="date" class="form-control border-start-0 filter-trigger" id="availDateInput" name="availabilityDate"
-                                   value="@(Model.AvailabilityDate.HasValue ? Model.AvailabilityDate.Value.ToString("yyyy-MM-dd") : "")" 
-                                   min="@DateTime.Today.ToString("yyyy-MM-dd")" />
-                        </div>
-                    </div>
-
-                    <!-- Filter Actions -->
-                    <div class="d-grid gap-2 pt-2">
-                        <button type="submit" class="btn btn-krishi-primary fw-semibold py-2">
-                            <i class="bi bi-search me-1.5"></i> Apply Filters
-                        </button>
-                        @if (activeFiltersCount > 0)
-                        {
-                            <a asp-controller="Equipment" asp-action="Index" class="btn btn-outline-secondary btn-sm py-1.5 rounded-3">
-                                Reset All
-                            </a>
-                        }
-                    </div>
-
+                    }
                 </div>
+            </div>
+
+            <!-- 2. Location Filter -->
+            <div class="mb-4">
+                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="desktopLocationSelect">
+                    Location / District
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted">
+                        <i class="bi bi-geo-alt-fill text-success"></i>
+                    </span>
+                    <select class="form-select border-start-0 filter-input" id="desktopLocationSelect" onchange="syncLocation(this.value); onFilterChanged();">
+                        <option value="">All Locations (Bangladesh)</option>
+                        @foreach (var loc in Model.AvailableLocations)
+                        {
+                            <option value="@loc" selected="@(Model.Location == loc ? "selected" : null)">@loc</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- 3. Price Range Slider (Daily Rate) -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0" for="desktopPriceSlider">
+                        Max Daily Rate
+                    </label>
+                    <span class="badge bg-success-subtle text-success fw-bold px-2 py-1 desktop-price-display">
+                        ৳@((Model.SelectedMaxPrice ?? Model.MaxPrice).ToString("N0")) / day
+                    </span>
+                </div>
+                <input type="range" class="form-range filter-input" id="desktopPriceSlider"
+                       min="@Model.MinPrice" max="@Model.MaxPrice" step="100" 
+                       value="@(Model.SelectedMaxPrice ?? Model.MaxPrice)" 
+                       oninput="syncPrice(this.value)"
+                       onchange="onFilterChanged()" />
+                <div class="d-flex justify-content-between small text-muted">
+                    <span>৳@Model.MinPrice.ToString("N0")</span>
+                    <span>৳@Model.MaxPrice.ToString("N0")</span>
+                </div>
+            </div>
+
+            <!-- 4. Availability Date Picker -->
+            <div class="mb-4">
+                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="desktopDateInput">
+                    Required Date
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted">
+                        <i class="bi bi-calendar3 text-success"></i>
+                    </span>
+                    <input type="date" class="form-control border-start-0 filter-input" id="desktopDateInput"
+                           value="@(Model.AvailabilityDate.HasValue ? Model.AvailabilityDate.Value.ToString("yyyy-MM-dd") : "")" 
+                           min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncDate(this.value); onFilterChanged();" />
+                </div>
+            </div>
+
+            <!-- Clear Filters Link -->
+            <div class="pt-2">
+                <button type="button" class="btn btn-outline-secondary w-100 btn-sm py-2 rounded-3" onclick="resetAllFilters()">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Clear Filters
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ==========================================
+         RIGHT SECTION: SEARCH BAR & RESULTS GRID
+         ========================================== -->
+    <div class="col-12 col-lg-8 col-xl-9">
+        
+        <!-- Top Controls: Search Bar & Sort Dropdown -->
+        <div class="card krishi-card border-0 shadow-sm rounded-4 p-3 mb-4">
+            <div class="row g-2 align-items-center">
+                
+                <!-- Search Input with Debounce & Clear Icon -->
+                <div class="col-12 col-md-7 col-xl-8">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted ps-3">
+                            <i class="bi bi-search text-success"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0 py-2" id="mainSearchInput" 
+                               value="@Model.SearchTerm" placeholder="Search machinery name, type, owner, or area..." 
+                               oninput="onSearchInput(this.value)" />
+                        <button class="btn btn-outline-light border text-muted d-none" type="button" id="clearSearchBtn" onclick="clearSearch()">
+                            <i class="bi bi-x-lg small"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sort Dropdown -->
+                <div class="col-12 col-md-5 col-xl-4">
+                    <div class="d-flex align-items-center justify-content-md-end gap-2">
+                        <label class="small text-muted text-nowrap fw-semibold d-none d-sm-inline" for="mainSortSelect">
+                            <i class="bi bi-arrow-down-up me-1"></i>Sort:
+                        </label>
+                        <select class="form-select form-select-sm py-2" id="mainSortSelect" onchange="onFilterChanged()">
+                            <option value="newest" selected="@(Model.SortBy == "newest" ? "selected" : null)">Newest First</option>
+                            <option value="price_asc" selected="@(Model.SortBy == "price_asc" ? "selected" : null)">Price: Low to High</option>
+                            <option value="price_desc" selected="@(Model.SortBy == "price_desc" ? "selected" : null)">Price: High to Low</option>
+                            <option value="distance" selected="@(Model.SortBy == "distance" ? "selected" : null)">Distance: Nearest</option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Results Summary & Active Filter Tags Bar -->
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 px-1">
+            <span class="text-secondary small fw-medium" id="resultsCountSummary">
+                Showing <strong class="text-dark" id="resultsCountNumber">@Model.EquipmentList.Count</strong> equipment available for rent
+            </span>
+
+            <div class="d-flex flex-wrap align-items-center gap-1.5" id="activeFilterTagsContainer">
+                <!-- Injected via JavaScript -->
             </div>
         </div>
 
         <!-- ==========================================
-             RIGHT SECTION: SEARCH BAR & RESULTS GRID
+             SKELETON LOADING PLACEHOLDERS
              ========================================== -->
-        <div class="col-12 col-lg-8 col-xl-9">
-            
-            <!-- Top Controls: Search Bar & Sort Dropdown -->
-            <div class="card krishi-card border-0 shadow-sm rounded-4 p-3 mb-4">
-                <div class="row g-2 align-items-center">
-                    
-                    <!-- Search Input -->
-                    <div class="col-12 col-md-7 col-xl-8">
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0 text-muted ps-3">
-                                <i class="bi bi-search text-success"></i>
-                            </span>
-                            <input type="text" class="form-control border-start-0 py-2" name="searchTerm" 
-                                   value="@Model.SearchTerm" placeholder="Search by machinery name, type, owner, or area..." />
-                            @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
-                            {
-                                <a asp-controller="Equipment" asp-action="Index" class="input-group-text bg-light border-start-0 text-muted text-decoration-none">
-                                    <i class="bi bi-x"></i>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 d-none" id="skeletonLoadingContainer">
+            @for (int i = 0; i < 6; i++)
+            {
+                <div class="col">
+                    <div class="krishi-skeleton-card h-100 p-0 shadow-sm border-0 rounded-4">
+                        <div class="krishi-shimmer krishi-skeleton-img"></div>
+                        <div class="p-3.5">
+                            <div class="krishi-shimmer krishi-skeleton-line-title"></div>
+                            <div class="krishi-shimmer krishi-skeleton-line w-75"></div>
+                            <div class="krishi-shimmer krishi-skeleton-line w-50 mb-4"></div>
+                            <div class="krishi-shimmer krishi-skeleton-btn"></div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- ==========================================
+             EQUIPMENT RESULTS GRID
+             ========================================== -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4" id="equipmentResultsGrid">
+            @foreach (var item in Model.EquipmentList)
+            {
+                <div class="col equipment-card-col">
+                    <div class="card krishi-card h-100 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column transition-hover" 
+                         style="cursor: pointer;" onclick="location.href='@Url.Action("Details", "Equipment", new { id = item.Id })'">
+                        
+                        <!-- Equipment Image & Badges -->
+                        <div class="position-relative bg-light text-center overflow-hidden" style="height: 190px;">
+                            <img src="@item.ImageUrl" class="card-img-top object-fit-cover w-100 h-100" alt="@item.Name" loading="lazy" />
+                            
+                            <!-- Category Pill -->
+                            <div class="position-absolute top-0 start-0 m-2.5">
+                                <span class="badge bg-white text-dark shadow-sm rounded-pill px-2.5 py-1 small fw-semibold opacity-95">
+                                    @item.Category
+                                </span>
+                            </div>
+
+                            <!-- Availability Badge -->
+                            <div class="position-absolute top-0 end-0 m-2.5">
+                                @if (item.IsAvailable)
+                                {
+                                    <span class="badge bg-success shadow-sm rounded-pill px-2.5 py-1 small fw-semibold">
+                                        <i class="bi bi-check-circle-fill me-1"></i>Available
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary shadow-sm rounded-pill px-2.5 py-1 small fw-semibold">
+                                        <i class="bi bi-clock-fill me-1"></i>Booked
+                                    </span>
+                                }
+                            </div>
+
+                            <!-- Distance Badge -->
+                            <div class="position-absolute bottom-0 start-0 m-2">
+                                <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2 py-0.5 small" style="font-size: 0.75rem;">
+                                    <i class="bi bi-compass me-1"></i>@item.DistanceKm.ToString("0.0") km away
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="card-body d-flex flex-column p-3.5">
+                            
+                            <!-- Title -->
+                            <h5 class="card-title fw-bold text-dark mb-1 text-truncate" title="@item.Name">
+                                @item.Name
+                            </h5>
+
+                            <!-- Location & Owner -->
+                            <div class="small text-muted mb-3">
+                                <div class="d-flex align-items-center gap-1 text-truncate mb-1">
+                                    <i class="bi bi-geo-alt text-success"></i>
+                                    <span class="text-truncate">@item.Location</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>@item.OwnerName</span>
+                                    <span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>@item.Rating.ToString("0.0") (@item.ReviewCount)</span>
+                                </div>
+                            </div>
+
+                            <!-- Pricing & Action Button -->
+                            <div class="pt-3 border-top mt-auto">
+                                <div class="d-flex justify-content-between align-items-baseline mb-3">
+                                    <div>
+                                        <span class="text-muted small d-block">Daily Rate</span>
+                                        <span class="fw-bold text-success fs-5">৳@item.DailyRate.ToString("N0")</span>
+                                        <span class="text-muted small">/ day</span>
+                                    </div>
+                                    @if (item.HourlyRate.HasValue)
+                                    {
+                                        <div class="text-end">
+                                            <span class="text-muted small d-block">Hourly</span>
+                                            <span class="fw-semibold text-dark">৳@item.HourlyRate.Value.ToString("N0")</span>
+                                            <span class="text-muted small">/ hr</span>
+                                        </div>
+                                    }
+                                </div>
+
+                                <a asp-controller="Equipment" asp-action="Details" asp-route-id="@item.Id" 
+                                   class="btn btn-krishi-primary w-100 fw-semibold rounded-3 py-2 d-flex align-items-center justify-content-center gap-1.5 shadow-sm"
+                                   onclick="event.stopPropagation();">
+                                    <span>View Details</span>
+                                    <i class="bi bi-arrow-right small"></i>
                                 </a>
-                            }
-                            <button class="btn btn-krishi-primary px-3" type="submit">Search</button>
+                            </div>
+
                         </div>
                     </div>
+                </div>
+            }
+        </div>
 
-                    <!-- Sort Dropdown -->
-                    <div class="col-12 col-md-5 col-xl-4">
-                        <div class="d-flex align-items-center justify-content-md-end gap-2">
-                            <label class="small text-muted text-nowrap fw-semibold d-none d-sm-inline" for="sortSelect">
-                                <i class="bi bi-arrow-down-up me-1"></i>Sort:
-                            </label>
-                            <select class="form-select form-select-sm py-2 filter-trigger" id="sortSelect" name="sortBy" style="max-width: 200px;">
-                                <option value="newest" selected="@(Model.SortBy == "newest" ? "selected" : null)">Newest First</option>
-                                <option value="price_asc" selected="@(Model.SortBy == "price_asc" ? "selected" : null)">Price: Low to High</option>
-                                <option value="price_desc" selected="@(Model.SortBy == "price_desc" ? "selected" : null)">Price: High to Low</option>
-                                <option value="distance" selected="@(Model.SortBy == "distance" ? "selected" : null)">Distance: Nearest</option>
-                            </select>
-                        </div>
-                    </div>
-
+        <!-- ==========================================
+             EMPTY STATE
+             ========================================== -->
+        <div class="card krishi-card border-0 shadow-sm rounded-4 p-5 text-center my-4 @(Model.EquipmentList.Any() ? "d-none" : "")" id="emptyStateContainer">
+            <div class="mb-3">
+                <div class="d-inline-flex p-3.5 rounded-circle bg-light text-muted mb-2">
+                    <i class="bi bi-search text-success" style="font-size: 3rem;"></i>
                 </div>
             </div>
+            <h4 class="fw-bold text-dark mb-2">No equipment matches your filters</h4>
+            <p class="text-secondary mb-4 mx-auto" style="max-width: 460px;">
+                No equipment matches your filters — try widening your search criteria, adjusting the price slider, or selecting a different location.
+            </p>
+            <div>
+                <button type="button" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm" onclick="resetAllFilters()">
+                    <i class="bi bi-arrow-counterclockwise me-1.5"></i> Clear Filters
+                </button>
+            </div>
+        </div>
 
-            <!-- Results Summary & Active Filter Tags -->
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 px-1">
-                <span class="text-secondary small fw-medium">
-                    Showing <strong class="text-dark">@Model.EquipmentList.Count</strong> equipment available for rent
-                </span>
+    </div>
+</div>
 
-                @if (activeFiltersCount > 0)
+<!-- ==========================================
+     MOBILE BOTTOM SHEET FOR FILTERS (< lg)
+     ========================================== -->
+<div class="offcanvas offcanvas-bottom krishi-bottom-sheet d-lg-none" tabindex="-1" id="mobileFilterBottomSheet" aria-labelledby="mobileFilterBottomSheetLabel">
+    <div class="offcanvas-header pb-2 pt-3 px-4 d-flex flex-column align-items-stretch">
+        <div class="krishi-sheet-handle"></div>
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <h5 class="offcanvas-title fw-bold text-dark d-flex align-items-center gap-2" id="mobileFilterBottomSheetLabel">
+                <i class="bi bi-sliders2 text-success"></i> Filter Machinery
+            </h5>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+    </div>
+    <div class="offcanvas-body px-4 py-3" style="overflow-y: auto;">
+        
+        <!-- Mobile: Equipment Type -->
+        <div class="mb-4">
+            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2">Equipment Type</label>
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var category in Model.AvailableCategories)
                 {
-                    <div class="d-flex flex-wrap align-items-center gap-1.5">
-                        @if (!string.IsNullOrWhiteSpace(Model.SearchTerm))
-                        {
-                            <span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small d-inline-flex align-items-center gap-1">
-                                Search: "@Model.SearchTerm"
-                            </span>
-                        }
-                        @foreach (var cat in Model.SelectedCategories)
-                        {
-                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill small">
-                                @cat
-                            </span>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(Model.Location))
-                        {
-                            <span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
-                                <i class="bi bi-geo-alt me-1"></i>@Model.Location
-                            </span>
-                        }
-                        @if (Model.SelectedMaxPrice.HasValue && Model.SelectedMaxPrice.Value < Model.MaxPrice)
-                        {
-                            <span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
-                                ≤ ৳@Model.SelectedMaxPrice.Value.ToString("N0") / day
-                            </span>
-                        }
+                    var isChecked = Model.SelectedCategories.Contains(category);
+                    <div class="form-check custom-checkbox w-100">
+                        <input class="form-check-input mobile-cat-filter" type="checkbox" 
+                               value="@category" id="mob_cat_@category.Replace(" ", "_").Replace("/", "_")" @(isChecked ? "checked" : "") onchange="syncMobileToDesktopCategory(); onFilterChanged();" />
+                        <label class="form-check-label text-secondary small" for="mob_cat_@category.Replace(" ", "_").Replace("/", "_")">
+                            @category
+                        </label>
                     </div>
                 }
             </div>
-
-            <!-- ==========================================
-                 RESULTS GRID
-                 ========================================== -->
-            @if (Model.EquipmentList.Any())
-            {
-                <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4" id="equipmentResultsGrid">
-                    @foreach (var item in Model.EquipmentList)
-                    {
-                        <div class="col">
-                            <div class="card krishi-card h-100 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column transition-hover">
-                                
-                                <!-- Equipment Image & Status Badge -->
-                                <div class="position-relative bg-light text-center overflow-hidden" style="height: 190px;">
-                                    <img src="@item.ImageUrl" class="card-img-top object-fit-cover w-100 h-100" alt="@item.Name" loading="lazy" />
-                                    
-                                    <!-- Category Pill -->
-                                    <div class="position-absolute top-0 start-0 m-2.5">
-                                        <span class="badge bg-white text-dark shadow-sm rounded-pill px-2.5 py-1 small fw-semibold opacity-95">
-                                            @item.Category
-                                        </span>
-                                    </div>
-
-                                    <!-- Status / Availability Badge -->
-                                    <div class="position-absolute top-0 end-0 m-2.5">
-                                        @if (item.IsAvailable)
-                                        {
-                                            <span class="badge bg-success shadow-sm rounded-pill px-2.5 py-1 small fw-semibold">
-                                                <i class="bi bi-check-circle-fill me-1"></i>Available
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary shadow-sm rounded-pill px-2.5 py-1 small fw-semibold">
-                                                <i class="bi bi-clock-fill me-1"></i>Booked
-                                            </span>
-                                        }
-                                    </div>
-
-                                    <!-- Distance Badge -->
-                                    <div class="position-absolute bottom-0 start-0 m-2">
-                                        <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2 py-0.5 small" style="font-size: 0.75rem;">
-                                            <i class="bi bi-compass me-1"></i>@item.DistanceKm.ToString("0.0") km away
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <!-- Card Body -->
-                                <div class="card-body d-flex flex-column p-3.5">
-                                    
-                                    <!-- Title -->
-                                    <h5 class="card-title fw-bold text-dark mb-1 text-truncate" title="@item.Name">
-                                        @item.Name
-                                    </h5>
-
-                                    <!-- Location & Owner -->
-                                    <div class="small text-muted mb-3">
-                                        <div class="d-flex align-items-center gap-1 text-truncate mb-1">
-                                            <i class="bi bi-geo-alt text-success"></i>
-                                            <span class="text-truncate">@item.Location</span>
-                                        </div>
-                                        <div class="d-flex align-items-center justify-content-between">
-                                            <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>@item.OwnerName</span>
-                                            <span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>@item.Rating.ToString("0.0") (@item.ReviewCount)</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Pricing & Action Button -->
-                                    <div class="pt-3 border-top mt-auto">
-                                        <div class="d-flex justify-content-between align-items-baseline mb-3">
-                                            <div>
-                                                <span class="text-muted small d-block">Rental Rate</span>
-                                                <span class="fw-bold text-success fs-5">৳@item.DailyRate.ToString("N0")</span>
-                                                <span class="text-muted small">/ day</span>
-                                            </div>
-                                            @if (item.HourlyRate.HasValue)
-                                            {
-                                                <div class="text-end">
-                                                    <span class="text-muted small d-block">Hourly</span>
-                                                    <span class="fw-semibold text-dark">৳@item.HourlyRate.Value.ToString("N0")</span>
-                                                    <span class="text-muted small">/ hr</span>
-                                                </div>
-                                            }
-                                        </div>
-
-                                        <a asp-controller="Equipment" asp-action="Details" asp-route-id="@item.Id" 
-                                           class="btn btn-krishi-primary w-100 fw-semibold rounded-3 py-2 d-flex align-items-center justify-content-center gap-1.5 shadow-sm">
-                                            <span>View Details & Request</span>
-                                            <i class="bi bi-arrow-right small"></i>
-                                        </a>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-                    }
-                </div>
-            }
-            else
-            {
-                <!-- Empty State -->
-                <div class="card krishi-card border-0 shadow-sm rounded-4 p-5 text-center my-4">
-                    <div class="mb-3">
-                        <div class="d-inline-flex p-3 rounded-circle bg-light text-muted mb-2">
-                            <i class="bi bi-search text-success" style="font-size: 3rem;"></i>
-                        </div>
-                    </div>
-                    <h4 class="fw-bold text-dark mb-2">No equipment matches your filters</h4>
-                    <p class="text-secondary mb-4 mx-auto" style="max-width: 460px;">
-                        Try widening your search criteria, clearing the category filters, or selecting a different location.
-                    </p>
-                    <div>
-                        <a asp-controller="Equipment" asp-action="Index" class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-semibold">
-                            <i class="bi bi-arrow-counterclockwise me-1.5"></i> Clear All Filters
-                        </a>
-                    </div>
-                </div>
-            }
-
         </div>
+
+        <!-- Mobile: Location -->
+        <div class="mb-4">
+            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="mobileLocationSelect">Location</label>
+            <select class="form-select" id="mobileLocationSelect" onchange="syncLocation(this.value); onFilterChanged();">
+                <option value="">All Locations (Bangladesh)</option>
+                @foreach (var loc in Model.AvailableLocations)
+                {
+                    <option value="@loc" selected="@(Model.Location == loc ? "selected" : null)">@loc</option>
+                }
+            </select>
+        </div>
+
+        <!-- Mobile: Price Slider -->
+        <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0" for="mobilePriceSlider">Max Daily Rate</label>
+                <span class="badge bg-success-subtle text-success fw-bold px-2 py-1 mobile-price-display">
+                    ৳@((Model.SelectedMaxPrice ?? Model.MaxPrice).ToString("N0")) / day
+                </span>
+            </div>
+            <input type="range" class="form-range" id="mobilePriceSlider"
+                   min="@Model.MinPrice" max="@Model.MaxPrice" step="100" 
+                   value="@(Model.SelectedMaxPrice ?? Model.MaxPrice)" 
+                   oninput="syncPrice(this.value)"
+                   onchange="onFilterChanged()" />
+        </div>
+
+        <!-- Mobile: Availability Date -->
+        <div class="mb-4">
+            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="mobileDateInput">Required Date</label>
+            <input type="date" class="form-control" id="mobileDateInput"
+                   value="@(Model.AvailabilityDate.HasValue ? Model.AvailabilityDate.Value.ToString("yyyy-MM-dd") : "")" 
+                   min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncDate(this.value); onFilterChanged();" />
+        </div>
+
+        <!-- Bottom Sheet Actions -->
+        <div class="d-grid gap-2 pt-2 pb-3">
+            <button type="button" class="btn btn-krishi-primary py-2.5 fw-bold rounded-pill" data-bs-dismiss="offcanvas">
+                View Results (<span id="mobileSheetResultCount">@Model.EquipmentList.Count</span>)
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm py-2 rounded-pill" onclick="resetAllFilters()">
+                Clear Filters
+            </button>
+        </div>
+
     </div>
-</form>
+</div>
 
 @section Scripts {
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            // Auto submit on select change for sort and location dropdowns
-            const filterTriggers = document.querySelectorAll(".filter-trigger");
-            filterTriggers.forEach(function (element) {
-                element.addEventListener("change", function () {
-                    document.getElementById("equipmentFilterForm").submit();
-                });
+        let searchDebounceTimer = null;
+        const DEFAULT_MAX_PRICE = @Model.MaxPrice;
+        const DEFAULT_MIN_PRICE = @Model.MinPrice;
+
+        // Synchronize desktop & mobile inputs
+        function syncPrice(val) {
+            const formatted = '৳' + Number(val).toLocaleString() + ' / day';
+            document.querySelectorAll('.desktop-price-display, .mobile-price-display').forEach(el => el.innerText = formatted);
+            const deskSlider = document.getElementById('desktopPriceSlider');
+            const mobSlider = document.getElementById('mobilePriceSlider');
+            if (deskSlider && deskSlider.value !== val) deskSlider.value = val;
+            if (mobSlider && mobSlider.value !== val) mobSlider.value = val;
+        }
+
+        function syncLocation(val) {
+            const deskLoc = document.getElementById('desktopLocationSelect');
+            const mobLoc = document.getElementById('mobileLocationSelect');
+            if (deskLoc && deskLoc.value !== val) deskLoc.value = val;
+            if (mobLoc && mobLoc.value !== val) mobLoc.value = val;
+        }
+
+        function syncDate(val) {
+            const deskDate = document.getElementById('desktopDateInput');
+            const mobDate = document.getElementById('mobileDateInput');
+            if (deskDate && deskDate.value !== val) deskDate.value = val;
+            if (mobDate && mobDate.value !== val) mobDate.value = val;
+        }
+
+        function syncMobileToDesktopCategory() {
+            const mobileChecked = Array.from(document.querySelectorAll('.mobile-cat-filter:checked')).map(cb => cb.value);
+            document.querySelectorAll('.desktop-cat-filter').forEach(cb => {
+                cb.checked = mobileChecked.includes(cb.value);
             });
+        }
+
+        function syncDesktopToMobileCategory() {
+            const desktopChecked = Array.from(document.querySelectorAll('.desktop-cat-filter:checked')).map(cb => cb.value);
+            document.querySelectorAll('.mobile-cat-filter').forEach(cb => {
+                cb.checked = desktopChecked.includes(cb.value);
+            });
+        }
+
+        function onSearchInput(val) {
+            const clearBtn = document.getElementById('clearSearchBtn');
+            if (clearBtn) {
+                if (val && val.trim().length > 0) clearBtn.classList.remove('d-none');
+                else clearBtn.classList.add('d-none');
+            }
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                onFilterChanged();
+            }, 250);
+        }
+
+        function clearSearch() {
+            const searchInput = document.getElementById('mainSearchInput');
+            if (searchInput) {
+                searchInput.value = '';
+                onSearchInput('');
+            }
+        }
+
+        function resetAllFilters() {
+            // Reset search input
+            const searchInput = document.getElementById('mainSearchInput');
+            if (searchInput) searchInput.value = '';
+            const clearBtn = document.getElementById('clearSearchBtn');
+            if (clearBtn) clearBtn.classList.add('d-none');
+
+            // Reset category checkboxes
+            document.querySelectorAll('.desktop-cat-filter, .mobile-cat-filter').forEach(cb => cb.checked = false);
+
+            // Reset location selects
+            syncLocation('');
+
+            // Reset price sliders
+            syncPrice(DEFAULT_MAX_PRICE);
+
+            // Reset dates
+            syncDate('');
+
+            // Reset sort select
+            const sortSelect = document.getElementById('mainSortSelect');
+            if (sortSelect) sortSelect.value = 'newest';
+
+            onFilterChanged();
+        }
+
+        // Live Filter Dispatcher via Fetch API with Skeleton Transitions
+        async function onFilterChanged() {
+            syncDesktopToMobileCategory();
+
+            // Collect filter parameters
+            const searchTerm = document.getElementById('mainSearchInput')?.value || '';
+            const selectedCategories = Array.from(document.querySelectorAll('.desktop-cat-filter:checked')).map(cb => cb.value);
+            const location = document.getElementById('desktopLocationSelect')?.value || '';
+            const maxPrice = document.getElementById('desktopPriceSlider')?.value || DEFAULT_MAX_PRICE;
+            const date = document.getElementById('desktopDateInput')?.value || '';
+            const sortBy = document.getElementById('mainSortSelect')?.value || 'newest';
+
+            // Show skeleton shimmer & hide grid / empty state
+            const grid = document.getElementById('equipmentResultsGrid');
+            const skeleton = document.getElementById('skeletonLoadingContainer');
+            const emptyState = document.getElementById('emptyStateContainer');
+            
+            if (skeleton) skeleton.classList.remove('d-none');
+            if (grid) grid.classList.add('d-none');
+            if (emptyState) emptyState.classList.add('d-none');
+
+            // Build query params
+            const params = new URLSearchParams();
+            if (searchTerm.trim()) params.append('searchTerm', searchTerm.trim());
+            selectedCategories.forEach(cat => params.append('selectedCategories', cat));
+            if (location) params.append('location', location);
+            if (maxPrice && Number(maxPrice) < DEFAULT_MAX_PRICE) params.append('selectedMaxPrice', maxPrice);
+            if (date) params.append('availabilityDate', date);
+            if (sortBy && sortBy !== 'newest') params.append('sortBy', sortBy);
+
+            // Update browser URL query string without reloading
+            const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+            window.history.replaceState({}, '', newUrl);
+
+            try {
+                const response = await fetch('/Equipment/FilterData?' + params.toString(), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (!response.ok) throw new Error('Network error fetching filtered equipment');
+
+                const data = await response.json();
+                renderResults(data);
+            } catch (err) {
+                console.error('Filter fetch failed:', err);
+                if (grid) grid.classList.remove('d-none');
+            } finally {
+                if (skeleton) skeleton.classList.add('d-none');
+            }
+        }
+
+        function renderResults(data) {
+            const grid = document.getElementById('equipmentResultsGrid');
+            const emptyState = document.getElementById('emptyStateContainer');
+            const countNum = document.getElementById('resultsCountNumber');
+            const heroCount = document.getElementById('heroListingCount');
+            const mobileCount = document.getElementById('mobileSheetResultCount');
+            const mobileFilterBadge = document.getElementById('mobileFilterBadge');
+
+            const count = data.totalCount || 0;
+            if (countNum) countNum.innerText = count;
+            if (heroCount) heroCount.innerText = count + ' Available Items';
+            if (mobileCount) mobileCount.innerText = count + ' items';
+
+            // Active filters count calculation
+            const searchTerm = document.getElementById('mainSearchInput')?.value || '';
+            const selectedCategories = Array.from(document.querySelectorAll('.desktop-cat-filter:checked')).map(cb => cb.value);
+            const location = document.getElementById('desktopLocationSelect')?.value || '';
+            const maxPrice = Number(document.getElementById('desktopPriceSlider')?.value || DEFAULT_MAX_PRICE);
+            const date = document.getElementById('desktopDateInput')?.value || '';
+
+            let activeCount = 0;
+            if (searchTerm.trim()) activeCount++;
+            activeCount += selectedCategories.length;
+            if (location) activeCount++;
+            if (maxPrice < DEFAULT_MAX_PRICE) activeCount++;
+            if (date) activeCount++;
+
+            if (mobileFilterBadge) {
+                mobileFilterBadge.innerText = activeCount > 0 ? `${activeCount} active` : 'Filters';
+            }
+
+            document.querySelectorAll('.clear-filters-btn').forEach(btn => {
+                if (activeCount > 0) btn.classList.remove('d-none');
+                else btn.classList.add('d-none');
+            });
+
+            // Update active tags
+            renderActiveTags(searchTerm, selectedCategories, location, maxPrice, date);
+
+            if (count === 0) {
+                if (grid) {
+                    grid.innerHTML = '';
+                    grid.classList.add('d-none');
+                }
+                if (emptyState) emptyState.classList.remove('d-none');
+                return;
+            }
+
+            if (emptyState) emptyState.classList.add('d-none');
+            if (grid) {
+                grid.classList.remove('d-none');
+                grid.innerHTML = data.items.map(item => `
+                    <div class="col equipment-card-col">
+                        <div class="card krishi-card h-100 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column transition-hover" 
+                             style="cursor: pointer;" onclick="location.href='${item.detailsUrl}'">
+                            
+                            <!-- Equipment Image & Badges -->
+                            <div class="position-relative bg-light text-center overflow-hidden" style="height: 190px;">
+                                <img src="${item.imageUrl}" class="card-img-top object-fit-cover w-100 h-100" alt="${item.name}" loading="lazy" />
+                                
+                                <div class="position-absolute top-0 start-0 m-2.5">
+                                    <span class="badge bg-white text-dark shadow-sm rounded-pill px-2.5 py-1 small fw-semibold opacity-95">
+                                        ${item.category}
+                                    </span>
+                                </div>
+
+                                <div class="position-absolute top-0 end-0 m-2.5">
+                                    ${item.isAvailable 
+                                        ? `<span class="badge bg-success shadow-sm rounded-pill px-2.5 py-1 small fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Available</span>`
+                                        : `<span class="badge bg-secondary shadow-sm rounded-pill px-2.5 py-1 small fw-semibold"><i class="bi bi-clock-fill me-1"></i>Booked</span>`
+                                    }
+                                </div>
+
+                                <div class="position-absolute bottom-0 start-0 m-2">
+                                    <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2 py-0.5 small" style="font-size: 0.75rem;">
+                                        <i class="bi bi-compass me-1"></i>${item.distanceKmFormatted}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Card Body -->
+                            <div class="card-body d-flex flex-column p-3.5">
+                                <h5 class="card-title fw-bold text-dark mb-1 text-truncate" title="${item.name}">
+                                    ${item.name}
+                                </h5>
+
+                                <div class="small text-muted mb-3">
+                                    <div class="d-flex align-items-center gap-1 text-truncate mb-1">
+                                        <i class="bi bi-geo-alt text-success"></i>
+                                        <span class="text-truncate">${item.location}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>${item.ownerName}</span>
+                                        <span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>${item.rating.toFixed(1)} (${item.reviewCount})</span>
+                                    </div>
+                                </div>
+
+                                <div class="pt-3 border-top mt-auto">
+                                    <div class="d-flex justify-content-between align-items-baseline mb-3">
+                                        <div>
+                                            <span class="text-muted small d-block">Daily Rate</span>
+                                            <span class="fw-bold text-success fs-5">${item.dailyRateFormatted}</span>
+                                            <span class="text-muted small">/ day</span>
+                                        </div>
+                                        ${item.hourlyRateFormatted ? `
+                                            <div class="text-end">
+                                                <span class="text-muted small d-block">Hourly</span>
+                                                <span class="fw-semibold text-dark">${item.hourlyRateFormatted}</span>
+                                                <span class="text-muted small">/ hr</span>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+
+                                    <a href="${item.detailsUrl}" 
+                                       class="btn btn-krishi-primary w-100 fw-semibold rounded-3 py-2 d-flex align-items-center justify-content-center gap-1.5 shadow-sm"
+                                       onclick="event.stopPropagation();">
+                                        <span>View Details</span>
+                                        <i class="bi bi-arrow-right small"></i>
+                                    </a>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function renderActiveTags(search, categories, location, maxPrice, date) {
+            const container = document.getElementById('activeFilterTagsContainer');
+            if (!container) return;
+
+            let html = '';
+            if (search.trim()) {
+                html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small d-inline-flex align-items-center gap-1">
+                    Search: "${search.trim()}" <i class="bi bi-x-circle-fill text-muted ms-1" style="cursor:pointer;" onclick="clearSearch()"></i>
+                </span>`;
+            }
+            categories.forEach(cat => {
+                html += `<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill small">
+                    ${cat}
+                </span>`;
+            });
+            if (location) {
+                html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
+                    <i class="bi bi-geo-alt me-1"></i>${location}
+                </span>`;
+            }
+            if (maxPrice < DEFAULT_MAX_PRICE) {
+                html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
+                    ≤ ৳${maxPrice.toLocaleString()} / day
+                </span>`;
+            }
+            if (date) {
+                html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
+                    <i class="bi bi-calendar3 me-1"></i>${date}
+                </span>`;
+            }
+            container.innerHTML = html;
+        }
+
+        // Initialize on load
+        document.addEventListener("DOMContentLoaded", function () {
+            const searchInput = document.getElementById('mainSearchInput');
+            if (searchInput && searchInput.value.trim().length > 0) {
+                const clearBtn = document.getElementById('clearSearchBtn');
+                if (clearBtn) clearBtn.classList.remove('d-none');
+            }
+            renderActiveTags(
+                document.getElementById('mainSearchInput')?.value || '',
+                Array.from(document.querySelectorAll('.desktop-cat-filter:checked')).map(cb => cb.value),
+                document.getElementById('desktopLocationSelect')?.value || '',
+                Number(document.getElementById('desktopPriceSlider')?.value || DEFAULT_MAX_PRICE),
+                document.getElementById('desktopDateInput')?.value || ''
+            );
         });
     </script>
 }

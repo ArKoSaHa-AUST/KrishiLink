@@ -141,28 +141,14 @@ namespace KrishiLink.Controllers
             }
         };
 
-        /// <summary>
-        /// GET: /Equipment/Index
-        /// Equipment Browse & Search with live/server-side filters, search, and sorting.
-        /// </summary>
-        public IActionResult Index(
+        private List<EquipmentItemViewModel> FilterEquipmentList(
             string? searchTerm,
             List<string>? selectedCategories,
             string? location,
             decimal? selectedMaxPrice,
             DateTime? availabilityDate,
-            string sortBy = "newest")
+            string? sortBy)
         {
-            var model = new EquipmentBrowseViewModel
-            {
-                SearchTerm = searchTerm,
-                SelectedCategories = selectedCategories ?? new List<string>(),
-                Location = location,
-                SelectedMaxPrice = selectedMaxPrice ?? 5000,
-                AvailabilityDate = availabilityDate,
-                SortBy = string.IsNullOrWhiteSpace(sortBy) ? "newest" : sortBy
-            };
-
             IEnumerable<EquipmentItemViewModel> query = SampleEquipment;
 
             // 1. Search Query Filter (Name, Category, Location, Owner)
@@ -177,9 +163,9 @@ namespace KrishiLink.Controllers
             }
 
             // 2. Category / Equipment Type Filter
-            if (model.SelectedCategories.Any())
+            if (selectedCategories != null && selectedCategories.Any())
             {
-                query = query.Where(e => model.SelectedCategories.Any(c => c.Equals(e.Category, StringComparison.OrdinalIgnoreCase)));
+                query = query.Where(e => selectedCategories.Any(c => c.Equals(e.Category, StringComparison.OrdinalIgnoreCase)));
             }
 
             // 3. Location Filter
@@ -189,19 +175,20 @@ namespace KrishiLink.Controllers
             }
 
             // 4. Max Price Filter
-            if (model.SelectedMaxPrice.HasValue)
+            if (selectedMaxPrice.HasValue)
             {
-                query = query.Where(e => e.DailyRate <= model.SelectedMaxPrice.Value);
+                query = query.Where(e => e.DailyRate <= selectedMaxPrice.Value);
             }
 
             // 5. Availability Date Filter
-            if (model.AvailabilityDate.HasValue)
+            if (availabilityDate.HasValue)
             {
                 query = query.Where(e => e.IsAvailable);
             }
 
             // 6. Sorting
-            query = model.SortBy switch
+            var sort = string.IsNullOrWhiteSpace(sortBy) ? "newest" : sortBy.ToLower();
+            query = sort switch
             {
                 "price_asc" => query.OrderBy(e => e.DailyRate),
                 "price_desc" => query.OrderByDescending(e => e.DailyRate),
@@ -210,9 +197,77 @@ namespace KrishiLink.Controllers
                 _ => query.OrderByDescending(e => e.CreatedAt)
             };
 
-            model.EquipmentList = query.ToList();
+            return query.ToList();
+        }
+
+        /// <summary>
+        /// GET: /Equipment/Index
+        /// Equipment Browse & Search with server-side and live AJAX filtering support.
+        /// </summary>
+        public IActionResult Index(
+            string? searchTerm,
+            List<string>? selectedCategories,
+            string? location,
+            decimal? selectedMaxPrice,
+            DateTime? availabilityDate,
+            string sortBy = "newest")
+        {
+            var filtered = FilterEquipmentList(searchTerm, selectedCategories, location, selectedMaxPrice, availabilityDate, sortBy);
+
+            var model = new EquipmentBrowseViewModel
+            {
+                SearchTerm = searchTerm,
+                SelectedCategories = selectedCategories ?? new List<string>(),
+                Location = location,
+                SelectedMaxPrice = selectedMaxPrice ?? 5000,
+                AvailabilityDate = availabilityDate,
+                SortBy = string.IsNullOrWhiteSpace(sortBy) ? "newest" : sortBy,
+                EquipmentList = filtered
+            };
 
             return View(model);
+        }
+
+        /// <summary>
+        /// GET: /Equipment/FilterData (AJAX JSON endpoint for instant live updates)
+        /// </summary>
+        [HttpGet]
+        public IActionResult FilterData(
+            string? searchTerm,
+            [FromQuery] List<string>? selectedCategories,
+            string? location,
+            decimal? selectedMaxPrice,
+            DateTime? availabilityDate,
+            string sortBy = "newest")
+        {
+            var filtered = FilterEquipmentList(searchTerm, selectedCategories, location, selectedMaxPrice, availabilityDate, sortBy);
+
+            var result = filtered.Select(e => new
+            {
+                id = e.Id,
+                name = e.Name,
+                category = e.Category,
+                dailyRate = e.DailyRate,
+                dailyRateFormatted = $"৳{e.DailyRate:N0}",
+                hourlyRate = e.HourlyRate,
+                hourlyRateFormatted = e.HourlyRate.HasValue ? $"৳{e.HourlyRate.Value:N0}" : null,
+                location = e.Location,
+                distanceKm = e.DistanceKm,
+                distanceKmFormatted = $"{e.DistanceKm:0.0} km away",
+                isAvailable = e.IsAvailable,
+                status = e.Status,
+                imageUrl = e.ImageUrl,
+                ownerName = e.OwnerName,
+                rating = e.Rating,
+                reviewCount = e.ReviewCount,
+                detailsUrl = Url.Action(nameof(Details), "Equipment", new { id = e.Id })
+            });
+
+            return Json(new
+            {
+                totalCount = filtered.Count,
+                items = result
+            });
         }
 
         /// <summary>

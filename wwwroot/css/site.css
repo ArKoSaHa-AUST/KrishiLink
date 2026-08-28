@@ -299,3 +299,65 @@ a:hover {
     padding: 0.75rem 1rem;
     font-size: 1.05rem;
 }
+
+/* ==========================================================================
+   Skeleton Shimmer Loader
+   ========================================================================== */
+.krishi-skeleton-card {
+    background-color: var(--krishi-surface);
+    border: 1px solid var(--krishi-border-color);
+    border-radius: var(--krishi-radius-md);
+    overflow: hidden;
+}
+
+.krishi-shimmer {
+    background: linear-gradient(90deg, #f0f2f0 25%, #e4e8e4 50%, #f0f2f0 75%);
+    background-size: 200% 100%;
+    animation: krishiShimmer 1.5s infinite ease-in-out;
+}
+
+@keyframes krishiShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.krishi-skeleton-img {
+    height: 190px;
+    width: 100%;
+}
+
+.krishi-skeleton-line {
+    height: 14px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.krishi-skeleton-line-title {
+    height: 20px;
+    width: 80%;
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.krishi-skeleton-btn {
+    height: 38px;
+    border-radius: var(--krishi-radius-md);
+    width: 100%;
+}
+
+/* Mobile Bottom Sheet Filter styling */
+.krishi-bottom-sheet {
+    border-top-left-radius: 1.5rem !important;
+    border-top-right-radius: 1.5rem !important;
+    max-height: 85vh !important;
+    border-top: 2px solid var(--krishi-primary) !important;
+    background-color: var(--krishi-bg) !important;
+}
+
+.krishi-sheet-handle {
+    width: 48px;
+    height: 5px;
+    background-color: #cbd5e1;
+    border-radius: 10px;
+    margin: 0 auto 12px auto;
+}
