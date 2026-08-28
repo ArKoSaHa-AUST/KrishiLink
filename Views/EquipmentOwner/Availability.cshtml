@@ -1,0 +1,291 @@
+@model KrishiLink.Models.ViewModels.ManageAvailabilityViewModel
+@{
+    ViewData["Title"] = "Manage Equipment Availability";
+    var bookedDatesJson = System.Text.Json.JsonSerializer.Serialize(Model.FarmerBookedDates.Select(d => d.ToString("yyyy-MM-dd")).ToList());
+    var blockedDatesJson = System.Text.Json.JsonSerializer.Serialize(Model.OwnerBlockedDates.Select(d => d.ToString("yyyy-MM-dd")).ToList());
+}
+
+<!-- Breadcrumb Navigation -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-success text-decoration-none">Home</a></li>
+        <li class="breadcrumb-item"><a asp-controller="EquipmentOwner" asp-action="Index" class="text-success text-decoration-none">Owner Dashboard</a></li>
+        <li class="breadcrumb-item active text-muted" aria-current="page">Manage Availability</li>
+    </ol>
+</nav>
+
+<!-- Page Header & Equipment Summary Banner -->
+<div class="card krishi-card border-0 shadow-sm p-4 mb-4" style="border-radius: var(--krishi-radius-lg);">
+    <div class="row align-items-center g-3">
+        <div class="col-auto">
+            <img src="@Model.ThumbnailUrl" class="rounded-3 object-fit-cover shadow-sm" style="width: 84px; height: 84px;" alt="@Model.EquipmentName" />
+        </div>
+        <div class="col">
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                    <i class="bi bi-tag-fill me-1"></i>@Model.Category
+                </span>
+                <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small">
+                    <i class="bi bi-geo-alt-fill text-danger me-1"></i>@Model.Location
+                </span>
+            </div>
+            <h3 class="fw-bold text-dark mb-1">@Model.EquipmentName</h3>
+            <p class="text-muted small mb-0">
+                Daily Rate: <strong class="text-success">@Model.DailyRate</strong> • Set maintenance & blackout dates for your equipment.
+            </p>
+        </div>
+        <div class="col-12 col-md-auto text-md-end">
+            <a asp-controller="EquipmentOwner" asp-action="Index" class="btn btn-krishi-outline rounded-pill px-4 py-2 text-nowrap fw-semibold">
+                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Success Alert Banner -->
+<div id="saveSuccessAlert" class="alert alert-success border-0 shadow-sm rounded-3 mb-4 d-none align-items-center gap-3">
+    <i class="bi bi-check-circle-fill display-6 text-success"></i>
+    <div>
+        <h6 class="fw-bold mb-1 text-success-emphasis">Availability Updated Successfully!</h6>
+        <p class="mb-0 small text-success-emphasis">Your availability calendar changes have been saved. Farmers will see updated availability immediately.</p>
+    </div>
+</div>
+
+<!-- MAIN CALENDAR CONTAINER -->
+<div class="card krishi-card border-0 shadow-sm p-4 mb-4" style="border-radius: var(--krishi-radius-lg);">
+    
+    <!-- Legend & Header controls -->
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+        <div>
+            <h5 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-calendar-range-fill text-success"></i>Availability Calendar — @Model.MonthName
+            </h5>
+            <p class="text-muted small mb-0">Click on available dates to select and mark them as unavailable (maintenance) or vice versa.</p>
+        </div>
+
+        <!-- Color Legend -->
+        <div class="d-flex align-items-center gap-3 flex-wrap small bg-light p-2.5 rounded-3 border">
+            <span class="d-flex align-items-center gap-1.5 fw-semibold text-dark">
+                <span class="d-inline-block rounded-circle bg-success" style="width: 12px; height: 12px;"></span>
+                Available
+            </span>
+            <span class="d-flex align-items-center gap-1.5 fw-semibold text-dark">
+                <span class="d-inline-block rounded-circle bg-secondary" style="width: 12px; height: 12px;"></span>
+                Unavailable (Owner Blocked)
+            </span>
+            <span class="d-flex align-items-center gap-1.5 fw-semibold text-dark">
+                <span class="d-inline-block rounded-circle bg-primary" style="width: 12px; height: 12px;"></span>
+                Farmer Booked (Locked)
+            </span>
+        </div>
+    </div>
+
+    <!-- SELECTION ACTION BAR (Appears dynamically when 1+ dates selected) -->
+    <div id="selectionActionBar" class="alert bg-success-subtle border-success-subtle rounded-3 p-3 mb-4 d-none align-items-center justify-content-between flex-wrap gap-2 shadow-sm">
+        <div class="d-flex align-items-center gap-2">
+            <span id="selectedCountBadge" class="badge bg-success text-white rounded-pill px-3 py-1.5 fs-6 fw-bold">0 Dates Selected</span>
+            <span class="text-dark small">Choose action for selected dates:</span>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <button type="button" class="btn btn-secondary btn-sm rounded-pill px-3 py-2 fw-semibold" onclick="markSelectedDates('blocked')">
+                <i class="bi bi-slash-circle me-1"></i> Mark as Unavailable
+            </button>
+            <button type="button" class="btn btn-success btn-sm rounded-pill px-3 py-2 fw-semibold" onclick="markSelectedDates('available')">
+                <i class="bi bi-check-circle me-1"></i> Mark as Available
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold" onclick="clearSelection()">
+                Clear Selection
+            </button>
+        </div>
+    </div>
+
+    <!-- MONTH GRID CALENDAR -->
+    <div class="bg-light p-3 p-md-4 rounded-3 border">
+        <!-- Days of Week Header -->
+        <div class="row row-cols-7 g-2 text-center small fw-bold text-muted mb-3 text-uppercase" style="letter-spacing: 0.05em;">
+            <div class="col py-1">Sun</div>
+            <div class="col py-1">Mon</div>
+            <div class="col py-1">Tue</div>
+            <div class="col py-1">Wed</div>
+            <div class="col py-1">Thu</div>
+            <div class="col py-1">Fri</div>
+            <div class="col py-1">Sat</div>
+        </div>
+
+        <!-- Calendar Days Grid -->
+        <div class="row row-cols-7 g-2 text-center" id="ownerCalendarGrid">
+            @{
+                var firstDayOfMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+                var daysInMonth = DateTime.DaysInMonth(DateTime.Today.Year, DateTime.Today.Month);
+                int startOffset = (int)firstDayOfMonth.DayOfWeek;
+
+                // Blank cells for offset
+                for (int b = 0; b < startOffset; b++)
+                {
+                    <div class="col p-3 text-muted opacity-25">•</div>
+                }
+
+                // Month days
+                for (int day = 1; day <= daysInMonth; day++)
+                {
+                    var currentDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, day);
+                    var dateStr = currentDate.ToString("yyyy-MM-dd");
+
+                    bool isBookedByFarmer = Model.FarmerBookedDates.Any(bd => bd.Date == currentDate.Date);
+                    bool isBlockedByOwner = Model.OwnerBlockedDates.Any(bd => bd.Date == currentDate.Date);
+                    bool isPast = currentDate < DateTime.Today;
+
+                    if (isBookedByFarmer)
+                    {
+                        <div class="col p-2 p-sm-3 rounded-3 bg-primary-subtle border border-primary text-primary fw-bold calendar-day-cell position-relative opacity-90 cursor-not-allowed"
+                             title="Booked by Farmer (Locked)">
+                            <div class="small">@day</div>
+                            <span class="badge bg-primary text-white rounded-pill font-monospace" style="font-size: 0.65rem;">
+                                <i class="bi bi-lock-fill me-0.5"></i>Booked
+                            </span>
+                        </div>
+                    }
+                    else if (isPast)
+                    {
+                        <div class="col p-2 p-sm-3 rounded-3 bg-secondary-subtle border border-light-subtle text-muted opacity-50 cursor-not-allowed"
+                             title="Past Date">
+                            <div class="small text-decoration-line-through">@day</div>
+                            <span class="badge bg-secondary-subtle text-secondary rounded-pill" style="font-size: 0.65rem;">Past</span>
+                        </div>
+                    }
+                    else if (isBlockedByOwner)
+                    {
+                        <div class="col p-2 p-sm-3 rounded-3 bg-secondary-subtle border border-secondary text-secondary fw-semibold calendar-day-cell cursor-pointer owner-date-cell blocked"
+                             data-date="@dateStr" onclick="toggleDateSelection(this)" title="Click to select date">
+                            <div class="small">@day</div>
+                            <span class="badge bg-secondary text-white rounded-pill date-status-tag" style="font-size: 0.65rem;">
+                                <i class="bi bi-tools me-0.5"></i>Blocked
+                            </span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col p-2 p-sm-3 rounded-3 bg-white border border-success text-success fw-bold calendar-day-cell cursor-pointer owner-date-cell available"
+                             data-date="@dateStr" onclick="toggleDateSelection(this)" title="Click to select date">
+                            <div class="small">@day</div>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill date-status-tag" style="font-size: 0.65rem;">Available</span>
+                        </div>
+                    }
+                }
+            }
+        </div>
+    </div>
+
+    <!-- SAVE CHANGES ACTION BUTTON -->
+    <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span class="text-muted small">
+            <i class="bi bi-info-circle text-success me-1"></i>Unsaved changes will revert if you leave without saving.
+        </span>
+        <button type="button" id="saveAvailabilityBtn" class="btn btn-krishi-primary rounded-pill px-5 py-3 fw-bold fs-6 shadow-sm d-inline-flex align-items-center gap-2" onclick="confirmSaveAvailability()">
+            <i class="bi bi-floppy-fill me-1"></i> Save Changes
+        </button>
+    </div>
+</div>
+
+<style>
+    .calendar-day-cell {
+        min-height: 72px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        user-select: none;
+    }
+    .owner-date-cell:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+    }
+    .owner-date-cell.selected {
+        outline: 3px solid var(--krishi-accent) !important;
+        box-shadow: 0 0 12px rgba(45, 106, 79, 0.4) !important;
+    }
+    .cursor-not-allowed {
+        cursor: not-allowed !important;
+    }
+    .cursor-pointer {
+        cursor: pointer !important;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        const selectedDates = new Set();
+
+        function toggleDateSelection(cell) {
+            const dateStr = cell.getAttribute('data-date');
+            if (!dateStr) return;
+
+            if (selectedDates.has(dateStr)) {
+                selectedDates.delete(dateStr);
+                cell.classList.remove('selected');
+            } else {
+                selectedDates.add(dateStr);
+                cell.classList.add('selected');
+            }
+            updateActionBar();
+        }
+
+        function updateActionBar() {
+            const bar = document.getElementById('selectionActionBar');
+            const countBadge = document.getElementById('selectedCountBadge');
+            if (selectedDates.size > 0) {
+                bar.classList.remove('d-none');
+                bar.classList.add('d-flex');
+                countBadge.textContent = `${selectedDates.size} Date${selectedDates.size > 1 ? 's' : ''} Selected`;
+            } else {
+                bar.classList.add('d-none');
+                bar.classList.remove('d-flex');
+            }
+        }
+
+        function clearSelection() {
+            selectedDates.clear();
+            document.querySelectorAll('.owner-date-cell.selected').forEach(c => c.classList.remove('selected'));
+            updateActionBar();
+        }
+
+        function markSelectedDates(status) {
+            selectedDates.forEach(dateStr => {
+                const cell = document.querySelector(`.owner-date-cell[data-date="${dateStr}"]`);
+                if (!cell) return;
+
+                const tag = cell.querySelector('.date-status-tag');
+                if (status === 'blocked') {
+                    cell.className = 'col p-2 p-sm-3 rounded-3 bg-secondary-subtle border border-secondary text-secondary fw-semibold calendar-day-cell cursor-pointer owner-date-cell blocked';
+                    if (tag) {
+                        tag.className = 'badge bg-secondary text-white rounded-pill date-status-tag';
+                        tag.innerHTML = '<i class="bi bi-tools me-0.5"></i>Blocked';
+                    }
+                } else if (status === 'available') {
+                    cell.className = 'col p-2 p-sm-3 rounded-3 bg-white border border-success text-success fw-bold calendar-day-cell cursor-pointer owner-date-cell available';
+                    if (tag) {
+                        tag.className = 'badge bg-success-subtle text-success border border-success-subtle rounded-pill date-status-tag';
+                        tag.textContent = 'Available';
+                    }
+                }
+            });
+            clearSelection();
+        }
+
+        function confirmSaveAvailability() {
+            window.KrishiModal.confirm({
+                title: 'Save Availability Changes?',
+                body: 'Are you sure you want to save these availability calendar updates for <strong>@Model.EquipmentName</strong>?',
+                confirmText: 'Save Changes',
+                cancelText: 'Cancel',
+                confirmClass: 'btn-krishi-primary',
+                iconClass: 'bi-calendar-check-fill text-success',
+                onConfirm: function () {
+                    const alertDiv = document.getElementById('saveSuccessAlert');
+                    if (alertDiv) {
+                        alertDiv.classList.remove('d-none');
+                        alertDiv.classList.add('d-flex');
+                        alertDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            });
+        }
+    </script>
+}
