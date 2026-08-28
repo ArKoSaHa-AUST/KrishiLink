@@ -148,6 +148,8 @@ window.KrishiToast = {
 window.KrishiCount = {
     animate: function (el, to, duration) {
         if (!el) return;
+        // rAF is paused in hidden tabs — snap to the final value instead
+        if (document.hidden) { el.textContent = to; return; }
         const from = Number(el.textContent) || 0;
         const start = performance.now();
         duration = duration || 400;

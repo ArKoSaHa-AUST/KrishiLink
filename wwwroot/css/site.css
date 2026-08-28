@@ -104,6 +104,28 @@ body.krishi-body-gradient {
     transform: translateX(24px);
 }
 
+/* Rental requests page: full-width Accept/Reject on mobile stacked cards */
+.request-actions {
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.request-actions .btn {
+    flex: 1 1 0;
+    white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+    .request-actions {
+        width: auto;
+    }
+
+    .request-actions .btn {
+        flex: 0 0 auto;
+    }
+}
+
 a {
     color: var(--krishi-primary);
     text-decoration: none;

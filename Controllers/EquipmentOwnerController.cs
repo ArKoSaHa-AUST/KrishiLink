@@ -42,6 +42,54 @@ namespace KrishiLink.Controllers
         }
 
         /// <summary>
+        /// GET: /EquipmentOwner/Requests
+        /// Full list of incoming rental requests with filter tabs and Accept/Reject.
+        /// </summary>
+        [HttpGet]
+        public IActionResult Requests()
+        {
+            var model = new RentalRequestsViewModel
+            {
+                Requests = new List<RentalRequestItem>
+                {
+                    // Pending (mirrors the dashboard widget)
+                    new() { Id = 101, FarmerName = "Rahim Uddin", EquipmentName = "Kubota DC-70 Combine Harvester", Status = "Pending",
+                            DateRange = "02 Sep – 06 Sep 2026", Note = "Need it for 5 acres of Aman paddy harvest.",
+                            EquipmentCategory = "Harvester", DailyRate = "৳4,200 / Day", Location = "Bogra Sadar, Bogra" },
+                    new() { Id = 102, FarmerName = "Karim Mia", EquipmentName = "ACI Power Tiller 12HP", Status = "Pending",
+                            DateRange = "05 Sep – 07 Sep 2026",
+                            EquipmentCategory = "Tiller", DailyRate = "৳800 / Day", Location = "Bogra Sadar, Bogra" },
+                    new() { Id = 103, FarmerName = "Fatema Begum", EquipmentName = "Mahindra 575 DI Heavy Tractor", Status = "Pending",
+                            DateRange = "10 Sep – 12 Sep 2026", Note = "Land preparation before potato season.",
+                            EquipmentCategory = "Tractor", DailyRate = "৳1,500 / Day", Location = "Bogra Sadar, Bogra" },
+
+                    // Accepted
+                    new() { Id = 96, FarmerName = "Abdul Halim", EquipmentName = "Mahindra 575 DI Heavy Tractor", Status = "Accepted",
+                            DateRange = "26 Aug – 30 Aug 2026", Note = "Tilling 3 acres before Rabi sowing.",
+                            EquipmentCategory = "Tractor", DailyRate = "৳1,500 / Day", Location = "Bogra Sadar, Bogra" },
+                    new() { Id = 97, FarmerName = "Shafiq Islam", EquipmentName = "TAFE 45DI Rotavator", Status = "Accepted",
+                            DateRange = "28 Aug – 29 Aug 2026",
+                            EquipmentCategory = "Tiller", DailyRate = "৳950 / Day", Location = "Bogra Sadar, Bogra" },
+
+                    // Rejected
+                    new() { Id = 91, FarmerName = "Jahanara Khatun", EquipmentName = "Kubota DC-70 Combine Harvester", Status = "Rejected",
+                            DateRange = "20 Aug – 25 Aug 2026", Note = "Requested during maintenance window.",
+                            EquipmentCategory = "Harvester", DailyRate = "৳4,200 / Day", Location = "Bogra Sadar, Bogra" },
+
+                    // Completed
+                    new() { Id = 85, FarmerName = "Motaleb Hossain", EquipmentName = "Honda WB30X Irrigation Pump", Status = "Completed",
+                            DateRange = "01 Aug – 10 Aug 2026", Note = "Boro seedbed irrigation.",
+                            EquipmentCategory = "Irrigation", DailyRate = "৳350 / Day", Location = "Bogra Sadar, Bogra" },
+                    new() { Id = 82, FarmerName = "Rahim Uddin", EquipmentName = "ACI Power Tiller 12HP", Status = "Completed",
+                            DateRange = "15 Jul – 18 Jul 2026",
+                            EquipmentCategory = "Tiller", DailyRate = "৳800 / Day", Location = "Bogra Sadar, Bogra" }
+                }
+            };
+
+            return View(model);
+        }
+
+        /// <summary>
         /// POST: /EquipmentOwner/RespondRequest
         /// Handles inline Accept/Reject from the dashboard pending requests widget.
         /// An optional reject reason is forwarded to the farmer.

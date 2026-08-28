@@ -1,6 +1,214 @@
+@model KrishiLink.Models.ViewModels.RentalRequestsViewModel
 @{
     ViewData["Title"] = "Equipment Rental Requests";
+    ViewData["BodyClass"] = "krishi-body-gradient";
+    var tabs = new[] { "Pending", "Accepted", "Rejected", "Completed" };
+    var badgeClassFor = (string s) => s switch
+    {
+        "Accepted" => "krishi-badge-available",
+        "Rejected" => "krishi-badge-unavailable",
+        "Completed" => "krishi-badge-completed",
+        _ => "krishi-badge-pending"
+    };
 }
-<div class="container py-4">
-    <h2>Equipment Rental Requests Placeholder</h2>
+
+<!-- Page Header -->
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4 pb-3 border-bottom" style="border-color: var(--krishi-border-color) !important;">
+    <div>
+        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">Rental Requests</h2>
+        <p class="mb-0" style="color: var(--krishi-text-muted);">
+            Review incoming rental requests and accept or reject them.
+        </p>
+    </div>
+    <a asp-controller="EquipmentOwner" asp-action="Index" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold flex-shrink-0">
+        <i class="bi bi-speedometer2 me-1"></i> Dashboard
+    </a>
 </div>
+
+<!-- Filter Tabs -->
+<ul class="nav nav-pills krishi-nav-pills gap-2 mb-4 flex-nowrap overflow-x-auto pb-1" id="requestTabs" role="tablist">
+    @foreach (var tab in tabs)
+    {
+        var count = Model.Requests.Count(r => r.Status == tab);
+        <li class="nav-item flex-shrink-0" role="presentation">
+            <button class="nav-link rounded-pill px-3 fw-semibold @(tab == "Pending" ? "active" : "")"
+                    id="tab-@tab" data-bs-toggle="pill" data-bs-target="#pane-@tab" type="button" role="tab">
+                @tab <span class="badge rounded-pill bg-white text-success shadow-sm ms-1 tab-count" id="count-@tab">@count</span>
+            </button>
+        </li>
+    }
+</ul>
+
+<!-- Tab Panes -->
+<div class="tab-content" id="requestTabPanes">
+    @foreach (var tab in tabs)
+    {
+        var items = Model.Requests.Where(r => r.Status == tab).ToList();
+        <div class="tab-pane fade @(tab == "Pending" ? "show active" : "")" id="pane-@tab" role="tabpanel">
+            <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: var(--krishi-radius-lg);">
+                <div class="request-list" id="list-@tab">
+                    @foreach (var req in items)
+                    {
+                        <div class="request-row border-bottom pending-request-row" data-request-id="@req.Id">
+                            <!-- Row header (click to expand detail) -->
+                            <div class="p-3 px-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3"
+                                 role="button" data-bs-toggle="collapse" data-bs-target="#detail-@req.Id" aria-expanded="false" aria-controls="detail-@req.Id">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 42px; height: 42px;">
+                                        @req.FarmerName[0]
+                                    </div>
+                                    <div>
+                                        <span class="fw-semibold d-block" style="color: var(--krishi-text-primary);">@req.FarmerName</span>
+                                        <span class="small d-block" style="color: var(--krishi-text-muted);">
+                                            <i class="bi bi-tools me-1 text-success"></i>@req.EquipmentName
+                                            <span class="mx-1">·</span>
+                                            <i class="bi bi-calendar-range me-1 text-success"></i>@req.DateRange
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-3 flex-shrink-0">
+                                    <span class="krishi-badge request-status-badge @badgeClassFor(req.Status) @(req.Status == "Pending" ? "d-none d-md-inline-flex" : "")">@req.Status</span>
+                                    @if (req.Status == "Pending")
+                                    {
+                                        <!-- stopPropagation keeps button clicks from toggling the row expansion -->
+                                        <div class="request-actions" onclick="event.stopPropagation()">
+                                            <button type="button" class="btn btn-krishi-primary btn-sm rounded-pill px-3 fw-semibold btn-accept"
+                                                    onclick="confirmAccept(@req.Id, '@req.FarmerName', this)">
+                                                <i class="bi bi-check-lg"></i> Accept
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold btn-reject"
+                                                    onclick="confirmReject(@req.Id, '@req.FarmerName', this)">
+                                                <i class="bi bi-x-lg"></i> Reject
+                                            </button>
+                                        </div>
+                                    }
+                                    <i class="bi bi-chevron-down small d-none d-md-block" style="color: var(--krishi-text-muted);"></i>
+                                </div>
+                            </div>
+
+                            <!-- Expanded detail: farmer's note + equipment recap -->
+                            <div class="collapse" id="detail-@req.Id">
+                                <div class="px-4 pb-3 pt-1 ms-md-5">
+                                    <div class="row g-3 p-3 rounded-3 border" style="background-color: var(--krishi-primary-light);">
+                                        <div class="col-12 col-md-6">
+                                            <span class="small fw-semibold text-uppercase d-block mb-1" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">Farmer's Note</span>
+                                            <p class="small mb-0 fst-italic" style="color: var(--krishi-text-primary);">
+                                                @(string.IsNullOrEmpty(req.Note) ? "No note provided." : $"\"{req.Note}\"")
+                                            </p>
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <span class="small fw-semibold text-uppercase d-block mb-1" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">Equipment Recap</span>
+                                            <ul class="list-unstyled small mb-0 d-flex flex-column gap-1" style="color: var(--krishi-text-primary);">
+                                                <li><i class="bi bi-tag text-success me-1"></i> @req.EquipmentCategory</li>
+                                                <li><i class="bi bi-cash-coin text-success me-1"></i> @req.DailyRate</li>
+                                                <li><i class="bi bi-geo-alt text-success me-1"></i> @req.Location</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Per-tab empty state -->
+                <div class="p-5 text-center empty-state @(items.Any() ? "d-none" : "")" id="empty-@tab">
+                    <i class="bi bi-inbox fs-2 text-success d-block mb-1"></i>
+                    <span style="color: var(--krishi-text-muted);">
+                        @(tab == "Pending" ? "No pending requests right now" : $"No {tab.ToLower()} requests yet")
+                    </span>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<form id="antiForgeryForm">@Html.AntiForgeryToken()</form>
+
+@section Scripts {
+    <script>
+        const BADGE_CLASS = { Accepted: 'krishi-badge-available', Rejected: 'krishi-badge-unavailable' };
+
+        function updateTabCount(tab, delta) {
+            const el = document.getElementById('count-' + tab);
+            KrishiCount.animate(el, Number(el.textContent) + delta);
+        }
+
+        function refreshEmptyStates() {
+            ['Pending', 'Accepted', 'Rejected', 'Completed'].forEach(tab => {
+                const hasRows = document.querySelectorAll('#list-' + tab + ' .request-row').length > 0;
+                document.getElementById('empty-' + tab).classList.toggle('d-none', hasRows);
+            });
+        }
+
+        function confirmAccept(id, farmerName, btn) {
+            KrishiModal.confirm({
+                title: 'Accept Rental Request',
+                body: `Accept this rental request from <strong>${farmerName}</strong>? They will be notified immediately.`,
+                confirmText: 'Yes, Accept',
+                onConfirm: () => submitDecision(id, 'accept', btn)
+            });
+        }
+
+        function confirmReject(id, farmerName, btn) {
+            KrishiModal.confirm({
+                title: 'Reject Rental Request',
+                body: `<p class="text-secondary small mb-2">Reject this request from <strong>${farmerName}</strong>? Optionally tell them why — it helps them adjust:</p>
+                       <textarea id="rejectReasonInput" class="form-control form-control-sm" rows="2"
+                                 placeholder="e.g. Equipment is already booked for those dates (optional)"></textarea>`,
+                confirmText: 'Reject Request',
+                confirmClass: 'btn-danger',
+                onConfirm: () => {
+                    const reason = document.getElementById('rejectReasonInput')?.value.trim() || '';
+                    submitDecision(id, 'reject', btn, reason);
+                }
+            });
+        }
+
+        async function submitDecision(id, decision, btn, reason) {
+            const row = btn.closest('.request-row');
+            if (!row) return; // stale reference (row already moved)
+            const accepted = decision === 'accept';
+            const actions = row.querySelector('.request-actions');
+            const originalHtml = btn.innerHTML;
+
+            // Brief loading state on the clicked button
+            actions.querySelectorAll('button').forEach(b => b.disabled = true);
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving…';
+
+            const token = document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]').value;
+            try {
+                const res = await fetch('@Url.Action("RespondRequest", "EquipmentOwner")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `id=${id}&decision=${decision}&reason=${encodeURIComponent(reason || '')}&__RequestVerificationToken=${encodeURIComponent(token)}`
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error();
+
+                // Animate the row out of Pending, then move it to the target tab
+                const targetTab = accepted ? 'Accepted' : 'Rejected';
+                row.classList.add('row-leaving');
+                setTimeout(() => {
+                    row.classList.remove('row-leaving');
+                    actions.remove();
+                    const badge = row.querySelector('.request-status-badge');
+                    badge.textContent = targetTab;
+                    badge.className = 'krishi-badge request-status-badge ' + BADGE_CLASS[targetTab];
+                    document.getElementById('list-' + targetTab).prepend(row);
+                    updateTabCount('Pending', -1);
+                    updateTabCount(targetTab, +1);
+                    refreshEmptyStates();
+                }, 350);
+
+                KrishiToast.show(
+                    accepted ? 'Request accepted — the farmer has been notified ✓' : 'Request rejected — the farmer has been notified',
+                    { iconClass: accepted ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger' });
+            } catch {
+                btn.innerHTML = originalHtml;
+                actions.querySelectorAll('button').forEach(b => b.disabled = false);
+                KrishiToast.show('Could not save the decision. Please try again.', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
+            }
+        }
+    </script>
+}
