@@ -1,0 +1,14 @@
+@* Shared Partial: Status Badge *@
+@model string
+@{
+    var status = Model ?? "Pending";
+    var badgeClass = status.ToLower() switch {
+        "approved" => "bg-success",
+        "confirmed" => "bg-success",
+        "pending" => "bg-warning text-dark",
+        "rejected" => "bg-danger",
+        "cancelled" => "bg-secondary",
+        _ => "bg-info text-dark"
+    };
+}
+<span class="badge @badgeClass fs-6 px-2 py-1">@status</span>

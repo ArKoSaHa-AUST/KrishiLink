@@ -1,0 +1,29 @@
+@using Microsoft.AspNetCore.Identity
+@using KrishiLink.Models.Entities
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+
+<ul class="navbar-nav ms-auto align-items-center">
+@if (SignInManager.IsSignedIn(User))
+{
+    <li class="nav-item">
+        <a class="nav-link text-dark fw-semibold" asp-area="" asp-controller="Account" asp-action="Profile">
+            Hello, @User.Identity?.Name!
+        </a>
+    </li>
+    <li class="nav-item">
+        <form class="form-inline" asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+            <button type="submit" class="nav-link btn btn-link text-dark border-0">Logout</button>
+        </form>
+    </li>
+}
+else
+{
+    <li class="nav-item">
+        <a class="nav-link text-dark" asp-controller="Account" asp-action="Register">Register</a>
+    </li>
+    <li class="nav-item">
+        <a class="btn btn-outline-success ms-2 px-3 rounded-pill" asp-controller="Account" asp-action="Login">Login</a>
+    </li>
+}
+</ul>
