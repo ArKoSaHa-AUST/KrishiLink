@@ -1,0 +1,32 @@
+@*
+    Shared Partial: Reusable Bootstrap Confirmation Modal Shell
+    Can be used statically via ViewData or dynamically via JavaScript (site.js KrishiModal helper)
+*@
+@{
+    var modalId = ViewData["ModalId"]?.ToString() ?? "krishiConfirmModal";
+    var title = ViewData["ModalTitle"]?.ToString() ?? "Confirm Action";
+    var body = ViewData["ModalBody"]?.ToString() ?? "Are you sure you want to proceed with this action?";
+    var confirmText = ViewData["ConfirmButtonText"]?.ToString() ?? "Confirm";
+    var cancelText = ViewData["CancelButtonText"]?.ToString() ?? "Cancel";
+    var confirmBtnClass = ViewData["ConfirmButtonClass"]?.ToString() ?? "btn-krishi-primary";
+}
+
+<div class="modal fade" id="@modalId" tabindex="-1" aria-labelledby="@(modalId)Label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-3">
+            <div class="modal-header border-bottom-0 pb-2">
+                <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="@(modalId)Label">
+                    <span id="@(modalId)Title">@title</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3" id="@(modalId)Body">
+                <p class="text-secondary mb-0">@body</p>
+            </div>
+            <div class="modal-footer border-top-0 pt-2 pb-3 px-3">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal" id="@(modalId)CancelBtn">@cancelText</button>
+                <button type="button" class="btn @confirmBtnClass rounded-pill px-4 fw-semibold" id="@(modalId)ConfirmBtn">@confirmText</button>
+            </div>
+        </div>
+    </div>
+</div>

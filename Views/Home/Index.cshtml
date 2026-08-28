@@ -1,7 +1,160 @@
+@using KrishiLink.Models.ViewModels
 @{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Home";
+    
+    var sampleEquipment = new CardViewModel
+    {
+        Name = "Mahindra 575 DI Tractor",
+        Category = "Heavy Machinery",
+        Location = "Bogra Sadar, Bogra",
+        Price = "Tk 1,500 / Day",
+        Status = "Available",
+        DetailUrl = Url.Action("Index", "Equipment")
+    };
+
+    var sampleGodown = new CardViewModel
+    {
+        Name = "Green Grain Cold Storage",
+        Category = "Cold Storage Facility",
+        Location = "Dinajpur Sadar",
+        Price = "Tk 500 / Ton / Month",
+        Status = "Pending",
+        DetailUrl = Url.Action("Index", "Godown")
+    };
+
+    var sampleHarvester = new CardViewModel
+    {
+        Name = "Combine Harvester Model X",
+        Category = "Harvesting",
+        Location = "Rangpur Sadar",
+        Price = "Tk 3,000 / Day",
+        Status = "Available",
+        DetailUrl = Url.Action("Index", "Equipment")
+    };
 }
-<div class="container py-4">
-    <h1>KrishiLink - Agriculture Platform</h1>
-    <p class="lead">Connecting farmers, equipment owners, and godown facilities seamlessly.</p>
+
+<!-- Hero Section -->
+<div class="py-5 px-4 mb-5 text-white rounded-3 shadow-sm" style="background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);">
+    <div class="row align-items-center py-3 py-md-4">
+        <div class="col-lg-8 col-md-10">
+            <span class="badge bg-light text-success fw-bold px-3 py-2 rounded-pill mb-3">Agricultural Hub Bangladesh</span>
+            <h1 class="display-5 fw-bold mb-3">Rent Equipment, Book Storage & Get Crop Advice</h1>
+            <p class="lead mb-4 opacity-90">
+                Empowering farmers across Bangladesh with direct access to modern farming machinery, secure godown cold storage, and expert agricultural advice — all in one unified platform.
+            </p>
+            <div class="d-flex flex-wrap gap-3">
+                <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success btn-lg px-4 py-2.5 fw-bold rounded-pill shadow-sm">
+                    Get Started
+                </a>
+                <a asp-controller="Equipment" asp-action="Index" class="btn btn-outline-light btn-lg px-4 py-2.5 fw-semibold rounded-pill">
+                    Browse Listings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How It Works Section -->
+<div class="mb-5">
+    <div class="text-center mx-auto mb-4" style="max-width: 650px;">
+        <h3 class="fw-bold" style="color: var(--krishi-primary);">How KrishiLink Works</h3>
+        <p class="text-muted">Simple, direct, and accessible for farmers, equipment providers, and warehouse owners.</p>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-12 col-md-4">
+            <div class="card h-100 border-0 shadow-sm p-4 text-center krishi-card">
+                <div class="mb-3">
+                    <span class="badge rounded-circle p-3 fs-5 text-white" style="background-color: var(--krishi-primary); width: 48px; height: 48px; display: inline-flex; align-items: center; justify-content: center;">1</span>
+                </div>
+                <h5 class="fw-bold mb-2" style="color: var(--krishi-primary);">Rent Equipment</h5>
+                <p class="text-muted small mb-0">Browse nearby tractors, tillers, and harvesters. Book by day or season at affordable rates.</p>
+            </div>
+        </div>
+        
+        <div class="col-12 col-md-4">
+            <div class="card h-100 border-0 shadow-sm p-4 text-center krishi-card">
+                <div class="mb-3">
+                    <span class="badge rounded-circle p-3 fs-5 text-white" style="background-color: var(--krishi-primary); width: 48px; height: 48px; display: inline-flex; align-items: center; justify-content: center;">2</span>
+                </div>
+                <h5 class="fw-bold mb-2" style="color: var(--krishi-primary);">Book Storage</h5>
+                <p class="text-muted small mb-0">Find verified cold storages and warehouses to preserve your harvest and prevent post-harvest loss.</p>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card h-100 border-0 shadow-sm p-4 text-center krishi-card">
+                <div class="mb-3">
+                    <span class="badge rounded-circle p-3 fs-5 text-white" style="background-color: var(--krishi-primary); width: 48px; height: 48px; display: inline-flex; align-items: center; justify-content: center;">3</span>
+                </div>
+                <h5 class="fw-bold mb-2" style="color: var(--krishi-primary);">Crop Advisory</h5>
+                <p class="text-muted small mb-0">Get localized soil, crop, and disease advisory from agricultural experts to maximize yield.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Featured Listings Section -->
+<div class="mb-5">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-end gap-2 mb-4">
+        <div>
+            <h3 class="fw-bold mb-1" style="color: var(--krishi-primary);">Featured Listings</h3>
+            <p class="text-muted mb-0">Explore recently listed machinery and storage facilities near your region.</p>
+        </div>
+        <a asp-controller="Equipment" asp-action="Index" class="btn btn-krishi-outline btn-sm rounded-pill px-3 py-1.5 fw-semibold flex-shrink-0">
+            View All Equipment
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12 col-md-6 col-lg-4">
+            <partial name="_EquipmentCard" model="sampleEquipment" />
+        </div>
+        <div class="col-12 col-md-6 col-lg-4">
+            <partial name="_EquipmentCard" model="sampleGodown" />
+        </div>
+        <div class="col-12 col-md-6 col-lg-4">
+            <partial name="_EquipmentCard" model="sampleHarvester" />
+        </div>
+    </div>
+</div>
+
+<!-- Role Selection / Registration Section -->
+<div class="mb-5 py-4 px-4 rounded-3 border bg-white shadow-sm" style="border-color: var(--krishi-border-color) !important;">
+    <div class="text-center mb-4">
+        <h3 class="fw-bold" style="color: var(--krishi-primary);">Join KrishiLink Today</h3>
+        <p class="text-muted">Choose your role to get started with tailored tools and services.</p>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-12 col-md-4">
+            <a asp-controller="Account" asp-action="Register" asp-route-role="Farmer" class="text-decoration-none h-100 d-block">
+                <div class="card h-100 p-4 border text-center krishi-card">
+                    <h5 class="fw-bold text-success mb-2">Farmer</h5>
+                    <p class="small text-muted mb-3">Rent machinery, store crops, and access advisory services.</p>
+                    <span class="btn btn-outline-success btn-sm rounded-pill px-3 mt-auto align-self-center">Register as Farmer</span>
+                </div>
+            </a>
+        </div>
+        
+        <div class="col-12 col-md-4">
+            <a asp-controller="Account" asp-action="Register" asp-route-role="EquipmentOwner" class="text-decoration-none h-100 d-block">
+                <div class="card h-100 p-4 border text-center krishi-card">
+                    <h5 class="fw-bold text-success mb-2">Equipment Owner</h5>
+                    <p class="small text-muted mb-3">List your tractors and farming machinery to earn rental income.</p>
+                    <span class="btn btn-outline-success btn-sm rounded-pill px-3 mt-auto align-self-center">Register as Owner</span>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <a asp-controller="Account" asp-action="Register" asp-route-role="GodownOwner" class="text-decoration-none h-100 d-block">
+                <div class="card h-100 p-4 border text-center krishi-card">
+                    <h5 class="fw-bold text-success mb-2">Godown Owner</h5>
+                    <p class="small text-muted mb-3">Monetize warehouse and cold storage space by listing godowns.</p>
+                    <span class="btn btn-outline-success btn-sm rounded-pill px-3 mt-auto align-self-center">Register Godown</span>
+                </div>
+            </a>
+        </div>
+    </div>
 </div>

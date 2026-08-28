@@ -4,78 +4,208 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - KrishiLink</title>
+    <meta name="description" content="KrishiLink - Empowering Farmers with Equipment Rental, Godown Storage, and Agricultural Advisory Services." />
+    
+    <!-- Bootstrap 5 CSS (via wwwroot/lib) -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- Bootstrap Icons & Google Fonts -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom site styling -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-<body class="bg-light d-flex flex-column min-vh-100" style="font-family: 'Inter', sans-serif;">
-    <header>
-        <nav class="navbar navbar-expand-lg navbar-dark bg-success shadow-sm py-2">
+<body class="d-flex flex-column min-vh-100">
+    <!-- Header & Sticky Top Navbar -->
+    <header class="sticky-top">
+        <nav class="navbar navbar-expand-lg navbar-dark navbar-krishi shadow-sm py-2.5">
             <div class="container">
-                <a class="navbar-brand fw-bold fs-4 d-flex align-items-center gap-2" asp-controller="Home" asp-action="Index">
-                    <i class="bi bi-tree-fill text-warning"></i>
+                <!-- Brand / Logo -->
+                <a class="navbar-brand fw-bold text-white d-flex align-items-center gap-2" asp-controller="Home" asp-action="Index">
+                    <img src="~/images/dp.png" alt="KrishiLink Logo" class="rounded-circle object-fit-cover bg-white p-0.5" style="width: 32px; height: 32px;" />
                     <span>KrishiLink</span>
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain"
-                        aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+
+                <!-- Mobile Hamburger Toggler (Offcanvas/Collapse trigger) -->
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#krishiMobileNav"
+                        aria-controls="krishiMobileNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="collapse navbar-collapse" id="navbarMain">
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 fw-medium">
+
+                <!-- Desktop Navigation Items -->
+                <div class="collapse navbar-collapse d-none d-lg-flex" id="navbarMain">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1 ms-3">
+                        @* Navigation links - placeholder for future @if (User.Identity.IsAuthenticated) check *@
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="Index"><i class="bi bi-house me-1"></i> Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Equipment" asp-action="Index"><i class="bi bi-tools me-1"></i> Equipment</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Godown" asp-action="Index"><i class="bi bi-building me-1"></i> Godowns</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Advisory" asp-action="Index"><i class="bi bi-sun me-1"></i> Advisory</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Bookings" asp-action="Index"><i class="bi bi-journal-check me-1"></i> Bookings</a>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="roleMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Role Views
+                            <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "") d-flex align-items-center gap-1.5" asp-controller="Home" asp-action="Index">
+                                <span>Home</span>
                             </a>
-                            <ul class="dropdown-menu shadow border-0" aria-labelledby="roleMenu">
-                                <li><a class="dropdown-item" asp-controller="Farmer" asp-action="Index"><i class="bi bi-person-fill me-2 text-success"></i>Farmer Hub</a></li>
-                                <li><a class="dropdown-item" asp-controller="EquipmentOwner" asp-action="Index"><i class="bi bi-gear-fill me-2 text-primary"></i>Equipment Owner</a></li>
-                                <li><a class="dropdown-item" asp-controller="GodownOwner" asp-action="Index"><i class="bi bi-house-door-fill me-2 text-warning"></i>Godown Owner</a></li>
-                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Equipment" ? "active" : "") d-flex align-items-center gap-1.5" asp-controller="Equipment" asp-action="Index">
+                                <span>Equipment</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Godown" ? "active" : "") d-flex align-items-center gap-1.5" asp-controller="Godown" asp-action="Index">
+                                <span>Godowns</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Advisory" ? "active" : "") d-flex align-items-center gap-1.5" asp-controller="Advisory" asp-action="Index">
+                                <span>Crop Advisory</span>
+                            </a>
                         </li>
                     </ul>
-                    <partial name="_LoginPartial" />
+
+                    <!-- Desktop Right Side Auth Navigation -->
+                    <div class="d-flex align-items-center gap-2">
+                        @*
+                            AUTH STATE PLACEHOLDER COMMENT FOR IDENTITY INTEGRATION:
+                            
+                            @if (User.Identity != null && User.Identity.IsAuthenticated)
+                            {
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-light rounded-pill px-3 py-1.5 d-flex align-items-center gap-2 dropdown-toggle" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span class="fw-medium">@User.Identity.Name</span>
+                                        <span class="badge bg-warning text-dark rounded-pill">Farmer</span>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="userMenuDropdown">
+                                        <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile">My Profile</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Bookings" asp-action="Index">My Bookings</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form asp-controller="Account" asp-action="Logout" method="post">
+                                                <button type="submit" class="dropdown-item text-danger">Logout</button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
+                            }
+                            else
+                            {
+                        *@
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light btn-sm rounded-pill px-3 py-1.5 fw-medium">Login</a>
+                        <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm">Register</a>
+                        <a asp-controller="Farmer" asp-action="Dashboard" class="btn btn-outline-light btn-sm rounded-circle d-inline-flex align-items-center justify-content-center p-0 text-white ms-1" style="width: 34px; height: 34px;" title="Farmer Dashboard" aria-label="Farmer Dashboard">
+                            <span class="fw-bold small">D</span>
+                        </a>
+                        @* } *@
+                    </div>
+                </div>
+
+                <!-- Mobile Offcanvas Menu -->
+                <div class="offcanvas offcanvas-end offcanvas-krishi d-lg-none" tabindex="-1" id="krishiMobileNav" aria-labelledby="krishiMobileNavLabel">
+                    <div class="offcanvas-header text-white">
+                        <h5 class="offcanvas-title d-flex align-items-center gap-2 fw-bold" id="krishiMobileNavLabel">
+                            <img src="~/images/dp.png" alt="KrishiLink Logo" class="rounded-circle object-fit-cover bg-white p-0.5" style="width: 28px; height: 28px;" />
+                            KrishiLink
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                    </div>
+                    <div class="offcanvas-body d-flex flex-column justify-content-between p-4">
+                        <ul class="navbar-nav me-auto mb-3 gap-2">
+                            @* Navigation links placeholder for mobile *@
+                            <li class="nav-item">
+                                <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Home" asp-action="Index">
+                                    Home
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Equipment" asp-action="Index">
+                                    Equipment
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Godown" asp-action="Index">
+                                    Godowns
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Advisory" asp-action="Index">
+                                    Crop Advisory
+                                </a>
+                            </li>
+                        </ul>
+
+                        <div class="border-top border-secondary pt-3 mt-auto">
+                            @* Auth placeholder for mobile *@
+                            <div class="d-grid gap-2">
+                                <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light rounded-pill py-2 fw-medium">Login</a>
+                                <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success rounded-pill py-2 fw-bold">Register</a>
+                                <a asp-controller="Farmer" asp-action="Dashboard" class="btn btn-outline-light rounded-pill py-2 fw-medium d-flex align-items-center justify-content-center gap-2">
+                                    <i class="bi bi-person-circle me-1"></i> Farmer Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </nav>
     </header>
 
+    <!-- Main Content Body -->
     <div class="container flex-grow-1 py-4">
         <main role="main">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="bg-dark text-white-50 py-3 mt-auto border-top">
-        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
-            <span class="small">&copy; 2026 KrishiLink Platform. All rights reserved.</span>
-            <div class="small">
-                <a asp-controller="Home" asp-action="Privacy" class="text-white-50 text-decoration-none me-3">Privacy Policy</a>
-                <span class="text-white-50">Role-Based Agriculture Platform</span>
+    <!-- Reusable Confirmation Modal Partial Shell -->
+    <partial name="_Modal" />
+
+    <!-- Footer -->
+    <footer class="footer-krishi py-4 mt-auto">
+        <div class="container">
+            <div class="row gy-4">
+                <div class="col-12 col-md-5">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="fw-bold fs-5 text-white">KrishiLink</span>
+                    </div>
+                    <p class="small text-white-50 mb-3" style="max-width: 360px;">
+                        A trustworthy digital agricultural ecosystem connecting farmers with equipment owners, godown facilities, and expert crop advisory.
+                    </p>
+                </div>
+                <div class="col-6 col-md-3">
+                    <h6 class="fw-bold text-white mb-3">Quick Links</h6>
+                    <ul class="list-unstyled small d-flex flex-column gap-2 mb-0">
+                        <li><a asp-controller="Home" asp-action="Index">Home Page</a></li>
+                        <li><a asp-controller="Equipment" asp-action="Index">Browse Equipment</a></li>
+                        <li><a asp-controller="Godown" asp-action="Index">Book Godowns</a></li>
+                        <li><a asp-controller="Advisory" asp-action="Index">Crop Advisory Services</a></li>
+                    </ul>
+                </div>
+                <div class="col-6 col-md-4">
+                    <h6 class="fw-bold text-white mb-3">Contact & Support</h6>
+                    <ul class="list-unstyled small d-flex flex-column gap-2 mb-0 text-white-50">
+                        <li>support@krishilink.gov.bd</li>
+                        <li>Agri-Helpline: 16123</li>
+                        <li>Dhaka, Bangladesh</li>
+                    </ul>
+                </div>
+            </div>
+            </div>
+            <div class="border-top border-secondary mt-4 pt-3 d-flex flex-column flex-sm-row justify-content-between align-items-center small text-white-50">
+                <span>&copy; @DateTime.Now.Year KrishiLink Platform. All rights reserved.</span>
+                <div class="mt-2 mt-sm-0">
+                    <a asp-controller="Home" asp-action="Privacy" class="me-3">Privacy Policy</a>
+                    <span>Empowering Bangladesh Farmers</span>
+                </div>
             </div>
         </div>
     </footer>
 
+    <!-- Bootstrap 5 & jQuery JS (via wwwroot/lib) -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom site JS -->
     <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <!-- Page Specific Scripts -->
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

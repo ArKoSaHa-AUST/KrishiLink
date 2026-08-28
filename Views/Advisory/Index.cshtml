@@ -1,6 +1,341 @@
+@model KrishiLink.Models.ViewModels.CropAdvisoryViewModel
 @{
-    ViewData["Title"] = "Crop & Weather Advisory";
+    ViewData["Title"] = "Crop Advisory & Recommendations";
 }
-<div class="container py-4">
-    <h2>Advisory Services Placeholder</h2>
+
+<!-- Page Header -->
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4 pb-3 border-bottom" style="border-color: var(--krishi-border-color) !important;">
+    <div>
+        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">
+            Smart Crop Advisory
+        </h2>
+        <p class="mb-0 text-muted">
+            Get personalized, rule-based crop recommendations and cultivation guides customized for your soil, region, and season.
+        </p>
+    </div>
+    @if (Model.HasSubmitted)
+    {
+        <button type="button" class="btn btn-krishi-outline rounded-pill px-3 py-2 btn-sm fw-semibold flex-shrink-0" onclick="scrollToForm()">
+            Edit Farm Details
+        </button>
+    }
 </div>
+
+<!-- STEP 1: FARM DETAILS FORM -->
+<div class="card krishi-card border-0 shadow-sm p-4 mb-5" id="advisoryFormCard" style="border-radius: var(--krishi-radius-lg);">
+    <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+        <div class="d-flex align-items-center justify-content-center rounded-circle text-white fw-bold"
+             style="width: 32px; height: 32px; background-color: var(--krishi-primary); font-size: 0.9rem;">1</div>
+        <h5 class="fw-bold mb-0 text-dark">Enter Your Farm Details</h5>
+    </div>
+
+    <form asp-controller="Advisory" asp-action="Index" method="post" id="cropForm" onsubmit="showAnalyzingState(event)">
+        <div class="row g-3 g-md-4">
+            
+            <!-- Location -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <label asp-for="Location" class="form-label small fw-bold text-dark">
+                    Region / Location <span class="text-danger">*</span>
+                </label>
+                <select asp-for="Location" class="form-select form-select-lg rounded-3 fs-6">
+                    <option value="Bogra, Rajshahi Division">Bogra, Rajshahi Division</option>
+                    <option value="Dinajpur, Rangpur Division">Dinajpur, Rangpur Division</option>
+                    <option value="Mymensingh, Mymensingh Division">Mymensingh, Mymensingh Division</option>
+                    <option value="Jessore, Khulna Division">Jessore, Khulna Division</option>
+                    <option value="Comilla, Chittagong Division">Comilla, Chittagong Division</option>
+                    <option value="Sylhet Sadar, Sylhet Division">Sylhet Sadar, Sylhet Division</option>
+                </select>
+            </div>
+
+            <!-- Season -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <label asp-for="Season" class="form-label small fw-bold text-dark">
+                    Cropping Season <span class="text-danger">*</span>
+                </label>
+                <select asp-for="Season" class="form-select form-select-lg rounded-3 fs-6">
+                    <option value="Rabi (Winter)">Rabi (Winter - Nov to Mar)</option>
+                    <option value="Kharif-1 (Early Summer)">Kharif-1 (Early Summer - Apr to Jun)</option>
+                    <option value="Kharif-2 (Monsoon)">Kharif-2 (Monsoon - Jul to Oct)</option>
+                </select>
+            </div>
+
+            <!-- Soil Type -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <label asp-for="SoilType" class="form-label small fw-bold text-dark">
+                    Soil Type <span class="text-danger">*</span>
+                </label>
+                <select asp-for="SoilType" class="form-select form-select-lg rounded-3 fs-6">
+                    <option value="Clay Loam">Clay Loam (Atel-Doash)</option>
+                    <option value="Alluvial / Silt">Alluvial / Silt (Poli)</option>
+                    <option value="Sandy Loam">Sandy Loam (Bele-Doash)</option>
+                    <option value="Clay">Heavy Clay (Atel)</option>
+                    <option value="Don't know / Not sure">Don't know / Not sure</option>
+                </select>
+            </div>
+
+            <!-- Soil pH (Optional Slider) -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label asp-for="SoilPh" class="form-label small fw-bold text-dark mb-0">
+                        Soil pH Level <span class="text-muted">(Optional)</span>
+                    </label>
+                    <span id="phValueBadge" class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">pH 6.5</span>
+                </div>
+                <input type="range" class="form-range py-2" id="soilPhSlider" asp-for="SoilPh" min="4.5" max="8.5" step="0.1" oninput="updatePhDisplay(this.value)" />
+                <div class="d-flex justify-content-between small text-muted">
+                    <span>4.5 (Acidic)</span>
+                    <span>6.5 (Neutral)</span>
+                    <span>8.5 (Alkaline)</span>
+                </div>
+            </div>
+
+            <!-- Land Size -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <label asp-for="LandSizeDecimal" class="form-label small fw-bold text-dark">
+                    Land Size <span class="text-muted">(Decimal / Shatangsho)</span>
+                </label>
+                <div class="input-group input-group-lg rounded-3 overflow-hidden">
+                    <input asp-for="LandSizeDecimal" type="number" class="form-control fs-6" placeholder="e.g. 50" min="1" step="1" />
+                    <span class="input-group-text bg-light text-muted small">Decimals</span>
+                </div>
+            </div>
+
+            <!-- Irrigation Availability (Toggle) -->
+            <div class="col-12 col-md-6 col-lg-4">
+                <label class="form-label small fw-bold text-dark mb-2">
+                    Assured Irrigation Available?
+                </label>
+                <div class="btn-group w-100" role="group" aria-label="Irrigation toggle">
+                    <input type="radio" class="btn-check" name="HasIrrigation" id="irrigationYes" value="true" @(Model.HasIrrigation ? "checked" : "") />
+                    <label class="btn btn-outline-success py-2.5 fw-semibold" for="irrigationYes">
+                        Yes (Pump / Canal)
+                    </label>
+
+                    <input type="radio" class="btn-check" name="HasIrrigation" id="irrigationNo" value="false" @(!Model.HasIrrigation ? "checked" : "") />
+                    <label class="btn btn-outline-secondary py-2.5 fw-semibold" for="irrigationNo">
+                        No (Rainfed)
+                    </label>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Submit Button & Loading State -->
+        <div class="mt-4 pt-3 border-top text-end">
+            <button type="submit" id="getRecommendationBtn" class="btn btn-krishi-primary px-5 py-3 rounded-pill fw-bold fs-6 d-inline-flex align-items-center gap-2 shadow-sm">
+                Get Recommendation
+            </button>
+        </div>
+    </form>
+
+    <!-- Simulating Loading Overlay -->
+    <div id="analyzingOverlay" class="d-none position-relative text-center py-5">
+        <div class="spinner-border text-success mb-3" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h5 class="fw-bold text-dark mb-1">Analyzing your farm details...</h5>
+        <p class="text-muted small">Matching soil pH, season, and regional climate data for maximum yield...</p>
+    </div>
+</div>
+
+<!-- STEP 2: RESULTS & RECOMMENDED CROPS -->
+@if (Model.HasSubmitted)
+{
+    <div id="resultsSection" class="mb-5">
+        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+            <div class="d-flex align-items-center justify-content-center rounded-circle text-white fw-bold"
+                 style="width: 32px; height: 32px; background-color: var(--krishi-accent); font-size: 0.9rem;">2</div>
+            <h5 class="fw-bold mb-0 text-dark">Top Recommended Crops for Your Farm</h5>
+            <span class="badge rounded-pill bg-success-subtle text-success ms-auto px-3 py-1.5 fw-semibold">
+                Rule-Based Advisory Active
+            </span>
+        </div>
+
+        <!-- Weather-based Warning Strip -->
+        @if (Model.WeatherAlert != null)
+        {
+            <div class="card border-0 shadow-sm mb-4 rounded-3 overflow-hidden" style="background-color: #fffbeb; border-left: 5px solid #f59e0b !important;">
+                <div class="card-body p-3 p-md-4 d-flex align-items-start gap-3">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-warning text-dark font-monospace small px-2 py-0.5">@Model.WeatherAlert.BadgeText</span>
+                            <h6 class="fw-bold mb-0 text-dark">@Model.WeatherAlert.Title</h6>
+                        </div>
+                        <p class="mb-0 small text-secondary leading-relaxed">@Model.WeatherAlert.Message</p>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Save Recommendation Action Bar -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <p class="text-muted small mb-0">Found <strong>@Model.RecommendedCrops.Count</strong> top matching crops suitable for @Model.Season in @Model.Location.</p>
+            <button type="button" id="saveRecommendationBtn" class="btn btn-krishi-outline rounded-pill px-4 py-2 fw-semibold d-inline-flex align-items-center gap-2" onclick="saveRecommendation(this)">
+                <span id="saveBtnText">Save this Recommendation</span>
+            </button>
+        </div>
+
+        <!-- Recommended Crop Cards Grid -->
+        <div class="row g-4">
+            @foreach (var crop in Model.RecommendedCrops)
+            {
+                <div class="col-12">
+                    <div class="card krishi-card border-0 shadow-sm overflow-hidden" style="border-radius: var(--krishi-radius-lg);">
+                        <!-- Card Header Summary -->
+                        <div class="card-body p-4 bg-white border-bottom">
+                            <div class="row align-items-center g-3">
+                                <div class="col">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                        <h4 class="fw-bold text-dark mb-0">@crop.CropName</h4>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                                            @crop.MatchPercentage% Match
+                                        </span>
+                                        <span class="text-muted small fst-italic">(@crop.ScientificName)</span>
+                                    </div>
+                                    <p class="text-secondary small mb-1">
+                                        @crop.MatchReason
+                                    </p>
+                                    <span class="badge bg-light text-dark border px-2.5 py-1 small">
+                                        Expected Yield: <strong>@crop.YieldEstimate</strong>
+                                    </span>
+                                </div>
+                                <div class="col-12 col-md-auto text-md-end">
+                                    <button class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-semibold text-nowrap d-flex align-items-center gap-2"
+                                            type="button" data-bs-toggle="collapse" data-bs-target="#guideCollapse-@crop.Id" aria-expanded="false" aria-controls="guideCollapse-@crop.Id">
+                                        <span>View Cultivation Guide</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cultivation Guide Accordion Panel -->
+                        <div class="collapse" id="guideCollapse-@crop.Id">
+                            <div class="card-body p-4 bg-light">
+                                <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                    Complete Cultivation Guide & Advisory
+                                </h6>
+
+                                <div class="row g-3">
+                                    <!-- Growing Season -->
+                                    <div class="col-12 col-md-6">
+                                        <div class="p-3 bg-white rounded-3 border h-100">
+                                            <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
+                                                Growing Season & Window
+                                            </span>
+                                            <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.GrowingSeason</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Water & Soil Requirements -->
+                                    <div class="col-12 col-md-6">
+                                        <div class="p-3 bg-white rounded-3 border h-100">
+                                            <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
+                                                Water & Soil Requirements
+                                            </span>
+                                            <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.WaterAndSoilRequirements</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Duration -->
+                                    <div class="col-12 col-md-6">
+                                        <div class="p-3 bg-white rounded-3 border h-100">
+                                            <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
+                                                Harvest Duration
+                                            </span>
+                                            <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.GrowingDuration</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Fertilizer Needs -->
+                                    <div class="col-12 col-md-6">
+                                        <div class="p-3 bg-white rounded-3 border h-100">
+                                            <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
+                                                Recommended Fertilizer Application
+                                            </span>
+                                            <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.FertilizerNeeds</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pest & Disease Management -->
+                                    <div class="col-12 col-md-6">
+                                        <div class="p-3 bg-white rounded-3 border h-100">
+                                            <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
+                                                Common Pests & Disease Care
+                                            </span>
+                                            <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.CommonPestsAndDiseases</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Key Precautions -->
+                                    <div class="col-12 col-md-6">
+                                        <div class="p-3 bg-white rounded-3 border h-100">
+                                            <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
+                                                Key Precautions
+                                            </span>
+                                            <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.Precautions</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function updatePhDisplay(val) {
+            const badge = document.getElementById('phValueBadge');
+            if (!badge) return;
+            let label = 'Neutral';
+            if (val < 6.0) label = 'Acidic';
+            else if (val > 7.5) label = 'Alkaline';
+            badge.textContent = `pH ${val} (${label})`;
+        }
+
+        function showAnalyzingState(e) {
+            const form = document.getElementById('cropForm');
+            const overlay = document.getElementById('analyzingOverlay');
+            if (overlay && form) {
+                form.classList.add('d-none');
+                overlay.classList.remove('d-none');
+            }
+        }
+
+        function saveRecommendation(btn) {
+            const text = document.getElementById('saveBtnText');
+            if (btn) {
+                btn.disabled = true;
+                btn.classList.remove('btn-krishi-outline');
+                btn.classList.add('btn-success');
+            }
+            if (text) text.textContent = 'Recommendation Saved to Dashboard';
+
+            window.KrishiModal.confirm({
+                title: 'Recommendation Saved!',
+                body: 'This crop recommendation has been saved to your <strong>Farmer Dashboard</strong> for quick access during planting season.',
+                confirmText: 'Go to Dashboard',
+                cancelText: 'Stay on Page',
+                confirmClass: 'btn-krishi-primary',
+                onConfirm: function () {
+                    window.location.href = '@Url.Action("Dashboard", "Farmer")';
+                }
+            });
+        }
+
+        function scrollToForm() {
+            const card = document.getElementById('advisoryFormCard');
+            if (card) card.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const resultsSection = document.getElementById('resultsSection');
+            if (resultsSection && @Model.HasSubmitted.ToString().ToLower()) {
+                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    </script>
+}

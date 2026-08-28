@@ -1,14 +1,23 @@
-@* Shared Partial: Status Badge *@
+@* 
+    Shared Partial: Reusable Status Badge Component
+    Model: string (Status text e.g., Pending, Accepted, Available, Completed, Rejected, Unavailable)
+*@
 @model string
+
 @{
-    var status = Model ?? "Pending";
-    var badgeClass = status.ToLower() switch {
-        "approved" => "bg-success",
-        "confirmed" => "bg-success",
-        "pending" => "bg-warning text-dark",
-        "rejected" => "bg-danger",
-        "cancelled" => "bg-secondary",
-        _ => "bg-info text-dark"
+    var status = string.IsNullOrWhiteSpace(Model) ? "Available" : Model.Trim();
+    var normalizedStatus = status.ToLowerInvariant();
+
+    var badgeClass = normalizedStatus switch
+    {
+        "pending" => "krishi-badge-pending",
+        "accepted" or "available" or "approved" => "krishi-badge-available",
+        "completed" or "done" => "krishi-badge-completed",
+        "rejected" or "unavailable" or "cancelled" or "canceled" => "krishi-badge-unavailable",
+        _ => "krishi-badge-completed"
     };
 }
-<span class="badge @badgeClass fs-6 px-2 py-1">@status</span>
+
+<span class="krishi-badge @badgeClass d-inline-flex align-items-center rounded-pill px-3 py-1 text-nowrap">
+    @status
+</span>

@@ -1,31 +1,301 @@
+/* ==========================================================================
+   KrishiLink Core Stylesheet
+   Agricultural Theme: Forest & Leaf Greens + Warm Cream/White Base
+   ========================================================================== */
+
+:root {
+    /* Color Palette - Warm Natural Greens & Cream/White */
+    --krishi-primary: #2d6a4f;           /* Forest / Leaf Green */
+    --krishi-primary-hover: #1b4332;     /* Dark Leaf Green */
+    --krishi-primary-active: #0d2818;    /* Deepest Green */
+    --krishi-primary-light: #eef7f2;     /* Soft Light Green Tint */
+    --krishi-primary-subtle: #d8f3dc;    /* Highlight Tint */
+    
+    --krishi-accent: #52b788;            /* Fresh Green Accent */
+    --krishi-accent-light: #b7e4c7;      /* Muted Accent */
+    
+    --krishi-bg: #f8faf7;                /* Base background: Warm Off-White */
+    --krishi-surface: #ffffff;           /* Card & Component Background */
+    --krishi-footer-bg: #193826;        /* Deep Forest Green Footer */
+    --krishi-footer-text: #e2ebd3;       /* Off-white Footer Text */
+
+    /* Typography & Neutral Text */
+    --krishi-text-primary: #1b2e21;      /* Deep Charcoal with subtle green hue */
+    --krishi-text-muted: #5e6e61;        /* Muted Gray-Green */
+    --krishi-border-color: #e2e8df;      /* Soft Warm Border */
+
+    /* Status Indicator Colors */
+    --krishi-status-pending-bg: #fff8e6;
+    --krishi-status-pending-text: #8a5300;
+    --krishi-status-pending-border: #ffe0b2;
+
+    --krishi-status-accepted-bg: #eef7f2;
+    --krishi-status-accepted-text: #1b4332;
+    --krishi-status-accepted-border: #b7e4c7;
+
+    --krishi-status-completed-bg: #f0f2f1;
+    --krishi-status-completed-text: #495057;
+    --krishi-status-completed-border: #ced4da;
+
+    --krishi-status-rejected-bg: #fdf2f2;
+    --krishi-status-rejected-text: #9b1c1c;
+    --krishi-status-rejected-border: #f8b4b4;
+
+    /* Spacing & Elevation */
+    --krishi-radius-sm: 0.375rem;
+    --krishi-radius-md: 0.6rem;
+    --krishi-radius-lg: 0.85rem;
+    --krishi-shadow-sm: 0 2px 6px rgba(45, 106, 79, 0.05);
+    --krishi-shadow-md: 0 4px 14px rgba(45, 106, 79, 0.08);
+    --krishi-shadow-lg: 0 8px 24px rgba(45, 106, 79, 0.12);
+}
+
+/* Base resets & typography */
 html {
-  font-size: 14px;
+    font-size: 14px;
+    position: relative;
+    min-height: 100%;
+    scroll-behavior: smooth;
 }
 
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
-html {
-  position: relative;
-  min-height: 100%;
+    html {
+        font-size: 16px;
+    }
 }
 
 body {
-  margin-bottom: 60px;
+    background-color: var(--krishi-bg);
+    color: var(--krishi-text-primary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+a {
+    color: var(--krishi-primary);
+    text-decoration: none;
+    transition: color 0.2s ease, text-decoration 0.2s ease;
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+a:hover {
+    color: var(--krishi-primary-hover);
+}
+
+/* Eliminate corporate blue focus rings across inputs & buttons */
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(45, 106, 79, 0.25) !important;
+    border-color: var(--krishi-accent) !important;
+}
+
+/* ==========================================================================
+   Navigation Bar
+   ========================================================================== */
+.navbar-krishi {
+    background-color: var(--krishi-primary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    box-shadow: var(--krishi-shadow-sm);
+}
+
+.navbar-krishi .navbar-brand {
+    color: #ffffff;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.35rem;
+}
+
+.navbar-krishi .navbar-brand:hover {
+    color: var(--krishi-primary-subtle);
+}
+
+.navbar-krishi .nav-link {
+    color: rgba(255, 255, 255, 0.88);
+    font-weight: 500;
+    padding: 0.5rem 0.85rem;
+    border-radius: var(--krishi-radius-sm);
+    transition: all 0.2s ease;
+}
+
+.navbar-krishi .nav-link:hover,
+.navbar-krishi .nav-link:focus {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+.navbar-krishi .nav-link.active {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.18);
+    font-weight: 600;
+}
+
+.navbar-krishi .navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.3);
+    padding: 0.35rem 0.65rem;
+}
+
+.navbar-krishi .navbar-toggler:focus {
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Dropdown Menu styling in navbar */
+.navbar-krishi .dropdown-menu {
+    border-radius: var(--krishi-radius-md);
+    border: 1px solid var(--krishi-border-color);
+    box-shadow: var(--krishi-shadow-lg);
+    padding: 0.5rem;
+}
+
+.navbar-krishi .dropdown-item {
+    font-weight: 500;
+    color: var(--krishi-text-primary);
+    border-radius: var(--krishi-radius-sm);
+    padding: 0.45rem 0.75rem;
+}
+
+.navbar-krishi .dropdown-item:hover {
+    background-color: var(--krishi-primary-light);
+    color: var(--krishi-primary);
+}
+
+/* ==========================================================================
+   Buttons (Overriding Bootstrap Primary & Adding Krishi Utilities)
+   ========================================================================== */
+.btn-primary,
+.btn-krishi-primary {
+    background-color: var(--krishi-primary) !important;
+    border-color: var(--krishi-primary) !important;
+    color: #ffffff !important;
+    border-radius: var(--krishi-radius-md);
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-krishi-primary:hover,
+.btn-krishi-primary:focus {
+    background-color: var(--krishi-primary-hover) !important;
+    border-color: var(--krishi-primary-hover) !important;
+    color: #ffffff !important;
+    box-shadow: var(--krishi-shadow-sm);
+}
+
+.btn-outline-primary,
+.btn-krishi-outline {
+    color: var(--krishi-primary) !important;
+    border-color: var(--krishi-primary) !important;
+    background-color: transparent !important;
+    border-radius: var(--krishi-radius-md);
+    transition: all 0.2s ease;
+}
+
+.btn-outline-primary:hover,
+.btn-krishi-outline:hover {
+    background-color: var(--krishi-primary) !important;
+    color: #ffffff !important;
+}
+
+/* ==========================================================================
+   Card Styling
+   ========================================================================== */
+.krishi-card {
+    background-color: var(--krishi-surface);
+    border: 1px solid var(--krishi-border-color) !important;
+    border-radius: var(--krishi-radius-md);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.krishi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--krishi-shadow-md) !important;
+}
+
+.krishi-card-img-wrapper {
+    overflow: hidden;
+    border-bottom: 1px solid var(--krishi-border-color);
+}
+
+.krishi-card-img-wrapper img {
+    transition: transform 0.3s ease;
+}
+
+.krishi-card:hover .krishi-card-img-wrapper img {
+    transform: scale(1.03);
+}
+
+/* ==========================================================================
+   Badges & Indicators
+   ========================================================================== */
+.krishi-badge {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    border: 1px solid transparent;
+}
+
+.krishi-badge-pending {
+    background-color: var(--krishi-status-pending-bg);
+    color: var(--krishi-status-pending-text);
+    border-color: var(--krishi-status-pending-border);
+}
+
+.krishi-badge-available {
+    background-color: var(--krishi-status-accepted-bg);
+    color: var(--krishi-status-accepted-text);
+    border-color: var(--krishi-status-accepted-border);
+}
+
+.krishi-badge-completed {
+    background-color: var(--krishi-status-completed-bg);
+    color: var(--krishi-status-completed-text);
+    border-color: var(--krishi-status-completed-border);
+}
+
+.krishi-badge-unavailable {
+    background-color: var(--krishi-status-rejected-bg);
+    color: var(--krishi-status-rejected-text);
+    border-color: var(--krishi-status-rejected-border);
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+.footer-krishi {
+    background-color: var(--krishi-footer-bg);
+    color: var(--krishi-footer-text);
+    border-top: 2px solid var(--krishi-primary);
+}
+
+.footer-krishi a {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.footer-krishi a:hover {
+    color: var(--krishi-primary-subtle);
+    text-decoration: underline;
+}
+
+/* Offcanvas navbar overrides for mobile */
+.offcanvas-krishi {
+    background-color: var(--krishi-footer-bg);
+    color: #ffffff;
+}
+
+.offcanvas-krishi .offcanvas-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.offcanvas-krishi .nav-link {
+    color: rgba(255, 255, 255, 0.9);
+    padding: 0.75rem 1rem;
+    font-size: 1.05rem;
 }

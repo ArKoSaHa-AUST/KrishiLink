@@ -21,5 +21,7 @@ Let an owner mark specific dates as available/unavailable for a piece of equipme
 - Legend shown above calendar explaining the color coding
 
 ## Design Notes
+- **UI Theme**: Follow the farmer-focused agricultural aesthetic — **green (`--krishi-primary: #2d6a4f`) as the dominant accent** (calendar available dates, buttons, active selections) and **white/off-white (`--krishi-bg: #f8faf7`) as the base background**. All colors are defined as CSS custom properties in `wwwroot/css/site.css`; use them everywhere instead of hardcoding hex values. Avoid corporate blue entirely.
+- Use the shared `_Layout.cshtml` (sticky green navbar, green footer), `_StatusBadge.cshtml` for availability indicators, `_Modal.cshtml` for save confirmations, and `btn-krishi-primary` / `btn-krishi-outline` for all buttons.
 - Keep the calendar the clear visual focus of the page — minimal surrounding chrome
 - Reuse the same calendar component style as the farmer-facing availability calendar on Equipment Detail page, for visual consistency
