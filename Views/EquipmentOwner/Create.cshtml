@@ -1,6 +1,204 @@
+@model KrishiLink.Models.ViewModels.EquipmentListingViewModel
 @{
-    ViewData["Title"] = "List New Equipment";
+    ViewData["Title"] = Model.FormTitle;
 }
-<div class="container py-4">
-    <h2>List New Equipment Placeholder</h2>
+
+<!-- Breadcrumb Navigation -->
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-success text-decoration-none">Home</a></li>
+        <li class="breadcrumb-item"><a asp-controller="EquipmentOwner" asp-action="Index" class="text-success text-decoration-none">Owner Dashboard</a></li>
+        <li class="breadcrumb-item active text-muted" aria-current="page">@Model.FormTitle</li>
+    </ol>
+</nav>
+
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-4 pb-2 border-bottom">
+    <div>
+        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">
+            <i class="bi bi-gear-wide-connected text-success me-2"></i>@Model.FormTitle
+        </h2>
+        <p class="text-muted mb-0">
+            @(Model.IsEditMode 
+                ? "Update your agricultural machinery details, pricing, and availability." 
+                : "List your agricultural machinery to connect with local farmers seeking rentals.")
+        </p>
+    </div>
+    <a asp-controller="EquipmentOwner" asp-action="Index" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold">
+        <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+    </a>
 </div>
+
+<!-- Main Form Container -->
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+        
+        <form asp-controller="EquipmentOwner" asp-action="Save" method="post" id="equipmentListingForm" enctype="multipart/form-data">
+            <input type="hidden" asp-for="Id" />
+
+            <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4">
+                
+                <div class="row g-4">
+                    
+                    <!-- Section 1: Basic Information -->
+                    <div class="col-12">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                            <span class="badge bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="bi bi-info-circle-fill"></i>
+                            </span>
+                            <h5 class="fw-bold text-dark mb-0">1. Machinery Details</h5>
+                        </div>
+                    </div>
+
+                    <!-- Equipment Name -->
+                    <div class="col-12 col-md-8">
+                        <label asp-for="Name" class="form-label fw-semibold text-dark small">
+                            Equipment / Machine Title <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="Name" class="form-control py-2.5" placeholder="e.g. Mahindra 575 DI Heavy Tractor" required />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                        <div class="form-text small text-muted">Include brand name, model, and horsepower for higher renter trust.</div>
+                    </div>
+
+                    <!-- Equipment Type / Category Dropdown -->
+                    <div class="col-12 col-md-4">
+                        <label asp-for="Category" class="form-label fw-semibold text-dark small">
+                            Machinery Category <span class="text-danger">*</span>
+                        </label>
+                        <select asp-for="Category" class="form-select py-2.5" required>
+                            <option value="">-- Select Category --</option>
+                            <option value="Tractor">🚜 Tractor</option>
+                            <option value="Power Tiller">⚙️ Power Tiller</option>
+                            <option value="Combine Harvester">🌾 Combine Harvester</option>
+                            <option value="Seed Drill / Seeder">🌱 Seed Drill / Seeder</option>
+                            <option value="Power Sprayer">💧 Power Sprayer</option>
+                            <option value="Irrigation Pump">⚡ Irrigation Pump</option>
+                            <option value="Thresher">🌾 Crop Thresher</option>
+                            <option value="Other">📦 Other Agricultural Tool</option>
+                        </select>
+                        <span asp-validation-for="Category" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Description Textarea -->
+                    <div class="col-12">
+                        <label asp-for="Description" class="form-label fw-semibold text-dark small">
+                            Description &amp; Key Specifications <span class="text-danger">*</span>
+                        </label>
+                        <textarea asp-for="Description" class="form-control" rows="4" 
+                                  placeholder="Detail the engine capacity (HP), compatible implements, fuel consumption, driver/operator availability, and operational condition..." required></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Location Input -->
+                    <div class="col-12 col-md-6">
+                        <label asp-for="Location" class="form-label fw-semibold text-dark small">
+                            Equipment Base Location / District <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-success border-end-0">
+                                <i class="bi bi-geo-alt-fill"></i>
+                            </span>
+                            <input asp-for="Location" class="form-control border-start-0 py-2.5" placeholder="e.g. Bogra Sadar, Bogra" required />
+                        </div>
+                        <span asp-validation-for="Location" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Availability Status Toggle -->
+                    <div class="col-12 col-md-6 d-flex align-items-center">
+                        <div class="p-3 bg-light rounded-3 border w-100 mt-md-3">
+                            <div class="form-check form-switch d-flex align-items-center justify-content-between p-0 m-0">
+                                <label class="form-check-label fw-semibold text-dark small mb-0" for="isAvailableSwitch">
+                                    <i class="bi bi-toggle-on text-success me-1.5"></i> Mark Listing as Active &amp; Available
+                                </label>
+                                <input class="form-check-input ms-0" type="checkbox" role="switch" id="isAvailableSwitch" asp-for="IsAvailable" style="cursor: pointer;" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Pricing Configuration -->
+                    <div class="col-12 pt-2">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                            <span class="badge bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="bi bi-tag-fill"></i>
+                            </span>
+                            <h5 class="fw-bold text-dark mb-0">2. Rental Rates &amp; Pricing</h5>
+                        </div>
+                    </div>
+
+                    <!-- Daily Rate -->
+                    <div class="col-12 col-md-6">
+                        <label asp-for="DailyRate" class="form-label fw-semibold text-dark small">
+                            Daily Rental Rate (in BDT ৳) <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-success fw-bold">৳</span>
+                            <input type="number" asp-for="DailyRate" class="form-control py-2.5" min="1" step="50" placeholder="1500" required />
+                            <span class="input-group-text bg-light text-muted">/ Day</span>
+                        </div>
+                        <span asp-validation-for="DailyRate" class="text-danger small"></span>
+                        <div class="form-text small text-muted">Standard 8-hour daily operational rental rate.</div>
+                    </div>
+
+                    <!-- Hourly Rate -->
+                    <div class="col-12 col-md-6">
+                        <label asp-for="HourlyRate" class="form-label fw-semibold text-dark small">
+                            Hourly Rental Rate (in BDT ৳, Optional)
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-success fw-bold">৳</span>
+                            <input type="number" asp-for="HourlyRate" class="form-control py-2.5" min="0" step="10" placeholder="250" />
+                            <span class="input-group-text bg-light text-muted">/ Hour</span>
+                        </div>
+                        <span asp-validation-for="HourlyRate" class="text-danger small"></span>
+                        <div class="form-text small text-muted">Leave blank if only daily rentals are supported.</div>
+                    </div>
+
+                    <!-- Section 3: Equipment Photos Placeholder (Handled in detail in list2.md) -->
+                    <div class="col-12 pt-2">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                            <span class="badge bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="bi bi-images"></i>
+                            </span>
+                            <h5 class="fw-bold text-dark mb-0">3. Machinery Photos</h5>
+                        </div>
+
+                        <!-- Existing Images (if edit mode) -->
+                        @if (Model.ExistingImageUrls.Any())
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-dark small mb-2">Current Active Photos</label>
+                                <div class="d-flex flex-wrap gap-3">
+                                    @foreach (var img in Model.ExistingImageUrls)
+                                    {
+                                        <div class="position-relative border rounded-3 overflow-hidden shadow-sm" style="width: 120px; height: 90px;">
+                                            <img src="@img" alt="Equipment photo" class="w-100 h-100 object-fit-cover" />
+                                            <input type="hidden" name="ExistingImageUrls" value="@img" />
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                </div>
+
+                <!-- Form Action Buttons -->
+                <div class="d-flex flex-column flex-sm-row justify-content-end align-items-center gap-3 pt-4 mt-4 border-top">
+                    <a asp-controller="EquipmentOwner" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-semibold w-100 w-sm-auto order-2 order-sm-1">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-krishi-primary rounded-pill px-5 py-2.5 fw-bold shadow-sm w-100 w-sm-auto order-1 order-sm-2">
+                        <i class="bi bi-check2-circle me-1.5"></i> @Model.SubmitButtonText
+                    </button>
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

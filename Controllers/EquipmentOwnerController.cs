@@ -10,14 +10,63 @@ namespace KrishiLink.Controllers
             return View();
         }
 
+        /// <summary>
+        /// GET: /EquipmentOwner/Create
+        /// Renders blank Add Equipment Listing form.
+        /// </summary>
+        [HttpGet]
         public IActionResult Create()
         {
-            return View();
+            var model = new EquipmentListingViewModel
+            {
+                DailyRate = 1500,
+                IsAvailable = true,
+                ExistingImageUrls = new List<string>()
+            };
+            return View(model);
         }
 
-        public IActionResult Requests()
+        /// <summary>
+        /// GET: /EquipmentOwner/Edit/1
+        /// Renders pre-filled Edit Equipment Listing form.
+        /// </summary>
+        [HttpGet]
+        public IActionResult Edit(int id = 1)
         {
-            return View();
+            var model = new EquipmentListingViewModel
+            {
+                Id = id,
+                Name = "Mahindra 575 DI Heavy Tractor",
+                Category = "Tractor",
+                Description = "High-performance 45 HP diesel tractor with 4-wheel drive capability. Ideal for deep tilling, dry and wet paddy field preparation, rotavator attachments, and heavy haulage.",
+                Location = "Bogra Sadar, Bogra",
+                DailyRate = 1500,
+                HourlyRate = 250,
+                IsAvailable = true,
+                ExistingImageUrls = new List<string>
+                {
+                    "https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?auto=format&fit=crop&w=800&q=80",
+                    "https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&w=800&q=80"
+                }
+            };
+            return View("Create", model);
+        }
+
+        /// <summary>
+        /// POST: /EquipmentOwner/Save
+        /// Handles creation or updating of equipment listing.
+        /// </summary>
+        [HttpPost]
+        public IActionResult Save(EquipmentListingViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View("Create", model);
+            }
+
+            var actionName = model.IsEditMode ? "updated" : "created";
+            TempData["SuccessMessage"] = $"Equipment listing '{model.Name}' successfully {actionName}!";
+            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>
