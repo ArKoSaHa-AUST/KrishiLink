@@ -1,6 +1,182 @@
+@model KrishiLink.Models.ViewModels.GodownListingViewModel
 @{
-    ViewData["Title"] = "Add Godown Facility";
+    ViewData["Title"] = L[Model.FormTitle];
 }
-<div class="container py-4">
-    <h2>@L["Add Godown Facility Placeholder"]</h2>
+
+<!-- Breadcrumb Navigation -->
+<nav aria-label="@L["breadcrumb"]" class="mb-3">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-success text-decoration-none">@L["Home"]</a></li>
+        <li class="breadcrumb-item"><a asp-controller="GodownOwner" asp-action="Index" class="text-success text-decoration-none">@L["Godown Dashboard"]</a></li>
+        <li class="breadcrumb-item active text-muted" aria-current="page">@L[Model.FormTitle]</li>
+    </ol>
+</nav>
+
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-4 pb-2 border-bottom">
+    <div>
+        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">
+            <i class="bi bi-building text-success me-2"></i>@L[Model.FormTitle]
+        </h2>
+        <p class="text-muted mb-0">
+            @(Model.IsEditMode 
+                ? L["Update your storage facility details, capacity, pricing, and amenities."]
+                : L["List your warehouse or cold storage facility to connect with farmers needing storage space."])
+        </p>
+    </div>
+    <a asp-controller="GodownOwner" asp-action="Index" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold">
+        <i class="bi bi-arrow-left me-1"></i> @L["Back to Dashboard"]
+    </a>
+</div>
+
+<!-- Main Form Container -->
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+        
+        <form asp-controller="GodownOwner" asp-action="Save" method="post" id="godownListingForm" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" id="godownId" />
+
+            <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4 bg-white">
+                
+                <div class="row g-4">
+                    
+                    <!-- Section 1: Basic Facility Details -->
+                    <div class="col-12">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                            <span class="badge bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="bi bi-info-circle-fill"></i>
+                            </span>
+                            <h5 class="fw-bold text-dark mb-0">@L["1. Facility Details"]</h5>
+                        </div>
+                    </div>
+
+                    <!-- Godown / Facility Name -->
+                    <div class="col-12 col-md-8">
+                        <label asp-for="Name" class="form-label fw-semibold text-dark small">
+                            @L["Godown / Facility Title"] <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="Name" class="form-control py-2.5 rounded-3" id="godownNameInput" placeholder="@L["e.g. Green Grain Cold Storage Facility"]" required />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                        <div class="form-text small text-muted">@L["Specify the facility name and storage specialty for higher search visibility."]</div>
+                    </div>
+
+                    <!-- Storage Category Dropdown -->
+                    <div class="col-12 col-md-4">
+                        <label asp-for="Category" class="form-label fw-semibold text-dark small">
+                            @L["Storage Type / Category"] <span class="text-danger">*</span>
+                        </label>
+                        <select asp-for="Category" class="form-select py-2.5 rounded-3" id="godownCategorySelect" required>
+                            <option value="Cold Storage">@L["❄️ Cold Storage (Vegetables & Fruits)"]</option>
+                            <option value="Grain Warehouse">@L["🌾 Grain Warehouse (Paddy & Wheat)"]</option>
+                            <option value="Multi-Chamber Cold Storage">@L["🧊 Multi-Chamber Storage (Multi-Temp)"]</option>
+                            <option value="Seed Vault">@L["🌱 Certified Seed Vault"]</option>
+                            <option value="Silo Facility">@L["🏢 Modern Silo Facility"]</option>
+                            <option value="Dry Godown">@L["📦 Dry Goods & Jute Warehouse"]</option>
+                        </select>
+                        <span asp-validation-for="Category" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Location Input -->
+                    <div class="col-12 col-md-6">
+                        <label asp-for="Location" class="form-label fw-semibold text-dark small">
+                            @L["Facility Location (District / Upazila)"] <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-success border-end-0 rounded-start-3">
+                                <i class="bi bi-geo-alt-fill"></i>
+                            </span>
+                            <input asp-for="Location" class="form-control border-start-0 py-2.5 rounded-end-3" id="godownLocationInput" placeholder="@L["e.g. Dinajpur Sadar, Dinajpur"]" required />
+                        </div>
+                        <span asp-validation-for="Location" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Availability Status Toggle -->
+                    <div class="col-12 col-md-6 d-flex align-items-center">
+                        <div class="p-3 bg-light rounded-3 border w-100 mt-md-3">
+                            <div class="form-check form-switch d-flex align-items-center justify-content-between p-0 m-0">
+                                <label class="form-check-label fw-semibold text-dark small mb-0" for="isAvailableSwitch">
+                                    <i class="bi bi-toggle-on text-success me-1.5"></i> @L["Mark Listing as Active & Bookable"]
+                                </label>
+                                <input class="form-check-input ms-0" type="checkbox" role="switch" id="isAvailableSwitch" asp-for="IsAvailable" style="cursor: pointer;" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Storage Capacity -->
+                    <div class="col-12 pt-2">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                            <span class="badge bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="bi bi-boxes"></i>
+                            </span>
+                            <h5 class="fw-bold text-dark mb-0">@L["2. Storage Capacity Specifications"]</h5>
+                        </div>
+                    </div>
+
+                    <!-- Total Capacity -->
+                    <div class="col-12 col-md-4">
+                        <label asp-for="TotalCapacity" class="form-label fw-semibold text-dark small">
+                            @L["Total Storage Capacity"] <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="number" asp-for="TotalCapacity" class="form-control py-2.5 rounded-start-3" id="totalCapacityInput" min="0.1" step="0.5" placeholder="200" required />
+                            <span class="input-group-text bg-light text-muted fw-semibold rounded-end-3" id="capacityUnitDisplay">@Model.CapacityUnit</span>
+                        </div>
+                        <span asp-validation-for="TotalCapacity" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Capacity Unit Selector -->
+                    <div class="col-12 col-md-4">
+                        <label asp-for="CapacityUnit" class="form-label fw-semibold text-dark small">
+                            @L["Measurement Unit"] <span class="text-danger">*</span>
+                        </label>
+                        <select asp-for="CapacityUnit" class="form-select py-2.5 rounded-3" id="capacityUnitSelect" required>
+                            <option value="Tons">@L["Metric Tons (MT)"]</option>
+                            <option value="Maunds">@L["Maunds (মন) - 40 kg"]</option>
+                            <option value="Bags">@L["Bags (50 kg standard)"]</option>
+                            <option value="Quintals">@L["Quintals (100 kg)"]</option>
+                        </select>
+                        <span asp-validation-for="CapacityUnit" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Available Capacity -->
+                    <div class="col-12 col-md-4">
+                        <label asp-for="AvailableCapacity" class="form-label fw-semibold text-dark small">
+                            @L["Currently Available Space"] <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="number" asp-for="AvailableCapacity" class="form-control py-2.5 rounded-start-3" id="availableCapacityInput" min="0" step="0.5" placeholder="200" required />
+                            <span class="input-group-text bg-light text-muted fw-semibold rounded-end-3" id="availableUnitDisplay">@Model.CapacityUnit</span>
+                        </div>
+                        <span asp-validation-for="AvailableCapacity" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Description Textarea -->
+                    <div class="col-12">
+                        <label asp-for="Description" class="form-label fw-semibold text-dark small">
+                            @L["Description & Facility Highlights"] <span class="text-danger">*</span>
+                        </label>
+                        <textarea asp-for="Description" class="form-control rounded-3" id="godownDescInput" rows="4" 
+                                  placeholder="@L["Detail the ventilation, cooling range, pallet support, security guards, pest control schedules, road access, and loading equipment..."]" required></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                        <div class="form-text small text-muted">@L["Provide detailed storage conditions so farmers know their crops remain fresh and secure."]</div>
+                    </div>
+
+                </div>
+
+                <!-- Form Action Buttons Placeholder -->
+                <div class="d-flex flex-column flex-sm-row justify-content-end align-items-center gap-3 pt-4 mt-4 border-top">
+                    <a asp-controller="GodownOwner" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-semibold w-100 w-sm-auto order-2 order-sm-1">
+                        @L["Cancel"]
+                    </a>
+                    <button type="submit" class="btn btn-krishi-primary rounded-pill px-5 py-2.5 fw-bold shadow-sm w-100 w-sm-auto order-1 order-sm-2" id="submitGodownBtn">
+                        <i class="bi bi-check2-circle me-1.5"></i> @L[Model.SubmitButtonText]
+                    </button>
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
 </div>
