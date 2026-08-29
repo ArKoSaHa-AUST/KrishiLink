@@ -1,46 +1,119 @@
 @model KrishiLink.Models.ViewModels.GodownBookingRequestItem
 @*
     Shared storage booking request row with inline Accept/Reject.
-    Used by the Godown Owner Dashboard widget and the Booking Requests page (part 18).
+    Compact mode (default): Godown Owner Dashboard widget.
+    Expandable mode (ViewData["Expandable"] = true): Booking Requests page — adds
+    status badge, keyboard-accessible expansion, and a detail block showing
+    capacity vs. remaining availability, the farmer's note, and any reject reason.
     Host page must define applyDecision(id, decision, btn) and promptReject(id, btn),
     and should call refreshFitIndicators() to populate the .fit-indicator span.
 *@
-<div class="p-3 px-4 border-bottom d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 pending-request-row"
-     data-request-id="@Model.Id" data-farmer-name="@Model.FarmerName"
-     data-godown-id="@Model.GodownId" data-capacity="@Model.RequestedCapacityTons">
-    <div class="d-flex align-items-center gap-3">
-        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 42px; height: 42px;">
-            @Model.FarmerName[0]
-        </div>
-        <div>
-            <span class="fw-semibold d-block" style="color: var(--krishi-text-primary);">@Model.FarmerName</span>
-            <span class="small d-block" style="color: var(--krishi-text-muted);">
-                <i class="bi bi-building me-1 text-success"></i>@Model.GodownName
-                <span class="mx-1">·</span>
-                <i class="bi bi-box-seam me-1 text-success"></i>@Model.RequestedCapacityTons.ToString("N0") Tons
-                <span class="mx-1">·</span>
-                <i class="bi bi-calendar-range me-1 text-success"></i>@Model.DateRange
-                @if (!string.IsNullOrEmpty(Model.TimeAgo))
-                {
+@{
+    var expandable = ViewData["Expandable"] as bool? ?? false;
+    var badgeClass = Model.Status switch
+    {
+        "Accepted" => "krishi-badge-available",
+        "Rejected" => "krishi-badge-unavailable",
+        "Completed" => "krishi-badge-completed",
+        _ => "krishi-badge-pending"
+    };
+}
+<div class="request-row border-bottom pending-request-row" data-request-id="@Model.Id"
+     data-farmer-name="@Model.FarmerName" data-godown-id="@Model.GodownId" data-capacity="@Model.RequestedCapacityTons"
+     data-search="@(($"{Model.FarmerName} {Model.GodownName}").ToLowerInvariant())">
+    <div class="p-3 px-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 request-row-header"
+         role="@(expandable ? "button" : null)" tabindex="@(expandable ? "0" : null)"
+         data-bs-toggle="@(expandable ? "collapse" : null)" data-bs-target="@(expandable ? $"#detail-{Model.Id}" : null)"
+         aria-expanded="@(expandable ? "false" : null)" aria-controls="@(expandable ? $"detail-{Model.Id}" : null)">
+        <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width: 42px; height: 42px;">
+                @Model.FarmerName[0]
+            </div>
+            <div>
+                <span class="fw-semibold d-block" style="color: var(--krishi-text-primary);">@Model.FarmerName</span>
+                <span class="small d-block" style="color: var(--krishi-text-muted);">
+                    <i class="bi bi-building me-1 text-success"></i>@Model.GodownName
                     <span class="mx-1">·</span>
-                    <i class="bi bi-clock me-1 text-success"></i>@Model.TimeAgo
+                    <i class="bi bi-box-seam me-1 text-success"></i>@Model.RequestedCapacityTons.ToString("N0") Tons
+                    <span class="mx-1">·</span>
+                    <i class="bi bi-calendar-range me-1 text-success"></i>@Model.DateRange
+                    @if (!string.IsNullOrEmpty(Model.TimeAgo))
+                    {
+                        <span class="mx-1">·</span>
+                        <i class="bi bi-clock me-1 text-success"></i>@Model.TimeAgo
+                    }
+                </span>
+                @if (!expandable && !string.IsNullOrEmpty(Model.Note))
+                {
+                    <span class="small fst-italic" style="color: var(--krishi-text-muted);">"@Model.Note"</span>
                 }
-            </span>
-            @if (!string.IsNullOrEmpty(Model.Note))
+                @if (Model.Status == "Pending")
+                {
+                    <span class="fit-indicator small d-block fw-semibold"></span>
+                }
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3 flex-shrink-0">
+            @if (expandable)
             {
-                <span class="small fst-italic" style="color: var(--krishi-text-muted);">"@Model.Note"</span>
+                <span class="krishi-badge request-status-badge @badgeClass @(Model.Status == "Pending" ? "d-none d-md-inline-flex" : "")">@Model.Status</span>
             }
-            <span class="fit-indicator small d-block fw-semibold"></span>
+            @if (Model.Status == "Pending")
+            {
+                <!-- stopPropagation keeps button clicks from toggling the row expansion -->
+                <div class="request-actions" onclick="event.stopPropagation()">
+                    <button type="button" class="btn btn-krishi-primary btn-sm rounded-pill px-3 fw-semibold btn-accept"
+                            onclick="applyDecision(@Model.Id, 'accept', this)">
+                        <i class="bi bi-check-lg"></i> Accept
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold btn-reject"
+                            onclick="promptReject(@Model.Id, this)">
+                        <i class="bi bi-x-lg"></i> Reject
+                    </button>
+                </div>
+            }
+            else if (expandable && Model.Status == "Accepted")
+            {
+                <div class="request-actions" onclick="event.stopPropagation()">
+                    <button type="button" class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold btn-complete"
+                            onclick="markCompleted(@Model.Id, this)">
+                        <i class="bi bi-check2-all"></i> Mark Completed
+                    </button>
+                </div>
+            }
+            @if (expandable)
+            {
+                <i class="bi bi-chevron-down small d-none d-md-block" style="color: var(--krishi-text-muted);"></i>
+            }
         </div>
     </div>
-    <div class="request-actions flex-shrink-0">
-        <button type="button" class="btn btn-krishi-primary btn-sm rounded-pill px-3 fw-semibold btn-accept"
-                onclick="applyDecision(@Model.Id, 'accept', this)">
-            <i class="bi bi-check-lg"></i> Accept
-        </button>
-        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold btn-reject"
-                onclick="promptReject(@Model.Id, this)">
-            <i class="bi bi-x-lg"></i> Reject
-        </button>
-    </div>
+
+    @if (expandable)
+    {
+        <!-- Expanded detail: capacity vs. remaining availability + farmer's note -->
+        <div class="collapse" id="detail-@Model.Id">
+            <div class="px-4 pb-3 pt-1 ms-md-5">
+                <div class="row g-3 p-3 rounded-3 border" style="background-color: var(--krishi-primary-light);">
+                    <div class="col-12 col-md-6">
+                        <span class="small fw-semibold text-uppercase d-block mb-1" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">Farmer's Note</span>
+                        <p class="small mb-0 fst-italic" style="color: var(--krishi-text-primary);">
+                            @(string.IsNullOrEmpty(Model.Note) ? "No note provided." : $"\"{Model.Note}\"")
+                        </p>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <span class="small fw-semibold text-uppercase d-block mb-1" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">Capacity vs. Availability</span>
+                        <ul class="list-unstyled small mb-0 d-flex flex-column gap-1" style="color: var(--krishi-text-primary);">
+                            <li><i class="bi bi-box-seam text-success me-1"></i> Requested: @Model.RequestedCapacityTons.ToString("N0") Tons</li>
+                            <li><i class="bi bi-building text-success me-1"></i> <span class="detail-availability">—</span></li>
+                            <li><i class="bi bi-calendar-range text-success me-1"></i> @Model.DateRange</li>
+                        </ul>
+                    </div>
+                    <div class="col-12 reject-reason-block @(string.IsNullOrEmpty(Model.RejectReason) ? "d-none" : "")">
+                        <span class="small fw-semibold text-uppercase d-block mb-1" style="color: var(--krishi-status-rejected-text); letter-spacing: 0.04em;">Rejection Reason</span>
+                        <p class="small mb-0 reject-reason-text" style="color: var(--krishi-text-primary);">@Model.RejectReason</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>

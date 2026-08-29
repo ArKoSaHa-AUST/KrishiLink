@@ -68,6 +68,15 @@
                     </button>
                 </div>
             }
+            else if (expandable && Model.Status == "Accepted")
+            {
+                <div class="request-actions" onclick="event.stopPropagation()">
+                    <button type="button" class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold btn-complete"
+                            onclick="markCompleted(@Model.Id, this)">
+                        <i class="bi bi-check2-all"></i> Mark Completed
+                    </button>
+                </div>
+            }
             @if (expandable)
             {
                 <i class="bi bi-chevron-down small d-none d-md-block" style="color: var(--krishi-text-muted);"></i>

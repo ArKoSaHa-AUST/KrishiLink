@@ -44,10 +44,25 @@ namespace KrishiLink.Models.ViewModels
         public string DateRange { get; set; } = string.Empty;
         public string? Note { get; set; }
 
+        /// <summary>Pending | Accepted | Rejected | Completed</summary>
+        public string Status { get; set; } = "Pending";
+
+        /// <summary>Owner's reason shown on rejected requests.</summary>
+        public string? RejectReason { get; set; }
+
         /// <summary>When the farmer submitted the request (drives sorting and "time ago").</summary>
         public DateTime RequestedOn { get; set; }
 
         /// <summary>Compact relative timestamp, e.g. "2h ago". Empty when RequestedOn is unset.</summary>
         public string TimeAgo => TimeAgoFormatter.Format(RequestedOn);
+    }
+
+    /// <summary>ViewModel for the full Godown Booking Requests page (owner decision view).</summary>
+    public class GodownBookingRequestsViewModel
+    {
+        public List<GodownBookingRequestItem> Requests { get; set; } = new();
+
+        /// <summary>Owner's godowns, used for live capacity/fit calculations.</summary>
+        public List<OwnerGodownItem> Godowns { get; set; } = new();
     }
 }

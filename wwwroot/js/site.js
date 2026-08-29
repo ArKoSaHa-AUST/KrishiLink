@@ -57,18 +57,36 @@ window.KrishiModal = {
                 confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
                 const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
-
-                newConfirmBtn.addEventListener('click', function () {
-                    if (typeof options.onConfirm === 'function') {
-                        options.onConfirm();
-                    }
+                const hideModal = function () {
                     bsModal.hide();
                     // Bootstrap no-ops hide() while the show transition is running
                     // (e.g. throttled background tabs) — retry once it settles.
                     setTimeout(function () {
                         if (modalEl.classList.contains('show')) bsModal.hide();
                     }, 450);
+                };
+
+                newConfirmBtn.addEventListener('click', function () {
+                    if (typeof options.onConfirm === 'function') {
+                        options.onConfirm();
+                    }
+                    hideModal();
                 });
+
+                // Optional secondary action button (e.g. "Reject Instead")
+                document.getElementById(`${modalId}SecondaryBtn`)?.remove();
+                if (options.secondary) {
+                    const secBtn = document.createElement('button');
+                    secBtn.type = 'button';
+                    secBtn.id = `${modalId}SecondaryBtn`;
+                    secBtn.className = `btn rounded-pill px-4 fw-semibold ${options.secondary.className || 'btn-outline-secondary'}`;
+                    secBtn.textContent = options.secondary.text || 'More';
+                    secBtn.addEventListener('click', function () {
+                        if (typeof options.secondary.onConfirm === 'function') options.secondary.onConfirm();
+                        hideModal();
+                    });
+                    newConfirmBtn.parentNode.insertBefore(secBtn, newConfirmBtn);
+                }
             }
 
             bootstrap.Modal.getOrCreateInstance(modalEl).show();
@@ -202,10 +220,11 @@ window.KrishiRequests = {
     },
 
     /** Accept confirmation modal: "Accept this rental request from [Farmer]?" */
-    confirmAccept: function (farmerName, onConfirm) {
+    confirmAccept: function (farmerName, onConfirm, opts) {
+        opts = opts || {};
         KrishiModal.confirm({
-            title: 'Accept Rental Request',
-            body: `Accept this rental request from <strong>${farmerName}</strong>? They will be notified immediately.`,
+            title: opts.title || 'Accept Rental Request',
+            body: `Accept this ${opts.noun || 'rental request'} from <strong>${farmerName}</strong>? They will be notified immediately.`,
             confirmText: 'Yes, Accept',
             onConfirm: onConfirm
         });
@@ -282,6 +301,262 @@ window.KrishiRequests = {
                 last = data.count;
             } catch { /* offline or logged out — silently skip this cycle */ }
         }, intervalMs || 20000);
+    }
+};
+
+/**
+ * Shared engine for the tabbed owner request pages (Equipment Rental Requests,
+ * Godown Booking Requests). Owns: tab counts, per-tab empty states, search +
+ * optional entity filter (with ?q= URL sync), hash deep-linking, keyboard row
+ * expansion, decision submission (loading state → POST → animated row move with
+ * an undo-race guard → Undo toast), the Accepted → Completed lifecycle, and
+ * optional new-request polling.
+ *
+ * Expects the page markup conventions: #requestTabs, #pane-X/#list-X/#count-X/#empty-X,
+ * #requestSearch, .request-row rows with data-request-id/-farmer-name/-search,
+ * and a #antiForgeryForm. Installs window.applyDecision / promptReject / markCompleted
+ * for the shared row partials.
+ *
+ * cfg: {
+ *   respondUrl, pendingCountUrl?, initialPendingCount?, undoDelay?,
+ *   filterSelectId?, sortSelectId?,
+ *   messages: { acceptTitle, acceptNoun, rejectTitle, rejectPlaceholder,
+ *               acceptedMsg, rejectedMsg, completedMsg, completeTitle, newRequestMsg },
+ *   acceptGuard?(row, api {confirm, direct, reject(reason)}),
+ *   onApplied?(row, decision), onReverted?(row, decision), afterListChange?()
+ * }
+ */
+window.KrishiRequestsPage = {
+    init: function (cfg) {
+        const TABS = ['Pending', 'Accepted', 'Rejected', 'Completed'];
+        const BADGE = {
+            Pending: 'krishi-badge-pending d-none d-md-inline-flex',
+            Accepted: 'krishi-badge-available',
+            Rejected: 'krishi-badge-unavailable',
+            Completed: 'krishi-badge-completed'
+        };
+        const MOVES = {
+            accept: { from: 'Pending', to: 'Accepted' },
+            reject: { from: 'Pending', to: 'Rejected' },
+            complete: { from: 'Accepted', to: 'Completed' }
+        };
+        const msgs = cfg.messages || {};
+        const searchInput = document.getElementById('requestSearch');
+        const filterSelect = cfg.filterSelectId ? document.getElementById(cfg.filterSelectId) : null;
+
+        function tabCount(tab, delta) {
+            const el = document.getElementById('count-' + tab);
+            if (el) KrishiCount.animate(el, Number(el.textContent) + delta);
+        }
+
+        function setStatus(row, status) {
+            const badge = row.querySelector('.request-status-badge');
+            if (badge) {
+                badge.textContent = status;
+                badge.className = 'krishi-badge request-status-badge ' + BADGE[status];
+            }
+        }
+
+        function isFiltering() {
+            return (searchInput?.value.trim().length > 0) || (filterSelect && filterSelect.value !== '');
+        }
+
+        function refreshEmptyStates() {
+            TABS.forEach(tab => {
+                const empty = document.getElementById('empty-' + tab);
+                if (!empty) return;
+                const total = document.querySelectorAll('#list-' + tab + ' .request-row').length;
+                const visible = document.querySelectorAll('#list-' + tab + ' .request-row:not(.d-none)').length;
+                empty.classList.toggle('d-none', visible > 0);
+                empty.querySelector('span').textContent =
+                    (total > 0 && isFiltering()) ? 'No requests match your search' : empty.dataset.defaultText;
+            });
+        }
+
+        function applyFilters() {
+            const q = (searchInput?.value || '').trim().toLowerCase();
+            const entity = filterSelect ? filterSelect.value : '';
+            document.querySelectorAll('.request-row').forEach(r => {
+                const matchQ = !q || (r.dataset.search || '').includes(q);
+                const matchE = !entity || r.dataset.godownId === entity;
+                r.classList.toggle('d-none', !(matchQ && matchE));
+            });
+            // Keep ?q= shareable/refresh-safe alongside the tab hash
+            const url = new URL(location.href);
+            if (q) url.searchParams.set('q', q); else url.searchParams.delete('q');
+            history.replaceState(null, '', url);
+            refreshEmptyStates();
+        }
+
+        function sortPending() {
+            if (!cfg.sortSelectId) return;
+            const mode = document.getElementById(cfg.sortSelectId)?.value || 'newest';
+            const list = document.getElementById('list-Pending');
+            Array.from(list.querySelectorAll('.request-row'))
+                .sort((a, b) => mode === 'capacity'
+                    ? Number(b.dataset.capacity || 0) - Number(a.dataset.capacity || 0)
+                    : Number(a.dataset.order || 0) - Number(b.dataset.order || 0))
+                .forEach(r => list.appendChild(r));
+        }
+
+        async function submit(id, decision, btn, reason) {
+            const row = btn.closest('.request-row');
+            if (!row) return;
+            const move = MOVES[decision];
+            const actions = row.querySelector('.request-actions');
+            const originalBtnHtml = btn.innerHTML;
+            const originalActionsHtml = actions.innerHTML;
+
+            actions.querySelectorAll('button').forEach(b => b.disabled = true);
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving…';
+
+            try {
+                await KrishiRequests.post(cfg.respondUrl, { id, decision, reason: reason || '' });
+                btn.innerHTML = originalBtnHtml;
+                actions.querySelectorAll('button').forEach(b => b.disabled = false);
+                if (cfg.onApplied) cfg.onApplied(row, decision);
+
+                const state = { undone: false, moved: false };
+                row.classList.add('row-leaving');
+                setTimeout(() => {
+                    row.classList.remove('row-leaving');
+                    if (state.undone) return; // undone before the move — leave the row in place
+                    if (decision === 'accept') {
+                        row.querySelector('.fit-indicator')?.classList.add('d-none');
+                        actions.innerHTML = `<button type="button" class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold btn-complete"
+                                                     onclick="markCompleted(${id}, this)"><i class="bi bi-check2-all"></i> Mark Completed</button>`;
+                    } else if (decision === 'reject') {
+                        row.querySelector('.fit-indicator')?.classList.add('d-none');
+                        actions.classList.add('d-none');
+                        if (reason) {
+                            const block = row.querySelector('.reject-reason-block');
+                            if (block) {
+                                block.querySelector('.reject-reason-text').textContent = reason;
+                                block.classList.remove('d-none');
+                            }
+                        }
+                    } else { // complete
+                        actions.classList.add('d-none');
+                    }
+                    setStatus(row, move.to);
+                    document.getElementById('list-' + move.to).prepend(row);
+                    tabCount(move.from, -1);
+                    tabCount(move.to, +1);
+                    refreshEmptyStates();
+                    if (cfg.afterListChange) cfg.afterListChange();
+                    state.moved = true;
+                }, 350);
+
+                const msg = decision === 'accept' ? msgs.acceptedMsg : decision === 'reject' ? msgs.rejectedMsg : msgs.completedMsg;
+                KrishiToast.show(msg || 'Saved ✓', {
+                    iconClass: decision === 'reject' ? 'bi-x-circle-fill text-danger' : 'bi-check-circle-fill text-success',
+                    actionText: 'Undo',
+                    delay: cfg.undoDelay || 5000,
+                    onAction: () => {
+                        state.undone = true;
+                        if (cfg.onReverted) cfg.onReverted(row, decision);
+                        if (state.moved) {
+                            actions.classList.remove('d-none');
+                            actions.innerHTML = originalActionsHtml;
+                            row.querySelector('.fit-indicator')?.classList.remove('d-none');
+                            if (decision === 'reject') row.querySelector('.reject-reason-block')?.classList.add('d-none');
+                            setStatus(row, move.from);
+                            document.getElementById('list-' + move.from).prepend(row);
+                            tabCount(move.to, -1);
+                            tabCount(move.from, +1);
+                            refreshEmptyStates();
+                            if (cfg.afterListChange) cfg.afterListChange();
+                        } else {
+                            row.classList.remove('row-leaving');
+                        }
+                        KrishiRequests.post(cfg.respondUrl, { id, decision: 'undo' }).catch(() => {});
+                    }
+                });
+            } catch {
+                btn.innerHTML = originalBtnHtml;
+                actions.querySelectorAll('button').forEach(b => b.disabled = false);
+                KrishiToast.show('Could not save the decision. Please try again.', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
+            }
+        }
+
+        // Handlers referenced by the shared row partials
+        window.applyDecision = function (id, decision, btn) {
+            const row = btn.closest('.request-row');
+            const farmer = row.dataset.farmerName;
+            const direct = () => submit(id, 'accept', btn);
+            const confirmThen = () => KrishiRequests.confirmAccept(farmer, direct, { title: msgs.acceptTitle, noun: msgs.acceptNoun });
+            if (cfg.acceptGuard) {
+                cfg.acceptGuard(row, { confirm: confirmThen, direct, reject: reason => submit(id, 'reject', btn, reason) });
+            } else {
+                confirmThen();
+            }
+        };
+
+        window.promptReject = function (id, btn) {
+            const farmer = btn.closest('.request-row').dataset.farmerName;
+            KrishiRequests.promptReject(farmer,
+                reason => submit(id, 'reject', btn, reason),
+                { title: msgs.rejectTitle, placeholder: msgs.rejectPlaceholder });
+        };
+
+        window.markCompleted = function (id, btn) {
+            const farmer = btn.closest('.request-row').dataset.farmerName;
+            KrishiModal.confirm({
+                title: msgs.completeTitle || 'Mark as Completed',
+                body: `Mark this booking from <strong>${farmer}</strong> as completed? This finishes the request lifecycle.`,
+                confirmText: 'Mark Completed',
+                onConfirm: () => submit(id, 'complete', btn)
+            });
+        };
+
+        // Deep-linking: #accepted etc. selects the tab; tab changes update the hash (keeping ?q=)
+        const hashMap = { pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected', completed: 'Completed' };
+        const hash = location.hash.replace('#', '').toLowerCase();
+        if (hashMap[hash]) bootstrap.Tab.getOrCreateInstance(document.getElementById('tab-' + hashMap[hash])).show();
+        document.querySelectorAll('#requestTabs [data-bs-toggle="pill"]').forEach(t =>
+            t.addEventListener('shown.bs.tab', e => {
+                const url = new URL(location.href);
+                url.hash = e.target.id.replace('tab-', '').toLowerCase();
+                history.replaceState(null, '', url);
+            }));
+
+        // Keyboard accessibility: Enter/Space toggles row expansion
+        document.getElementById('requestTabPanes')?.addEventListener('keydown', function (e) {
+            if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('request-row-header')) {
+                e.preventDefault();
+                e.target.click();
+            }
+        });
+
+        // Search (+ optional entity filter), prefilled from ?q=
+        if (searchInput) {
+            const q = new URL(location.href).searchParams.get('q');
+            if (q) searchInput.value = q;
+            searchInput.addEventListener('input', applyFilters);
+        }
+        filterSelect?.addEventListener('change', applyFilters);
+
+        // Optional pending sort; remember the initial (newest-first) order
+        if (cfg.sortSelectId) {
+            document.querySelectorAll('#list-Pending .request-row').forEach((r, i) => r.dataset.order = i);
+            document.getElementById(cfg.sortSelectId)?.addEventListener('change', sortPending);
+        }
+
+        // Screen readers hear capacity/fit changes in the pending list
+        document.getElementById('list-Pending')?.setAttribute('aria-live', 'polite');
+
+        // Notify when new requests arrive
+        if (cfg.pendingCountUrl) {
+            KrishiRequests.watchPendingCount(cfg.pendingCountUrl, cfg.initialPendingCount || 0, delta => {
+                tabCount('Pending', delta);
+                KrishiToast.show(`${delta} ${msgs.newRequestMsg || 'new request'}${delta > 1 ? 's' : ''} received`, { iconClass: 'bi-bell-fill text-success' });
+            });
+        }
+
+        applyFilters();
+        if (cfg.afterListChange) cfg.afterListChange();
+
+        return { applyFilters, refreshEmptyStates };
     }
 };
 

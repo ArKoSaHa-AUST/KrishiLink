@@ -129,7 +129,8 @@ namespace KrishiLink.Controllers
             {
                 "accept" => "accepted",
                 "reject" => "rejected",
-                "undo" => "restored to pending",
+                "complete" => "marked as completed",
+                "undo" => "restored",
                 _ => "updated"
             };
             return Json(new { success = true, message = $"Request #{id} {verb}." });

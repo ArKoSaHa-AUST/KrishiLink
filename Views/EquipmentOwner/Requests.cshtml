@@ -36,7 +36,7 @@
     <div class="input-group input-group-sm flex-shrink-0" style="max-width: 320px;">
         <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-success"></i></span>
         <input type="search" class="form-control border-start-0" id="requestSearch"
-               placeholder="Search farmer or equipment…" aria-label="Search requests" oninput="filterRequests(this.value)" />
+               placeholder="Search farmer or equipment…" aria-label="Search requests" />
     </div>
 </div>
 
@@ -69,134 +69,21 @@
 
 @section Scripts {
     <script>
-        const RESPOND_URL = '@Url.Action("RespondRequest", "EquipmentOwner")';
-        const BADGE_CLASS = {
-            Pending: 'krishi-badge-pending d-none d-md-inline-flex',
-            Accepted: 'krishi-badge-available',
-            Rejected: 'krishi-badge-unavailable'
-        };
-        const UNDO_DELAY_MS = 5000;
-
-        function updateTabCount(tab, delta) {
-            const el = document.getElementById('count-' + tab);
-            KrishiCount.animate(el, Number(el.textContent) + delta);
-        }
-
-        function setRowStatus(row, status) {
-            const badge = row.querySelector('.request-status-badge');
-            badge.textContent = status;
-            badge.className = 'krishi-badge request-status-badge ' + BADGE_CLASS[status];
-        }
-
-        function refreshEmptyStates() {
-            const filtering = document.getElementById('requestSearch').value.trim().length > 0;
-            ['Pending', 'Accepted', 'Rejected', 'Completed'].forEach(tab => {
-                const total = document.querySelectorAll('#list-' + tab + ' .request-row').length;
-                const visible = document.querySelectorAll('#list-' + tab + ' .request-row:not(.d-none)').length;
-                const empty = document.getElementById('empty-' + tab);
-                empty.classList.toggle('d-none', visible > 0);
-                empty.querySelector('span').textContent =
-                    (total > 0 && filtering) ? 'No requests match your search' : empty.dataset.defaultText;
-            });
-        }
-
-        // Client-side filter across all tabs by farmer or equipment name
-        function filterRequests(q) {
-            q = q.trim().toLowerCase();
-            document.querySelectorAll('.request-row').forEach(r =>
-                r.classList.toggle('d-none', q.length > 0 && !r.dataset.search.includes(q)));
-            refreshEmptyStates();
-        }
-
-        // Handlers referenced by the shared _RequestRow partial
-        function applyDecision(id, decision, btn) {
-            const farmer = btn.closest('.request-row').dataset.farmerName;
-            KrishiRequests.confirmAccept(farmer, () => submitDecision(id, 'accept', btn));
-        }
-
-        function promptReject(id, btn) {
-            const farmer = btn.closest('.request-row').dataset.farmerName;
-            KrishiRequests.promptReject(farmer, reason => submitDecision(id, 'reject', btn, reason));
-        }
-
-        async function submitDecision(id, decision, btn, reason) {
-            const row = btn.closest('.request-row');
-            if (!row) return; // stale reference (row already moved)
-            const accepted = decision === 'accept';
-            const actions = row.querySelector('.request-actions');
-            const originalHtml = btn.innerHTML;
-
-            // Brief loading state on the clicked button
-            actions.querySelectorAll('button').forEach(b => b.disabled = true);
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving…';
-
-            try {
-                await KrishiRequests.post(RESPOND_URL, { id, decision, reason: reason || '' });
-
-                // Restore buttons (hidden but intact, so Undo can bring them back)
-                btn.innerHTML = originalHtml;
-                actions.querySelectorAll('button').forEach(b => b.disabled = false);
-
-                const targetTab = accepted ? 'Accepted' : 'Rejected';
-                row.classList.add('row-leaving');
-                setTimeout(() => {
-                    row.classList.remove('row-leaving');
-                    actions.classList.add('d-none');
-                    setRowStatus(row, targetTab);
-                    if (!accepted && reason) {
-                        const block = row.querySelector('.reject-reason-block');
-                        block.querySelector('.reject-reason-text').textContent = reason;
-                        block.classList.remove('d-none');
-                    }
-                    document.getElementById('list-' + targetTab).prepend(row);
-                    updateTabCount('Pending', -1);
-                    updateTabCount(targetTab, +1);
-                    refreshEmptyStates();
-                }, 350);
-
-                KrishiToast.show(
-                    accepted ? 'Request accepted — the farmer has been notified ✓' : 'Request rejected — the farmer has been notified',
-                    {
-                        iconClass: accepted ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger',
-                        actionText: 'Undo',
-                        delay: UNDO_DELAY_MS,
-                        onAction: () => undoDecision(row, targetTab)
-                    });
-            } catch {
-                btn.innerHTML = originalHtml;
-                actions.querySelectorAll('button').forEach(b => b.disabled = false);
-                KrishiToast.show('Could not save the decision. Please try again.', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
-            }
-        }
-
-        // Reverse a decision: move the row back to Pending and notify the server
-        function undoDecision(row, fromTab) {
-            row.querySelector('.request-actions').classList.remove('d-none');
-            row.querySelector('.reject-reason-block')?.classList.add('d-none');
-            setRowStatus(row, 'Pending');
-            document.getElementById('list-Pending').prepend(row);
-            updateTabCount(fromTab, -1);
-            updateTabCount('Pending', +1);
-            refreshEmptyStates();
-            KrishiRequests.post(RESPOND_URL, { id: row.dataset.requestId, decision: 'undo' })
-                .catch(() => KrishiToast.show('Could not undo on the server.', { iconClass: 'bi-exclamation-triangle-fill text-danger' }));
-        }
-
-        // Deep-linking: #accepted etc. selects the tab; tab changes update the hash
-        (function () {
-            const map = { pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected', completed: 'Completed' };
-            const hash = location.hash.replace('#', '').toLowerCase();
-            if (map[hash]) bootstrap.Tab.getOrCreateInstance(document.getElementById('tab-' + map[hash])).show();
-            document.querySelectorAll('#requestTabs [data-bs-toggle="pill"]').forEach(t =>
-                t.addEventListener('shown.bs.tab', e =>
-                    history.replaceState(null, '', '#' + e.target.id.replace('tab-', '').toLowerCase())));
-        })();
-
-        // Keyboard accessibility: Enter/Space toggles row expansion
-        document.getElementById('requestTabPanes').addEventListener('keydown', function (e) {
-            if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('request-row-header')) {
-                e.preventDefault();
-                e.target.click();
+        // All list/tab/decision behavior comes from the shared KrishiRequestsPage engine
+        KrishiRequestsPage.init({
+            respondUrl: '@Url.Action("RespondRequest", "EquipmentOwner")',
+            pendingCountUrl: '@Url.Action("PendingCount", "EquipmentOwner")',
+            initialPendingCount: @Model.Requests.Count(r => r.Status == "Pending"),
+            messages: {
+                acceptTitle: 'Accept Rental Request',
+                acceptNoun: 'rental request',
+                rejectTitle: 'Reject Rental Request',
+                rejectPlaceholder: 'e.g. Equipment is already booked for those dates (optional)',
+                acceptedMsg: 'Request accepted — the farmer has been notified ✓',
+                rejectedMsg: 'Request rejected — the farmer has been notified',
+                completedMsg: 'Rental marked as completed ✓',
+                completeTitle: 'Mark Rental Completed',
+                newRequestMsg: 'new rental request'
             }
         });
     </script>

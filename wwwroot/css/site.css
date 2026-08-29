@@ -109,6 +109,15 @@ body.krishi-body-gradient {
     opacity: 0.78;
 }
 
+/* Requests pages: chevron rotates when a row is expanded */
+.request-row-header .bi-chevron-down {
+    transition: transform 0.25s ease;
+}
+
+.request-row-header[aria-expanded="true"] .bi-chevron-down {
+    transform: rotate(180deg);
+}
+
 /* Rental requests page: full-width Accept/Reject on mobile stacked cards */
 .request-actions {
     width: 100%;

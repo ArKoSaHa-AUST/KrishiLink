@@ -1,6 +1,196 @@
+@model KrishiLink.Models.ViewModels.GodownBookingRequestsViewModel
+@using System.Text.Json
 @{
     ViewData["Title"] = "Godown Booking Requests";
+    ViewData["BodyClass"] = "krishi-body-gradient";
+    ViewData["Expandable"] = true;
+    var tabs = new[] { "Pending", "Accepted", "Rejected", "Completed" };
+    var godownsJson = JsonSerializer.Serialize(Model.Godowns.ToDictionary(
+        g => g.Id,
+        g => new { name = g.Name, total = g.TotalCapacityTons, available = g.AvailableCapacityTons }));
 }
-<div class="container py-4">
-    <h2>Godown Booking Requests Placeholder</h2>
+
+<!-- Page Header -->
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4 pb-3 border-bottom" style="border-color: var(--krishi-border-color) !important;">
+    <div>
+        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">Booking Requests</h2>
+        <p class="mb-0" style="color: var(--krishi-text-muted);">
+            Review incoming storage booking requests against remaining capacity and accept or reject them.
+        </p>
+    </div>
+    <a asp-controller="GodownOwner" asp-action="Index" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold flex-shrink-0">
+        <i class="bi bi-speedometer2 me-1"></i> Dashboard
+    </a>
 </div>
+
+<!-- Live capacity overview: remaining space per godown + aggregate pending demand -->
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3" id="capacityChips" aria-live="polite">
+    @foreach (var g in Model.Godowns)
+    {
+        <span class="badge bg-white border rounded-pill px-3 py-2 fw-medium d-inline-flex align-items-center gap-1"
+              style="color: var(--krishi-text-primary);" data-godown-id="@g.Id">
+            <i class="bi bi-building text-success"></i> @g.Name:
+            <strong class="chip-available">@g.AvailableCapacityTons.ToString("N0")</strong>/@g.TotalCapacityTons.ToString("N0") Tons free
+        </span>
+    }
+    <span class="badge rounded-pill px-3 py-2 fw-semibold" id="pendingAggregate"
+          style="background-color: var(--krishi-primary-light); color: var(--krishi-primary);"></span>
+</div>
+
+<!-- Filter Tabs + Godown Filter + Sort + Search -->
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+    <ul class="nav nav-pills krishi-nav-pills gap-2 flex-nowrap overflow-x-auto pb-1" id="requestTabs" role="tablist">
+        @foreach (var tab in tabs)
+        {
+            var count = Model.Requests.Count(r => r.Status == tab);
+            <li class="nav-item flex-shrink-0" role="presentation">
+                <button class="nav-link rounded-pill px-3 fw-semibold @(tab == "Pending" ? "active" : "")"
+                        id="tab-@tab" data-bs-toggle="pill" data-bs-target="#pane-@tab" type="button" role="tab">
+                    @tab <span class="badge rounded-pill bg-white text-success shadow-sm ms-1 tab-count" id="count-@tab">@count</span>
+                </button>
+            </li>
+        }
+    </ul>
+    <div class="d-flex flex-wrap gap-2">
+        <select class="form-select form-select-sm" id="godownFilter" aria-label="Filter by godown" style="max-width: 220px;">
+            <option value="">All godowns</option>
+            @foreach (var g in Model.Godowns)
+            {
+                <option value="@g.Id">@g.Name</option>
+            }
+        </select>
+        <select class="form-select form-select-sm" id="pendingSort" aria-label="Sort pending requests" style="max-width: 180px;">
+            <option value="newest">Newest first</option>
+            <option value="capacity">Largest capacity</option>
+        </select>
+        <div class="input-group input-group-sm" style="max-width: 240px;">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-success"></i></span>
+            <input type="search" class="form-control border-start-0" id="requestSearch"
+                   placeholder="Search farmer or godown…" aria-label="Search booking requests" />
+        </div>
+    </div>
+</div>
+
+<!-- Tab Panes -->
+<div class="tab-content" id="requestTabPanes">
+    @foreach (var tab in tabs)
+    {
+        var items = Model.Requests.Where(r => r.Status == tab).ToList();
+        var emptyText = tab == "Pending" ? "No pending requests right now" : $"No {tab.ToLower()} requests yet";
+        <div class="tab-pane fade @(tab == "Pending" ? "show active" : "")" id="pane-@tab" role="tabpanel">
+            <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: var(--krishi-radius-lg);">
+                <div class="request-list" id="list-@tab">
+                    @foreach (var req in items)
+                    {
+                        <partial name="_BookingRequestRow" model="req" />
+                    }
+                </div>
+
+                <!-- Per-tab empty / no-match state -->
+                <div class="p-5 text-center empty-state @(items.Any() ? "d-none" : "")" id="empty-@tab" data-default-text="@emptyText">
+                    <i class="bi bi-inbox fs-2 text-success d-block mb-1"></i>
+                    <span style="color: var(--krishi-text-muted);">@emptyText</span>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<form id="antiForgeryForm">@Html.AntiForgeryToken()</form>
+
+@section Scripts {
+    <script>
+        // Live capacity state per godown, seeded from the server
+        const GODOWNS = @Html.Raw(godownsJson);
+        const fmt = n => Number(n).toLocaleString();
+
+        // Header fit lines, expanded detail availability, capacity chips, and aggregate
+        function refreshCapacityUI() {
+            document.querySelectorAll('.request-row').forEach(row => {
+                const g = GODOWNS[row.dataset.godownId];
+                const cap = Number(row.dataset.capacity);
+                if (!g) return;
+                const fit = row.querySelector('.fit-indicator');
+                if (fit) {
+                    if (cap <= g.available) {
+                        fit.style.color = 'var(--krishi-status-accepted-text)';
+                        fit.innerHTML = `<i class="bi bi-check-circle me-1"></i>${fmt(cap)} / ${fmt(g.available)} Tons free — fits available space`;
+                    } else {
+                        fit.style.color = 'var(--krishi-status-rejected-text)';
+                        fit.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>Exceeds available space (only ${fmt(g.available)} Tons free)`;
+                    }
+                }
+                const detail = row.querySelector('.detail-availability');
+                if (detail) detail.textContent = `${fmt(g.available)} of ${fmt(g.total)} Tons currently available in this godown`;
+            });
+
+            document.querySelectorAll('#capacityChips [data-godown-id]').forEach(chip => {
+                const g = GODOWNS[chip.dataset.godownId];
+                if (g) chip.querySelector('.chip-available').textContent = fmt(g.available);
+            });
+
+            let pendingTons = 0;
+            document.querySelectorAll('#list-Pending .request-row').forEach(r => pendingTons += Number(r.dataset.capacity || 0));
+            const freeTons = Object.values(GODOWNS).reduce((s, g) => s + g.available, 0);
+            document.getElementById('pendingAggregate').textContent =
+                `Pending requests total ${fmt(pendingTons)} Tons vs. ${fmt(freeTons)} Tons free`;
+        }
+
+        function applyCapacityChange(godownId, deltaOccupiedTons) {
+            const g = GODOWNS[godownId];
+            if (!g) return;
+            g.available -= deltaOccupiedTons;
+            refreshCapacityUI();
+        }
+
+        KrishiRequestsPage.init({
+            respondUrl: '@Url.Action("RespondRequest", "GodownOwner")',
+            pendingCountUrl: '@Url.Action("PendingCount", "GodownOwner")',
+            initialPendingCount: @Model.Requests.Count(r => r.Status == "Pending"),
+            filterSelectId: 'godownFilter',
+            sortSelectId: 'pendingSort',
+            messages: {
+                acceptTitle: 'Accept Booking Request',
+                acceptNoun: 'storage booking request',
+                rejectTitle: 'Reject Booking Request',
+                rejectPlaceholder: 'e.g. Requested capacity is not available for those dates (optional)',
+                acceptedMsg: 'Booking accepted — the farmer has been notified ✓',
+                rejectedMsg: 'Booking rejected — the farmer has been notified',
+                completedMsg: 'Booking marked as completed — capacity freed ✓',
+                completeTitle: 'Mark Booking Completed',
+                newRequestMsg: 'new booking request'
+            },
+            // Over-capacity accepts need explicit confirmation — or a one-click reject
+            acceptGuard: function (row, api) {
+                const g = GODOWNS[row.dataset.godownId];
+                const cap = Number(row.dataset.capacity);
+                if (!g || cap <= g.available) return api.confirm();
+                KrishiModal.confirm({
+                    title: 'Exceeds Available Capacity',
+                    body: `This booking needs <strong>${fmt(cap)} Tons</strong>, but only <strong>${fmt(g.available)} Tons</strong> are free in this godown. Accept anyway?`,
+                    confirmText: 'Accept Anyway',
+                    confirmClass: 'btn-danger',
+                    iconClass: 'bi-exclamation-triangle-fill text-danger',
+                    onConfirm: api.direct,
+                    secondary: {
+                        text: 'Reject Instead',
+                        className: 'btn-outline-danger',
+                        onConfirm: () => api.reject('Requested capacity is not available for those dates.')
+                    }
+                });
+            },
+            // Accepted bookings occupy capacity; completed bookings free it again
+            onApplied: function (row, decision) {
+                const cap = Number(row.dataset.capacity);
+                if (decision === 'accept') applyCapacityChange(row.dataset.godownId, cap);
+                if (decision === 'complete') applyCapacityChange(row.dataset.godownId, -cap);
+            },
+            onReverted: function (row, decision) {
+                const cap = Number(row.dataset.capacity);
+                if (decision === 'accept') applyCapacityChange(row.dataset.godownId, -cap);
+                if (decision === 'complete') applyCapacityChange(row.dataset.godownId, cap);
+            },
+            afterListChange: refreshCapacityUI
+        });
+    </script>
+}
