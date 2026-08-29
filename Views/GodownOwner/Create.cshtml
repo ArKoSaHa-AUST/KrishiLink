@@ -432,5 +432,61 @@
             const card = document.getElementById('existingCard_' + index);
             if (card) card.remove();
         }
+
+        // 4. Form Submit Validation & Loading Spinner State
+        $('#godownListingForm').on('submit', function (e) {
+            const form = $(this);
+            const totalCapacity = parseFloat($('#totalCapacityInput').val()) || 0;
+            const availableCapacity = parseFloat($('#availableCapacityInput').val()) || 0;
+            const priceAmount = parseFloat($('#priceAmountInput').val()) || 0;
+            const existingCount = $('.existing-image-card').length;
+            const newCount = selectedFiles.filter(f => f !== null).length;
+            const alertBox = $('#imageValidationAlert');
+
+            // Validate capacity
+            if (totalCapacity <= 0) {
+                e.preventDefault();
+                KrishiToast.show('@L["Total storage capacity must be a positive number."]', { iconClass: 'bi-exclamation-triangle-fill text-warning' });
+                $('#totalCapacityInput').focus();
+                return false;
+            }
+
+            if (availableCapacity < 0 || availableCapacity > totalCapacity) {
+                e.preventDefault();
+                KrishiToast.show('@L["Available capacity cannot exceed total capacity."]', { iconClass: 'bi-exclamation-triangle-fill text-warning' });
+                $('#availableCapacityInput').focus();
+                return false;
+            }
+
+            // Validate price
+            if (priceAmount <= 0) {
+                e.preventDefault();
+                KrishiToast.show('@L["Rental price must be greater than 0."]', { iconClass: 'bi-exclamation-triangle-fill text-warning' });
+                $('#priceAmountInput').focus();
+                return false;
+            }
+
+            // Validate images (at least 1 photo)
+            if (existingCount + newCount === 0) {
+                e.preventDefault();
+                alertBox.removeClass('d-none');
+                alertBox[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+
+            if (form.valid()) {
+                const submitBtn = $('#submitGodownBtn');
+                const spinner = submitBtn.find('.btn-spinner');
+                const icon = submitBtn.find('.btn-icon');
+                const text = submitBtn.find('.btn-text');
+
+                spinner.removeClass('d-none');
+                icon.addClass('d-none');
+                text.text('@(Model.IsEditMode ? L["Updating Storage Facility..."] : L["Saving Storage Facility..."])');
+                submitBtn.prop('disabled', true);
+
+                return true;
+            }
+        });
     </script>
 }
