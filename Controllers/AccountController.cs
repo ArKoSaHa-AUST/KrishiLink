@@ -137,9 +137,59 @@ namespace KrishiLink.Controllers
         }
 
         [HttpGet]
-        public IActionResult Login()
+        public async Task<IActionResult> Login(string? returnUrl = null)
         {
-            return View();
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                var currentUser = await _userManager.GetUserAsync(User);
+                return RedirectBasedOnRole(currentUser?.UserRole);
+            }
+
+            var model = new LoginViewModel
+            {
+                ReturnUrl = returnUrl
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(LoginViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var identifier = model.Identifier.Trim();
+
+            // Attempt to find user by Phone Number or Email/UserName
+            ApplicationUser? user = _userManager.Users.FirstOrDefault(u => u.PhoneNumber == identifier);
+            if (user == null)
+            {
+                user = await _userManager.FindByEmailAsync(identifier) ?? await _userManager.FindByNameAsync(identifier);
+            }
+
+            if (user == null)
+            {
+                ModelState.AddModelError(nameof(model.Identifier), "Incorrect phone number or password.");
+                return View(model);
+            }
+
+            var result = await _signInManager.PasswordSignInAsync(user.UserName!, model.Password, model.RememberMe, lockoutOnFailure: false);
+            if (result.Succeeded)
+            {
+                if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+                {
+                    return Redirect(model.ReturnUrl);
+                }
+
+                return RedirectBasedOnRole(user.UserRole);
+            }
+
+            ModelState.AddModelError(nameof(model.Password), "Incorrect phone number or password.");
+            return View(model);
         }
 
         [HttpPost]
@@ -151,9 +201,126 @@ namespace KrishiLink.Controllers
         }
 
         [HttpGet]
-        public IActionResult Profile()
+        public async Task<IActionResult> Profile()
         {
-            return View();
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser != null)
+                {
+                    var model = new UserProfileViewModel
+                    {
+                        FullName = currentUser.FullName ?? string.Empty,
+                        PhoneNumber = currentUser.PhoneNumber ?? string.Empty,
+                        Email = currentUser.Email,
+                        Location = currentUser.Location ?? string.Empty,
+                        BusinessOrFarmName = currentUser.BusinessOrFarmName,
+                        Role = currentUser.UserRole ?? "Farmer",
+                        MemberSince = currentUser.CreatedAt
+                    };
+                    return View(model);
+                }
+            }
+
+            // Fallback for preview / demo
+            var previewModel = new UserProfileViewModel
+            {
+                FullName = "Rahim Uddin",
+                PhoneNumber = "01712345678",
+                Email = "rahim.uddin@krishilink.com",
+                Location = "Dinajpur Sadar, Dinajpur",
+                BusinessOrFarmName = "Uddin Agro Farm",
+                Role = "Farmer",
+                MemberSince = DateTime.UtcNow.AddMonths(-6)
+            };
+
+            return View(previewModel);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateProfile(UserProfileViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                    return Json(new { success = false, message = string.Join(" ", errors) });
+                }
+                return View("Profile", model);
+            }
+
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser != null)
+                {
+                    currentUser.FullName = model.FullName.Trim();
+                    currentUser.PhoneNumber = model.PhoneNumber.Trim();
+                    currentUser.Email = !string.IsNullOrWhiteSpace(model.Email) ? model.Email.Trim() : currentUser.Email;
+                    currentUser.Location = model.Location.Trim();
+                    currentUser.BusinessOrFarmName = model.BusinessOrFarmName?.Trim();
+
+                    var result = await _userManager.UpdateAsync(currentUser);
+                    if (result.Succeeded)
+                    {
+                        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                        {
+                            return Json(new { success = true, message = "Profile updated successfully." });
+                        }
+                        TempData["SuccessMessage"] = "Profile updated successfully.";
+                        return RedirectToAction(nameof(Profile));
+                    }
+
+                    var errorDesc = string.Join(" ", result.Errors.Select(e => e.Description));
+                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    {
+                        return Json(new { success = false, message = errorDesc });
+                    }
+                    ModelState.AddModelError(string.Empty, errorDesc);
+                    return View("Profile", model);
+                }
+            }
+
+            // Preview mode response
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = true, message = "Profile updated successfully (Preview Mode)." });
+            }
+            TempData["SuccessMessage"] = "Profile updated successfully.";
+            return RedirectToAction(nameof(Profile));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return Json(new { success = false, message = string.Join(" ", errors) });
+            }
+
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                var currentUser = await _userManager.GetUserAsync(User);
+                if (currentUser != null)
+                {
+                    var result = await _userManager.ChangePasswordAsync(currentUser, model.CurrentPassword, model.NewPassword);
+                    if (result.Succeeded)
+                    {
+                        await _signInManager.RefreshSignInAsync(currentUser);
+                        return Json(new { success = true, message = "Password updated successfully." });
+                    }
+
+                    var errorDesc = string.Join(" ", result.Errors.Select(e => e.Description));
+                    return Json(new { success = false, message = errorDesc });
+                }
+            }
+
+            // Preview mode response
+            return Json(new { success = true, message = "Password changed successfully (Preview Mode)." });
         }
 
         private IActionResult RedirectBasedOnRole(string? role)

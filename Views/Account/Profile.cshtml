@@ -1,6 +1,735 @@
+@model KrishiLink.Models.ViewModels.UserProfileViewModel
 @{
-    ViewData["Title"] = L["Profile"];
+    ViewData["Title"] = L["User Profile"];
+    var roleName = Model.Role ?? "Farmer";
+    var roleIcon = roleName == "EquipmentOwner" ? "bi-truck" : (roleName == "GodownOwner" ? "bi-building" : "bi-flower1");
+    var roleDisplay = roleName == "EquipmentOwner" ? L["Equipment Owner"] : (roleName == "GodownOwner" ? L["Godown Owner"] : L["Farmer"]);
+    var dashboardController = roleName == "EquipmentOwner" ? "EquipmentOwner" : (roleName == "GodownOwner" ? "GodownOwner" : "Farmer");
+    var dashboardAction = roleName == "Farmer" ? "Dashboard" : "Index";
 }
-<div class="container py-4">
-    <h2>@L["User Profile Placeholder"]</h2>
+
+<div class="container py-4 py-md-5">
+    <!-- Breadcrumb & Page Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb small mb-1">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-decoration-none text-muted">@L["Home"]</a></li>
+                    <li class="breadcrumb-item"><a asp-controller="@dashboardController" asp-action="@dashboardAction" class="text-decoration-none text-muted">@L["Dashboard"]</a></li>
+                    <li class="breadcrumb-item active text-success fw-semibold" aria-current="page">@L["My Profile"]</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold mb-0 text-dark">@L["Account Profile"]</h2>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a asp-controller="@dashboardController" asp-action="@dashboardAction" class="btn btn-outline-success btn-sm rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5">
+                <i class="bi bi-speedometer2"></i>
+                <span>@L["Return to Dashboard"]</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Alert Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm py-2.5 px-3 mb-4 d-flex align-items-center gap-2" role="alert">
+            <i class="bi bi-check-circle-fill text-success fs-5 flex-shrink-0"></i>
+            <div>@TempData["SuccessMessage"]</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+        <!-- Left Sidebar: Profile Summary Card -->
+        <div class="col-12 col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden h-100 profile-sidebar-card">
+                <!-- Banner Graphic -->
+                <div class="profile-header-strip px-4 pt-4 pb-5 text-center" style="background: linear-gradient(135deg, #193826 0%, #2d6a4f 100%);">
+                </div>
+
+                <!-- Avatar & Core Info -->
+                <div class="card-body px-4 pb-4 pt-0 text-center" style="margin-top: -45px;">
+                    <!-- Initials-based Avatar Badge -->
+                    <div class="avatar-initials-badge mx-auto mb-3 shadow">
+                        <span>@Model.Initials</span>
+                    </div>
+
+                    <h4 class="fw-bold mb-1 text-dark" id="profileSidebarName">@Model.FullName</h4>
+                    
+                    <div class="mb-3">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1.5 rounded-pill fw-semibold d-inline-flex align-items-center gap-1">
+                            <i class="bi @roleIcon"></i> @roleDisplay
+                        </span>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.BusinessOrFarmName))
+                    {
+                        <div class="text-muted small fw-medium mb-3">
+                            <i class="bi bi-shop me-1 text-success"></i> @Model.BusinessOrFarmName
+                        </div>
+                    }
+
+                    <hr class="my-3 text-muted opacity-25">
+
+                    <!-- Meta Details -->
+                    <ul class="list-unstyled text-start small mb-4 d-flex flex-column gap-2.5 text-muted">
+                        <li class="d-flex align-items-center gap-2">
+                            <div class="p-1.5 rounded-circle bg-light text-success d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                                <i class="bi bi-telephone"></i>
+                            </div>
+                            <span class="text-dark fw-medium" id="sidebarPhone">@Model.PhoneNumber</span>
+                        </li>
+                        <li class="d-flex align-items-center gap-2">
+                            <div class="p-1.5 rounded-circle bg-light text-success d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                                <i class="bi bi-envelope"></i>
+                            </div>
+                            <span class="text-truncate text-dark fw-medium" id="sidebarEmail">@(string.IsNullOrEmpty(Model.Email) ? L["Not specified"] : Model.Email)</span>
+                        </li>
+                        <li class="d-flex align-items-center gap-2">
+                            <div class="p-1.5 rounded-circle bg-light text-success d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                                <i class="bi bi-geo-alt"></i>
+                            </div>
+                            <span class="text-dark fw-medium" id="sidebarLocation">@Model.Location</span>
+                        </li>
+                        <li class="d-flex align-items-center gap-2">
+                            <div class="p-1.5 rounded-circle bg-light text-success d-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
+                                <i class="bi bi-calendar-check"></i>
+                            </div>
+                            <span>@L["Member Since:"] <strong class="text-dark">@Model.MemberSince.ToString("MMM yyyy")</strong></span>
+                        </li>
+                    </ul>
+
+                    <!-- Quick Action Shortcuts -->
+                    <div class="d-grid gap-2">
+                        <a asp-controller="@dashboardController" asp-action="@dashboardAction" class="btn btn-krishi-subtle py-2 rounded-pill fw-semibold small d-flex align-items-center justify-content-center gap-1.5">
+                            <i class="bi bi-grid"></i>
+                            <span>@(roleName == "Farmer" ? L["My Bookings & Activity"] : L["Manage My Listings"])</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Personal Details & Password Panels -->
+        <div class="col-12 col-lg-8">
+            <!-- Profile Details Card -->
+            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden mb-4 profile-main-card">
+                <!-- Card Header -->
+                <div class="px-4 py-3 border-bottom d-flex align-items-center justify-content-between bg-light-subtle">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="p-2 rounded-circle text-success" style="background-color: var(--krishi-primary-subtle);">
+                            <i class="bi bi-person-vcard fs-5"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">@L["Personal Details"]</h5>
+                            <span class="small text-muted">@L["View and update your personal and agricultural account info"]</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3 py-1.5 fw-semibold" id="toggleEditBtn">
+                        <i class="bi bi-pencil-square me-1"></i> <span id="editBtnText">@L["Edit Profile"]</span>
+                    </button>
+                </div>
+
+                <div class="card-body p-4">
+                    <form id="profileForm" novalidate>
+                        @Html.AntiForgeryToken()
+
+                        <!-- Read-Only / View Mode Section -->
+                        <div id="readOnlyView">
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label text-muted small mb-1 fw-medium">@L["Full Name"]</label>
+                                    <div class="p-2.5 bg-light rounded-3 text-dark fw-semibold" id="viewFullName">@Model.FullName</div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label text-muted small mb-1 fw-medium">@L["Phone Number"]</label>
+                                    <div class="p-2.5 bg-light rounded-3 text-dark fw-semibold" id="viewPhone">@Model.PhoneNumber</div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label text-muted small mb-1 fw-medium">@L["Email Address"]</label>
+                                    <div class="p-2.5 bg-light rounded-3 text-dark fw-semibold" id="viewEmail">@(string.IsNullOrEmpty(Model.Email) ? L["Not provided"] : Model.Email)</div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label text-muted small mb-1 fw-medium">@L["Location"]</label>
+                                    <div class="p-2.5 bg-light rounded-3 text-dark fw-semibold" id="viewLocation">@Model.Location</div>
+                                </div>
+                                @if (roleName == "EquipmentOwner" || roleName == "GodownOwner" || !string.IsNullOrEmpty(Model.BusinessOrFarmName))
+                                {
+                                    <div class="col-12">
+                                        <label class="form-label text-muted small mb-1 fw-medium">
+                                            @(roleName == "GodownOwner" ? L["Godown / Storage Facility Name"] : L["Farm / Equipment Business Name"])
+                                        </label>
+                                        <div class="p-2.5 bg-light rounded-3 text-dark fw-semibold" id="viewBusiness">
+                                            @(string.IsNullOrEmpty(Model.BusinessOrFarmName) ? L["Not specified"] : Model.BusinessOrFarmName)
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Editable Form Mode (Hidden by default) -->
+                        <div id="editableView" class="d-none">
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label asp-for="FullName" class="form-label fw-semibold small text-dark mb-1">
+                                        @L["Full Name"] <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                            <i class="bi bi-person"></i>
+                                        </span>
+                                        <input asp-for="FullName" class="form-control border-start-0 rounded-end-pill pe-3 py-2 profile-input" id="inputFullName" required />
+                                    </div>
+                                    <span asp-validation-for="FullName" class="text-danger small mt-1 d-block ms-2"></span>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label asp-for="PhoneNumber" class="form-label fw-semibold small text-dark mb-1">
+                                        @L["Phone Number"] <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                            <i class="bi bi-telephone"></i>
+                                        </span>
+                                        <input asp-for="PhoneNumber" class="form-control border-start-0 rounded-end-pill pe-3 py-2 profile-input" id="inputPhone" required />
+                                    </div>
+                                    <span asp-validation-for="PhoneNumber" class="text-danger small mt-1 d-block ms-2"></span>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label asp-for="Email" class="form-label fw-semibold small text-dark mb-1">
+                                        @L["Email Address"]
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                            <i class="bi bi-envelope"></i>
+                                        </span>
+                                        <input asp-for="Email" class="form-control border-start-0 rounded-end-pill pe-3 py-2 profile-input" id="inputEmail" type="email" />
+                                    </div>
+                                    <span asp-validation-for="Email" class="text-danger small mt-1 d-block ms-2"></span>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label asp-for="Location" class="form-label fw-semibold small text-dark mb-1">
+                                        @L["Location"] <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                            <i class="bi bi-geo-alt"></i>
+                                        </span>
+                                        <input asp-for="Location" class="form-control border-start-0 rounded-end-pill pe-3 py-2 profile-input" id="inputLocation" required />
+                                    </div>
+                                    <span asp-validation-for="Location" class="text-danger small mt-1 d-block ms-2"></span>
+                                </div>
+
+                                <div class="col-12 @(roleName == "Farmer" && string.IsNullOrEmpty(Model.BusinessOrFarmName) ? "d-none" : "")" id="businessEditSection">
+                                    <label asp-for="BusinessOrFarmName" class="form-label fw-semibold small text-dark mb-1">
+                                        @(roleName == "GodownOwner" ? L["Godown / Storage Facility Name"] : L["Farm / Equipment Business Name"])
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                            <i class="bi bi-shop"></i>
+                                        </span>
+                                        <input asp-for="BusinessOrFarmName" class="form-control border-start-0 rounded-end-pill pe-3 py-2 profile-input" id="inputBusiness" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Edit Action Buttons -->
+                            <div class="d-flex align-items-center justify-content-end gap-2 mt-4 pt-3 border-top">
+                                <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-medium" id="cancelEditBtn">
+                                    @L["Cancel"]
+                                </button>
+                                <button type="submit" class="btn btn-krishi rounded-pill px-4 py-2 fw-bold text-white shadow-sm d-inline-flex align-items-center gap-2" id="saveProfileBtn" disabled>
+                                    <span class="btn-spinner spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    <i class="bi bi-check2 btn-icon"></i>
+                                    <span class="btn-text">@L["Save Changes"]</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Password Management Section Card -->
+            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden profile-password-card">
+                <div class="px-4 py-3 border-bottom d-flex align-items-center justify-content-between bg-light-subtle">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="p-2 rounded-circle text-success" style="background-color: var(--krishi-primary-subtle);">
+                            <i class="bi bi-shield-lock fs-5"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">@L["Security & Password"]</h5>
+                            <span class="small text-muted">@L["Ensure your account stays secure with regular password updates"]</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <!-- Change Password Collapsible Trigger -->
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3" id="passwordTriggerSection">
+                        <div>
+                            <h6 class="fw-bold mb-1 text-dark">@L["Account Password"]</h6>
+                            <p class="small text-muted mb-0">@L["Change your password to keep your farm data and transactions safe."]</p>
+                        </div>
+                        <button class="btn btn-outline-success rounded-pill px-3 py-1.5 fw-semibold small" type="button" data-bs-toggle="collapse" data-bs-target="#changePasswordCollapse" aria-expanded="false" aria-controls="changePasswordCollapse" id="togglePasswordAccordionBtn">
+                            <i class="bi bi-key me-1"></i> @L["Change Password"]
+                        </button>
+                    </div>
+
+                    <!-- Change Password Accordion Body -->
+                    <div class="collapse mt-3 pt-3 border-top" id="changePasswordCollapse">
+                        <form id="changePasswordForm" novalidate>
+                            @Html.AntiForgeryToken()
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold small text-dark mb-1">
+                                        @L["Current Password"] <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                            <i class="bi bi-lock"></i>
+                                        </span>
+                                        <input type="password" name="CurrentPassword" class="form-control border-start-0 border-end-0 py-2" id="inputCurrentPassword" placeholder="@L["Enter current password"]" required />
+                                        <button type="button" class="input-group-text bg-white text-muted border-start-0 rounded-end-pill pe-3 toggle-password-btn" data-target="inputCurrentPassword">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <span class="text-danger small mt-1 d-block ms-2" id="currentPasswordError"></span>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label fw-semibold small text-dark mb-1">
+                                        @L["New Password"] <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                            <i class="bi bi-shield-lock"></i>
+                                        </span>
+                                        <input type="password" name="NewPassword" class="form-control border-start-0 border-end-0 py-2" id="inputNewPassword" placeholder="@L["Min. 6 characters"]" required />
+                                        <button type="button" class="input-group-text bg-white text-muted border-start-0 rounded-end-pill pe-3 toggle-password-btn" data-target="inputNewPassword">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <span class="text-danger small mt-1 d-block ms-2" id="newPasswordError"></span>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label fw-semibold small text-dark mb-1">
+                                        @L["Confirm New Password"] <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                            <i class="bi bi-shield-check"></i>
+                                        </span>
+                                        <input type="password" name="ConfirmNewPassword" class="form-control border-start-0 border-end-0 py-2" id="inputConfirmPassword" placeholder="@L["Re-enter new password"]" required />
+                                        <button type="button" class="input-group-text bg-white text-muted border-start-0 rounded-end-pill pe-3 toggle-password-btn" data-target="inputConfirmPassword">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    <span class="text-danger small mt-1 d-block ms-2" id="confirmPasswordError"></span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-end gap-2 mt-3 pt-3 border-top">
+                                <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-1.5 small fw-medium" data-bs-toggle="collapse" data-bs-target="#changePasswordCollapse">
+                                    @L["Cancel"]
+                                </button>
+                                <button type="submit" class="btn btn-krishi rounded-pill px-4 py-1.5 small fw-bold text-white shadow-sm d-inline-flex align-items-center gap-2" id="savePasswordBtn">
+                                    <span class="btn-spinner spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    <i class="bi bi-check2 btn-icon"></i>
+                                    <span class="btn-text">@L["Update Password"]</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+/* Profile Styles */
+.profile-sidebar-card,
+.profile-main-card,
+.profile-password-card {
+    border: 1px solid var(--krishi-border-color);
+}
+
+.avatar-initials-badge {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #193826 0%, #2d6a4f 100%);
+    color: #ffffff;
+    font-size: 2rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 4px solid #ffffff;
+    letter-spacing: 1px;
+}
+
+.btn-krishi {
+    background-color: var(--krishi-primary);
+    border-color: var(--krishi-primary);
+    transition: all 0.2s ease;
+}
+.btn-krishi:hover:not(:disabled) {
+    background-color: var(--krishi-primary-hover);
+    border-color: var(--krishi-primary-hover);
+    transform: translateY(-1px);
+}
+.btn-krishi:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.btn-krishi-subtle {
+    background-color: var(--krishi-primary-light);
+    color: var(--krishi-primary);
+    border: 1px solid var(--krishi-primary-subtle);
+    transition: all 0.2s ease;
+}
+.btn-krishi-subtle:hover {
+    background-color: var(--krishi-primary);
+    color: #ffffff;
+}
+
+.toggle-password-btn {
+    cursor: pointer;
+    background: transparent;
+}
+.toggle-password-btn:hover {
+    color: var(--krishi-primary) !important;
+}
+
+.input-group.has-error .form-control,
+.input-group.has-error .input-group-text {
+    border-color: #dc3545 !important;
+}
+
+.input-group.is-valid-field .form-control,
+.input-group.is-valid-field .input-group-text {
+    border-color: var(--krishi-accent) !important;
+}
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+            // 1. Initial State & Value Tracking for Dirty Field Detection
+            let initialValues = {
+                fullName: $('#inputFullName').val().trim(),
+                phone: $('#inputPhone').val().trim(),
+                email: $('#inputEmail').val().trim(),
+                location: $('#inputLocation').val().trim(),
+                business: $('#inputBusiness').length ? $('#inputBusiness').val().trim() : ''
+            };
+
+            function checkFormDirty() {
+                const currentValues = {
+                    fullName: $('#inputFullName').val().trim(),
+                    phone: $('#inputPhone').val().trim(),
+                    email: $('#inputEmail').val().trim(),
+                    location: $('#inputLocation').val().trim(),
+                    business: $('#inputBusiness').length ? $('#inputBusiness').val().trim() : ''
+                };
+
+                const isDirty = (
+                    currentValues.fullName !== initialValues.fullName ||
+                    currentValues.phone !== initialValues.phone ||
+                    currentValues.email !== initialValues.email ||
+                    currentValues.location !== initialValues.location ||
+                    currentValues.business !== initialValues.business
+                );
+
+                const isValid = currentValues.fullName.length > 0 &&
+                                currentValues.phone.length >= 11 &&
+                                currentValues.location.length > 0;
+
+                $('#saveProfileBtn').prop('disabled', !(isDirty && isValid));
+            }
+
+            // 2. Read-Only <-> Edit Mode Toggle
+            function enterEditMode() {
+                $('#readOnlyView').addClass('d-none');
+                $('#editableView').removeClass('d-none').hide().fadeIn(250);
+                $('#editBtnText').text('@L["View Mode"]');
+                $('#toggleEditBtn').removeClass('btn-outline-success').addClass('btn-outline-secondary');
+                $('#toggleEditBtn i').removeClass('bi-pencil-square').addClass('bi-eye');
+                $('#inputFullName').focus();
+                checkFormDirty();
+            }
+
+            function exitEditMode(resetValues = false) {
+                if (resetValues) {
+                    $('#inputFullName').val(initialValues.fullName);
+                    $('#inputPhone').val(initialValues.phone);
+                    $('#inputEmail').val(initialValues.email);
+                    $('#inputLocation').val(initialValues.location);
+                    if ($('#inputBusiness').length) {
+                        $('#inputBusiness').val(initialValues.business);
+                    }
+                    $('.input-group').removeClass('has-error is-valid-field');
+                    $('.text-danger.small').text('');
+                }
+
+                $('#editableView').addClass('d-none');
+                $('#readOnlyView').removeClass('d-none').hide().fadeIn(250);
+                $('#editBtnText').text('@L["Edit Profile"]');
+                $('#toggleEditBtn').removeClass('btn-outline-secondary').addClass('btn-outline-success');
+                $('#toggleEditBtn i').removeClass('bi-eye').addClass('bi-pencil-square');
+                $('#saveProfileBtn').prop('disabled', true);
+            }
+
+            $('#toggleEditBtn').on('click', function () {
+                if ($('#editableView').hasClass('d-none')) {
+                    enterEditMode();
+                } else {
+                    exitEditMode(false);
+                }
+            });
+
+            $('#cancelEditBtn').on('click', function () {
+                exitEditMode(true);
+            });
+
+            // 3. Live Input Validation & Dirty Change Detection
+            $('.profile-input').on('input change', function () {
+                const input = $(this);
+                const val = input.val().trim();
+                const group = input.closest('.input-group');
+
+                if (input.attr('id') === 'inputPhone') {
+                    const phoneRegex = /^(?:\+?880|0)?1[3-9]\d{8}$/;
+                    if (val.length > 0 && !phoneRegex.test(val)) {
+                        group.addClass('has-error').removeClass('is-valid-field');
+                    } else if (val.length >= 11) {
+                        group.removeClass('has-error').addClass('is-valid-field');
+                    } else {
+                        group.removeClass('has-error is-valid-field');
+                    }
+                } else if (input.attr('id') === 'inputFullName' || input.attr('id') === 'inputLocation') {
+                    if (val.length > 0) {
+                        group.removeClass('has-error').addClass('is-valid-field');
+                    } else {
+                        group.addClass('has-error').removeClass('is-valid-field');
+                    }
+                }
+
+                checkFormDirty();
+            });
+
+            // 4. Password Show/Hide Visibility Toggles
+            $('.toggle-password-btn').on('click', function () {
+                const targetId = $(this).data('target');
+                const targetInput = $('#' + targetId);
+                const icon = $(this).find('i');
+
+                if (targetInput.attr('type') === 'password') {
+                    targetInput.attr('type', 'text');
+                    icon.removeClass('bi-eye').addClass('bi-eye-slash text-success');
+                } else {
+                    targetInput.attr('type', 'password');
+                    icon.removeClass('bi-eye-slash text-success').addClass('bi-eye');
+                }
+            });
+
+            // 5. Live Password Confirmation & Length Feedback
+            $('#inputNewPassword, #inputConfirmPassword').on('input', function () {
+                const newPass = $('#inputNewPassword').val();
+                const confirmPass = $('#inputConfirmPassword').val();
+                const newPassGroup = $('#inputNewPassword').closest('.input-group');
+                const confirmPassGroup = $('#inputConfirmPassword').closest('.input-group');
+
+                // Check length
+                if (newPass.length > 0 && newPass.length < 6) {
+                    newPassGroup.addClass('has-error').removeClass('is-valid-field');
+                    $('#newPasswordError').text('@L["Password must be at least 6 characters."]');
+                } else if (newPass.length >= 6) {
+                    newPassGroup.removeClass('has-error').addClass('is-valid-field');
+                    $('#newPasswordError').text('');
+                } else {
+                    newPassGroup.removeClass('has-error is-valid-field');
+                    $('#newPasswordError').text('');
+                }
+
+                // Check matching
+                if (confirmPass.length > 0 && newPass !== confirmPass) {
+                    confirmPassGroup.addClass('has-error').removeClass('is-valid-field');
+                    $('#confirmPasswordError').text('@L["Passwords do not match."]');
+                } else if (confirmPass.length > 0 && newPass === confirmPass) {
+                    confirmPassGroup.removeClass('has-error').addClass('is-valid-field');
+                    $('#confirmPasswordError').text('');
+                } else {
+                    confirmPassGroup.removeClass('has-error is-valid-field');
+                    $('#confirmPasswordError').text('');
+                }
+            });
+
+            // 6. AJAX Profile Save Submission
+            $('#profileForm').on('submit', function (e) {
+                e.preventDefault();
+
+                const saveBtn = $('#saveProfileBtn');
+                const spinner = saveBtn.find('.btn-spinner');
+                const icon = saveBtn.find('.btn-icon');
+                const text = saveBtn.find('.btn-text');
+
+                const newName = $('#inputFullName').val().trim();
+                const newPhone = $('#inputPhone').val().trim();
+                const newEmail = $('#inputEmail').val().trim();
+                const newLocation = $('#inputLocation').val().trim();
+                const newBusiness = $('#inputBusiness').length ? $('#inputBusiness').val().trim() : '';
+
+                if (!newName || !newPhone || !newLocation) {
+                    KrishiToast.show('@L["Please fill in all required fields."]', { iconClass: 'bi-exclamation-circle-fill text-warning' });
+                    return false;
+                }
+
+                // Show spinner
+                spinner.removeClass('d-none');
+                icon.addClass('d-none');
+                text.text('@L["Saving..."]');
+                saveBtn.prop('disabled', true);
+
+                $.ajax({
+                    url: '@Url.Action("UpdateProfile", "Account")',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            // Update read-only views
+                            $('#viewFullName').text(newName);
+                            $('#viewPhone').text(newPhone);
+                            $('#viewEmail').text(newEmail || '@L["Not provided"]');
+                            $('#viewLocation').text(newLocation);
+                            if ($('#viewBusiness').length) {
+                                $('#viewBusiness').text(newBusiness || '@L["Not specified"]');
+                            }
+
+                            // Update sidebar metadata
+                            $('#profileSidebarName').text(newName);
+                            $('#sidebarPhone').text(newPhone);
+                            $('#sidebarEmail').text(newEmail || '@L["Not specified"]');
+                            $('#sidebarLocation').text(newLocation);
+
+                            // Recalculate initials
+                            const parts = newName.split(/\s+/).filter(Boolean);
+                            let initials = 'KL';
+                            if (parts.length === 1) {
+                                initials = parts[0].length >= 2 ? parts[0].substring(0, 2).toUpperCase() : parts[0].toUpperCase();
+                            } else if (parts.length > 1) {
+                                initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                            }
+                            $('.avatar-initials-badge span').text(initials);
+
+                            // Refresh baseline initial values
+                            initialValues = {
+                                fullName: newName,
+                                phone: newPhone,
+                                email: newEmail,
+                                location: newLocation,
+                                business: newBusiness
+                            };
+
+                            KrishiToast.show('@L["Profile updated successfully!"]', { iconClass: 'bi-check-circle-fill text-success' });
+                            exitEditMode(false);
+                        } else {
+                            KrishiToast.show(response.message || '@L["Failed to update profile."]', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
+                        }
+                    },
+                    error: function () {
+                        KrishiToast.show('@L["A network error occurred. Please try again."]', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
+                    },
+                    complete: function () {
+                        spinner.addClass('d-none');
+                        icon.removeClass('d-none');
+                        text.text('@L["Save Changes"]');
+                        saveBtn.prop('disabled', false);
+                        checkFormDirty();
+                    }
+                });
+            });
+
+            // 7. AJAX Password Change Submission
+            $('#changePasswordForm').on('submit', function (e) {
+                e.preventDefault();
+
+                const currentPass = $('#inputCurrentPassword').val();
+                const newPass = $('#inputNewPassword').val();
+                const confirmPass = $('#inputConfirmPassword').val();
+
+                if (!currentPass || !newPass || !confirmPass) {
+                    KrishiToast.show('@L["Please complete all password fields."]', { iconClass: 'bi-exclamation-circle-fill text-warning' });
+                    return false;
+                }
+
+                if (newPass.length < 6) {
+                    $('#newPasswordError').text('@L["Password must be at least 6 characters."]');
+                    $('#inputNewPassword').focus();
+                    return false;
+                }
+
+                if (newPass !== confirmPass) {
+                    $('#confirmPasswordError').text('@L["Passwords do not match."]');
+                    $('#inputConfirmPassword').focus();
+                    return false;
+                }
+
+                const saveBtn = $('#savePasswordBtn');
+                const spinner = saveBtn.find('.btn-spinner');
+                const icon = saveBtn.find('.btn-icon');
+                const text = saveBtn.find('.btn-text');
+
+                spinner.removeClass('d-none');
+                icon.addClass('d-none');
+                text.text('@L["Updating..."]');
+                saveBtn.prop('disabled', true);
+
+                $.ajax({
+                    url: '@Url.Action("ChangePassword", "Account")',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            KrishiToast.show(response.message || '@L["Password changed successfully!"]', { iconClass: 'bi-shield-check text-success' });
+                            $('#changePasswordForm')[0].reset();
+                            $('.input-group').removeClass('has-error is-valid-field');
+                            $('#currentPasswordError, #newPasswordError, #confirmPasswordError').text('');
+
+                            // Collapse accordion
+                            const collapseEl = document.getElementById('changePasswordCollapse');
+                            if (collapseEl) {
+                                const bsCollapse = bootstrap.Collapse.getInstance(collapseEl) || new bootstrap.Collapse(collapseEl);
+                                bsCollapse.hide();
+                            }
+                        } else {
+                            KrishiToast.show(response.message || '@L["Failed to change password."]', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
+                            $('#currentPasswordError').text(response.message || '');
+                        }
+                    },
+                    error: function () {
+                        KrishiToast.show('@L["An error occurred while changing password."]', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
+                    },
+                    complete: function () {
+                        spinner.addClass('d-none');
+                        icon.removeClass('d-none');
+                        text.text('@L["Update Password"]');
+                        saveBtn.prop('disabled', false);
+                    }
+                });
+            });
+        });
+    </script>
+}

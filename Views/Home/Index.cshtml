@@ -9,6 +9,7 @@
         Location = L["Bogra Sadar, Bogra"].Value,
         Price = L["Tk {0} / Day", "1,500"].Value,
         Status = "Available",
+        ImageUrl = "/images/tractor.jpg",
         DetailUrl = Url.Action("Index", "Equipment")
     };
 
@@ -18,7 +19,8 @@
         Category = "Cold Storage Facility",
         Location = L["Dinajpur Sadar"].Value,
         Price = L["Tk {0} / Ton / Month", "500"].Value,
-        Status = "Pending",
+        Status = "Available",
+        ImageUrl = "/images/godown.jpg",
         DetailUrl = Url.Action("Index", "Godown")
     };
 
@@ -29,66 +31,127 @@
         Location = L["Rangpur Sadar"].Value,
         Price = L["Tk {0} / Day", "3,000"].Value,
         Status = "Available",
+        ImageUrl = "/images/harvester.jpg",
         DetailUrl = Url.Action("Index", "Equipment")
     };
 }
 
 <!-- Hero Section -->
-<div class="py-5 px-4 mb-5 text-white rounded-3 shadow-sm" style="background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);">
-    <div class="row align-items-center py-3 py-md-4">
+<div class="krishi-hero-banner py-5 px-4 mb-4 text-white rounded-4 shadow-sm position-relative overflow-hidden">
+    <div class="row align-items-center py-3 py-lg-4 position-relative" style="z-index: 2;">
         <div class="col-lg-8 col-md-10">
-            <span class="badge bg-light text-success fw-bold px-3 py-2 rounded-pill mb-3">@L["Agricultural Hub Bangladesh"]</span>
-            <h1 class="display-5 fw-bold mb-3">@L["Rent Equipment, Book Storage & Get Crop Advice"]</h1>
-            <p class="lead mb-4 opacity-90">
+            <span class="badge bg-white text-success fw-bold px-3 py-2 rounded-pill mb-3 shadow-sm d-inline-flex align-items-center gap-1.5">
+                <i class="bi bi-patch-check-fill text-success"></i> @L["Agricultural Hub Bangladesh"]
+            </span>
+            <h1 class="display-5 fw-bold mb-3 text-white lh-sm">
+                @L["Rent Equipment, Book Storage & Get Crop Advice"]
+            </h1>
+            <p class="lead mb-4 text-white-50" style="max-width: 650px;">
                 @L["Empowering farmers across Bangladesh with direct access to modern farming machinery, secure godown cold storage, and expert agricultural advice — all in one unified platform."]
             </p>
             <div class="d-flex flex-wrap gap-3">
-                <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success btn-lg px-4 py-2.5 fw-bold rounded-pill shadow-sm">
-                    @L["Get Started"]
+                <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success btn-lg px-4 py-2.5 fw-bold rounded-pill shadow-sm d-inline-flex align-items-center gap-2 krishi-btn-hero">
+                    <i class="bi bi-person-plus-fill"></i> @L["Get Started"]
                 </a>
-                <a asp-controller="Equipment" asp-action="Index" class="btn btn-outline-light btn-lg px-4 py-2.5 fw-semibold rounded-pill">
-                    @L["Browse Listings"]
+                <a asp-controller="Equipment" asp-action="Index" class="btn btn-outline-light btn-lg px-4 py-2.5 fw-semibold rounded-pill d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-search"></i> @L["Browse Listings"]
                 </a>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Stats / Trust Strip Section -->
+<div class="row g-3 mb-5">
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-sm p-3 p-md-4 rounded-3 krishi-card text-center bg-white">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 48px; height: 48px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
+                <i class="bi bi-people-fill fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-dark">1,250+</h3>
+            <p class="text-muted small mb-0 fw-medium">@L["Active Farmers"]</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-sm p-3 p-md-4 rounded-3 krishi-card text-center bg-white">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 48px; height: 48px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
+                <i class="bi bi-truck-front-fill fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-dark">380+</h3>
+            <p class="text-muted small mb-0 fw-medium">@L["Machinery Listed"]</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-sm p-3 p-md-4 rounded-3 krishi-card text-center bg-white">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 48px; height: 48px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
+                <i class="bi bi-building-check fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-dark">12,500 <span class="fs-6 fw-normal">Ton</span></h3>
+            <p class="text-muted small mb-0 fw-medium">@L["Storage Capacity"]</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-sm p-3 p-md-4 rounded-3 krishi-card text-center bg-white">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 48px; height: 48px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
+                <i class="bi bi-geo-alt-fill fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-dark">64</h3>
+            <p class="text-muted small mb-0 fw-medium">@L["Districts Connected"]</p>
+        </div>
+    </div>
+</div>
+
 <!-- How It Works Section -->
-<div class="mb-5">
+<div id="how-it-works" class="mb-5" style="scroll-margin-top: 80px;">
     <div class="text-center mx-auto mb-4" style="max-width: 650px;">
+        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold mb-2">@L["Simple 3-Step Process"]</span>
         <h3 class="fw-bold" style="color: var(--krishi-primary);">@L["How KrishiLink Works"]</h3>
         <p class="text-muted">@L["Simple, direct, and accessible for farmers, equipment providers, and warehouse owners."]</p>
     </div>
     
     <div class="row g-4">
         <div class="col-12 col-md-4">
-            <div class="card h-100 border-0 shadow-sm p-4 text-center krishi-card">
-                <div class="mb-3">
-                    <span class="badge rounded-circle p-3 fs-5 text-white" style="background-color: var(--krishi-primary); width: 48px; height: 48px; display: inline-flex; align-items: center; justify-content: center;">1</span>
+            <div class="card h-100 border-0 shadow-sm p-4 text-center krishi-card bg-white d-flex flex-column">
+                <div class="mb-3 d-inline-flex align-items-center justify-content-center mx-auto">
+                    <span class="badge rounded-circle p-3 fs-5 text-white shadow-sm" style="background-color: var(--krishi-primary); width: 52px; height: 52px; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-truck"></i>
+                    </span>
                 </div>
-                <h5 class="fw-bold mb-2" style="color: var(--krishi-primary);">@L["Rent Equipment"]</h5>
-                <p class="text-muted small mb-0">@L["Browse nearby tractors, tillers, and harvesters. Book by day or season at affordable rates."]</p>
+                <h5 class="fw-bold mb-2" style="color: var(--krishi-primary);">1. @L["Rent Equipment"]</h5>
+                <p class="text-muted small mb-3">@L["Browse nearby tractors, tillers, and harvesters. Book by day or season at affordable rates."]</p>
+                <a asp-controller="Equipment" asp-action="Index" class="btn btn-outline-success btn-sm rounded-pill mt-auto align-self-center px-3 py-1.5 fw-medium">
+                    @L["Find Machinery"] <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
         </div>
         
         <div class="col-12 col-md-4">
-            <div class="card h-100 border-0 shadow-sm p-4 text-center krishi-card">
-                <div class="mb-3">
-                    <span class="badge rounded-circle p-3 fs-5 text-white" style="background-color: var(--krishi-primary); width: 48px; height: 48px; display: inline-flex; align-items: center; justify-content: center;">2</span>
+            <div class="card h-100 border-0 shadow-sm p-4 text-center krishi-card bg-white d-flex flex-column">
+                <div class="mb-3 d-inline-flex align-items-center justify-content-center mx-auto">
+                    <span class="badge rounded-circle p-3 fs-5 text-white shadow-sm" style="background-color: var(--krishi-primary); width: 52px; height: 52px; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-building"></i>
+                    </span>
                 </div>
-                <h5 class="fw-bold mb-2" style="color: var(--krishi-primary);">@L["Book Storage"]</h5>
-                <p class="text-muted small mb-0">@L["Find verified cold storages and warehouses to preserve your harvest and prevent post-harvest loss."]</p>
+                <h5 class="fw-bold mb-2" style="color: var(--krishi-primary);">2. @L["Book Storage"]</h5>
+                <p class="text-muted small mb-3">@L["Find verified cold storages and warehouses to preserve your harvest and prevent post-harvest loss."]</p>
+                <a asp-controller="Godown" asp-action="Index" class="btn btn-outline-success btn-sm rounded-pill mt-auto align-self-center px-3 py-1.5 fw-medium">
+                    @L["Find Godowns"] <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
         </div>
 
         <div class="col-12 col-md-4">
-            <div class="card h-100 border-0 shadow-sm p-4 text-center krishi-card">
-                <div class="mb-3">
-                    <span class="badge rounded-circle p-3 fs-5 text-white" style="background-color: var(--krishi-primary); width: 48px; height: 48px; display: inline-flex; align-items: center; justify-content: center;">3</span>
+            <div class="card h-100 border-0 shadow-sm p-4 text-center krishi-card bg-white d-flex flex-column">
+                <div class="mb-3 d-inline-flex align-items-center justify-content-center mx-auto">
+                    <span class="badge rounded-circle p-3 fs-5 text-white shadow-sm" style="background-color: var(--krishi-primary); width: 52px; height: 52px; display: inline-flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-cloud-sun"></i>
+                    </span>
                 </div>
-                <h5 class="fw-bold mb-2" style="color: var(--krishi-primary);">@L["Crop Advisory"]</h5>
-                <p class="text-muted small mb-0">@L["Get localized soil, crop, and disease advisory from agricultural experts to maximize yield."]</p>
+                <h5 class="fw-bold mb-2" style="color: var(--krishi-primary);">3. @L["Crop Advisory"]</h5>
+                <p class="text-muted small mb-3">@L["Get localized soil, crop, and disease advisory from agricultural experts to maximize yield."]</p>
+                <a asp-controller="Advisory" asp-action="Index" class="btn btn-outline-success btn-sm rounded-pill mt-auto align-self-center px-3 py-1.5 fw-medium">
+                    @L["Get Advisory"] <i class="bi bi-arrow-right"></i>
+                </a>
             </div>
         </div>
     </div>
@@ -98,11 +161,13 @@
 <div class="mb-5">
     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-end gap-2 mb-4">
         <div>
+            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold mb-2">@L["Verified Hub"]</span>
             <h3 class="fw-bold mb-1" style="color: var(--krishi-primary);">@L["Featured Listings"]</h3>
             <p class="text-muted mb-0">@L["Explore recently listed machinery and storage facilities near your region."]</p>
         </div>
-        <a asp-controller="Equipment" asp-action="Index" class="btn btn-krishi-outline btn-sm rounded-pill px-3 py-1.5 fw-semibold flex-shrink-0">
-            @L["View All Equipment"]
+        <a asp-controller="Equipment" asp-action="Index" class="btn btn-krishi-outline btn-sm rounded-pill px-3.5 py-2 fw-semibold flex-shrink-0 d-inline-flex align-items-center gap-1.5">
+            <span>@L["View All Equipment"]</span>
+            <i class="bi bi-arrow-right"></i>
         </a>
     </div>
 
@@ -120,39 +185,76 @@
 </div>
 
 <!-- Role Selection / Registration Section -->
-<div class="mb-5 py-4 px-4 rounded-3 border bg-white shadow-sm" style="border-color: var(--krishi-border-color) !important;">
-    <div class="text-center mb-4">
+<div class="mb-5 py-5 px-4 rounded-4 border bg-white shadow-sm" style="border-color: var(--krishi-border-color) !important;">
+    <div class="text-center mx-auto mb-4" style="max-width: 650px;">
+        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold mb-2">@L["Role-Based Access"]</span>
         <h3 class="fw-bold" style="color: var(--krishi-primary);">@L["Join KrishiLink Today"]</h3>
         <p class="text-muted">@L["Choose your role to get started with tailored tools and services."]</p>
     </div>
 
-    <div class="row g-3">
+    <div class="row g-4">
+        <!-- Farmer Card -->
         <div class="col-12 col-md-4">
             <a asp-controller="Account" asp-action="Register" asp-route-role="Farmer" class="text-decoration-none h-100 d-block">
-                <div class="card h-100 p-4 border text-center krishi-card">
-                    <h5 class="fw-bold text-success mb-2">@L["Farmer"]</h5>
-                    <p class="small text-muted mb-3">@L["Rent machinery, store crops, and access advisory services."]</p>
-                    <span class="btn btn-outline-success btn-sm rounded-pill px-3 mt-auto align-self-center">@L["Register as Farmer"]</span>
+                <div class="card h-100 p-4 border rounded-3 text-center krishi-card bg-white d-flex flex-column">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-3" style="width: 56px; height: 56px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
+                        <i class="bi bi-flower1 fs-4"></i>
+                    </div>
+                    <h4 class="fw-bold mb-2" style="color: var(--krishi-primary);">@L["Farmer"]</h4>
+                    <p class="small text-muted mb-3 flex-grow-1">@L["Rent machinery, store crops, and access advisory services."]</p>
+                    <div class="d-flex flex-wrap gap-1 justify-content-center mb-3">
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Rent Machinery"]</span>
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Cold Storage"]</span>
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Advisory"]</span>
+                    </div>
+                    <span class="btn btn-krishi-primary w-100 rounded-pill py-2 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5 mt-auto">
+                        <span>@L["Register as Farmer"]</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </span>
                 </div>
             </a>
         </div>
         
+        <!-- Equipment Owner Card -->
         <div class="col-12 col-md-4">
             <a asp-controller="Account" asp-action="Register" asp-route-role="EquipmentOwner" class="text-decoration-none h-100 d-block">
-                <div class="card h-100 p-4 border text-center krishi-card">
-                    <h5 class="fw-bold text-success mb-2">@L["Equipment Owner"]</h5>
-                    <p class="small text-muted mb-3">@L["List your tractors and farming machinery to earn rental income."]</p>
-                    <span class="btn btn-outline-success btn-sm rounded-pill px-3 mt-auto align-self-center">@L["Register as Owner"]</span>
+                <div class="card h-100 p-4 border rounded-3 text-center krishi-card bg-white d-flex flex-column">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-3" style="width: 56px; height: 56px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
+                        <i class="bi bi-truck-front fs-4"></i>
+                    </div>
+                    <h4 class="fw-bold mb-2" style="color: var(--krishi-primary);">@L["Equipment Owner"]</h4>
+                    <p class="small text-muted mb-3 flex-grow-1">@L["List your tractors and farming machinery to earn rental income."]</p>
+                    <div class="d-flex flex-wrap gap-1 justify-content-center mb-3">
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["List Machinery"]</span>
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Manage Bookings"]</span>
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Earn Income"]</span>
+                    </div>
+                    <span class="btn btn-krishi-primary w-100 rounded-pill py-2 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5 mt-auto">
+                        <span>@L["Register as Owner"]</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </span>
                 </div>
             </a>
         </div>
 
+        <!-- Godown Owner Card -->
         <div class="col-12 col-md-4">
             <a asp-controller="Account" asp-action="Register" asp-route-role="GodownOwner" class="text-decoration-none h-100 d-block">
-                <div class="card h-100 p-4 border text-center krishi-card">
-                    <h5 class="fw-bold text-success mb-2">@L["Godown Owner"]</h5>
-                    <p class="small text-muted mb-3">@L["Monetize warehouse and cold storage space by listing godowns."]</p>
-                    <span class="btn btn-outline-success btn-sm rounded-pill px-3 mt-auto align-self-center">@L["Register Godown"]</span>
+                <div class="card h-100 p-4 border rounded-3 text-center krishi-card bg-white d-flex flex-column">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-3" style="width: 56px; height: 56px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
+                        <i class="bi bi-building fs-4"></i>
+                    </div>
+                    <h4 class="fw-bold mb-2" style="color: var(--krishi-primary);">@L["Godown Owner"]</h4>
+                    <p class="small text-muted mb-3 flex-grow-1">@L["Monetize warehouse and cold storage space by listing godowns."]</p>
+                    <div class="d-flex flex-wrap gap-1 justify-content-center mb-3">
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Warehouse Space"]</span>
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Storage Requests"]</span>
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Secure Payment"]</span>
+                    </div>
+                    <span class="btn btn-krishi-primary w-100 rounded-pill py-2 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5 mt-auto">
+                        <span>@L["Register Godown"]</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </span>
                 </div>
             </a>
         </div>

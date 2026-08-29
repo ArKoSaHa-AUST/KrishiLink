@@ -23,6 +23,6 @@ First page any visitor sees. Introduces KrishiLink and pushes visitors toward re
 - Mobile: navbar collapses into hamburger menu
 
 ## Design Notes
-- Warm, agricultural color palette (greens/earth tones), not corporate blue
+- UI Theme: Agriculture-related green and white color palette — vibrant green navbar accents, lush green CTAs, clean white backgrounds, and nature-inspired green hero elements (not corporate blue)
 - Large tap targets for mobile (farmers may access via phone)
 - Keep hero copy short — assume some users have low digital literacy

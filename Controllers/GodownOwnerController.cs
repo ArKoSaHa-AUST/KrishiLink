@@ -121,17 +121,83 @@ namespace KrishiLink.Controllers
             return Json(new { count = 3 });
         }
 
+        [HttpGet]
         public IActionResult Create()
         {
-            return View();
+            var model = new GodownListingViewModel
+            {
+                Name = string.Empty,
+                Category = "Cold Storage",
+                Location = "Dinajpur Sadar, Dinajpur",
+                TotalCapacity = 200,
+                CapacityUnit = "Tons",
+                AvailableCapacity = 200,
+                PriceAmount = 450,
+                PricePeriod = "Month",
+                Description = string.Empty,
+                IsAvailable = true,
+                SelectedFacilities = new List<string> { "Climate Control (2-8°C)", "24/7 Security & CCTV", "Power Backup Generator" },
+                ExistingImageUrls = new List<string>()
+            };
+
+            return View(model);
         }
 
         /// <summary>
-        /// GET: /GodownOwner/Edit/1 — placeholder until the listing form (part 17) is built.
+        /// GET: /GodownOwner/Edit/1
         /// </summary>
+        [HttpGet]
         public IActionResult Edit(int id = 1)
         {
-            return View("Create");
+            var sampleGodowns = GetSampleGodowns();
+            var godown = sampleGodowns.FirstOrDefault(g => g.Id == id) ?? sampleGodowns.First();
+
+            var model = new GodownListingViewModel
+            {
+                Id = godown.Id,
+                Name = godown.Name,
+                Category = godown.StorageType,
+                Location = "Dinajpur Sadar, Dinajpur",
+                TotalCapacity = godown.TotalCapacityTons,
+                CapacityUnit = "Tons",
+                AvailableCapacity = godown.AvailableCapacityTons,
+                PriceAmount = 450,
+                PricePeriod = "Month",
+                Description = "Modern temperature-controlled warehouse equipped with automated moisture monitors, pallet racking, 24/7 security guard patrol, and power backup for agricultural produce preservation.",
+                IsAvailable = godown.Status == "Active",
+                SelectedFacilities = new List<string>
+                {
+                    "Climate Control (2-8°C)",
+                    "24/7 Security & CCTV",
+                    "Power Backup Generator",
+                    "Pest & Rodent Control",
+                    "Loading & Unloading Ramp"
+                },
+                ExistingImageUrls = new List<string>
+                {
+                    "/images/godown.jpg"
+                }
+            };
+
+            return View("Create", model);
+        }
+
+        /// <summary>
+        /// POST: /GodownOwner/Save
+        /// Handles creation or updating of godown storage listing.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Save(GodownListingViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View("Create", model);
+            }
+
+            var actionName = model.IsEditMode ? "updated" : "listed";
+            TempData["SuccessMessage"] = $"Storage facility '{model.Name}' successfully {actionName}!";
+            return RedirectToAction(nameof(Index));
         }
     }
 }

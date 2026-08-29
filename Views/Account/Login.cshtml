@@ -1,6 +1,308 @@
+@model KrishiLink.Models.ViewModels.LoginViewModel
 @{
-    ViewData["Title"] = L["Login"];
+    ViewData["Title"] = L["Login - Account Access"];
 }
-<div class="container py-4">
-    <h2>@L["Login Placeholder"]</h2>
+
+<div class="row justify-content-center py-3 py-md-5">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
+        <!-- Main Login Card -->
+        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden login-card">
+            <!-- Header Banner -->
+            <div class="px-4 pt-4 pb-3 text-center border-bottom bg-light-subtle" style="background: linear-gradient(180deg, #eef7f2 0%, #ffffff 100%);">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-2 p-2.5 shadow-sm" style="background-color: var(--krishi-primary-subtle); color: var(--krishi-primary); width: 54px; height: 54px;">
+                    <i class="bi bi-box-arrow-in-right fs-4"></i>
+                </div>
+                <h3 class="fw-bold mb-1" style="color: var(--krishi-primary);">@L["Login to KrishiLink"]</h3>
+                <p class="text-muted small mb-0">@L["Enter your credentials to access your agricultural dashboard."]</p>
+            </div>
+
+            <div class="card-body p-4">
+                <!-- Server-Side Error Alert -->
+                @if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty]?.Errors.Count > 0)
+                {
+                    <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+                        <div>
+                            @foreach (var error in ViewData.ModelState[string.Empty]!.Errors)
+                            {
+                                <div>@error.ErrorMessage</div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <form asp-action="Login" method="post" id="loginForm" novalidate>
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="ReturnUrl" />
+
+                    <!-- Phone Number or Email Field -->
+                    <div class="mb-3">
+                        <label asp-for="Identifier" class="form-label fw-semibold small text-dark mb-1">
+                            @L["Phone Number or Email"] <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group @(!ViewData.ModelState.IsValid && ViewData.ModelState[nameof(Model.Identifier)]?.Errors.Count > 0 ? "has-error" : "")">
+                            <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                <i class="bi bi-person-badge"></i>
+                            </span>
+                            <input asp-for="Identifier"
+                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2"
+                                   placeholder="@L["e.g. 017XXXXXXXX or name@example.com"]"
+                                   autocomplete="username"
+                                   id="loginIdentifierInput"
+                                   required />
+                        </div>
+                        <span asp-validation-for="Identifier" class="text-danger small mt-1 d-block ms-2" id="identifierError"></span>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label fw-semibold small text-dark mb-1">
+                            @L["Password"] <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group @(!ViewData.ModelState.IsValid && ViewData.ModelState[nameof(Model.Password)]?.Errors.Count > 0 ? "has-error" : "")">
+                            <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            <input asp-for="Password"
+                                   type="password"
+                                   class="form-control border-start-0 border-end-0 py-2"
+                                   placeholder="@L["Enter your password"]"
+                                   id="loginPasswordInput"
+                                   autocomplete="current-password"
+                                   required />
+                            <button type="button"
+                                    class="input-group-text bg-white text-muted border-start-0 rounded-end-pill pe-3 toggle-password-btn"
+                                    data-target="loginPasswordInput"
+                                    aria-label="@L["Toggle password visibility"]">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger small mt-1 d-block ms-2" id="passwordError"></span>
+                    </div>
+
+                    <!-- Remember Me & Forgot Password -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input asp-for="RememberMe" class="form-check-input" type="checkbox" id="rememberMeCheck" />
+                            <label class="form-check-label small text-muted user-select-none" for="rememberMeCheck">
+                                @L["Remember me"]
+                            </label>
+                        </div>
+                        <a href="javascript:void(0)" class="small text-decoration-none fw-semibold" style="color: var(--krishi-primary);" onclick="KrishiToast.show('@L["Please contact helpline 16123 or support@krishilink.gov.bd to reset your password."]', { iconClass: 'bi-info-circle-fill text-success' })">
+                            @L["Forgot password?"]
+                        </a>
+                    </div>
+
+                    <!-- Primary Login Button -->
+                    <div class="d-grid mb-3">
+                        <button type="submit"
+                                class="btn btn-krishi btn-lg py-2.5 rounded-pill fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2"
+                                id="loginSubmitBtn">
+                            <span class="btn-spinner spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <i class="bi bi-box-arrow-in-right fs-5 btn-icon"></i>
+                            <span class="btn-text">@L["Login"]</span>
+                        </button>
+                    </div>
+
+                    <!-- Secondary Register Link -->
+                    <div class="text-center pt-3 border-top">
+                        <p class="small text-muted mb-0">
+                            @L["Don't have an account?"]
+                            <a asp-controller="Account" asp-action="Register" class="fw-bold text-decoration-none ms-1" style="color: var(--krishi-primary);">
+                                @L["Register here"]
+                            </a>
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Role Access Helper -->
+        <div class="text-center mt-3 text-muted small">
+            <span class="d-inline-flex align-items-center gap-1.5">
+                <i class="bi bi-shield-check text-success"></i> @L["Secure & Direct Role Authentication (Farmer / Owner)"]
+            </span>
+        </div>
+    </div>
 </div>
+
+<style>
+/* Login Specific Styles */
+.login-card {
+    border: 1px solid var(--krishi-border-color);
+    box-shadow: 0 10px 25px rgba(45, 106, 79, 0.08) !important;
+}
+
+.toggle-password-btn {
+    cursor: pointer;
+    background: transparent;
+    transition: color 0.2s ease;
+}
+.toggle-password-btn:hover {
+    color: var(--krishi-primary) !important;
+}
+
+.btn-krishi {
+    background-color: var(--krishi-primary);
+    border-color: var(--krishi-primary);
+    transition: all 0.2s ease;
+}
+.btn-krishi:hover:not(:disabled) {
+    background-color: var(--krishi-primary-hover);
+    border-color: var(--krishi-primary-hover);
+    transform: translateY(-1px);
+}
+.btn-krishi:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    background-color: #94a3b8;
+    border-color: #94a3b8;
+}
+
+.input-group .form-control:focus {
+    z-index: 3;
+}
+
+.input-group.has-error .form-control,
+.input-group.has-error .input-group-text {
+    border-color: #dc3545 !important;
+}
+
+.input-group.is-valid-field .form-control,
+.input-group.is-valid-field .input-group-text {
+    border-color: var(--krishi-accent) !important;
+}
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+            const identifierInput = $('#loginIdentifierInput');
+            const passwordInput = $('#loginPasswordInput');
+            const submitBtn = $('#loginSubmitBtn');
+            const serverAlert = $('.alert-danger');
+
+            // 1. Check & Toggle Submit Button State (Disabled until both fields filled)
+            function updateSubmitButtonState() {
+                const identifierVal = identifierInput.val().trim();
+                const passwordVal = passwordInput.val().trim();
+
+                const isReady = identifierVal.length > 0 && passwordVal.length >= 6;
+                submitBtn.prop('disabled', !isReady);
+            }
+
+            // Initial check
+            updateSubmitButtonState();
+
+            // 2. Interactive Password Visibility Toggle
+            $('.toggle-password-btn').on('click', function () {
+                const targetId = $(this).data('target');
+                const targetInput = $('#' + targetId);
+                const icon = $(this).find('i');
+
+                if (targetInput.attr('type') === 'password') {
+                    targetInput.attr('type', 'text');
+                    icon.removeClass('bi-eye').addClass('bi-eye-slash text-success');
+                    $(this).attr('aria-label', '@L["Hide password"]');
+                } else {
+                    targetInput.attr('type', 'password');
+                    icon.removeClass('bi-eye-slash text-success').addClass('bi-eye');
+                    $(this).attr('aria-label', '@L["Show password"]');
+                }
+            });
+
+            // 3. Client-Side Input Formatting & Live Validation
+            identifierInput.on('input', function () {
+                const val = $(this).val().trim();
+                const inputGroup = $(this).closest('.input-group');
+                const errorSpan = $('#identifierError');
+
+                // Clear server alert when user starts editing
+                serverAlert.fadeOut(200);
+
+                if (val.length === 0) {
+                    inputGroup.removeClass('has-error is-valid-field');
+                    errorSpan.text('');
+                } else if (/^\d/.test(val) || val.startsWith('+')) {
+                    // Phone validation pattern for Bangladesh numbers
+                    const phoneRegex = /^(?:\+?880|0)?1[3-9]\d{8}$/;
+                    if (val.length >= 3 && !phoneRegex.test(val)) {
+                        inputGroup.addClass('has-error').removeClass('is-valid-field');
+                        errorSpan.text('@L["Enter a valid Bangladeshi phone number (e.g. 017XXXXXXXX)"]');
+                    } else {
+                        inputGroup.removeClass('has-error').addClass('is-valid-field');
+                        errorSpan.text('');
+                    }
+                } else if (val.includes('@@')) {
+                    // Email format validation
+                    const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+                    if (!emailRegex.test(val)) {
+                        inputGroup.addClass('has-error').removeClass('is-valid-field');
+                        errorSpan.text('@L["Enter a valid email address (e.g. name@example.com)"]');
+                    } else {
+                        inputGroup.removeClass('has-error').addClass('is-valid-field');
+                        errorSpan.text('');
+                    }
+                } else {
+                    inputGroup.removeClass('has-error is-valid-field');
+                    errorSpan.text('');
+                }
+
+                updateSubmitButtonState();
+            });
+
+            passwordInput.on('input', function () {
+                const val = $(this).val();
+                const inputGroup = $(this).closest('.input-group');
+                const errorSpan = $('#passwordError');
+
+                // Clear server alert when editing
+                serverAlert.fadeOut(200);
+
+                if (val.length > 0 && val.length < 6) {
+                    inputGroup.addClass('has-error').removeClass('is-valid-field');
+                    errorSpan.text('@L["Password must be at least 6 characters."]');
+                } else if (val.length >= 6) {
+                    inputGroup.removeClass('has-error').addClass('is-valid-field');
+                    errorSpan.text('');
+                } else {
+                    inputGroup.removeClass('has-error is-valid-field');
+                    errorSpan.text('');
+                }
+
+            // 4. Form Submit Loading Interaction
+            $('#loginForm').on('submit', function (e) {
+                const identifierVal = identifierInput.val().trim();
+                const passwordVal = passwordInput.val().trim();
+
+                if (!identifierVal || passwordVal.length < 6) {
+                    e.preventDefault();
+                    if (!identifierVal) {
+                        identifierInput.closest('.input-group').addClass('has-error');
+                        $('#identifierError').text('@L["Please enter your phone number or email."]');
+                        identifierInput.focus();
+                    } else if (passwordVal.length < 6) {
+                        passwordInput.closest('.input-group').addClass('has-error');
+                        $('#passwordError').text('@L["Password must be at least 6 characters."]');
+                        passwordInput.focus();
+                    }
+                    return false;
+                }
+
+                // Show spinner & disable button
+                const spinner = submitBtn.find('.btn-spinner');
+                const icon = submitBtn.find('.btn-icon');
+                const text = submitBtn.find('.btn-text');
+
+                spinner.removeClass('d-none');
+                icon.addClass('d-none');
+                text.text('@L["Signing in..."]');
+                submitBtn.prop('disabled', true);
+
+                // Allow form submission to proceed
+                return true;
+            });
+        });
+    </script>
+}
