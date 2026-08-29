@@ -82,6 +82,22 @@ body.krishi-body-gradient {
     background-attachment: fixed;
 }
 
+/* Hero Banner with Farmland Background & Forest Green Gradient Overlay */
+.krishi-hero-banner {
+    background: linear-gradient(135deg, rgba(27, 67, 50, 0.94) 0%, rgba(45, 106, 79, 0.88) 100%), url('/images/hero-farmland.jpg') center/cover no-repeat;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    position: relative;
+}
+
+.krishi-btn-hero {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.krishi-btn-hero:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15) !important;
+}
+
 /* Owner dashboard: summary cards & pending request rows */
 .krishi-summary-card {
     min-width: 220px;

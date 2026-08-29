@@ -34,22 +34,66 @@
 }
 
 <!-- Hero Section -->
-<div class="py-5 px-4 mb-5 text-white rounded-3 shadow-sm" style="background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);">
-    <div class="row align-items-center py-3 py-md-4">
+<div class="krishi-hero-banner py-5 px-4 mb-4 text-white rounded-4 shadow-sm position-relative overflow-hidden">
+    <div class="row align-items-center py-3 py-lg-4 position-relative" style="z-index: 2;">
         <div class="col-lg-8 col-md-10">
-            <span class="badge bg-light text-success fw-bold px-3 py-2 rounded-pill mb-3">@L["Agricultural Hub Bangladesh"]</span>
-            <h1 class="display-5 fw-bold mb-3">@L["Rent Equipment, Book Storage & Get Crop Advice"]</h1>
-            <p class="lead mb-4 opacity-90">
+            <span class="badge bg-white text-success fw-bold px-3 py-2 rounded-pill mb-3 shadow-sm d-inline-flex align-items-center gap-1.5">
+                <i class="bi bi-patch-check-fill text-success"></i> @L["Agricultural Hub Bangladesh"]
+            </span>
+            <h1 class="display-5 fw-bold mb-3 text-white lh-sm">
+                @L["Rent Equipment, Book Storage & Get Crop Advice"]
+            </h1>
+            <p class="lead mb-4 text-white-50" style="max-width: 650px;">
                 @L["Empowering farmers across Bangladesh with direct access to modern farming machinery, secure godown cold storage, and expert agricultural advice — all in one unified platform."]
             </p>
             <div class="d-flex flex-wrap gap-3">
-                <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success btn-lg px-4 py-2.5 fw-bold rounded-pill shadow-sm">
-                    @L["Get Started"]
+                <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success btn-lg px-4 py-2.5 fw-bold rounded-pill shadow-sm d-inline-flex align-items-center gap-2 krishi-btn-hero">
+                    <i class="bi bi-person-plus-fill"></i> @L["Get Started"]
                 </a>
-                <a asp-controller="Equipment" asp-action="Index" class="btn btn-outline-light btn-lg px-4 py-2.5 fw-semibold rounded-pill">
-                    @L["Browse Listings"]
+                <a asp-controller="Equipment" asp-action="Index" class="btn btn-outline-light btn-lg px-4 py-2.5 fw-semibold rounded-pill d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-search"></i> @L["Browse Listings"]
                 </a>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats / Trust Strip Section -->
+<div class="row g-3 mb-5">
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-sm p-3 p-md-4 rounded-3 krishi-card text-center bg-white">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 48px; height: 48px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
+                <i class="bi bi-people-fill fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-dark">1,250+</h3>
+            <p class="text-muted small mb-0 fw-medium">@L["Active Farmers"]</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-sm p-3 p-md-4 rounded-3 krishi-card text-center bg-white">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 48px; height: 48px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
+                <i class="bi bi-truck-front-fill fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-dark">380+</h3>
+            <p class="text-muted small mb-0 fw-medium">@L["Machinery Listed"]</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-sm p-3 p-md-4 rounded-3 krishi-card text-center bg-white">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 48px; height: 48px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
+                <i class="bi bi-building-check fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-dark">12,500 <span class="fs-6 fw-normal">Ton</span></h3>
+            <p class="text-muted small mb-0 fw-medium">@L["Storage Capacity"]</p>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 border-0 shadow-sm p-3 p-md-4 rounded-3 krishi-card text-center bg-white">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 48px; height: 48px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
+                <i class="bi bi-geo-alt-fill fs-5"></i>
+            </div>
+            <h3 class="fw-bold mb-0 text-dark">64</h3>
+            <p class="text-muted small mb-0 fw-medium">@L["Districts Connected"]</p>
         </div>
     </div>
 </div>
