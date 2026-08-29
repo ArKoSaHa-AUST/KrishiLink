@@ -1,6 +1,162 @@
+@model KrishiLink.Models.ViewModels.LoginViewModel
 @{
-    ViewData["Title"] = L["Login"];
+    ViewData["Title"] = L["Login - Account Access"];
 }
-<div class="container py-4">
-    <h2>@L["Login Placeholder"]</h2>
+
+<div class="row justify-content-center py-3 py-md-5">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
+        <!-- Main Login Card -->
+        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden login-card">
+            <!-- Header Banner -->
+            <div class="px-4 pt-4 pb-3 text-center border-bottom bg-light-subtle" style="background: linear-gradient(180deg, #eef7f2 0%, #ffffff 100%);">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-2 p-2.5 shadow-sm" style="background-color: var(--krishi-primary-subtle); color: var(--krishi-primary); width: 54px; height: 54px;">
+                    <i class="bi bi-box-arrow-in-right fs-4"></i>
+                </div>
+                <h3 class="fw-bold mb-1" style="color: var(--krishi-primary);">@L["Login to KrishiLink"]</h3>
+                <p class="text-muted small mb-0">@L["Enter your credentials to access your agricultural dashboard."]</p>
+            </div>
+
+            <div class="card-body p-4">
+                <!-- Server-Side Error Alert -->
+                @if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty]?.Errors.Count > 0)
+                {
+                    <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3 d-flex align-items-center gap-2" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+                        <div>
+                            @foreach (var error in ViewData.ModelState[string.Empty]!.Errors)
+                            {
+                                <div>@error.ErrorMessage</div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <form asp-action="Login" method="post" id="loginForm" novalidate>
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="ReturnUrl" />
+
+                    <!-- Phone Number or Email Field -->
+                    <div class="mb-3">
+                        <label asp-for="Identifier" class="form-label fw-semibold small text-dark mb-1">
+                            @L["Phone Number or Email"] <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                <i class="bi bi-person-badge"></i>
+                            </span>
+                            <input asp-for="Identifier"
+                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2"
+                                   placeholder="@L["e.g. 017XXXXXXXX or name@example.com"]"
+                                   autocomplete="username"
+                                   id="loginIdentifierInput"
+                                   required />
+                        </div>
+                        <span asp-validation-for="Identifier" class="text-danger small mt-1 d-block ms-2" id="identifierError"></span>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label fw-semibold small text-dark mb-1">
+                            @L["Password"] <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            <input asp-for="Password"
+                                   type="password"
+                                   class="form-control border-start-0 border-end-0 py-2"
+                                   placeholder="@L["Enter your password"]"
+                                   id="loginPasswordInput"
+                                   autocomplete="current-password"
+                                   required />
+                            <button type="button"
+                                    class="input-group-text bg-white text-muted border-start-0 rounded-end-pill pe-3 toggle-password-btn"
+                                    data-target="loginPasswordInput"
+                                    aria-label="@L["Toggle password visibility"]">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger small mt-1 d-block ms-2" id="passwordError"></span>
+                    </div>
+
+                    <!-- Remember Me & Forgot Password -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input asp-for="RememberMe" class="form-check-input" type="checkbox" id="rememberMeCheck" />
+                            <label class="form-check-label small text-muted user-select-none" for="rememberMeCheck">
+                                @L["Remember me"]
+                            </label>
+                        </div>
+                        <a href="javascript:void(0)" class="small text-decoration-none fw-semibold" style="color: var(--krishi-primary);" onclick="KrishiToast.show('@L["Please contact helpline 16123 or support@krishilink.gov.bd to reset your password."]', { iconClass: 'bi-info-circle-fill text-success' })">
+                            @L["Forgot password?"]
+                        </a>
+                    </div>
+
+                    <!-- Primary Login Button -->
+                    <div class="d-grid mb-3">
+                        <button type="submit"
+                                class="btn btn-krishi btn-lg py-2.5 rounded-pill fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2"
+                                id="loginSubmitBtn">
+                            <span class="btn-spinner spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            <i class="bi bi-box-arrow-in-right fs-5 btn-icon"></i>
+                            <span class="btn-text">@L["Login"]</span>
+                        </button>
+                    </div>
+
+                    <!-- Secondary Register Link -->
+                    <div class="text-center pt-3 border-top">
+                        <p class="small text-muted mb-0">
+                            @L["Don't have an account?"]
+                            <a asp-controller="Account" asp-action="Register" class="fw-bold text-decoration-none ms-1" style="color: var(--krishi-primary);">
+                                @L["Register here"]
+                            </a>
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Role Access Helper -->
+        <div class="text-center mt-3 text-muted small">
+            <span class="d-inline-flex align-items-center gap-1.5">
+                <i class="bi bi-shield-check text-success"></i> @L["Secure & Direct Role Authentication (Farmer / Owner)"]
+            </span>
+        </div>
+    </div>
 </div>
+
+<style>
+/* Login Specific Styles */
+.login-card {
+    border: 1px solid var(--krishi-border-color);
+    box-shadow: 0 10px 25px rgba(45, 106, 79, 0.08) !important;
+}
+
+.toggle-password-btn {
+    cursor: pointer;
+    background: transparent;
+}
+.toggle-password-btn:hover {
+    color: var(--krishi-primary) !important;
+}
+
+.btn-krishi {
+    background-color: var(--krishi-primary);
+    border-color: var(--krishi-primary);
+    transition: all 0.2s ease;
+}
+.btn-krishi:hover:not(:disabled) {
+    background-color: var(--krishi-primary-hover);
+    border-color: var(--krishi-primary-hover);
+    transform: translateY(-1px);
+}
+.btn-krishi:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.input-group .form-control:focus {
+    z-index: 3;
+}
+</style>
