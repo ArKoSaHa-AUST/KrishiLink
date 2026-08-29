@@ -137,9 +137,59 @@ namespace KrishiLink.Controllers
         }
 
         [HttpGet]
-        public IActionResult Login()
+        public async Task<IActionResult> Login(string? returnUrl = null)
         {
-            return View();
+            if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                var currentUser = await _userManager.GetUserAsync(User);
+                return RedirectBasedOnRole(currentUser?.UserRole);
+            }
+
+            var model = new LoginViewModel
+            {
+                ReturnUrl = returnUrl
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(LoginViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var identifier = model.Identifier.Trim();
+
+            // Attempt to find user by Phone Number or Email/UserName
+            ApplicationUser? user = _userManager.Users.FirstOrDefault(u => u.PhoneNumber == identifier);
+            if (user == null)
+            {
+                user = await _userManager.FindByEmailAsync(identifier) ?? await _userManager.FindByNameAsync(identifier);
+            }
+
+            if (user == null)
+            {
+                ModelState.AddModelError(nameof(model.Identifier), "Incorrect phone number or password.");
+                return View(model);
+            }
+
+            var result = await _signInManager.PasswordSignInAsync(user.UserName!, model.Password, model.RememberMe, lockoutOnFailure: false);
+            if (result.Succeeded)
+            {
+                if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+                {
+                    return Redirect(model.ReturnUrl);
+                }
+
+                return RedirectBasedOnRole(user.UserRole);
+            }
+
+            ModelState.AddModelError(nameof(model.Password), "Incorrect phone number or password.");
+            return View(model);
         }
 
         [HttpPost]
