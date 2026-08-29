@@ -406,7 +406,170 @@
     color: var(--krishi-primary) !important;
 }
 
-.input-group .form-control:focus {
-    z-index: 3;
+.input-group.has-error .form-control,
+.input-group.has-error .input-group-text {
+    border-color: #dc3545 !important;
+}
+
+.input-group.is-valid-field .form-control,
+.input-group.is-valid-field .input-group-text {
+    border-color: var(--krishi-accent) !important;
 }
 </style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+            // 1. Initial State & Value Tracking for Dirty Field Detection
+            let initialValues = {
+                fullName: $('#inputFullName').val().trim(),
+                phone: $('#inputPhone').val().trim(),
+                email: $('#inputEmail').val().trim(),
+                location: $('#inputLocation').val().trim(),
+                business: $('#inputBusiness').length ? $('#inputBusiness').val().trim() : ''
+            };
+
+            function checkFormDirty() {
+                const currentValues = {
+                    fullName: $('#inputFullName').val().trim(),
+                    phone: $('#inputPhone').val().trim(),
+                    email: $('#inputEmail').val().trim(),
+                    location: $('#inputLocation').val().trim(),
+                    business: $('#inputBusiness').length ? $('#inputBusiness').val().trim() : ''
+                };
+
+                const isDirty = (
+                    currentValues.fullName !== initialValues.fullName ||
+                    currentValues.phone !== initialValues.phone ||
+                    currentValues.email !== initialValues.email ||
+                    currentValues.location !== initialValues.location ||
+                    currentValues.business !== initialValues.business
+                );
+
+                const isValid = currentValues.fullName.length > 0 &&
+                                currentValues.phone.length >= 11 &&
+                                currentValues.location.length > 0;
+
+                $('#saveProfileBtn').prop('disabled', !(isDirty && isValid));
+            }
+
+            // 2. Read-Only <-> Edit Mode Toggle
+            function enterEditMode() {
+                $('#readOnlyView').addClass('d-none');
+                $('#editableView').removeClass('d-none').hide().fadeIn(250);
+                $('#editBtnText').text('@L["View Mode"]');
+                $('#toggleEditBtn').removeClass('btn-outline-success').addClass('btn-outline-secondary');
+                $('#toggleEditBtn i').removeClass('bi-pencil-square').addClass('bi-eye');
+                $('#inputFullName').focus();
+                checkFormDirty();
+            }
+
+            function exitEditMode(resetValues = false) {
+                if (resetValues) {
+                    $('#inputFullName').val(initialValues.fullName);
+                    $('#inputPhone').val(initialValues.phone);
+                    $('#inputEmail').val(initialValues.email);
+                    $('#inputLocation').val(initialValues.location);
+                    if ($('#inputBusiness').length) {
+                        $('#inputBusiness').val(initialValues.business);
+                    }
+                    $('.input-group').removeClass('has-error is-valid-field');
+                    $('.text-danger.small').text('');
+                }
+
+                $('#editableView').addClass('d-none');
+                $('#readOnlyView').removeClass('d-none').hide().fadeIn(250);
+                $('#editBtnText').text('@L["Edit Profile"]');
+                $('#toggleEditBtn').removeClass('btn-outline-secondary').addClass('btn-outline-success');
+                $('#toggleEditBtn i').removeClass('bi-eye').addClass('bi-pencil-square');
+                $('#saveProfileBtn').prop('disabled', true);
+            }
+
+            $('#toggleEditBtn').on('click', function () {
+                if ($('#editableView').hasClass('d-none')) {
+                    enterEditMode();
+                } else {
+                    exitEditMode(false);
+                }
+            });
+
+            $('#cancelEditBtn').on('click', function () {
+                exitEditMode(true);
+            });
+
+            // 3. Live Input Validation & Dirty Change Detection
+            $('.profile-input').on('input change', function () {
+                const input = $(this);
+                const val = input.val().trim();
+                const group = input.closest('.input-group');
+
+                if (input.attr('id') === 'inputPhone') {
+                    const phoneRegex = /^(?:\+?880|0)?1[3-9]\d{8}$/;
+                    if (val.length > 0 && !phoneRegex.test(val)) {
+                        group.addClass('has-error').removeClass('is-valid-field');
+                    } else if (val.length >= 11) {
+                        group.removeClass('has-error').addClass('is-valid-field');
+                    } else {
+                        group.removeClass('has-error is-valid-field');
+                    }
+                } else if (input.attr('id') === 'inputFullName' || input.attr('id') === 'inputLocation') {
+                    if (val.length > 0) {
+                        group.removeClass('has-error').addClass('is-valid-field');
+                    } else {
+                        group.addClass('has-error').removeClass('is-valid-field');
+                    }
+                }
+
+                checkFormDirty();
+            });
+
+            // 4. Password Show/Hide Visibility Toggles
+            $('.toggle-password-btn').on('click', function () {
+                const targetId = $(this).data('target');
+                const targetInput = $('#' + targetId);
+                const icon = $(this).find('i');
+
+                if (targetInput.attr('type') === 'password') {
+                    targetInput.attr('type', 'text');
+                    icon.removeClass('bi-eye').addClass('bi-eye-slash text-success');
+                } else {
+                    targetInput.attr('type', 'password');
+                    icon.removeClass('bi-eye-slash text-success').addClass('bi-eye');
+                }
+            });
+
+            // 5. Live Password Confirmation & Length Feedback
+            $('#inputNewPassword, #inputConfirmPassword').on('input', function () {
+                const newPass = $('#inputNewPassword').val();
+                const confirmPass = $('#inputConfirmPassword').val();
+                const newPassGroup = $('#inputNewPassword').closest('.input-group');
+                const confirmPassGroup = $('#inputConfirmPassword').closest('.input-group');
+
+                // Check length
+                if (newPass.length > 0 && newPass.length < 6) {
+                    newPassGroup.addClass('has-error').removeClass('is-valid-field');
+                    $('#newPasswordError').text('@L["Password must be at least 6 characters."]');
+                } else if (newPass.length >= 6) {
+                    newPassGroup.removeClass('has-error').addClass('is-valid-field');
+                    $('#newPasswordError').text('');
+                } else {
+                    newPassGroup.removeClass('has-error is-valid-field');
+                    $('#newPasswordError').text('');
+                }
+
+                // Check matching
+                if (confirmPass.length > 0 && newPass !== confirmPass) {
+                    confirmPassGroup.addClass('has-error').removeClass('is-valid-field');
+                    $('#confirmPasswordError').text('@L["Passwords do not match."]');
+                } else if (confirmPass.length > 0 && newPass === confirmPass) {
+                    confirmPassGroup.removeClass('has-error').addClass('is-valid-field');
+                    $('#confirmPasswordError').text('');
+                } else {
+                    confirmPassGroup.removeClass('has-error is-valid-field');
+                    $('#confirmPasswordError').text('');
+                }
+            });
+        });
+    </script>
+}
