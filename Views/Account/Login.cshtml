@@ -40,7 +40,7 @@
                         <label asp-for="Identifier" class="form-label fw-semibold small text-dark mb-1">
                             @L["Phone Number or Email"] <span class="text-danger">*</span>
                         </label>
-                        <div class="input-group">
+                        <div class="input-group @(!ViewData.ModelState.IsValid && ViewData.ModelState[nameof(Model.Identifier)]?.Errors.Count > 0 ? "has-error" : "")">
                             <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
                                 <i class="bi bi-person-badge"></i>
                             </span>
@@ -59,7 +59,7 @@
                         <label asp-for="Password" class="form-label fw-semibold small text-dark mb-1">
                             @L["Password"] <span class="text-danger">*</span>
                         </label>
-                        <div class="input-group">
+                        <div class="input-group @(!ViewData.ModelState.IsValid && ViewData.ModelState[nameof(Model.Password)]?.Errors.Count > 0 ? "has-error" : "")">
                             <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
                                 <i class="bi bi-lock"></i>
                             </span>
@@ -271,7 +271,37 @@
                     errorSpan.text('');
                 }
 
-                updateSubmitButtonState();
+            // 4. Form Submit Loading Interaction
+            $('#loginForm').on('submit', function (e) {
+                const identifierVal = identifierInput.val().trim();
+                const passwordVal = passwordInput.val().trim();
+
+                if (!identifierVal || passwordVal.length < 6) {
+                    e.preventDefault();
+                    if (!identifierVal) {
+                        identifierInput.closest('.input-group').addClass('has-error');
+                        $('#identifierError').text('@L["Please enter your phone number or email."]');
+                        identifierInput.focus();
+                    } else if (passwordVal.length < 6) {
+                        passwordInput.closest('.input-group').addClass('has-error');
+                        $('#passwordError').text('@L["Password must be at least 6 characters."]');
+                        passwordInput.focus();
+                    }
+                    return false;
+                }
+
+                // Show spinner & disable button
+                const spinner = submitBtn.find('.btn-spinner');
+                const icon = submitBtn.find('.btn-icon');
+                const text = submitBtn.find('.btn-text');
+
+                spinner.removeClass('d-none');
+                icon.addClass('d-none');
+                text.text('@L["Signing in..."]');
+                submitBtn.prop('disabled', true);
+
+                // Allow form submission to proceed
+                return true;
             });
         });
     </script>
