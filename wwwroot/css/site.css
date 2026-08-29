@@ -71,6 +71,75 @@ body {
     line-height: 1.6;
 }
 
+/* Opt-in page background: slight light greenish gradient */
+body.krishi-body-gradient {
+    background: linear-gradient(160deg, #f1f9f3 0%, var(--krishi-primary-light) 45%, #f8faf7 100%);
+    background-attachment: fixed;
+}
+
+/* Owner dashboard: summary cards & pending request rows */
+.krishi-summary-card {
+    min-width: 220px;
+}
+
+.krishi-summary-icon {
+    width: 48px;
+    height: 48px;
+}
+
+.krishi-summary-value {
+    color: var(--krishi-text-primary);
+}
+
+.krishi-summary-label {
+    color: var(--krishi-text-muted);
+}
+
+.pending-request-row {
+    transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.pending-request-row.row-leaving {
+    opacity: 0;
+    transform: translateX(24px);
+}
+
+/* Godown owner dashboard: fully-booked cards are visually muted */
+.godown-card-full {
+    opacity: 0.78;
+}
+
+/* Requests pages: chevron rotates when a row is expanded */
+.request-row-header .bi-chevron-down {
+    transition: transform 0.25s ease;
+}
+
+.request-row-header[aria-expanded="true"] .bi-chevron-down {
+    transform: rotate(180deg);
+}
+
+/* Rental requests page: full-width Accept/Reject on mobile stacked cards */
+.request-actions {
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.request-actions .btn {
+    flex: 1 1 0;
+    white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+    .request-actions {
+        width: auto;
+    }
+
+    .request-actions .btn {
+        flex: 0 0 auto;
+    }
+}
+
 a {
     color: var(--krishi-primary);
     text-decoration: none;
@@ -548,4 +617,4 @@ a:hover {
         width: calc(50% - 6px);
         height: 105px;
     }
-}
+}
