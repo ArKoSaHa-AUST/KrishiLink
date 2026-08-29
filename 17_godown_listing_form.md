@@ -19,4 +19,5 @@ Let a godown owner add a new storage listing or edit an existing one.
 - Inline validation for required fields
 
 ## Design Notes
+- UI Theme: Agriculture-related green and white color palette — clean white form container with green input focus borders, agricultural green dropzone highlight, and prominent green save button
 - Structurally mirrors Equipment Listing Form — same component patterns, different field set — to minimize design/dev duplication and keep the app feeling cohesive

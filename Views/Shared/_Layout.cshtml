@@ -54,6 +54,11 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-1.5" href="/#how-it-works">
+                                <span>@L["How it Works"]</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Equipment" ? "active" : "") d-flex align-items-center gap-1.5" asp-controller="Equipment" asp-action="Index">
                                 <span>@L["Equipment"]</span>
                             </a>
@@ -148,6 +153,11 @@
                             <li class="nav-item">
                                 <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Home" asp-action="Index">
                                     <i class="bi bi-house-door"></i> @L["Home"]
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" href="/#how-it-works" data-bs-dismiss="offcanvas">
+                                    <i class="bi bi-gear-wide-connected"></i> @L["How it Works"]
                                 </a>
                             </li>
                             <li class="nav-item">

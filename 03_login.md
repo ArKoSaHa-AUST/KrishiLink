@@ -22,6 +22,7 @@ Authenticate a returning user and route them to their role-specific dashboard.
 - "Remember me" checkbox (optional, keeps session longer)
 
 ## Design Notes
+- UI Theme: Agriculture-related green and white color palette — clean white card surface with agricultural green action buttons, green focus outlines, and fresh green branding
 - Keep this page visually consistent with Register (same card style, same palette)
 - Single column, generous spacing for mobile tapping
 - No unnecessary marketing content on this page — pure utility

@@ -21,5 +21,6 @@ Let a logged-in user (any role) view and edit their personal details.
 - Success/error feedback via toast notification, not full page reload
 
 ## Design Notes
+- UI Theme: Agriculture-related green and white color palette — crisp white profile cards, green role badges, green button accents, and clean white layout
 - Keep this page simple and utilitarian — it's not a frequently visited page
 - Role badge uses the same icon/color convention as Register page tabs for consistency
