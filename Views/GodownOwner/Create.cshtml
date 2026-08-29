@@ -164,13 +164,145 @@
 
                 </div>
 
-                <!-- Form Action Buttons Placeholder -->
+                    <!-- Section 3: Rental Rates & Pricing Structure -->
+                    <div class="col-12 pt-2">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                            <span class="badge bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="bi bi-tag-fill"></i>
+                            </span>
+                            <h5 class="fw-bold text-dark mb-0">@L["3. Storage Rental Rates & Pricing"]</h5>
+                        </div>
+                    </div>
+
+                    <!-- Price Amount -->
+                    <div class="col-12 col-md-6">
+                        <label asp-for="PriceAmount" class="form-label fw-semibold text-dark small">
+                            @L["Storage Rental Rate (BDT ৳)"] <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-success fw-bold">৳</span>
+                            <input type="number" asp-for="PriceAmount" class="form-control py-2.5" id="priceAmountInput" min="1" step="10" placeholder="450" required />
+                            <span class="input-group-text bg-light text-muted" id="priceUnitSuffix">@L["/ Ton / Month"]</span>
+                        </div>
+                        <span asp-validation-for="PriceAmount" class="text-danger small"></span>
+                        <div class="form-text small text-muted" id="calculatedEquivalentRate">@L["Standard rate charged per ton per month."]</div>
+                    </div>
+
+                    <!-- Pricing Period Toggle -->
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-semibold text-dark small">
+                            @L["Billing Frequency / Period"] <span class="text-danger">*</span>
+                        </label>
+                        <div class="d-flex gap-2">
+                            <div class="form-check form-check-inline p-2.5 border rounded-3 flex-grow-1 text-center bg-light">
+                                <input class="form-check-input" type="radio" asp-for="PricePeriod" id="periodMonth" value="Month" checked />
+                                <label class="form-check-label fw-semibold small text-dark user-select-none" for="periodMonth">
+                                    <i class="bi bi-calendar3 me-1 text-success"></i> @L["Monthly (/ Month)"]
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline p-2.5 border rounded-3 flex-grow-1 text-center bg-light">
+                                <input class="form-check-input" type="radio" asp-for="PricePeriod" id="periodDay" value="Day" />
+                                <label class="form-check-label fw-semibold small text-dark user-select-none" for="periodDay">
+                                    <i class="bi bi-sun me-1 text-success"></i> @L["Daily (/ Day)"]
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 4: Facility Features & Amenities -->
+                    <div class="col-12 pt-2">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                            <span class="badge bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="bi bi-shield-check"></i>
+                            </span>
+                            <h5 class="fw-bold text-dark mb-0">@L["4. Facility Amenities & Conditions"]</h5>
+                        </div>
+                        <p class="text-muted small mb-3">@L["Select all preservation facilities and security standards provided at this godown:"]</p>
+
+                        <div class="row g-2">
+                            @{
+                                var standardFacilities = new[]
+                                {
+                                    new { Name = "Climate Control (2-8°C)", Icon = "bi-snow", Label = "❄️ Climate Control (2-8°C)" },
+                                    new { Name = "24/7 Security & CCTV", Icon = "bi-camera-video", Label = "🛡️ 24/7 Security & CCTV" },
+                                    new { Name = "Power Backup Generator", Icon = "bi-lightning-charge", Label = "⚡ Power Backup Generator" },
+                                    new { Name = "Pest & Rodent Control", Icon = "bi-bug", Label = "🐜 Pest & Rodent Fumigation" },
+                                    new { Name = "Moisture Testing Lab", Icon = "bi-droplet", Label = "🧪 Moisture Testing Lab" },
+                                    new { Name = "Loading & Unloading Ramp", Icon = "bi-truck", Label = "🚚 Loading / Unloading Ramp" },
+                                    new { Name = "Pallet Racking System", Icon = "bi-grid-3x3", Label = "📦 Pallet Racking System" },
+                                    new { Name = "Fire Safety & Insurance", Icon = "bi-fire", Label = "🧯 Fire Safety & Insurance" }
+                                };
+                            }
+                            @foreach (var fac in standardFacilities)
+                            {
+                                var isChecked = Model.SelectedFacilities != null && Model.SelectedFacilities.Contains(fac.Name);
+                                <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                                    <div class="form-check amenity-pill-check p-2 border rounded-3 h-100 bg-light d-flex align-items-center gap-2">
+                                        <input class="form-check-input ms-1" type="checkbox" name="SelectedFacilities" value="@fac.Name" id="fac_@fac.Name.Replace(" ", "_")" @(isChecked ? "checked" : "") />
+                                        <label class="form-check-label small fw-medium text-dark user-select-none mb-0" for="fac_@fac.Name.Replace(" ", "_")">
+                                            @L[fac.Label]
+                                        </label>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Section 5: Interactive Drag-and-Drop Image Uploader -->
+                    <div class="col-12 pt-2">
+                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                    <i class="bi bi-images"></i>
+                                </span>
+                                <h5 class="fw-bold text-dark mb-0">@L["5. Facility Photos"] <span class="text-danger">*</span></h5>
+                            </div>
+                            <span class="text-muted small">@L["At least 1 photo required (PNG, JPG, WebP)"]</span>
+                        </div>
+
+                        <!-- Dropzone Component -->
+                        <div class="krishi-upload-dropzone mb-3" id="dropzoneArea" onclick="document.getElementById('godownImageFileInput').click()">
+                            <input type="file" id="godownImageFileInput" name="imageFiles" multiple accept="image/png, image/jpeg, image/webp" class="d-none" onchange="handleFileSelect(this.files)" />
+                            <div class="mb-2">
+                                <i class="bi bi-cloud-arrow-up text-success" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">@L["Drag & drop godown facility photos here, or"] <span class="text-success text-decoration-underline">@L["browse files"]</span></h6>
+                            <p class="text-muted small mb-0">@L["Clear photos of the facility exterior, storage chambers, and security gates build farmer trust."]</p>
+                        </div>
+
+                        <!-- Image Validation Alert -->
+                        <div class="alert alert-danger d-none py-2 px-3 small rounded-3 mb-3" id="imageValidationAlert">
+                            <i class="bi bi-exclamation-triangle-fill me-1.5"></i> @L["Please upload at least one photo of the storage facility before saving."]
+                        </div>
+
+                        <!-- Live Preview Cards Container -->
+                        <div class="d-flex flex-wrap gap-3" id="imagePreviewsContainer">
+                            <!-- Existing Images (if edit mode) -->
+                            @for (int i = 0; i < Model.ExistingImageUrls.Count; i++)
+                            {
+                                var imgUrl = Model.ExistingImageUrls[i];
+                                <div class="krishi-image-preview-card existing-image-card" id="existingCard_@i">
+                                    <img src="@imgUrl" alt="@L["Godown photo"]" class="w-100 h-100 object-fit-cover rounded-3" />
+                                    <input type="hidden" name="ExistingImageUrls" value="@imgUrl" />
+                                    <button type="button" class="krishi-preview-remove-btn" onclick="removeExistingImage(@i)" title="@L["Remove photo"]">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Form Action Buttons -->
                 <div class="d-flex flex-column flex-sm-row justify-content-end align-items-center gap-3 pt-4 mt-4 border-top">
                     <a asp-controller="GodownOwner" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-semibold w-100 w-sm-auto order-2 order-sm-1">
                         @L["Cancel"]
                     </a>
                     <button type="submit" class="btn btn-krishi-primary rounded-pill px-5 py-2.5 fw-bold shadow-sm w-100 w-sm-auto order-1 order-sm-2" id="submitGodownBtn">
-                        <i class="bi bi-check2-circle me-1.5"></i> @L[Model.SubmitButtonText]
+                        <span class="btn-spinner spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                        <i class="bi bi-check2-circle me-1.5 btn-icon"></i>
+                        <span class="btn-text">@L[Model.SubmitButtonText]</span>
                     </button>
                 </div>
 
@@ -180,3 +312,125 @@
 
     </div>
 </div>
+
+<style>
+.amenity-pill-check {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.amenity-pill-check:hover {
+    border-color: var(--krishi-primary) !important;
+    background-color: var(--krishi-primary-light) !important;
+}
+.amenity-pill-check input:checked ~ label {
+    color: var(--krishi-primary) !important;
+    font-weight: 600 !important;
+}
+</style>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // Track uploaded files in memory
+        let selectedFiles = [];
+
+        // 1. Capacity Unit Live Synchronization
+        $('#capacityUnitSelect').on('change', function () {
+            const unit = $(this).val();
+            $('#capacityUnitDisplay').text(unit);
+            $('#availableUnitDisplay').text(unit);
+            updatePricingSuffix();
+        });
+
+        // 2. Pricing Frequency & Suffix Recalculator
+        function updatePricingSuffix() {
+            const unit = $('#capacityUnitSelect').val() || 'Ton';
+            const isMonthly = $('#periodMonth').is(':checked');
+            const suffix = isMonthly ? `/ ${unit} / Month` : `/ ${unit} / Day`;
+            $('#priceUnitSuffix').text(suffix);
+
+            const amount = parseFloat($('#priceAmountInput').val()) || 0;
+            if (amount > 0) {
+                if (isMonthly) {
+                    const dailyEquiv = (amount / 30).toFixed(1);
+                    $('#calculatedEquivalentRate').text(`Approx. ৳${dailyEquiv} / ${unit} / day equivalent.`);
+                } else {
+                    const monthlyEquiv = (amount * 30).toFixed(0);
+                    $('#calculatedEquivalentRate').text(`Approx. ৳${monthlyEquiv} / ${unit} / month equivalent.`);
+                }
+            }
+        }
+
+        $('input[name="PricePeriod"]').on('change', updatePricingSuffix);
+        $('#priceAmountInput').on('input', updatePricingSuffix);
+
+        // 3. Drag-and-Drop Image Uploader
+        const dropzone = document.getElementById('dropzoneArea');
+
+        if (dropzone) {
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.add('dragover');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.remove('dragover');
+                }, false);
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                if (dt && dt.files && dt.files.length > 0) {
+                    handleFileSelect(dt.files);
+                }
+            }, false);
+        }
+
+        function handleFileSelect(files) {
+            const container = document.getElementById('imagePreviewsContainer');
+            const alertBox = document.getElementById('imageValidationAlert');
+            if (alertBox) alertBox.classList.add('d-none');
+
+            Array.from(files).forEach((file) => {
+                if (!file.type.startsWith('image/')) return;
+
+                const fileIndex = selectedFiles.length;
+                selectedFiles.push(file);
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const card = document.createElement('div');
+                    card.className = 'krishi-image-preview-card';
+                    card.id = 'previewCard_' + fileIndex;
+
+                    card.innerHTML = `
+                        <img src="${e.target.result}" alt="@L["New Upload"]" class="w-100 h-100 object-fit-cover rounded-3" />
+                        <button type="button" class="krishi-preview-remove-btn" onclick="removeNewImage(${fileIndex})" title="@L["Remove photo"]">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    `;
+                    container.appendChild(card);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function removeNewImage(index) {
+            const card = document.getElementById('previewCard_' + index);
+            if (card) card.remove();
+            selectedFiles[index] = null;
+        }
+
+        function removeExistingImage(index) {
+            const card = document.getElementById('existingCard_' + index);
+            if (card) card.remove();
+        }
+    </script>
+}
