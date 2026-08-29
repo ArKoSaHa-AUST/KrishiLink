@@ -414,8 +414,9 @@ a:hover {
     color: rgba(255, 255, 255, 0.85);
 }
 
-.footer-krishi a:hover {
-    color: var(--krishi-primary-subtle);
+.footer-krishi a:hover,
+.hover-white:hover {
+    color: var(--krishi-primary-subtle) !important;
     text-decoration: underline;
 }
 

@@ -185,39 +185,76 @@
 </div>
 
 <!-- Role Selection / Registration Section -->
-<div class="mb-5 py-4 px-4 rounded-3 border bg-white shadow-sm" style="border-color: var(--krishi-border-color) !important;">
-    <div class="text-center mb-4">
+<div class="mb-5 py-5 px-4 rounded-4 border bg-white shadow-sm" style="border-color: var(--krishi-border-color) !important;">
+    <div class="text-center mx-auto mb-4" style="max-width: 650px;">
+        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold mb-2">@L["Role-Based Access"]</span>
         <h3 class="fw-bold" style="color: var(--krishi-primary);">@L["Join KrishiLink Today"]</h3>
         <p class="text-muted">@L["Choose your role to get started with tailored tools and services."]</p>
     </div>
 
-    <div class="row g-3">
+    <div class="row g-4">
+        <!-- Farmer Card -->
         <div class="col-12 col-md-4">
             <a asp-controller="Account" asp-action="Register" asp-route-role="Farmer" class="text-decoration-none h-100 d-block">
-                <div class="card h-100 p-4 border text-center krishi-card">
-                    <h5 class="fw-bold text-success mb-2">@L["Farmer"]</h5>
-                    <p class="small text-muted mb-3">@L["Rent machinery, store crops, and access advisory services."]</p>
-                    <span class="btn btn-outline-success btn-sm rounded-pill px-3 mt-auto align-self-center">@L["Register as Farmer"]</span>
+                <div class="card h-100 p-4 border rounded-3 text-center krishi-card bg-white d-flex flex-column">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-3" style="width: 56px; height: 56px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
+                        <i class="bi bi-flower1 fs-4"></i>
+                    </div>
+                    <h4 class="fw-bold mb-2" style="color: var(--krishi-primary);">@L["Farmer"]</h4>
+                    <p class="small text-muted mb-3 flex-grow-1">@L["Rent machinery, store crops, and access advisory services."]</p>
+                    <div class="d-flex flex-wrap gap-1 justify-content-center mb-3">
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Rent Machinery"]</span>
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Cold Storage"]</span>
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Advisory"]</span>
+                    </div>
+                    <span class="btn btn-krishi-primary w-100 rounded-pill py-2 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5 mt-auto">
+                        <span>@L["Register as Farmer"]</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </span>
                 </div>
             </a>
         </div>
         
+        <!-- Equipment Owner Card -->
         <div class="col-12 col-md-4">
             <a asp-controller="Account" asp-action="Register" asp-route-role="EquipmentOwner" class="text-decoration-none h-100 d-block">
-                <div class="card h-100 p-4 border text-center krishi-card">
-                    <h5 class="fw-bold text-success mb-2">@L["Equipment Owner"]</h5>
-                    <p class="small text-muted mb-3">@L["List your tractors and farming machinery to earn rental income."]</p>
-                    <span class="btn btn-outline-success btn-sm rounded-pill px-3 mt-auto align-self-center">@L["Register as Owner"]</span>
+                <div class="card h-100 p-4 border rounded-3 text-center krishi-card bg-white d-flex flex-column">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-3" style="width: 56px; height: 56px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
+                        <i class="bi bi-truck-front fs-4"></i>
+                    </div>
+                    <h4 class="fw-bold mb-2" style="color: var(--krishi-primary);">@L["Equipment Owner"]</h4>
+                    <p class="small text-muted mb-3 flex-grow-1">@L["List your tractors and farming machinery to earn rental income."]</p>
+                    <div class="d-flex flex-wrap gap-1 justify-content-center mb-3">
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["List Machinery"]</span>
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Manage Bookings"]</span>
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Earn Income"]</span>
+                    </div>
+                    <span class="btn btn-krishi-primary w-100 rounded-pill py-2 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5 mt-auto">
+                        <span>@L["Register as Owner"]</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </span>
                 </div>
             </a>
         </div>
 
+        <!-- Godown Owner Card -->
         <div class="col-12 col-md-4">
             <a asp-controller="Account" asp-action="Register" asp-route-role="GodownOwner" class="text-decoration-none h-100 d-block">
-                <div class="card h-100 p-4 border text-center krishi-card">
-                    <h5 class="fw-bold text-success mb-2">@L["Godown Owner"]</h5>
-                    <p class="small text-muted mb-3">@L["Monetize warehouse and cold storage space by listing godowns."]</p>
-                    <span class="btn btn-outline-success btn-sm rounded-pill px-3 mt-auto align-self-center">@L["Register Godown"]</span>
+                <div class="card h-100 p-4 border rounded-3 text-center krishi-card bg-white d-flex flex-column">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-3" style="width: 56px; height: 56px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
+                        <i class="bi bi-building fs-4"></i>
+                    </div>
+                    <h4 class="fw-bold mb-2" style="color: var(--krishi-primary);">@L["Godown Owner"]</h4>
+                    <p class="small text-muted mb-3 flex-grow-1">@L["Monetize warehouse and cold storage space by listing godowns."]</p>
+                    <div class="d-flex flex-wrap gap-1 justify-content-center mb-3">
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Warehouse Space"]</span>
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Storage Requests"]</span>
+                        <span class="badge bg-light text-success border rounded-pill px-2.5 py-1 small">@L["Secure Payment"]</span>
+                    </div>
+                    <span class="btn btn-krishi-primary w-100 rounded-pill py-2 fw-semibold d-inline-flex align-items-center justify-content-center gap-1.5 mt-auto">
+                        <span>@L["Register Godown"]</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </span>
                 </div>
             </a>
         </div>
