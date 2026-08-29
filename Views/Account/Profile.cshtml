@@ -570,6 +570,166 @@
                     $('#confirmPasswordError').text('');
                 }
             });
+
+            // 6. AJAX Profile Save Submission
+            $('#profileForm').on('submit', function (e) {
+                e.preventDefault();
+
+                const saveBtn = $('#saveProfileBtn');
+                const spinner = saveBtn.find('.btn-spinner');
+                const icon = saveBtn.find('.btn-icon');
+                const text = saveBtn.find('.btn-text');
+
+                const newName = $('#inputFullName').val().trim();
+                const newPhone = $('#inputPhone').val().trim();
+                const newEmail = $('#inputEmail').val().trim();
+                const newLocation = $('#inputLocation').val().trim();
+                const newBusiness = $('#inputBusiness').length ? $('#inputBusiness').val().trim() : '';
+
+                if (!newName || !newPhone || !newLocation) {
+                    KrishiToast.show('@L["Please fill in all required fields."]', { iconClass: 'bi-exclamation-circle-fill text-warning' });
+                    return false;
+                }
+
+                // Show spinner
+                spinner.removeClass('d-none');
+                icon.addClass('d-none');
+                text.text('@L["Saving..."]');
+                saveBtn.prop('disabled', true);
+
+                $.ajax({
+                    url: '@Url.Action("UpdateProfile", "Account")',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            // Update read-only views
+                            $('#viewFullName').text(newName);
+                            $('#viewPhone').text(newPhone);
+                            $('#viewEmail').text(newEmail || '@L["Not provided"]');
+                            $('#viewLocation').text(newLocation);
+                            if ($('#viewBusiness').length) {
+                                $('#viewBusiness').text(newBusiness || '@L["Not specified"]');
+                            }
+
+                            // Update sidebar metadata
+                            $('#profileSidebarName').text(newName);
+                            $('#sidebarPhone').text(newPhone);
+                            $('#sidebarEmail').text(newEmail || '@L["Not specified"]');
+                            $('#sidebarLocation').text(newLocation);
+
+                            // Recalculate initials
+                            const parts = newName.split(/\s+/).filter(Boolean);
+                            let initials = 'KL';
+                            if (parts.length === 1) {
+                                initials = parts[0].length >= 2 ? parts[0].substring(0, 2).toUpperCase() : parts[0].toUpperCase();
+                            } else if (parts.length > 1) {
+                                initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                            }
+                            $('.avatar-initials-badge span').text(initials);
+
+                            // Refresh baseline initial values
+                            initialValues = {
+                                fullName: newName,
+                                phone: newPhone,
+                                email: newEmail,
+                                location: newLocation,
+                                business: newBusiness
+                            };
+
+                            KrishiToast.show('@L["Profile updated successfully!"]', { iconClass: 'bi-check-circle-fill text-success' });
+                            exitEditMode(false);
+                        } else {
+                            KrishiToast.show(response.message || '@L["Failed to update profile."]', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
+                        }
+                    },
+                    error: function () {
+                        KrishiToast.show('@L["A network error occurred. Please try again."]', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
+                    },
+                    complete: function () {
+                        spinner.addClass('d-none');
+                        icon.removeClass('d-none');
+                        text.text('@L["Save Changes"]');
+                        saveBtn.prop('disabled', false);
+                        checkFormDirty();
+                    }
+                });
+            });
+
+            // 7. AJAX Password Change Submission
+            $('#changePasswordForm').on('submit', function (e) {
+                e.preventDefault();
+
+                const currentPass = $('#inputCurrentPassword').val();
+                const newPass = $('#inputNewPassword').val();
+                const confirmPass = $('#inputConfirmPassword').val();
+
+                if (!currentPass || !newPass || !confirmPass) {
+                    KrishiToast.show('@L["Please complete all password fields."]', { iconClass: 'bi-exclamation-circle-fill text-warning' });
+                    return false;
+                }
+
+                if (newPass.length < 6) {
+                    $('#newPasswordError').text('@L["Password must be at least 6 characters."]');
+                    $('#inputNewPassword').focus();
+                    return false;
+                }
+
+                if (newPass !== confirmPass) {
+                    $('#confirmPasswordError').text('@L["Passwords do not match."]');
+                    $('#inputConfirmPassword').focus();
+                    return false;
+                }
+
+                const saveBtn = $('#savePasswordBtn');
+                const spinner = saveBtn.find('.btn-spinner');
+                const icon = saveBtn.find('.btn-icon');
+                const text = saveBtn.find('.btn-text');
+
+                spinner.removeClass('d-none');
+                icon.addClass('d-none');
+                text.text('@L["Updating..."]');
+                saveBtn.prop('disabled', true);
+
+                $.ajax({
+                    url: '@Url.Action("ChangePassword", "Account")',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            KrishiToast.show(response.message || '@L["Password changed successfully!"]', { iconClass: 'bi-shield-check text-success' });
+                            $('#changePasswordForm')[0].reset();
+                            $('.input-group').removeClass('has-error is-valid-field');
+                            $('#currentPasswordError, #newPasswordError, #confirmPasswordError').text('');
+
+                            // Collapse accordion
+                            const collapseEl = document.getElementById('changePasswordCollapse');
+                            if (collapseEl) {
+                                const bsCollapse = bootstrap.Collapse.getInstance(collapseEl) || new bootstrap.Collapse(collapseEl);
+                                bsCollapse.hide();
+                            }
+                        } else {
+                            KrishiToast.show(response.message || '@L["Failed to change password."]', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
+                            $('#currentPasswordError').text(response.message || '');
+                        }
+                    },
+                    error: function () {
+                        KrishiToast.show('@L["An error occurred while changing password."]', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
+                    },
+                    complete: function () {
+                        spinner.addClass('d-none');
+                        icon.removeClass('d-none');
+                        text.text('@L["Update Password"]');
+                        saveBtn.prop('disabled', false);
+                    }
+                });
+            });
         });
     </script>
 }
