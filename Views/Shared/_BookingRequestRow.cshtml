@@ -34,7 +34,7 @@
                 <span class="small d-block" style="color: var(--krishi-text-muted);">
                     <i class="bi bi-building me-1 text-success"></i>@Model.GodownName
                     <span class="mx-1">·</span>
-                    <i class="bi bi-box-seam me-1 text-success"></i>@Model.RequestedCapacityTons.ToString("N0") Tons
+                    <i class="bi bi-box-seam me-1 text-success"></i>@L["{0} Tons", Model.RequestedCapacityTons.ToString("N0")]
                     <span class="mx-1">·</span>
                     <i class="bi bi-calendar-range me-1 text-success"></i>@Model.DateRange
                     @if (!string.IsNullOrEmpty(Model.TimeAgo))
@@ -56,7 +56,7 @@
         <div class="d-flex align-items-center gap-3 flex-shrink-0">
             @if (expandable)
             {
-                <span class="krishi-badge request-status-badge @badgeClass @(Model.Status == "Pending" ? "d-none d-md-inline-flex" : "")">@Model.Status</span>
+                <span class="krishi-badge request-status-badge @badgeClass @(Model.Status == "Pending" ? "d-none d-md-inline-flex" : "")">@L[Model.Status]</span>
             }
             @if (Model.Status == "Pending")
             {
@@ -64,11 +64,11 @@
                 <div class="request-actions" onclick="event.stopPropagation()">
                     <button type="button" class="btn btn-krishi-primary btn-sm rounded-pill px-3 fw-semibold btn-accept"
                             onclick="applyDecision(@Model.Id, 'accept', this)">
-                        <i class="bi bi-check-lg"></i> Accept
+                        <i class="bi bi-check-lg"></i> @L["Accept"]
                     </button>
                     <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold btn-reject"
                             onclick="promptReject(@Model.Id, this)">
-                        <i class="bi bi-x-lg"></i> Reject
+                        <i class="bi bi-x-lg"></i> @L["Reject"]
                     </button>
                 </div>
             }
@@ -77,7 +77,7 @@
                 <div class="request-actions" onclick="event.stopPropagation()">
                     <button type="button" class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold btn-complete"
                             onclick="markCompleted(@Model.Id, this)">
-                        <i class="bi bi-check2-all"></i> Mark Completed
+                        <i class="bi bi-check2-all"></i> @L["Mark Completed"]
                     </button>
                 </div>
             }
@@ -95,21 +95,21 @@
             <div class="px-4 pb-3 pt-1 ms-md-5">
                 <div class="row g-3 p-3 rounded-3 border" style="background-color: var(--krishi-primary-light);">
                     <div class="col-12 col-md-6">
-                        <span class="small fw-semibold text-uppercase d-block mb-1" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">Farmer's Note</span>
+                        <span class="small fw-semibold text-uppercase d-block mb-1" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L["Farmer's Note"]</span>
                         <p class="small mb-0 fst-italic" style="color: var(--krishi-text-primary);">
-                            @(string.IsNullOrEmpty(Model.Note) ? "No note provided." : $"\"{Model.Note}\"")
+                            @(string.IsNullOrEmpty(Model.Note) ? L["No note provided."].Value : $"\"{Model.Note}\"")
                         </p>
                     </div>
                     <div class="col-12 col-md-6">
-                        <span class="small fw-semibold text-uppercase d-block mb-1" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">Capacity vs. Availability</span>
+                        <span class="small fw-semibold text-uppercase d-block mb-1" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L["Capacity vs. Availability"]</span>
                         <ul class="list-unstyled small mb-0 d-flex flex-column gap-1" style="color: var(--krishi-text-primary);">
-                            <li><i class="bi bi-box-seam text-success me-1"></i> Requested: @Model.RequestedCapacityTons.ToString("N0") Tons</li>
+                            <li><i class="bi bi-box-seam text-success me-1"></i> @L["Requested:"] @L["{0} Tons", Model.RequestedCapacityTons.ToString("N0")]</li>
                             <li><i class="bi bi-building text-success me-1"></i> <span class="detail-availability">—</span></li>
                             <li><i class="bi bi-calendar-range text-success me-1"></i> @Model.DateRange</li>
                         </ul>
                     </div>
                     <div class="col-12 reject-reason-block @(string.IsNullOrEmpty(Model.RejectReason) ? "d-none" : "")">
-                        <span class="small fw-semibold text-uppercase d-block mb-1" style="color: var(--krishi-status-rejected-text); letter-spacing: 0.04em;">Rejection Reason</span>
+                        <span class="small fw-semibold text-uppercase d-block mb-1" style="color: var(--krishi-status-rejected-text); letter-spacing: 0.04em;">@L["Rejection Reason"]</span>
                         <p class="small mb-0 reject-reason-text" style="color: var(--krishi-text-primary);">@Model.RejectReason</p>
                     </div>
                 </div>

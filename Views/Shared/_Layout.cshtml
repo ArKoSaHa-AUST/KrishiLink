@@ -2,8 +2,14 @@
 @using KrishiLink.Models.Entities
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
+@{
+    var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+    var targetCulture = isBangla ? "en" : "bn";
+    var targetLangLabel = isBangla ? "English" : "বাংলা";
+    var langReturnUrl = Context.Request.Path + Context.Request.QueryString;
+}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="@(isBangla ? "bn" : "en")">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -17,12 +23,12 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Custom site styling -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-<body class="d-flex flex-column min-vh-100 @ViewData["BodyClass"]">
+<body class="d-flex flex-column min-vh-100 @(isBangla ? "lang-bn" : "") @ViewData["BodyClass"]">
     <!-- Header & Sticky Top Navbar -->
     <header class="sticky-top">
         <nav class="navbar navbar-expand-lg navbar-dark navbar-krishi shadow-sm py-2.5">
@@ -44,28 +50,37 @@
                     <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1 ms-3">
                         <li class="nav-item">
                             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "") d-flex align-items-center gap-1.5" asp-controller="Home" asp-action="Index">
-                                <span>Home</span>
+                                <span>@L["Home"]</span>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Equipment" ? "active" : "") d-flex align-items-center gap-1.5" asp-controller="Equipment" asp-action="Index">
-                                <span>Equipment</span>
+                                <span>@L["Equipment"]</span>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Godown" ? "active" : "") d-flex align-items-center gap-1.5" asp-controller="Godown" asp-action="Index">
-                                <span>Godowns</span>
+                                <span>@L["Godowns"]</span>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Advisory" ? "active" : "") d-flex align-items-center gap-1.5" asp-controller="Advisory" asp-action="Index">
-                                <span>Crop Advisory</span>
+                                <span>@L["Crop Advisory"]</span>
                             </a>
                         </li>
                     </ul>
 
                     <!-- Desktop Right Side Auth Navigation -->
                     <div class="d-flex align-items-center gap-2">
+                        <!-- Language Toggle (EN ⇄ BN) — server-side culture cookie, no JavaScript -->
+                        <form asp-controller="Home" asp-action="SetLanguage" method="post" class="d-inline">
+                            <input type="hidden" name="culture" value="@targetCulture" />
+                            <input type="hidden" name="returnUrl" value="@langReturnUrl" />
+                            <button type="submit" class="btn btn-outline-light btn-sm rounded-pill px-3 py-1.5 fw-medium d-flex align-items-center gap-1" title="Switch language">
+                                <i class="bi bi-translate"></i>
+                                <span>@targetLangLabel</span>
+                            </button>
+                        </form>
                         @if (SignInManager.IsSignedIn(User))
                         {
                             var currentUser = await UserManager.GetUserAsync(User);
@@ -77,25 +92,25 @@
                                 <button class="btn btn-outline-light rounded-pill px-3 py-1.5 d-flex align-items-center gap-2 dropdown-toggle" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="bi bi-person-circle fs-6"></i>
                                     <span class="fw-medium">@(currentUser?.FullName ?? User.Identity?.Name)</span>
-                                    <span class="badge bg-light text-success rounded-pill px-2 py-0.5">@roleDisplay</span>
+                                    <span class="badge bg-light text-success rounded-pill px-2 py-0.5">@L[roleDisplay]</span>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2 rounded-3" aria-labelledby="userMenuDropdown">
                                     <li>
                                         <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="@dashboardController" asp-action="@dashboardAction">
                                             <i class="bi bi-speedometer2 text-success"></i>
-                                            <span>Dashboard</span>
+                                            <span>@L["Dashboard"]</span>
                                         </a>
                                     </li>
                                     <li>
                                         <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="Bookings" asp-action="Index">
                                             <i class="bi bi-calendar2-check text-success"></i>
-                                            <span>My Bookings</span>
+                                            <span>@L["My Bookings"]</span>
                                         </a>
                                     </li>
                                     <li>
                                         <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="Account" asp-action="Profile">
                                             <i class="bi bi-person-gear text-success"></i>
-                                            <span>My Profile</span>
+                                            <span>@L["My Profile"]</span>
                                         </a>
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
@@ -104,7 +119,7 @@
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="dropdown-item text-danger rounded-2 d-flex align-items-center gap-2 py-1.5">
                                                 <i class="bi bi-box-arrow-right"></i>
-                                                <span>Logout</span>
+                                                <span>@L["Logout"]</span>
                                             </button>
                                         </form>
                                     </li>
@@ -113,8 +128,8 @@
                         }
                         else
                         {
-                            <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light btn-sm rounded-pill px-3 py-1.5 fw-medium">Login</a>
-                            <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm">Register</a>
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light btn-sm rounded-pill px-3 py-1.5 fw-medium">@L["Login"]</a>
+                            <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm">@L["Register"]</a>
                         }
                     </div>
                 </div>
@@ -132,25 +147,35 @@
                         <ul class="navbar-nav me-auto mb-3 gap-2">
                             <li class="nav-item">
                                 <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Home" asp-action="Index">
-                                    <i class="bi bi-house-door"></i> Home
+                                    <i class="bi bi-house-door"></i> @L["Home"]
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Equipment" asp-action="Index">
-                                    <i class="bi bi-truck"></i> Equipment
+                                    <i class="bi bi-truck"></i> @L["Equipment"]
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Godown" asp-action="Index">
-                                    <i class="bi bi-building"></i> Godowns
+                                    <i class="bi bi-building"></i> @L["Godowns"]
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Advisory" asp-action="Index">
-                                    <i class="bi bi-cloud-sun"></i> Crop Advisory
+                                    <i class="bi bi-cloud-sun"></i> @L["Crop Advisory"]
                                 </a>
                             </li>
                         </ul>
+
+                        <!-- Language Toggle (EN ⇄ BN) — server-side culture cookie, no JavaScript -->
+                        <form asp-controller="Home" asp-action="SetLanguage" method="post" class="mb-3">
+                            <input type="hidden" name="culture" value="@targetCulture" />
+                            <input type="hidden" name="returnUrl" value="@langReturnUrl" />
+                            <button type="submit" class="btn btn-outline-light rounded-pill py-2 fw-medium w-100 d-flex align-items-center justify-content-center gap-2" title="Switch language">
+                                <i class="bi bi-translate"></i>
+                                <span>@targetLangLabel</span>
+                            </button>
+                        </form>
 
                         <div class="border-top border-secondary pt-3 mt-auto">
                             @if (SignInManager.IsSignedIn(User))
@@ -161,23 +186,23 @@
                                 var dashboardAction = roleDisplay == "Farmer" ? "Dashboard" : "Index";
 
                                 <div class="text-white mb-2 small">
-                                    Signed in as <strong class="text-warning">@(currentUser?.FullName ?? User.Identity?.Name)</strong> (@roleDisplay)
+                                    @L["Signed in as"] <strong class="text-warning">@(currentUser?.FullName ?? User.Identity?.Name)</strong> (@L[roleDisplay])
                                 </div>
                                 <div class="d-grid gap-2">
                                     <a asp-controller="@dashboardController" asp-action="@dashboardAction" class="btn btn-light text-success rounded-pill py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
-                                        <i class="bi bi-speedometer2"></i> Dashboard
+                                        <i class="bi bi-speedometer2"></i> @L["Dashboard"]
                                     </a>
                                     <form asp-controller="Account" asp-action="Logout" method="post">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-outline-danger w-100 rounded-pill py-2 fw-medium">Logout</button>
+                                        <button type="submit" class="btn btn-outline-danger w-100 rounded-pill py-2 fw-medium">@L["Logout"]</button>
                                     </form>
                                 </div>
                             }
                             else
                             {
                                 <div class="d-grid gap-2">
-                                    <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light rounded-pill py-2 fw-medium">Login</a>
-                                    <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success rounded-pill py-2 fw-bold">Register</a>
+                                    <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light rounded-pill py-2 fw-medium">@L["Login"]</a>
+                                    <a asp-controller="Account" asp-action="Register" class="btn btn-light text-success rounded-pill py-2 fw-bold">@L["Register"]</a>
                                 </div>
                             }
                         </div>
@@ -206,24 +231,24 @@
                         <span class="fw-bold fs-5 text-white">KrishiLink</span>
                     </div>
                     <p class="small text-white-50 mb-3" style="max-width: 360px;">
-                        A trustworthy digital agricultural ecosystem connecting farmers with equipment owners, godown facilities, and expert crop advisory.
+                        @L["A trustworthy digital agricultural ecosystem connecting farmers with equipment owners, godown facilities, and expert crop advisory."]
                     </p>
                 </div>
                 <div class="col-6 col-md-3">
-                    <h6 class="fw-bold text-white mb-3">Quick Links</h6>
+                    <h6 class="fw-bold text-white mb-3">@L["Quick Links"]</h6>
                     <ul class="list-unstyled small d-flex flex-column gap-2 mb-0">
-                        <li><a asp-controller="Home" asp-action="Index">Home Page</a></li>
-                        <li><a asp-controller="Equipment" asp-action="Index">Browse Equipment</a></li>
-                        <li><a asp-controller="Godown" asp-action="Index">Book Godowns</a></li>
-                        <li><a asp-controller="Advisory" asp-action="Index">Crop Advisory Services</a></li>
+                        <li><a asp-controller="Home" asp-action="Index">@L["Home Page"]</a></li>
+                        <li><a asp-controller="Equipment" asp-action="Index">@L["Browse Equipment"]</a></li>
+                        <li><a asp-controller="Godown" asp-action="Index">@L["Book Godowns"]</a></li>
+                        <li><a asp-controller="Advisory" asp-action="Index">@L["Crop Advisory Services"]</a></li>
                     </ul>
                 </div>
                 <div class="col-6 col-md-4">
-                    <h6 class="fw-bold text-white mb-3">Contact & Support</h6>
+                    <h6 class="fw-bold text-white mb-3">@L["Contact & Support"]</h6>
                     <ul class="list-unstyled small d-flex flex-column gap-2 mb-0 text-white-50">
                         <li>support@krishilink.gov.bd</li>
-                        <li>Agri-Helpline: 16123</li>
-                        <li>Dhaka, Bangladesh</li>
+                        <li>@L["Agri-Helpline: 16123"]</li>
+                        <li>@L["Dhaka, Bangladesh"]</li>
                     </ul>
                 </div>
             </div>
@@ -231,8 +256,8 @@
             <div class="border-top border-secondary mt-4 pt-3 d-flex flex-column flex-sm-row justify-content-between align-items-center small text-white-50">
                 <span>&copy; @DateTime.Now.Year KrishiLink Platform. All rights reserved.</span>
                 <div class="mt-2 mt-sm-0">
-                    <a asp-controller="Home" asp-action="Privacy" class="me-3">Privacy Policy</a>
-                    <span>Empowering Bangladesh Farmers</span>
+                    <a asp-controller="Home" asp-action="Privacy" class="me-3">@L["Privacy Policy"]</a>
+                    <span>@L["Empowering Bangladesh Farmers"]</span>
                 </div>
             </div>
         </div>

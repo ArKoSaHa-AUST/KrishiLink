@@ -1,6 +1,6 @@
-@model KrishiLink.Models.ViewModels.GodownBrowseViewModel
+﻿@model KrishiLink.Models.ViewModels.GodownBrowseViewModel
 @{
-    ViewData["Title"] = "Browse Godowns & Storage";
+    ViewData["Title"] = L["Browse Godowns"];
     var activeFiltersCount = 0;
     if (!string.IsNullOrWhiteSpace(Model.SearchTerm)) activeFiltersCount++;
     if (Model.SelectedStorageTypes.Any()) activeFiltersCount += Model.SelectedStorageTypes.Count;
@@ -15,18 +15,18 @@
     <div class="row align-items-center position-relative" style="z-index: 2;">
         <div class="col-lg-8">
             <span class="badge bg-light text-success fw-bold px-3 py-1.5 rounded-pill mb-2 mb-md-3">
-                <i class="bi bi-building-check me-1"></i> Harvest Preservation Network
+                <i class="bi bi-building-check me-1"></i> @L["Harvest Preservation Network"]
             </span>
-            <h1 class="display-6 fw-bold mb-2 text-white">Find & Book Godowns & Cold Storages</h1>
+            <h1 class="display-6 fw-bold mb-2 text-white">@L["Find & Book Godowns & Cold Storages"]</h1>
             <p class="lead text-white-50 mb-0 fs-6">
-                Protect your crops, grains, and perishable produce in verified climate-controlled cold storages and fumigated warehouses across Bangladesh.
+                @L["Protect your crops, grains, and perishable produce in verified climate-controlled cold storages and fumigated warehouses across Bangladesh."]
             </p>
         </div>
         <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
             <div class="d-inline-flex flex-column align-items-lg-end bg-white bg-opacity-10 border border-white border-opacity-25 rounded-3 p-3 text-white text-start">
-                <span class="small text-white-50">Verified Facilities</span>
-                <span class="fs-4 fw-bold" id="heroListingCount">@Model.GodownList.Count Storage Options</span>
-                <span class="small text-white-50"><i class="bi bi-shield-check text-warning me-1"></i>Pest-controlled & insured</span>
+                <span class="small text-white-50">@L["Verified Facilities"]</span>
+                <span class="fs-4 fw-bold" id="heroListingCount">@L["{0} Storage Options", Model.GodownList.Count]</span>
+                <span class="small text-white-50"><i class="bi bi-shield-check text-warning me-1"></i>@L["Pest-controlled & insured"]</span>
             </div>
         </div>
     </div>
@@ -38,53 +38,53 @@
 <!-- Mobile Sticky Filter Bar (< lg) -->
 <div class="d-lg-none mb-3">
     <div class="d-flex gap-2">
-        <button class="btn btn-krishi-primary flex-grow-1 d-flex justify-content-between align-items-center py-2.5 px-3 rounded-3 shadow-sm" 
+        <button class="btn btn-krishi-primary flex-grow-1 d-flex justify-content-between align-items-center py-2.5 px-3 rounded-3 shadow-sm"
                 type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileGodownFilterBottomSheet" aria-controls="mobileGodownFilterBottomSheet">
             <span class="d-flex align-items-center gap-2 fw-semibold">
-                <i class="bi bi-sliders2"></i> Filter Godowns
+                <i class="bi bi-sliders2"></i> @L["Filter Godowns"]
             </span>
             <span class="badge bg-white text-success rounded-pill px-2.5 py-1" id="mobileFilterBadge">
-                @(activeFiltersCount > 0 ? $"{activeFiltersCount} active" : "Filters")
+                @(activeFiltersCount > 0 ? L["{0} active", activeFiltersCount] : L["Filters"])
             </span>
         </button>
-        <button type="button" class="btn btn-outline-secondary rounded-3 px-3" onclick="resetAllFilters()" title="Reset Filters">
+        <button type="button" class="btn btn-outline-secondary rounded-3 px-3" onclick="resetAllFilters()" title='@L["Reset Filters"]'>
             <i class="bi bi-arrow-counterclockwise"></i>
         </button>
     </div>
 </div>
 
 <div class="row g-4">
-    
+
     <!-- ==========================================
          LEFT SIDEBAR: FILTERS (>= lg)
          ========================================== -->
     <div class="col-12 col-lg-4 col-xl-3 d-none d-lg-block">
         <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 sticky-top" style="top: 85px; z-index: 10;">
-            
+
             <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-sliders text-success fs-5"></i>
-                    <h5 class="fw-bold mb-0 text-dark">Filters</h5>
+                    <h5 class="fw-bold mb-0 text-dark">@L["Filters"]</h5>
                 </div>
                 <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0 fw-semibold clear-filters-btn @(activeFiltersCount > 0 ? "" : "d-none")" onclick="resetAllFilters()">
-                    <i class="bi bi-x-circle me-1"></i>Clear Filters
+                    <i class="bi bi-x-circle me-1"></i>@L["Clear Filters"]
                 </button>
             </div>
 
             <!-- 1. Location Filter -->
             <div class="mb-4">
                 <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="desktopLocationSelect">
-                    Location / District
+                    @L["Location / District"]
                 </label>
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0 text-muted">
                         <i class="bi bi-geo-alt-fill text-success"></i>
                     </span>
                     <select class="form-select border-start-0" id="desktopLocationSelect" onchange="syncLocation(this.value); onFilterChanged();">
-                        <option value="">All Locations (Bangladesh)</option>
+                        <option value="">@L["All Locations (Bangladesh)"]</option>
                         @foreach (var loc in Model.AvailableLocations)
                         {
-                            <option value="@loc" selected="@(Model.Location == loc ? "selected" : null)">@loc</option>
+                            <option value="@loc" selected="@(Model.Location == loc ? "selected" : null)">@L[loc]</option>
                         }
                     </select>
                 </div>
@@ -94,27 +94,27 @@
             <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0" for="desktopCapacitySlider">
-                        Min. Capacity Needed
+                        @L["Min. Capacity Needed"]
                     </label>
                     <span class="badge bg-success-subtle text-success fw-bold px-2 py-1 desktop-capacity-display">
-                        @((Model.SelectedMinCapacity ?? 0) > 0 ? $"{Model.SelectedMinCapacity} Tons" : "Any Capacity")
+                        @((Model.SelectedMinCapacity ?? 0) > 0 ? L["{0} Tons", Model.SelectedMinCapacity ?? 0] : L["Any Capacity"])
                     </span>
                 </div>
                 <input type="range" class="form-range" id="desktopCapacitySlider"
-                       min="0" max="300" step="10" 
-                       value="@(Model.SelectedMinCapacity ?? 0)" 
+                       min="0" max="300" step="10"
+                       value="@(Model.SelectedMinCapacity ?? 0)"
                        oninput="syncCapacity(this.value)"
                        onchange="onFilterChanged()" />
                 <div class="d-flex justify-content-between small text-muted">
-                    <span>Any</span>
-                    <span>300+ Tons</span>
+                    <span>@L["Any"]</span>
+                    <span>@L["{0} Tons", "300+"]</span>
                 </div>
             </div>
 
             <!-- 3. Storage Type Filter -->
             <div class="mb-4">
                 <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2.5 d-flex justify-content-between align-items-center">
-                    <span>Storage Type</span>
+                    <span>@L["Storage Type"]</span>
                     <span class="badge bg-light text-muted border">@Model.AvailableStorageTypes.Count</span>
                 </label>
                 <div class="d-flex flex-column gap-2" style="max-height: 200px; overflow-y: auto;">
@@ -122,11 +122,11 @@
                     {
                         var isChecked = Model.SelectedStorageTypes.Contains(type);
                         <div class="form-check custom-checkbox">
-                            <input class="form-check-input desktop-type-filter" type="checkbox" 
-                                   value="@type" id="desk_type_@type.Replace(" ", "_").Replace("(", "").Replace(")", "").Replace("&", "")" 
+                            <input class="form-check-input desktop-type-filter" type="checkbox"
+                                   value="@type" id="desk_type_@type.Replace(" ", "_").Replace("(", "").Replace(")", "").Replace("&", "")"
                                    @(isChecked ? "checked" : "") onchange="onFilterChanged()" />
                             <label class="form-check-label text-secondary small user-select-none" for="desk_type_@type.Replace(" ", "_").Replace("(", "").Replace(")", "").Replace("&", "")">
-                                @type
+                                @L[type]
                             </label>
                         </div>
                     }
@@ -137,15 +137,15 @@
             <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0" for="desktopPriceSlider">
-                        Max Rate / Ton / Month
+                        @L["Max Rate / Ton / Month"]
                     </label>
                     <span class="badge bg-success-subtle text-success fw-bold px-2 py-1 desktop-price-display">
                         ৳@((Model.SelectedMaxPrice ?? Model.MaxPrice).ToString("N0"))
                     </span>
                 </div>
                 <input type="range" class="form-range" id="desktopPriceSlider"
-                       min="@Model.MinPrice" max="@Model.MaxPrice" step="50" 
-                       value="@(Model.SelectedMaxPrice ?? Model.MaxPrice)" 
+                       min="@Model.MinPrice" max="@Model.MaxPrice" step="50"
+                       value="@(Model.SelectedMaxPrice ?? Model.MaxPrice)"
                        oninput="syncPrice(this.value)"
                        onchange="onFilterChanged()" />
                 <div class="d-flex justify-content-between small text-muted">
@@ -157,19 +157,19 @@
             <!-- 5. Available Date Range -->
             <div class="mb-4">
                 <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2">
-                    Available Date Range
+                    @L["Available Date Range"]
                 </label>
                 <div class="row g-2">
                     <div class="col-6">
-                        <label class="small text-muted mb-1" for="desktopStartDateInput">From</label>
+                        <label class="small text-muted mb-1" for="desktopStartDateInput">@L["From"]</label>
                         <input type="date" class="form-control form-control-sm" id="desktopStartDateInput"
-                               value="@(Model.AvailableStartDate.HasValue ? Model.AvailableStartDate.Value.ToString("yyyy-MM-dd") : "")" 
+                               value="@(Model.AvailableStartDate.HasValue ? Model.AvailableStartDate.Value.ToString("yyyy-MM-dd") : "")"
                                min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncDates(); onFilterChanged();" />
                     </div>
                     <div class="col-6">
-                        <label class="small text-muted mb-1" for="desktopEndDateInput">To</label>
+                        <label class="small text-muted mb-1" for="desktopEndDateInput">@L["To"]</label>
                         <input type="date" class="form-control form-control-sm" id="desktopEndDateInput"
-                               value="@(Model.AvailableEndDate.HasValue ? Model.AvailableEndDate.Value.ToString("yyyy-MM-dd") : "")" 
+                               value="@(Model.AvailableEndDate.HasValue ? Model.AvailableEndDate.Value.ToString("yyyy-MM-dd") : "")"
                                min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncDates(); onFilterChanged();" />
                     </div>
                 </div>
@@ -178,7 +178,7 @@
             <!-- Clear Filters -->
             <div class="pt-2">
                 <button type="button" class="btn btn-outline-secondary w-100 btn-sm py-2 rounded-3" onclick="resetAllFilters()">
-                    <i class="bi bi-arrow-counterclockwise me-1"></i> Clear Filters
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> @L["Clear Filters"]
                 </button>
             </div>
 
@@ -189,19 +189,19 @@
          RIGHT SECTION: SEARCH BAR & RESULTS GRID
          ========================================== -->
     <div class="col-12 col-lg-8 col-xl-9">
-        
+
         <!-- Top Controls: Search Bar & Sort Dropdown -->
         <div class="card krishi-card border-0 shadow-sm rounded-4 p-3 mb-4">
             <div class="row g-2 align-items-center">
-                
+
                 <!-- Search Input -->
                 <div class="col-12 col-md-7 col-xl-8">
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0 text-muted ps-3">
                             <i class="bi bi-search text-success"></i>
                         </span>
-                        <input type="text" class="form-control border-start-0 py-2" id="mainSearchInput" 
-                               value="@Model.SearchTerm" placeholder="Search godown name, facility, storage type, or owner..." 
+                        <input type="text" class="form-control border-start-0 py-2" id="mainSearchInput"
+                               value="@Model.SearchTerm" placeholder='@L["Search godown name, facility, storage type, or owner..."]'
                                oninput="onSearchInput(this.value)" />
                         <button class="btn btn-outline-light border text-muted d-none" type="button" id="clearSearchBtn" onclick="clearSearch()">
                             <i class="bi bi-x-lg small"></i>
@@ -213,14 +213,14 @@
                 <div class="col-12 col-md-5 col-xl-4">
                     <div class="d-flex align-items-center justify-content-md-end gap-2">
                         <label class="small text-muted text-nowrap fw-semibold d-none d-sm-inline" for="mainSortSelect">
-                            <i class="bi bi-arrow-down-up me-1"></i>Sort:
+                            <i class="bi bi-arrow-down-up me-1"></i>@L["Sort:"]
                         </label>
                         <select class="form-select form-select-sm py-2" id="mainSortSelect" onchange="onFilterChanged()">
-                            <option value="newest" selected="@(Model.SortBy == "newest" ? "selected" : null)">Newest First</option>
-                            <option value="price_asc" selected="@(Model.SortBy == "price_asc" ? "selected" : null)">Price: Low to High</option>
-                            <option value="price_desc" selected="@(Model.SortBy == "price_desc" ? "selected" : null)">Price: High to Low</option>
-                            <option value="distance" selected="@(Model.SortBy == "distance" ? "selected" : null)">Distance: Nearest</option>
-                            <option value="capacity_desc" selected="@(Model.SortBy == "capacity_desc" ? "selected" : null)">Capacity: Largest Available</option>
+                            <option value="newest" selected="@(Model.SortBy == "newest" ? "selected" : null)">@L["Newest First"]</option>
+                            <option value="price_asc" selected="@(Model.SortBy == "price_asc" ? "selected" : null)">@L["Price: Low to High"]</option>
+                            <option value="price_desc" selected="@(Model.SortBy == "price_desc" ? "selected" : null)">@L["Price: High to Low"]</option>
+                            <option value="distance" selected="@(Model.SortBy == "distance" ? "selected" : null)">@L["Distance: Nearest"]</option>
+                            <option value="capacity_desc" selected="@(Model.SortBy == "capacity_desc" ? "selected" : null)">@L["Capacity: Largest Available"]</option>
                         </select>
                     </div>
                 </div>
@@ -231,7 +231,7 @@
         <!-- Results Summary & Active Filter Tags Bar -->
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 px-1">
             <span class="text-secondary small fw-medium" id="resultsCountSummary">
-                Showing <strong class="text-dark" id="resultsCountNumber">@Model.GodownList.Count</strong> storage facilities
+                @L["Showing"] <strong class="text-dark" id="resultsCountNumber">@Model.GodownList.Count</strong> @L["storage facilities"]
             </span>
 
             <div class="d-flex flex-wrap align-items-center gap-1.5" id="activeFilterTagsContainer">
@@ -264,17 +264,17 @@
             @foreach (var item in Model.GodownList)
             {
                 <div class="col godown-card-col">
-                    <div class="card krishi-card h-100 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column transition-hover" 
+                    <div class="card krishi-card h-100 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column transition-hover"
                          style="cursor: pointer;" onclick="location.href='@Url.Action("Details", "Godown", new { id = item.Id })'">
-                        
+
                         <!-- Image & Badges -->
                         <div class="krishi-equipment-img-box">
                             <img src="@item.ImageUrl" alt="@item.Name" loading="lazy" />
-                            
+
                             <!-- Type Pill -->
                             <div class="position-absolute top-0 start-0 m-2.5">
                                 <span class="badge bg-white text-dark shadow-sm rounded-pill px-2.5 py-1 small fw-semibold opacity-95">
-                                    @item.StorageType
+                                    @L[item.StorageType]
                                 </span>
                             </div>
 
@@ -283,13 +283,13 @@
                                 @if (item.IsAvailable)
                                 {
                                     <span class="krishi-badge krishi-badge-available shadow-sm">
-                                        <i class="bi bi-check-circle-fill"></i> Available
+                                        <i class="bi bi-check-circle-fill"></i> @L["Available"]
                                     </span>
                                 }
                                 else
                                 {
                                     <span class="krishi-badge krishi-badge-unavailable shadow-sm">
-                                        <i class="bi bi-slash-circle-fill"></i> Full
+                                        <i class="bi bi-slash-circle-fill"></i> @L["Full"]
                                     </span>
                                 }
                             </div>
@@ -297,14 +297,14 @@
                             <!-- Distance Badge -->
                             <div class="position-absolute bottom-0 start-0 m-2">
                                 <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2.5 py-1 small" style="font-size: 0.75rem;">
-                                    <i class="bi bi-compass me-1"></i>@item.DistanceKm.ToString("0.0") km away
+                                    <i class="bi bi-compass me-1"></i>@L["{0} km away", item.DistanceKm.ToString("0.0")]
                                 </span>
                             </div>
                         </div>
 
                         <!-- Card Body -->
                         <div class="card-body d-flex flex-column p-3.5">
-                            
+
                             <!-- Title -->
                             <h5 class="card-title fw-bold text-dark mb-1 text-truncate" title="@item.Name">
                                 @item.Name
@@ -314,7 +314,7 @@
                             <div class="small text-muted mb-2.5">
                                 <div class="d-flex align-items-center gap-1 text-truncate mb-1">
                                     <i class="bi bi-geo-alt text-success"></i>
-                                    <span class="text-truncate">@item.Location</span>
+                                    <span class="text-truncate">@L[item.Location]</span>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between">
                                     <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>@item.OwnerName</span>
@@ -325,8 +325,8 @@
                             <!-- Capacity Indicator Bar -->
                             <div class="p-2 rounded-3 bg-light border mb-3">
                                 <div class="d-flex justify-content-between align-items-center small mb-1">
-                                    <span class="text-muted"><i class="bi bi-box-seam text-success me-1"></i>Storage Space:</span>
-                                    <span class="fw-bold text-dark">@item.AvailableCapacityTons.ToString("N0") / @item.TotalCapacityTons.ToString("N0") Tons</span>
+                                    <span class="text-muted"><i class="bi bi-box-seam text-success me-1"></i>@L["Storage Space:"]</span>
+                                    <span class="fw-bold text-dark">@L["{0} / {1} Tons", item.AvailableCapacityTons.ToString("N0"), item.TotalCapacityTons.ToString("N0")]</span>
                                 </div>
                                 @{
                                     var percent = item.TotalCapacityTons > 0 ? (item.AvailableCapacityTons / item.TotalCapacityTons) * 100 : 0;
@@ -340,24 +340,24 @@
                             <div class="pt-2 border-top mt-auto">
                                 <div class="d-flex justify-content-between align-items-baseline mb-3">
                                     <div>
-                                        <span class="text-muted small d-block">Monthly Rate</span>
+                                        <span class="text-muted small d-block">@L["Monthly Rate"]</span>
                                         <span class="fw-bold text-success fs-5">৳@item.PricePerTonPerMonth.ToString("N0")</span>
-                                        <span class="text-muted small">/ ton / mo</span>
+                                        <span class="text-muted small">@L["/ ton / mo"]</span>
                                     </div>
                                     @if (item.DailyRatePerTon.HasValue)
                                     {
                                         <div class="text-end">
-                                            <span class="text-muted small d-block">Daily</span>
+                                            <span class="text-muted small d-block">@L["Daily"]</span>
                                             <span class="fw-semibold text-dark">৳@item.DailyRatePerTon.Value.ToString("N0")</span>
-                                            <span class="text-muted small">/ ton</span>
+                                            <span class="text-muted small">@L["/ ton"]</span>
                                         </div>
                                     }
                                 </div>
 
-                                <a asp-controller="Godown" asp-action="Details" asp-route-id="@item.Id" 
+                                <a asp-controller="Godown" asp-action="Details" asp-route-id="@item.Id"
                                    class="btn btn-krishi-primary w-100 fw-semibold rounded-3 py-2 d-flex align-items-center justify-content-center gap-1.5 shadow-sm"
                                    onclick="event.stopPropagation();">
-                                    <span>View Details & Book</span>
+                                    <span>@L["View Details & Book"]</span>
                                     <i class="bi bi-arrow-right small"></i>
                                 </a>
                             </div>
@@ -375,13 +375,13 @@
                     <i class="bi bi-building-slash text-success" style="font-size: 3rem;"></i>
                 </div>
             </div>
-            <h4 class="fw-bold text-dark mb-2">No storage facilities match your filters</h4>
+            <h4 class="fw-bold text-dark mb-2">@L["No storage facilities match your filters"]</h4>
             <p class="text-secondary mb-4 mx-auto" style="max-width: 460px;">
-                Try adjusting the capacity required, clearing storage type filters, or expanding your search district.
+                @L["Try adjusting the capacity required, clearing storage type filters, or expanding your search district."]
             </p>
             <div>
                 <button type="button" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm" onclick="resetAllFilters()">
-                    <i class="bi bi-arrow-counterclockwise me-1.5"></i> Clear Filters
+                    <i class="bi bi-arrow-counterclockwise me-1.5"></i> @L["Clear Filters"]
                 </button>
             </div>
         </div>
@@ -397,21 +397,21 @@
         <div class="krishi-sheet-handle"></div>
         <div class="d-flex justify-content-between align-items-center w-100">
             <h5 class="offcanvas-title fw-bold text-dark d-flex align-items-center gap-2" id="mobileGodownFilterLabel">
-                <i class="bi bi-sliders2 text-success"></i> Filter Storage
+                <i class="bi bi-sliders2 text-success"></i> @L["Filter Storage"]
             </h5>
-            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label='@L["Close"]'></button>
         </div>
     </div>
     <div class="offcanvas-body px-4 py-3" style="overflow-y: auto;">
-        
+
         <!-- Mobile: Location -->
         <div class="mb-4">
-            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2">Location</label>
+            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2">@L["Location"]</label>
             <select class="form-select" id="mobileLocationSelect" onchange="syncLocation(this.value); onFilterChanged();">
-                <option value="">All Locations (Bangladesh)</option>
+                <option value="">@L["All Locations (Bangladesh)"]</option>
                 @foreach (var loc in Model.AvailableLocations)
                 {
-                    <option value="@loc" selected="@(Model.Location == loc ? "selected" : null)">@loc</option>
+                    <option value="@loc" selected="@(Model.Location == loc ? "selected" : null)">@L[loc]</option>
                 }
             </select>
         </div>
@@ -419,31 +419,31 @@
         <!-- Mobile: Capacity Slider -->
         <div class="mb-4">
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0">Min Capacity Needed</label>
+                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0">@L["Min Capacity Needed"]</label>
                 <span class="badge bg-success-subtle text-success fw-bold px-2 py-1 mobile-capacity-display">
-                    @((Model.SelectedMinCapacity ?? 0) > 0 ? $"{Model.SelectedMinCapacity} Tons" : "Any Capacity")
+                    @((Model.SelectedMinCapacity ?? 0) > 0 ? L["{0} Tons", Model.SelectedMinCapacity ?? 0] : L["Any Capacity"])
                 </span>
             </div>
             <input type="range" class="form-range" id="mobileCapacitySlider"
-                   min="0" max="300" step="10" 
-                   value="@(Model.SelectedMinCapacity ?? 0)" 
+                   min="0" max="300" step="10"
+                   value="@(Model.SelectedMinCapacity ?? 0)"
                    oninput="syncCapacity(this.value)"
                    onchange="onFilterChanged()" />
         </div>
 
         <!-- Mobile: Storage Type -->
         <div class="mb-4">
-            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2">Storage Type</label>
+            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2">@L["Storage Type"]</label>
             <div class="d-flex flex-wrap gap-2">
                 @foreach (var type in Model.AvailableStorageTypes)
                 {
                     var isChecked = Model.SelectedStorageTypes.Contains(type);
                     <div class="form-check custom-checkbox w-100">
-                        <input class="form-check-input mobile-type-filter" type="checkbox" 
-                               value="@type" id="mob_type_@type.Replace(" ", "_").Replace("(", "").Replace(")", "").Replace("&", "")" 
+                        <input class="form-check-input mobile-type-filter" type="checkbox"
+                               value="@type" id="mob_type_@type.Replace(" ", "_").Replace("(", "").Replace(")", "").Replace("&", "")"
                                @(isChecked ? "checked" : "") onchange="syncMobileToDesktopType(); onFilterChanged();" />
                         <label class="form-check-label text-secondary small" for="mob_type_@type.Replace(" ", "_").Replace("(", "").Replace(")", "").Replace("&", "")">
-                            @type
+                            @L[type]
                         </label>
                     </div>
                 }
@@ -453,30 +453,30 @@
         <!-- Mobile: Price Slider -->
         <div class="mb-4">
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0">Max Monthly Rate</label>
+                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0">@L["Max Monthly Rate"]</label>
                 <span class="badge bg-success-subtle text-success fw-bold px-2 py-1 mobile-price-display">
                     ৳@((Model.SelectedMaxPrice ?? Model.MaxPrice).ToString("N0"))
                 </span>
             </div>
             <input type="range" class="form-range" id="mobilePriceSlider"
-                   min="@Model.MinPrice" max="@Model.MaxPrice" step="50" 
-                   value="@(Model.SelectedMaxPrice ?? Model.MaxPrice)" 
+                   min="@Model.MinPrice" max="@Model.MaxPrice" step="50"
+                   value="@(Model.SelectedMaxPrice ?? Model.MaxPrice)"
                    oninput="syncPrice(this.value)"
                    onchange="onFilterChanged()" />
         </div>
 
         <!-- Mobile: Available Dates -->
         <div class="mb-4">
-            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2">Dates</label>
+            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2">@L["Dates"]</label>
             <div class="row g-2">
                 <div class="col-6">
                     <input type="date" class="form-control form-control-sm" id="mobileStartDateInput"
-                           value="@(Model.AvailableStartDate.HasValue ? Model.AvailableStartDate.Value.ToString("yyyy-MM-dd") : "")" 
+                           value="@(Model.AvailableStartDate.HasValue ? Model.AvailableStartDate.Value.ToString("yyyy-MM-dd") : "")"
                            min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncMobileDates(); onFilterChanged();" />
                 </div>
                 <div class="col-6">
                     <input type="date" class="form-control form-control-sm" id="mobileEndDateInput"
-                           value="@(Model.AvailableEndDate.HasValue ? Model.AvailableEndDate.Value.ToString("yyyy-MM-dd") : "")" 
+                           value="@(Model.AvailableEndDate.HasValue ? Model.AvailableEndDate.Value.ToString("yyyy-MM-dd") : "")"
                            min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncMobileDates(); onFilterChanged();" />
                 </div>
             </div>
@@ -485,10 +485,10 @@
         <!-- Bottom Sheet Actions -->
         <div class="d-grid gap-2 pt-2 pb-3">
             <button type="button" class="btn btn-krishi-primary py-2.5 fw-bold rounded-pill" data-bs-dismiss="offcanvas">
-                View Results (<span id="mobileSheetResultCount">@Model.GodownList.Count</span>)
+                @L["View Results ("]<span id="mobileSheetResultCount">@Model.GodownList.Count</span>)
             </button>
             <button type="button" class="btn btn-outline-danger btn-sm py-2 rounded-pill" onclick="resetAllFilters()">
-                Clear Filters
+                @L["Clear Filters"]
             </button>
         </div>
 
@@ -499,6 +499,18 @@
     <script>
         let searchDebounceTimer = null;
         const DEFAULT_MAX_PRICE = @Model.MaxPrice;
+        const storageTypeTranslations = {
+            @foreach (var type in Model.AvailableStorageTypes)
+            {
+                <text>@Json.Serialize(type): @Json.Serialize(L[type].Value),</text>
+            }
+        };
+        const locationTranslations = {
+            @foreach (var loc in Model.AvailableLocations)
+            {
+                <text>@Json.Serialize(loc): @Json.Serialize(L[loc].Value),</text>
+            }
+        };
 
         function syncLocation(val) {
             const desk = document.getElementById('desktopLocationSelect');
@@ -508,7 +520,7 @@
         }
 
         function syncCapacity(val) {
-            const formatted = Number(val) > 0 ? val + ' Tons' : 'Any Capacity';
+            const formatted = Number(val) > 0 ? `@L["{0} Tons", "${val}"]` : '@L["Any Capacity"]';
             document.querySelectorAll('.desktop-capacity-display, .mobile-capacity-display').forEach(el => el.innerText = formatted);
             const desk = document.getElementById('desktopCapacitySlider');
             const mob = document.getElementById('mobileCapacitySlider');
@@ -587,7 +599,7 @@
             syncLocation('');
             syncCapacity(0);
             syncPrice(DEFAULT_MAX_PRICE);
-            
+
             const sDesk = document.getElementById('desktopStartDateInput');
             const eDesk = document.getElementById('desktopEndDateInput');
             if (sDesk) sDesk.value = '';
@@ -615,7 +627,7 @@
             const grid = document.getElementById('godownResultsGrid');
             const skeleton = document.getElementById('skeletonLoadingContainer');
             const emptyState = document.getElementById('emptyStateContainer');
-            
+
             if (skeleton) skeleton.classList.remove('d-none');
             if (grid) grid.classList.add('d-none');
             if (emptyState) emptyState.classList.add('d-none');
@@ -660,8 +672,8 @@
 
             const count = data.totalCount || 0;
             if (countNum) countNum.innerText = count;
-            if (heroCount) heroCount.innerText = count + ' Storage Options';
-            if (mobileCount) mobileCount.innerText = count + ' items';
+            if (heroCount) heroCount.innerText = `@L["{0} Storage Options", "${count}"]`;
+            if (mobileCount) mobileCount.innerText = `@L["{0} items", "${count}"]`;
 
             // Active filters count
             const searchTerm = document.getElementById('mainSearchInput')?.value || '';
@@ -681,7 +693,7 @@
             if (startDate || endDate) activeCount++;
 
             if (mobileFilterBadge) {
-                mobileFilterBadge.innerText = activeCount > 0 ? `${activeCount} active` : 'Filters';
+                mobileFilterBadge.innerText = activeCount > 0 ? `@L["{0} active", "${activeCount}"]` : '@L["Filters"]';
             }
 
             document.querySelectorAll('.clear-filters-btn').forEach(btn => {
@@ -707,29 +719,29 @@
                     const percent = item.totalCapacityTons > 0 ? (item.availableCapacityTons / item.totalCapacityTons) * 100 : 0;
                     return `
                     <div class="col godown-card-col">
-                        <div class="card krishi-card h-100 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column transition-hover" 
+                        <div class="card krishi-card h-100 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column transition-hover"
                              style="cursor: pointer;" onclick="location.href='${item.detailsUrl}'">
-                            
+
                             <!-- Image & Badges -->
                             <div class="krishi-equipment-img-box">
                                 <img src="${item.imageUrl}" alt="${item.name}" loading="lazy" />
-                                
+
                                 <div class="position-absolute top-0 start-0 m-2.5">
                                     <span class="badge bg-white text-dark shadow-sm rounded-pill px-2.5 py-1 small fw-semibold opacity-95">
-                                        ${item.storageType}
+                                        ${storageTypeTranslations[item.storageType] || item.storageType}
                                     </span>
                                 </div>
 
                                 <div class="position-absolute top-0 end-0 m-2.5">
-                                    ${item.isAvailable 
-                                        ? `<span class="krishi-badge krishi-badge-available shadow-sm"><i class="bi bi-check-circle-fill"></i> Available</span>`
-                                        : `<span class="krishi-badge krishi-badge-unavailable shadow-sm"><i class="bi bi-slash-circle-fill"></i> Full</span>`
+                                    ${item.isAvailable
+                                        ? `<span class="krishi-badge krishi-badge-available shadow-sm"><i class="bi bi-check-circle-fill"></i> @L["Available"]</span>`
+                                        : `<span class="krishi-badge krishi-badge-unavailable shadow-sm"><i class="bi bi-slash-circle-fill"></i> @L["Full"]</span>`
                                     }
                                 </div>
 
                                 <div class="position-absolute bottom-0 start-0 m-2">
                                     <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2.5 py-1 small" style="font-size: 0.75rem;">
-                                        <i class="bi bi-compass me-1"></i>${item.distanceKmFormatted}
+                                        <i class="bi bi-compass me-1"></i>@L["{0} km away", "${item.distanceKm.toFixed(1)}"]
                                     </span>
                                 </div>
                             </div>
@@ -743,7 +755,7 @@
                                 <div class="small text-muted mb-2.5">
                                     <div class="d-flex align-items-center gap-1 text-truncate mb-1">
                                         <i class="bi bi-geo-alt text-success"></i>
-                                        <span class="text-truncate">${item.location}</span>
+                                        <span class="text-truncate">${locationTranslations[item.location] || item.location}</span>
                                     </div>
                                     <div class="d-flex align-items-center justify-content-between">
                                         <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>${item.ownerName}</span>
@@ -754,8 +766,8 @@
                                 <!-- Capacity Indicator -->
                                 <div class="p-2 rounded-3 bg-light border mb-3">
                                     <div class="d-flex justify-content-between align-items-center small mb-1">
-                                        <span class="text-muted"><i class="bi bi-box-seam text-success me-1"></i>Storage Space:</span>
-                                        <span class="fw-bold text-dark">${item.capacityDisplay}</span>
+                                        <span class="text-muted"><i class="bi bi-box-seam text-success me-1"></i>@L["Storage Space:"]</span>
+                                        <span class="fw-bold text-dark">@L["{0} / {1} Tons", "${item.availableCapacityTons.toLocaleString()}", "${item.totalCapacityTons.toLocaleString()}"]</span>
                                     </div>
                                     <div class="progress" style="height: 6px;">
                                         <div class="progress-bar bg-success" role="progressbar" style="width: ${percent}%;" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100"></div>
@@ -765,23 +777,23 @@
                                 <div class="pt-2 border-top mt-auto">
                                     <div class="d-flex justify-content-between align-items-baseline mb-3">
                                         <div>
-                                            <span class="text-muted small d-block">Monthly Rate</span>
+                                            <span class="text-muted small d-block">@L["Monthly Rate"]</span>
                                             <span class="fw-bold text-success fs-5">${item.pricePerTonPerMonthFormatted}</span>
-                                            <span class="text-muted small">/ ton / mo</span>
+                                            <span class="text-muted small">@L["/ ton / mo"]</span>
                                         </div>
                                         ${item.dailyRatePerTonFormatted ? `
                                             <div class="text-end">
-                                                <span class="text-muted small d-block">Daily</span>
+                                                <span class="text-muted small d-block">@L["Daily"]</span>
                                                 <span class="fw-semibold text-dark">${item.dailyRatePerTonFormatted}</span>
-                                                <span class="text-muted small">/ ton</span>
+                                                <span class="text-muted small">@L["/ ton"]</span>
                                             </div>
                                         ` : ''}
                                     </div>
 
-                                    <a href="${item.detailsUrl}" 
+                                    <a href="${item.detailsUrl}"
                                        class="btn btn-krishi-primary w-100 fw-semibold rounded-3 py-2 d-flex align-items-center justify-content-center gap-1.5 shadow-sm"
                                        onclick="event.stopPropagation();">
-                                        <span>View Details & Book</span>
+                                        <span>@L["View Details & Book"]</span>
                                         <i class="bi bi-arrow-right small"></i>
                                     </a>
                                 </div>
@@ -800,32 +812,32 @@
             let html = '';
             if (search.trim()) {
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small d-inline-flex align-items-center gap-1">
-                    Search: "${search.trim()}" <i class="bi bi-x-circle-fill text-muted ms-1" style="cursor:pointer;" onclick="clearSearch()"></i>
+                    @L["Search:"] "${search.trim()}" <i class="bi bi-x-circle-fill text-muted ms-1" style="cursor:pointer;" onclick="clearSearch()"></i>
                 </span>`;
             }
             types.forEach(t => {
                 html += `<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill small">
-                    ${t}
+                    ${storageTypeTranslations[t] || t}
                 </span>`;
             });
             if (location) {
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
-                    <i class="bi bi-geo-alt me-1"></i>${location}
+                    <i class="bi bi-geo-alt me-1"></i>${locationTranslations[location] || location}
                 </span>`;
             }
             if (capacity > 0) {
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
-                    ≥ ${capacity} Tons
+                    ≥ @L["{0} Tons", "${capacity}"]
                 </span>`;
             }
             if (maxPrice < DEFAULT_MAX_PRICE) {
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
-                    ≤ ৳${maxPrice.toLocaleString()} / mo
+                    ≤ ৳${maxPrice.toLocaleString()} @L["/ mo"]
                 </span>`;
             }
             if (startDate || endDate) {
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
-                    <i class="bi bi-calendar-range me-1"></i>${startDate || 'Any'} → ${endDate || 'Any'}
+                    <i class="bi bi-calendar-range me-1"></i>${startDate || '@L["Any"]'} → ${endDate || '@L["Any"]'}
                 </span>`;
             }
             container.innerHTML = html;

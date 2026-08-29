@@ -4,10 +4,10 @@
 *@
 @{
     var modalId = ViewData["ModalId"]?.ToString() ?? "krishiConfirmModal";
-    var title = ViewData["ModalTitle"]?.ToString() ?? "Confirm Action";
-    var body = ViewData["ModalBody"]?.ToString() ?? "Are you sure you want to proceed with this action?";
-    var confirmText = ViewData["ConfirmButtonText"]?.ToString() ?? "Confirm";
-    var cancelText = ViewData["CancelButtonText"]?.ToString() ?? "Cancel";
+    var title = ViewData["ModalTitle"]?.ToString() ?? L["Confirm Action"].Value;
+    var body = ViewData["ModalBody"]?.ToString() ?? L["Are you sure you want to proceed with this action?"].Value;
+    var confirmText = ViewData["ConfirmButtonText"]?.ToString() ?? L["Confirm"].Value;
+    var cancelText = ViewData["CancelButtonText"]?.ToString() ?? L["Cancel"].Value;
     var confirmBtnClass = ViewData["ConfirmButtonClass"]?.ToString() ?? "btn-krishi-primary";
 }
 

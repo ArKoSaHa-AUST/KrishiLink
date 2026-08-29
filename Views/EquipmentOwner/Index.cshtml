@@ -1,6 +1,6 @@
 @model KrishiLink.Models.ViewModels.EquipmentOwnerDashboardViewModel
 @{
-    ViewData["Title"] = "Equipment Owner Dashboard";
+    ViewData["Title"] = L["Equipment Owner Dashboard"];
     ViewData["BodyClass"] = "krishi-body-gradient";
     const int previewCap = 4;
 }
@@ -8,13 +8,13 @@
 <!-- Dashboard Welcome Header -->
 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4 pb-3 border-bottom" style="border-color: var(--krishi-border-color) !important;">
     <div>
-        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">Equipment Owner Dashboard</h2>
+        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">@L["Equipment Owner Dashboard"]</h2>
         <p class="mb-0" style="color: var(--krishi-text-muted);">
-            Manage your listings and respond to incoming rental requests.
+            @L["Manage your listings and respond to incoming rental requests."]
         </p>
     </div>
     <a asp-controller="EquipmentOwner" asp-action="Requests" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold flex-shrink-0">
-        <i class="bi bi-inbox me-1"></i> All Requests
+        <i class="bi bi-inbox me-1"></i> @L["All Requests"]
     </a>
 </div>
 
@@ -35,7 +35,7 @@
             </div>
             <div>
                 <span class="fs-3 fw-bold d-block lh-1 summary-count krishi-summary-value">@Model.TotalListings</span>
-                <span class="small krishi-summary-label">Total Listings</span>
+                <span class="small krishi-summary-label">@L["Total Listings"]</span>
             </div>
         </div>
     </a>
@@ -46,7 +46,7 @@
             </div>
             <div>
                 <span class="fs-3 fw-bold d-block lh-1 summary-count krishi-summary-value" id="activeRentalsCount">@Model.ActiveRentals</span>
-                <span class="small krishi-summary-label">Active Rentals</span>
+                <span class="small krishi-summary-label">@L["Active Rentals"]</span>
             </div>
         </div>
     </a>
@@ -57,7 +57,7 @@
             </div>
             <div>
                 <span class="fs-3 fw-bold d-block lh-1 summary-count krishi-summary-value" id="pendingCount" aria-live="polite">@Model.PendingRequests</span>
-                <span class="small krishi-summary-label">Pending Requests</span>
+                <span class="small krishi-summary-label">@L["Pending Requests"]</span>
             </div>
         </div>
     </a>
@@ -68,11 +68,11 @@
     <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: var(--krishi-radius-lg); border-left: 4px solid var(--krishi-primary) !important;">
         <div class="p-3 px-4 d-flex align-items-center justify-content-between" style="background-color: var(--krishi-primary-light);">
             <h5 class="fw-bold mb-0 d-flex align-items-center gap-2" style="color: var(--krishi-primary);">
-                <i class="bi bi-bell-fill"></i> Pending Rental Requests
+                <i class="bi bi-bell-fill"></i> @L["Pending Rental Requests"]
                 <span class="badge rounded-pill bg-white shadow-sm" id="pendingBadge" style="color: var(--krishi-primary);">@Model.PendingRequests</span>
             </h5>
             <a asp-controller="EquipmentOwner" asp-action="Requests" class="small fw-semibold text-success text-decoration-none d-none d-sm-block">
-                View All <i class="bi bi-arrow-right"></i>
+                @L["View All"] <i class="bi bi-arrow-right"></i>
             </a>
         </div>
 
@@ -85,7 +85,7 @@
 
         <div class="p-4 text-center @(Model.PendingRequestItems.Any() ? "d-none" : "")" id="noPendingState">
             <i class="bi bi-check2-circle fs-2 text-success d-block mb-1"></i>
-            <span style="color: var(--krishi-text-muted);">All caught up — no pending requests right now.</span>
+            <span style="color: var(--krishi-text-muted);">@L["All caught up — no pending requests right now."]</span>
         </div>
     </div>
 </div>
@@ -94,11 +94,11 @@
 <div class="mb-5" id="myListings">
     <div class="d-flex align-items-center justify-content-between mb-3">
         <h5 class="fw-bold mb-0" style="color: var(--krishi-text-primary);">
-            My Equipment Listings
+            @L["My Equipment Listings"]
             <span class="badge rounded-pill ms-1" style="background-color: var(--krishi-primary-light); color: var(--krishi-primary); font-size: 0.78rem;">@Model.TotalListings</span>
         </h5>
         <a asp-controller="EquipmentOwner" asp-action="Create" class="btn btn-krishi-primary rounded-pill px-3 py-2 fw-bold shadow-sm">
-            <i class="bi bi-plus-lg me-1"></i> Add New Equipment
+            <i class="bi bi-plus-lg me-1"></i> @L["Add New Equipment"]
         </a>
     </div>
 
@@ -107,11 +107,11 @@
         <!-- Empty state: first-time owner -->
         <div class="card border-0 shadow-sm text-center p-5" style="border-radius: var(--krishi-radius-lg);">
             <i class="bi bi-tools fs-1 text-success d-block mb-2"></i>
-            <h5 class="fw-bold" style="color: var(--krishi-text-primary);">No equipment listed yet</h5>
-            <p class="mb-3" style="color: var(--krishi-text-muted);">List your first tractor, tiller, or harvester and start earning rental income.</p>
+            <h5 class="fw-bold" style="color: var(--krishi-text-primary);">@L["No equipment listed yet"]</h5>
+            <p class="mb-3" style="color: var(--krishi-text-muted);">@L["List your first tractor, tiller, or harvester and start earning rental income."]</p>
             <div>
                 <a asp-controller="EquipmentOwner" asp-action="Create" class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-bold">
-                    <i class="bi bi-plus-lg me-1"></i> List Your First Equipment
+                    <i class="bi bi-plus-lg me-1"></i> @L["List Your First Equipment"]
                 </a>
             </div>
         </div>
@@ -127,19 +127,19 @@
                         <div class="krishi-card-img-wrapper position-relative" style="height: 140px;">
                             <img src="@item.ImageUrl" class="w-100 h-100 object-fit-cover" alt="@item.Name" />
                             <span class="krishi-badge position-absolute top-0 end-0 m-2 shadow-sm @(item.Status == "Available" ? "krishi-badge-available" : item.Status == "Rented" ? "krishi-badge-pending" : "krishi-badge-unavailable")">
-                                @item.Status
+                                @L[item.Status]
                             </span>
                         </div>
                         <div class="card-body p-3 d-flex flex-column">
-                            <span class="small text-uppercase fw-semibold" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@item.Category</span>
+                            <span class="small text-uppercase fw-semibold" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L[item.Category]</span>
                             <h6 class="fw-bold mb-1" style="color: var(--krishi-text-primary);">@item.Name</h6>
                             <span class="fw-bold text-success small mb-3">@item.DailyRate</span>
                             <div class="d-flex gap-2 mt-auto">
                                 <a asp-controller="EquipmentOwner" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-krishi-outline btn-sm rounded-pill px-3 flex-grow-1">
-                                    <i class="bi bi-pencil"></i> Edit
+                                    <i class="bi bi-pencil"></i> @L["Edit"]
                                 </a>
                                 <a asp-controller="EquipmentOwner" asp-action="Availability" asp-route-id="@item.Id" class="btn btn-outline-secondary btn-sm rounded-pill px-3 flex-grow-1">
-                                    <i class="bi bi-calendar3"></i> Availability
+                                    <i class="bi bi-calendar3"></i> @L["Availability"]
                                 </a>
                             </div>
                         </div>
@@ -153,7 +153,7 @@
             <div class="text-center mt-3">
                 <button type="button" class="btn btn-krishi-outline rounded-pill px-4 fw-semibold" id="showAllListingsBtn"
                         onclick="document.querySelectorAll('.extra-listing').forEach(el => el.classList.remove('d-none')); this.remove();">
-                    Show all @Model.Listings.Count listings <i class="bi bi-chevron-down"></i>
+                    @L["Show all {0} listings", Model.Listings.Count] <i class="bi bi-chevron-down"></i>
                 </button>
             </div>
         }
@@ -190,8 +190,8 @@
             const accepted = decision === 'accept';
             KrishiRequests.optimisticDecision({
                 url: RESPOND_URL, id, decision, reason, row,
-                acceptedMsg: 'Rental request accepted ✓',
-                rejectedMsg: 'Rental request rejected',
+                acceptedMsg: '@L["Rental request accepted ✓"]',
+                rejectedMsg: '@L["Rental request rejected"]',
                 undoDelay: UNDO_DELAY_MS,
                 onApply: () => { if (accepted) bumpActiveRentals(1); },
                 onRowHidden: refreshPendingUI,
@@ -211,7 +211,10 @@
             KrishiCount.animate(countEl, Number(countEl.textContent) + delta);
             const badge = document.getElementById('pendingBadge');
             badge.textContent = Number(badge.textContent) + delta;
-            KrishiToast.show(`${delta} new rental request${delta > 1 ? 's' : ''} received`, { iconClass: 'bi-bell-fill text-success' });
+            KrishiToast.show(delta > 1
+                ? '@L["{0} new rental requests received", "__COUNT__"]'.replace('__COUNT__', delta)
+                : '@L["{0} new rental request received", "__COUNT__"]'.replace('__COUNT__', delta),
+                { iconClass: 'bi-bell-fill text-success' });
         });
     </script>
 }

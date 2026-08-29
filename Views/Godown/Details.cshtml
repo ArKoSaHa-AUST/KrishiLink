@@ -4,13 +4,14 @@
     ViewData["BodyClass"] = "krishi-body-gradient";
     var primaryImage = Model.ImageUrls.FirstOrDefault() ?? "";
     var bookingRequested = TempData.Peek("SuccessMessage") != null;
+    var ownerMemberSinceParts = Model.OwnerMemberSince?.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
 }
 
 <!-- Breadcrumb Navigation -->
-<nav aria-label="breadcrumb" class="mb-3">
+<nav aria-label='@L["breadcrumb"]' class="mb-3">
     <ol class="breadcrumb small">
-        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-success text-decoration-none">Home</a></li>
-        <li class="breadcrumb-item"><a asp-controller="Godown" asp-action="Index" class="text-success text-decoration-none">Godowns</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-success text-decoration-none">@L["Home"]</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Godown" asp-action="Index" class="text-success text-decoration-none">@L["Godowns"]</a></li>
         <li class="breadcrumb-item active text-muted" aria-current="page">@Model.Name</li>
     </ol>
 </nav>
@@ -21,10 +22,10 @@
     <div class="alert alert-success border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-3">
         <i class="bi bi-check-circle-fill fs-4 text-success"></i>
         <div>
-            <h6 class="fw-bold mb-0 text-success-emphasis">Booking Requested ✓</h6>
+            <h6 class="fw-bold mb-0 text-success-emphasis">@L["Booking Requested ✓"]</h6>
             <p class="mb-1 small text-success-emphasis">@TempData["SuccessMessage"]</p>
             <a asp-controller="Bookings" asp-action="Index" class="small fw-semibold text-success">
-                View Booking History <i class="bi bi-arrow-right"></i>
+                @L["View Booking History"] <i class="bi bi-arrow-right"></i>
             </a>
         </div>
     </div>
@@ -33,7 +34,7 @@
 <div class="row g-4">
     <!-- LEFT COLUMN: Image Gallery & Storage Details -->
     <div class="col-12 col-lg-7 col-xl-8">
-        
+
         <!-- Image Gallery Component -->
         <div class="card krishi-card overflow-hidden mb-4 border-0 shadow-sm">
             <div class="position-relative bg-light text-center">
@@ -42,13 +43,13 @@
                     @if (Model.AvailableCapacityTons > 0)
                     {
                         <span class="krishi-badge krishi-badge-available shadow-sm">
-                            <i class="bi bi-check-circle-fill"></i> Available
+                            <i class="bi bi-check-circle-fill"></i> @L["Available"]
                         </span>
                     }
                     else
                     {
                         <span class="krishi-badge krishi-badge-unavailable shadow-sm">
-                            <i class="bi bi-slash-circle-fill"></i> Fully Booked
+                            <i class="bi bi-slash-circle-fill"></i> @L["Fully Booked"]
                         </span>
                     }
                 </div>
@@ -62,8 +63,8 @@
                         {
                             var imgUrl = Model.ImageUrls[i];
                             <button type="button" class="btn p-0 border rounded overflow-hidden gallery-thumb-btn @(i == 0 ? "border-success border-2" : "border-light-subtle")"
-                                    onclick="switchGodownImage('@imgUrl', this)" aria-label="View godown photo @(i+1)">
-                                <img src="@imgUrl" class="object-fit-cover" style="width: 76px; height: 60px;" alt="Thumbnail @(i+1)" />
+                                    onclick="switchGodownImage('@imgUrl', this)" aria-label='@L["View godown photo {0}", i+1]'>
+                                <img src="@imgUrl" class="object-fit-cover" style="width: 76px; height: 60px;" alt='@L["Thumbnail {0}", i+1]' />
                             </button>
                         }
                     </div>
@@ -75,10 +76,10 @@
         <div class="card krishi-card p-4 mb-4 border-0 shadow-sm">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                 <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold">
-                    @Model.StorageType
+                    @L[Model.StorageType]
                 </span>
                 <span class="text-muted small d-flex align-items-center gap-1">
-                    <i class="bi bi-geo-alt text-success"></i> @Model.Location
+                    <i class="bi bi-geo-alt text-success"></i> @L[Model.Location]
                 </span>
             </div>
 
@@ -87,30 +88,30 @@
             <!-- Rates & Capacity Highlight Box -->
             <div class="row g-3 p-3 rounded-3 mb-4 bg-light text-dark border">
                 <div class="col-6 col-sm-4">
-                    <span class="text-muted small d-block">Monthly Rate</span>
-                    <span class="fs-4 fw-bold text-success">@Model.PricePerTonPerMonth</span>
+                    <span class="text-muted small d-block">@L["Monthly Rate"]</span>
+                    <span class="fs-4 fw-bold text-success">@L["Tk {0} / Ton / Month", Model.PricePerTonPerMonth.Replace("\u09f3", "").Replace(" / Ton / Month", "")]</span>
                 </div>
                 <div class="col-6 col-sm-4">
-                    <span class="text-muted small d-block">Daily Rate (Est.)</span>
-                    <span class="fs-5 fw-semibold text-dark">@Model.DailyRatePerTon</span>
+                    <span class="text-muted small d-block">@L["Daily Rate (Est.)"]</span>
+                    <span class="fs-5 fw-semibold text-dark">@L["Tk {0} / Ton / Day", Model.DailyRatePerTon.Replace("\u09f3", "").Replace(" / Ton / Day", "")]</span>
                 </div>
                 <div class="col-12 col-sm-4 border-start-sm pt-2 pt-sm-0">
-                    <span class="text-muted small d-block">Available Space</span>
-                    <span class="fw-bold text-success fs-5">@Model.AvailableCapacityTons.ToString("N0") / @Model.TotalCapacityTons.ToString("N0") Tons</span>
+                    <span class="text-muted small d-block">@L["Available Space"]</span>
+                    <span class="fw-bold text-success fs-5">@L["{0} / {1} Tons", Model.AvailableCapacityTons.ToString("N0"), Model.TotalCapacityTons.ToString("N0")]</span>
                 </div>
             </div>
 
             <!-- Description -->
-            <h5 class="fw-bold text-dark mb-2">Storage Facility Description</h5>
+            <h5 class="fw-bold text-dark mb-2">@L["Storage Facility Description"]</h5>
             <p class="text-secondary leading-relaxed mb-4">@Model.Description</p>
 
             <!-- Facilities & Highlights -->
-            <h5 class="fw-bold text-dark mb-2.5">Preservation & Security Features</h5>
+            <h5 class="fw-bold text-dark mb-2.5">@L["Preservation & Security Features"]</h5>
             <div class="d-flex flex-wrap gap-2 mb-4">
                 @foreach (var fac in Model.Facilities)
                 {
                     <span class="badge bg-light text-dark border px-3 py-2 rounded-pill small fw-medium d-inline-flex align-items-center gap-1.5">
-                        <i class="bi bi-shield-check text-success"></i> @fac
+                        <i class="bi bi-shield-check text-success"></i> @L[fac]
                     </span>
                 }
             </div>
@@ -124,14 +125,14 @@
                     <div>
                         <h6 class="fw-bold mb-0 text-dark">@Model.OwnerName</h6>
                         <div class="d-flex align-items-center gap-2 small text-muted">
-                            <span class="text-success fw-semibold">Rating: @Model.OwnerRating.ToString("0.0")</span>
-                            <span>(@Model.TotalReviews reviews)</span>
-                            <span>Member since @Model.OwnerMemberSince</span>
+                            <span class="text-success fw-semibold">@L["Rating:"] @Model.OwnerRating.ToString("0.0")</span>
+                            <span>(@L["{0} reviews", Model.TotalReviews])</span>
+                            <span>@L["Member since"] @(ownerMemberSinceParts.Length == 2 ? $"{L[ownerMemberSinceParts[0]]} {ownerMemberSinceParts[1]}" : Model.OwnerMemberSince)</span>
                         </div>
                     </div>
                 </div>
                 <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill small">
-                    <i class="bi bi-telephone text-success me-1"></i> Verified Owner
+                    <i class="bi bi-telephone text-success me-1"></i> @L["Verified Owner"]
                 </span>
             </div>
 
@@ -144,15 +145,15 @@
         <div class="card krishi-card p-4 border-0 shadow-sm sticky-top" style="top: 85px; z-index: 10;" id="bookingFormContainer">
             <div class="d-flex align-items-center justify-content-between mb-3 pb-3 border-bottom">
                 <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                    <i class="bi bi-calendar-check text-success"></i> Book Storage Space
+                    <i class="bi bi-calendar-check text-success"></i> @L["Book Storage Space"]
                 </h5>
-                <span class="badge bg-success-subtle text-success fw-bold">@Model.AvailableCapacityTons Tons Free</span>
+                <span class="badge bg-success-subtle text-success fw-bold">@L["{0} Tons Free", Model.AvailableCapacityTons]</span>
             </div>
 
             @if (Model.AvailableCapacityTons <= 0)
             {
                 <div class="alert alert-warning border-0 small rounded-3 mb-0">
-                    <i class="bi bi-exclamation-triangle-fill me-1"></i> This godown is currently fully booked. Please check other nearby storage options.
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> @L["This godown is currently fully booked. Please check other nearby storage options."]
                 </div>
             }
             else
@@ -165,31 +166,31 @@
                     <!-- Capacity Needed Input with Live Indicator -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-dark small" for="requestedCapacityInput">
-                            Capacity Needed (in Tons) <span class="text-danger">*</span>
+                            @L["Capacity Needed (in Tons)"] <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
                             <input type="number" class="form-control" id="requestedCapacityInput" asp-for="RequestedCapacityTons"
                                    min="1" max="@Model.AvailableCapacityTons" step="1" required oninput="updateRemainingCapacity(this.value)" />
-                            <span class="input-group-text bg-light text-muted">Tons</span>
+                            <span class="input-group-text bg-light text-muted">@L["Tons"]</span>
                         </div>
                         <div class="form-text small" id="remainingCapacityText">
                             <i class="bi bi-info-circle text-success me-1"></i>
-                            <span id="remainingCapacityNumber">@((Model.AvailableCapacityTons - Model.RequestedCapacityTons).ToString("N0"))</span>/@Model.AvailableCapacityTons.ToString("N0") Tons available after this booking.
+                            <span id="remainingCapacityNumber">@((Model.AvailableCapacityTons - Model.RequestedCapacityTons).ToString("N0"))</span>/@Model.AvailableCapacityTons.ToString("N0") @L["Tons available after this booking."]
                         </div>
                         <div class="text-danger small d-none mt-1" id="capacityErrorMsg">
-                            <i class="bi bi-x-circle me-1"></i> Requested capacity exceeds available space (@Model.AvailableCapacityTons Tons).
+                            <i class="bi bi-x-circle me-1"></i> @L["Requested capacity exceeds available space ({0} Tons).", Model.AvailableCapacityTons]
                         </div>
                     </div>
 
                     <!-- Date Range -->
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label class="form-label fw-semibold text-dark small" for="startDateInput">Start Date <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold text-dark small" for="startDateInput">@L["Start Date"] <span class="text-danger">*</span></label>
                             <input type="date" class="form-control form-control-sm" id="startDateInput" asp-for="StartDate"
                                    min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
                         </div>
                         <div class="col-6">
-                            <label class="form-label fw-semibold text-dark small" for="endDateInput">End Date <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold text-dark small" for="endDateInput">@L["End Date"] <span class="text-danger">*</span></label>
                             <input type="date" class="form-control form-control-sm" id="endDateInput" asp-for="EndDate"
                                    min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" required />
                         </div>
@@ -197,9 +198,9 @@
 
                     <!-- Notes -->
                     <div class="mb-3">
-                        <label class="form-label fw-semibold text-dark small" for="bookingNotesInput">Produce Details & Notes (Optional)</label>
-                        <textarea class="form-control form-control-sm" id="bookingNotesInput" asp-for="BookingNotes" rows="3" 
-                                  placeholder="e.g. 5 Tons BRRI-28 Paddy bags, moisture tested, delivery next Monday"></textarea>
+                        <label class="form-label fw-semibold text-dark small" for="bookingNotesInput">@L["Produce Details & Notes (Optional)"]</label>
+                        <textarea class="form-control form-control-sm" id="bookingNotesInput" asp-for="BookingNotes" rows="3"
+                                  placeholder='@L["e.g. 5 Tons BRRI-28 Paddy bags, moisture tested, delivery next Monday"]'></textarea>
                     </div>
 
                     <!-- Action Button -->
@@ -207,19 +208,19 @@
                         @if (bookingRequested)
                         {
                             <button type="button" class="btn btn-success py-2.5 fw-bold rounded-3" disabled>
-                                <i class="bi bi-check-circle-fill me-1.5"></i> Booking Requested ✓
+                                <i class="bi bi-check-circle-fill me-1.5"></i> @L["Booking Requested ✓"]
                             </button>
                         }
                         else
                         {
                             <button type="submit" class="btn btn-krishi-primary py-2.5 fw-bold rounded-3 shadow-sm" id="submitBookingBtn">
-                                <i class="bi bi-box-seam me-1.5"></i> Book Storage
+                                <i class="bi bi-box-seam me-1.5"></i> @L["Book Storage"]
                             </button>
                         }
                     </div>
 
                     <p class="text-muted small text-center mt-3 mb-0" style="font-size: 0.78rem;">
-                        <i class="bi bi-lock-fill text-muted me-1"></i> No immediate payment required. Owner confirms reservation first.
+                        <i class="bi bi-lock-fill text-muted me-1"></i> @L["No immediate payment required. Owner confirms reservation first."]
                     </p>
                 </form>
             }
@@ -231,25 +232,25 @@
 <div class="d-lg-none position-fixed bottom-0 start-0 end-0 bg-white border-top shadow-lg p-3" style="z-index: 1040;">
     <div class="container d-flex align-items-center justify-content-between gap-2">
         <div>
-            <span class="text-muted small d-block">Monthly Rate</span>
-            <span class="fw-bold text-success fs-5">@Model.PricePerTonPerMonth</span>
+            <span class="text-muted small d-block">@L["Monthly Rate"]</span>
+            <span class="fw-bold text-success fs-5">@L["Tk {0} / Ton / Month", Model.PricePerTonPerMonth.Replace("\u09f3", "").Replace(" / Ton / Month", "")]</span>
         </div>
         @if (bookingRequested)
         {
             <button type="button" class="btn btn-secondary rounded-pill px-4 py-2.5 fw-bold" disabled>
-                Booking Requested ✓
+                @L["Booking Requested ✓"]
             </button>
         }
         else if (Model.AvailableCapacityTons <= 0)
         {
             <button type="button" class="btn btn-secondary rounded-pill px-4 py-2.5 fw-bold" disabled>
-                Fully Booked
+                @L["Fully Booked"]
             </button>
         }
         else
         {
             <button type="button" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-bold" onclick="scrollToBookingForm()">
-                Book This Godown
+                @L["Book This Godown"]
             </button>
         }
     </div>
@@ -313,21 +314,21 @@
 
             if (end <= start) {
                 KrishiModal.confirm({
-                    title: 'Invalid Dates',
-                    body: 'End date must be after the start date. Please adjust the booking duration.',
-                    confirmText: 'OK'
+                    title: '@L["Invalid Dates"]',
+                    body: '@L["End Date must be after Start Date and not overlap booked dates."]',
+                    confirmText: '@L["Close"]'
                 });
                 return;
             }
 
             KrishiModal.confirm({
-                title: 'Confirm Storage Booking',
+                title: '@L["Confirm Storage Booking"]',
                 body: `<ul class="list-unstyled mb-0 d-flex flex-column gap-2 small">
-                           <li><i class="bi bi-building text-success me-2"></i><strong>Godown:</strong> @Model.Name</li>
-                           <li><i class="bi bi-box-seam text-success me-2"></i><strong>Capacity:</strong> ${capacity} Tons</li>
-                           <li><i class="bi bi-calendar-range text-success me-2"></i><strong>Duration:</strong> ${start} → ${end}</li>
+                           <li><i class="bi bi-building text-success me-2"></i><strong>@L["Godown"]:</strong> @Model.Name</li>
+                           <li><i class="bi bi-box-seam text-success me-2"></i><strong>@L["Capacity:"]</strong> @L["{0} Tons", "${capacity}"]</li>
+                           <li><i class="bi bi-calendar-range text-success me-2"></i><strong>@L["Duration:"]</strong> ${start} → ${end}</li>
                        </ul>`,
-                confirmText: 'Confirm Booking',
+                confirmText: '@L["Confirm Booking"]',
                 onConfirm: function () { form.submit(); }
             });
         });
