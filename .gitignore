@@ -39,7 +39,12 @@ appsettings.Local.json
 Thumbs.db
 ehthumbs.db
 
-# Never ignore markdown documentation files
-!*.md
+# Ignore markdown files except README.md
+*.md
+!README.md
+!readme.md
+!README*.md
+
 bin/
 obj/
+
