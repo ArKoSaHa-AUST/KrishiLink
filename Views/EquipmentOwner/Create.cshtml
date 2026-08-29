@@ -1,14 +1,14 @@
 @model KrishiLink.Models.ViewModels.EquipmentListingViewModel
 @{
-    ViewData["Title"] = Model.FormTitle;
+    ViewData["Title"] = L[Model.FormTitle];
 }
 
 <!-- Breadcrumb Navigation -->
-<nav aria-label="breadcrumb" class="mb-3">
+<nav aria-label="@L["breadcrumb"]" class="mb-3">
     <ol class="breadcrumb small">
-        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-success text-decoration-none">Home</a></li>
-        <li class="breadcrumb-item"><a asp-controller="EquipmentOwner" asp-action="Index" class="text-success text-decoration-none">Owner Dashboard</a></li>
-        <li class="breadcrumb-item active text-muted" aria-current="page">@Model.FormTitle</li>
+        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-success text-decoration-none">@L["Home"]</a></li>
+        <li class="breadcrumb-item"><a asp-controller="EquipmentOwner" asp-action="Index" class="text-success text-decoration-none">@L["Owner Dashboard"]</a></li>
+        <li class="breadcrumb-item active text-muted" aria-current="page">@L[Model.FormTitle]</li>
     </ol>
 </nav>
 
@@ -16,16 +16,16 @@
 <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-4 pb-2 border-bottom">
     <div>
         <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">
-            <i class="bi bi-gear-wide-connected text-success me-2"></i>@Model.FormTitle
+            <i class="bi bi-gear-wide-connected text-success me-2"></i>@L[Model.FormTitle]
         </h2>
         <p class="text-muted mb-0">
             @(Model.IsEditMode 
-                ? "Update your agricultural machinery details, pricing, and availability." 
-                : "List your agricultural machinery to connect with local farmers seeking rentals.")
+                ? L["Update your agricultural machinery details, pricing, and availability."]
+                : L["List your agricultural machinery to connect with local farmers seeking rentals."])
         </p>
     </div>
     <a asp-controller="EquipmentOwner" asp-action="Index" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold">
-        <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+        <i class="bi bi-arrow-left me-1"></i> @L["Back to Dashboard"]
     </a>
 </div>
 
@@ -46,35 +46,35 @@
                             <span class="badge bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
                                 <i class="bi bi-info-circle-fill"></i>
                             </span>
-                            <h5 class="fw-bold text-dark mb-0">1. Machinery Details</h5>
+                            <h5 class="fw-bold text-dark mb-0">@L["1. Machinery Details"]</h5>
                         </div>
                     </div>
 
                     <!-- Equipment Name -->
                     <div class="col-12 col-md-8">
                         <label asp-for="Name" class="form-label fw-semibold text-dark small">
-                            Equipment / Machine Title <span class="text-danger">*</span>
+                            @L["Equipment / Machine Title"] <span class="text-danger">*</span>
                         </label>
-                        <input asp-for="Name" class="form-control py-2.5" id="equipmentNameInput" placeholder="e.g. Mahindra 575 DI Heavy Tractor" required />
+                        <input asp-for="Name" class="form-control py-2.5" id="equipmentNameInput" placeholder="@L["e.g. Mahindra 575 DI Heavy Tractor"]" required />
                         <span asp-validation-for="Name" class="text-danger small"></span>
-                        <div class="form-text small text-muted">Include brand name, model, and horsepower for higher renter trust.</div>
+                        <div class="form-text small text-muted">@L["Include brand name, model, and horsepower for higher renter trust."]</div>
                     </div>
 
                     <!-- Equipment Type / Category Dropdown -->
                     <div class="col-12 col-md-4">
                         <label asp-for="Category" class="form-label fw-semibold text-dark small">
-                            Machinery Category <span class="text-danger">*</span>
+                            @L["Machinery Category"] <span class="text-danger">*</span>
                         </label>
                         <select asp-for="Category" class="form-select py-2.5" id="equipmentCategorySelect" required>
-                            <option value="">-- Select Category --</option>
-                            <option value="Tractor">🚜 Tractor</option>
-                            <option value="Power Tiller">⚙️ Power Tiller</option>
-                            <option value="Combine Harvester">🌾 Combine Harvester</option>
-                            <option value="Seed Drill / Seeder">🌱 Seed Drill / Seeder</option>
-                            <option value="Power Sprayer">💧 Power Sprayer</option>
-                            <option value="Irrigation Pump">⚡ Irrigation Pump</option>
-                            <option value="Thresher">🌾 Crop Thresher</option>
-                            <option value="Other">📦 Other Agricultural Tool</option>
+                            <option value="">@L["-- Select Category --"]</option>
+                            <option value="Tractor">@L["🚜 Tractor"]</option>
+                            <option value="Power Tiller">@L["⚙️ Power Tiller"]</option>
+                            <option value="Combine Harvester">@L["🌾 Combine Harvester"]</option>
+                            <option value="Seed Drill / Seeder">@L["🌱 Seed Drill / Seeder"]</option>
+                            <option value="Power Sprayer">@L["💧 Power Sprayer"]</option>
+                            <option value="Irrigation Pump">@L["⚡ Irrigation Pump"]</option>
+                            <option value="Thresher">@L["🌾 Crop Thresher"]</option>
+                            <option value="Other">@L["📦 Other Agricultural Tool"]</option>
                         </select>
                         <span asp-validation-for="Category" class="text-danger small"></span>
                     </div>
@@ -82,23 +82,23 @@
                     <!-- Description Textarea -->
                     <div class="col-12">
                         <label asp-for="Description" class="form-label fw-semibold text-dark small">
-                            Description &amp; Key Specifications <span class="text-danger">*</span>
+                            @L["Description & Key Specifications"] <span class="text-danger">*</span>
                         </label>
                         <textarea asp-for="Description" class="form-control" id="equipmentDescInput" rows="4" 
-                                  placeholder="Detail the engine capacity (HP), compatible implements, fuel consumption, driver/operator availability, and operational condition..." required></textarea>
+                                  placeholder="@L["Detail the engine capacity (HP), compatible implements, fuel consumption, driver/operator availability, and operational condition..."]" required></textarea>
                         <span asp-validation-for="Description" class="text-danger small"></span>
                     </div>
 
                     <!-- Location Input -->
                     <div class="col-12 col-md-6">
                         <label asp-for="Location" class="form-label fw-semibold text-dark small">
-                            Equipment Base Location / District <span class="text-danger">*</span>
+                            @L["Equipment Base Location / District"] <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-success border-end-0">
                                 <i class="bi bi-geo-alt-fill"></i>
                             </span>
-                            <input asp-for="Location" class="form-control border-start-0 py-2.5" id="equipmentLocationInput" placeholder="e.g. Bogra Sadar, Bogra" required />
+                            <input asp-for="Location" class="form-control border-start-0 py-2.5" id="equipmentLocationInput" placeholder="@L["e.g. Bogra Sadar, Bogra"]" required />
                         </div>
                         <span asp-validation-for="Location" class="text-danger small"></span>
                     </div>
@@ -108,7 +108,7 @@
                         <div class="p-3 bg-light rounded-3 border w-100 mt-md-3">
                             <div class="form-check form-switch d-flex align-items-center justify-content-between p-0 m-0">
                                 <label class="form-check-label fw-semibold text-dark small mb-0" for="isAvailableSwitch">
-                                    <i class="bi bi-toggle-on text-success me-1.5"></i> Mark Listing as Active &amp; Available
+                                    <i class="bi bi-toggle-on text-success me-1.5"></i> @L["Mark Listing as Active & Available"]
                                 </label>
                                 <input class="form-check-input ms-0" type="checkbox" role="switch" id="isAvailableSwitch" asp-for="IsAvailable" style="cursor: pointer;" />
                             </div>
@@ -121,36 +121,36 @@
                             <span class="badge bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
                                 <i class="bi bi-tag-fill"></i>
                             </span>
-                            <h5 class="fw-bold text-dark mb-0">2. Rental Rates &amp; Pricing</h5>
+                            <h5 class="fw-bold text-dark mb-0">@L["2. Rental Rates & Pricing"]</h5>
                         </div>
                     </div>
 
                     <!-- Daily Rate -->
                     <div class="col-12 col-md-6">
                         <label asp-for="DailyRate" class="form-label fw-semibold text-dark small">
-                            Daily Rental Rate (in BDT ৳) <span class="text-danger">*</span>
+                            @L["Daily Rental Rate (in BDT ৳)"] <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-success fw-bold">৳</span>
                             <input type="number" asp-for="DailyRate" class="form-control py-2.5" id="dailyRateInput" min="1" step="50" placeholder="1500" required />
-                            <span class="input-group-text bg-light text-muted">/ Day</span>
+                            <span class="input-group-text bg-light text-muted">@L["/ Day"]</span>
                         </div>
                         <span asp-validation-for="DailyRate" class="text-danger small"></span>
-                        <div class="form-text small text-muted">Standard 8-hour daily operational rental rate. Must be greater than 0.</div>
+                        <div class="form-text small text-muted">@L["Standard 8-hour daily operational rental rate. Must be greater than 0."]</div>
                     </div>
 
                     <!-- Hourly Rate -->
                     <div class="col-12 col-md-6">
                         <label asp-for="HourlyRate" class="form-label fw-semibold text-dark small">
-                            Hourly Rental Rate (in BDT ৳, Optional)
+                            @L["Hourly Rental Rate (in BDT ৳, Optional)"]
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-success fw-bold">৳</span>
                             <input type="number" asp-for="HourlyRate" class="form-control py-2.5" id="hourlyRateInput" min="0" step="10" placeholder="250" />
-                            <span class="input-group-text bg-light text-muted">/ Hour</span>
+                            <span class="input-group-text bg-light text-muted">@L["/ Hour"]</span>
                         </div>
                         <span asp-validation-for="HourlyRate" class="text-danger small"></span>
-                        <div class="form-text small text-muted">Leave blank if only daily rentals are supported.</div>
+                        <div class="form-text small text-muted">@L["Leave blank if only daily rentals are supported."]</div>
                     </div>
 
                     <!-- Section 3: Interactive Drag-and-Drop Image Uploader -->
@@ -160,9 +160,9 @@
                                 <span class="badge bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
                                     <i class="bi bi-images"></i>
                                 </span>
-                                <h5 class="fw-bold text-dark mb-0">3. Machinery Photos <span class="text-danger">*</span></h5>
+                                <h5 class="fw-bold text-dark mb-0">@L["3. Machinery Photos"] <span class="text-danger">*</span></h5>
                             </div>
-                            <span class="text-muted small">At least 1 photo required (PNG, JPG, WebP)</span>
+                            <span class="text-muted small">@L["At least 1 photo required (PNG, JPG, WebP)"]</span>
                         </div>
 
                         <!-- Dropzone Component -->
@@ -171,13 +171,13 @@
                             <div class="mb-2">
                                 <i class="bi bi-cloud-arrow-up text-success" style="font-size: 2.5rem;"></i>
                             </div>
-                            <h6 class="fw-bold text-dark mb-1">Drag &amp; drop equipment photos here, or <span class="text-success text-decoration-underline">browse files</span></h6>
-                            <p class="text-muted small mb-0">High-quality photos of the front, side, and engine bay increase rental bookings.</p>
+                            <h6 class="fw-bold text-dark mb-1">@L["Drag & drop equipment photos here, or"] <span class="text-success text-decoration-underline">@L["browse files"]</span></h6>
+                            <p class="text-muted small mb-0">@L["High-quality photos of the front, side, and engine bay increase rental bookings."]</p>
                         </div>
 
                         <!-- Image Validation Alert -->
                         <div class="alert alert-danger d-none py-2 px-3 small rounded-3 mb-3" id="imageValidationAlert">
-                            <i class="bi bi-exclamation-triangle-fill me-1.5"></i> Please upload at least one photo of the equipment before saving.
+                            <i class="bi bi-exclamation-triangle-fill me-1.5"></i> @L["Please upload at least one photo of the equipment before saving."]
                         </div>
 
                         <!-- Live Preview Cards Container -->
@@ -188,9 +188,9 @@
                             {
                                 var imgUrl = Model.ExistingImageUrls[i];
                                 <div class="krishi-image-preview-card existing-image-card" id="existingCard_@i">
-                                    <img src="@imgUrl" alt="Equipment photo" class="w-100 h-100 object-fit-cover" />
+                                    <img src="@imgUrl" alt="@L["Equipment photo"]" class="w-100 h-100 object-fit-cover" />
                                     <input type="hidden" name="ExistingImageUrls" value="@imgUrl" />
-                                    <button type="button" class="krishi-preview-remove-btn" onclick="removeExistingImage(@i)" title="Remove photo">
+                                    <button type="button" class="krishi-preview-remove-btn" onclick="removeExistingImage(@i)" title="@L["Remove photo"]">
                                         <i class="bi bi-x"></i>
                                     </button>
                                 </div>
@@ -205,10 +205,10 @@
                 <!-- Form Action Buttons -->
                 <div class="d-flex flex-column flex-sm-row justify-content-end align-items-center gap-3 pt-4 mt-4 border-top">
                     <a asp-controller="EquipmentOwner" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-semibold w-100 w-sm-auto order-2 order-sm-1">
-                        Cancel
+                        @L["Cancel"]
                     </a>
                     <button type="submit" class="btn btn-krishi-primary rounded-pill px-5 py-2.5 fw-bold shadow-sm w-100 w-sm-auto order-1 order-sm-2" id="submitListingBtn">
-                        <i class="bi bi-check2-circle me-1.5"></i> @Model.SubmitButtonText
+                        <i class="bi bi-check2-circle me-1.5"></i> @L[Model.SubmitButtonText]
                     </button>
                 </div>
 
@@ -270,8 +270,8 @@
                     card.id = 'previewCard_' + fileIndex;
 
                     card.innerHTML = `
-                        <img src="${e.target.result}" alt="New Upload" class="w-100 h-100 object-fit-cover" />
-                        <button type="button" class="krishi-preview-remove-btn" onclick="removeNewImage(${fileIndex})" title="Remove photo">
+                        <img src="${e.target.result}" alt="@L["New Upload"]" class="w-100 h-100 object-fit-cover" />
+                        <button type="button" class="krishi-preview-remove-btn" onclick="removeNewImage(${fileIndex})" title="@L["Remove photo"]">
                             <i class="bi bi-x"></i>
                         </button>
                     `;
@@ -299,7 +299,7 @@
             const alertBox = document.getElementById('imageValidationAlert');
 
             if (dailyRate <= 0) {
-                alert('Daily rental rate must be greater than 0.');
+                alert('@L["Daily rental rate must be greater than 0."]');
                 return false;
             }
 

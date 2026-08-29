@@ -13,13 +13,13 @@
 <!-- Dashboard Welcome Header -->
 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4 pb-3 border-bottom" style="border-color: var(--krishi-border-color) !important;">
     <div>
-        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">Godown Owner Dashboard</h2>
+        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">@L["Godown Owner Dashboard"]</h2>
         <p class="mb-0" style="color: var(--krishi-text-muted);">
-            Track capacity utilization and respond to incoming storage booking requests.
+            @L["Track capacity utilization and respond to incoming storage booking requests."]
         </p>
     </div>
     <a asp-controller="GodownOwner" asp-action="Requests" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold flex-shrink-0">
-        <i class="bi bi-inbox me-1"></i> Booking Requests
+        <i class="bi bi-inbox me-1"></i> @L["Booking Requests"]
     </a>
 </div>
 
@@ -40,7 +40,7 @@
             </div>
             <div>
                 <span class="fs-3 fw-bold d-block lh-1 krishi-summary-value">@Model.TotalGodowns</span>
-                <span class="small krishi-summary-label">Total Godowns</span>
+                <span class="small krishi-summary-label">@L["Total Godowns"]</span>
             </div>
         </div>
     </a>
@@ -52,10 +52,10 @@
             <div class="flex-grow-1">
                 <span class="fs-3 fw-bold d-block lh-1 krishi-summary-value">
                     <span id="summaryOccupied">@Model.OccupiedCapacityTons.ToString("N0")</span>
-                    <span class="fs-6 fw-normal" style="color: var(--krishi-text-muted);">/ @Model.TotalCapacityTons.ToString("N0") Tons</span>
+                    <span class="fs-6 fw-normal" style="color: var(--krishi-text-muted);">/ @L["{0} Tons", Model.TotalCapacityTons.ToString("N0")]</span>
                 </span>
-                <span class="small krishi-summary-label">Occupied Capacity (<span id="summaryOccupiedPct">@occupiedPercent</span>%)</span>
-                <div class="progress mt-1" role="progressbar" aria-label="Overall capacity utilization"
+                <span class="small krishi-summary-label">@L["Occupied Capacity ("]<span id="summaryOccupiedPct">@occupiedPercent</span>%)</span>
+                <div class="progress mt-1" role="progressbar" aria-label="@L["Overall capacity utilization"]"
                      aria-valuenow="@occupiedPercent" aria-valuemin="0" aria-valuemax="100" style="height: 4px;">
                     <div class="progress-bar @summaryBarClass" id="summaryOccupiedBar" style="width: @occupiedPercent%;"></div>
                 </div>
@@ -69,7 +69,7 @@
             </div>
             <div>
                 <span class="fs-3 fw-bold d-block lh-1 krishi-summary-value" id="pendingCount" aria-live="polite">@Model.PendingRequests</span>
-                <span class="small krishi-summary-label">Pending Booking Requests</span>
+                <span class="small krishi-summary-label">@L["Pending Booking Requests"]</span>
             </div>
         </div>
     </a>
@@ -80,11 +80,11 @@
     <div class="card border-0 shadow-sm overflow-hidden" style="border-radius: var(--krishi-radius-lg); border-left: 4px solid var(--krishi-primary) !important;">
         <div class="p-3 px-4 d-flex align-items-center justify-content-between" style="background-color: var(--krishi-primary-light);">
             <h5 class="fw-bold mb-0 d-flex align-items-center gap-2" style="color: var(--krishi-primary);">
-                <i class="bi bi-bell-fill"></i> Pending Booking Requests
+                <i class="bi bi-bell-fill"></i> @L["Pending Booking Requests"]
                 <span class="badge rounded-pill bg-white shadow-sm" id="pendingBadge" style="color: var(--krishi-primary);">@Model.PendingRequests</span>
             </h5>
             <a asp-controller="GodownOwner" asp-action="Requests" class="small fw-semibold text-success text-decoration-none d-none d-sm-block">
-                View All <i class="bi bi-arrow-right"></i>
+                @L["View All"] <i class="bi bi-arrow-right"></i>
             </a>
         </div>
 
@@ -97,7 +97,7 @@
 
         <div class="p-4 text-center @(Model.PendingRequestItems.Any() ? "d-none" : "")" id="noPendingState">
             <i class="bi bi-check2-circle fs-2 text-success d-block mb-1"></i>
-            <span style="color: var(--krishi-text-muted);">All caught up — no pending booking requests right now.</span>
+            <span style="color: var(--krishi-text-muted);">@L["All caught up — no pending booking requests right now."]</span>
         </div>
     </div>
 </div>
@@ -106,11 +106,11 @@
 <div class="mb-5" id="myGodowns">
     <div class="d-flex align-items-center justify-content-between mb-3">
         <h5 class="fw-bold mb-0" style="color: var(--krishi-text-primary);">
-            My Godowns
+            @L["My Godowns"]
             <span class="badge rounded-pill ms-1" style="background-color: var(--krishi-primary-light); color: var(--krishi-primary); font-size: 0.78rem;">@Model.TotalGodowns</span>
         </h5>
         <a asp-controller="GodownOwner" asp-action="Create" class="btn btn-krishi-primary rounded-pill px-3 py-2 fw-bold shadow-sm">
-            <i class="bi bi-plus-lg me-1"></i> Add New Godown
+            <i class="bi bi-plus-lg me-1"></i> @L["Add New Godown"]
         </a>
     </div>
 
@@ -118,11 +118,11 @@
     {
         <div class="card border-0 shadow-sm text-center p-5" style="border-radius: var(--krishi-radius-lg);">
             <i class="bi bi-building fs-1 text-success d-block mb-2"></i>
-            <h5 class="fw-bold" style="color: var(--krishi-text-primary);">No godowns listed yet</h5>
-            <p class="mb-3" style="color: var(--krishi-text-muted);">List your first warehouse or cold storage and start earning from unused capacity.</p>
+            <h5 class="fw-bold" style="color: var(--krishi-text-primary);">@L["No godowns listed yet"]</h5>
+            <p class="mb-3" style="color: var(--krishi-text-muted);">@L["List your first warehouse or cold storage and start earning from unused capacity."]</p>
             <div>
                 <a asp-controller="GodownOwner" asp-action="Create" class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-bold">
-                    <i class="bi bi-plus-lg me-1"></i> List Your First Godown
+                    <i class="bi bi-plus-lg me-1"></i> @L["List Your First Godown"]
                 </a>
             </div>
         </div>
@@ -137,10 +137,10 @@
                         <div class="card krishi-card border-0 shadow-sm h-100 p-3 godown-card @(g.AvailableCapacityTons <= 0 ? "godown-card-full" : "")" data-godown-id="@g.Id">
                             <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
                                 <div>
-                                    <span class="small text-uppercase fw-semibold" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@g.StorageType</span>
+                                    <span class="small text-uppercase fw-semibold" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L[g.StorageType]</span>
                                     <h6 class="fw-bold mb-0" style="color: var(--krishi-text-primary);">@g.Name</h6>
                                 </div>
-                                <span class="krishi-badge g-status-badge @(g.Status == "Active" ? "krishi-badge-available" : g.Status == "Full" ? "krishi-badge-unavailable" : "krishi-badge-completed")">@g.Status</span>
+                                <span class="krishi-badge g-status-badge @(g.Status == "Active" ? "krishi-badge-available" : g.Status == "Full" ? "krishi-badge-unavailable" : "krishi-badge-completed")">@L[g.Status]</span>
                             </div>
 
                             <!-- Capacity utilization: the card's visual anchor -->
@@ -149,7 +149,7 @@
                             </div>
 
                             <span class="small fw-semibold mt-3 text-success">
-                                <i class="bi bi-pencil me-1"></i>Edit Listing <i class="bi bi-arrow-right"></i>
+                                <i class="bi bi-pencil me-1"></i>@L["Edit Listing"] <i class="bi bi-arrow-right"></i>
                             </span>
                         </div>
                     </a>
@@ -187,18 +187,18 @@
             const occupied = g.total - g.available;
             const pct = g.total > 0 ? Math.round(occupied / g.total * 100) : 0;
 
-            card.querySelector('.occupied-line').textContent = `${fmt(occupied)} / ${fmt(g.total)} Tons occupied`;
+            card.querySelector('.occupied-line').textContent = '@L["{0} / {1} Tons occupied"]'.replace('{0}', fmt(occupied)).replace('{1}', fmt(g.total));
             card.querySelector('.util-percent').textContent = pct + '%';
             const bar = card.querySelector('.progress-bar');
             bar.style.width = pct + '%';
             bar.className = 'progress-bar ' + barClassFor(pct);
             bar.parentElement.setAttribute('aria-valuenow', pct);
             card.querySelector('.available-line').innerHTML = g.available > 0
-                ? `<i class="bi bi-box-seam text-success me-1"></i>${fmt(g.available)} Tons still available`
-                : `<i class="bi bi-slash-circle text-danger me-1"></i>Fully booked — no new capacity`;
+                ? `<i class="bi bi-box-seam text-success me-1"></i>` + '@L["{0} Tons still available"]'.replace('{0}', fmt(g.available))
+                : `<i class="bi bi-slash-circle text-danger me-1"></i>@L["Fully booked — no new capacity"]`;
 
             const badge = card.querySelector('.g-status-badge');
-            badge.textContent = g.available > 0 ? 'Active' : 'Full';
+            badge.textContent = g.available > 0 ? '@L["Active"]' : '@L["Full"]';
             badge.className = 'krishi-badge g-status-badge ' + (g.available > 0 ? 'krishi-badge-available' : 'krishi-badge-unavailable');
             card.classList.toggle('godown-card-full', g.available <= 0);
         }
@@ -224,10 +224,10 @@
                 if (!g || !el) return;
                 if (cap <= g.available) {
                     el.style.color = 'var(--krishi-status-accepted-text)';
-                    el.innerHTML = `<i class="bi bi-check-circle me-1"></i>${fmt(cap)} / ${fmt(g.available)} Tons free — fits available space`;
+                    el.innerHTML = `<i class="bi bi-check-circle me-1"></i>${fmt(cap)} / ${fmt(g.available)} @L["Tons free — fits available space"]`;
                 } else {
                     el.style.color = 'var(--krishi-status-rejected-text)';
-                    el.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>Exceeds available space (only ${fmt(g.available)} Tons free)`;
+                    el.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>` + '@L["Exceeds available space (only {0} Tons free)"]'.replace('{0}', fmt(g.available));
                 }
             });
         }
@@ -252,9 +252,9 @@
             // Capacity guard: accepting more than the godown has free needs explicit confirmation
             if (accepted && !skipGuard && g && cap > g.available) {
                 KrishiModal.confirm({
-                    title: 'Exceeds Available Capacity',
-                    body: `This booking needs <strong>${fmt(cap)} Tons</strong>, but only <strong>${fmt(g.available)} Tons</strong> are free in this godown. Accept anyway?`,
-                    confirmText: 'Accept Anyway',
+                    title: '@L["Exceeds Available Capacity"]',
+                    body: '@L["This booking needs <strong>{0} Tons</strong>, but only <strong>{1} Tons</strong> are free in this godown. Accept anyway?"]'.replace('{0}', fmt(cap)).replace('{1}', fmt(g.available)),
+                    confirmText: '@L["Accept Anyway"]',
                     confirmClass: 'btn-danger',
                     iconClass: 'bi-exclamation-triangle-fill text-danger',
                     onConfirm: () => applyDecision(id, decision, btn, reason, true)
@@ -264,8 +264,8 @@
 
             KrishiRequests.optimisticDecision({
                 url: RESPOND_URL, id, decision, reason, row,
-                acceptedMsg: 'Booking request accepted ✓',
-                rejectedMsg: 'Booking request rejected',
+                acceptedMsg: '@L["Booking request accepted ✓"]',
+                rejectedMsg: '@L["Booking request rejected"]',
                 onApply: () => { if (accepted) applyCapacityChange(godownId, cap); },
                 onRowHidden: refreshPendingUI,
                 onRevert: () => { if (accepted) applyCapacityChange(godownId, -cap); refreshPendingUI(); }
@@ -276,7 +276,7 @@
             const farmer = btn.closest('.pending-request-row').dataset.farmerName;
             KrishiRequests.promptReject(farmer,
                 reason => applyDecision(id, 'reject', btn, reason),
-                { title: 'Reject Booking Request', placeholder: 'e.g. Requested capacity is not available for those dates (optional)' });
+                { title: '@L["Reject Booking Request"]', placeholder: '@L["e.g. Requested capacity is not available for those dates (optional)"]' });
         }
 
         // Notify when new booking requests arrive
@@ -285,7 +285,7 @@
             KrishiCount.animate(countEl, Number(countEl.textContent) + delta);
             const badge = document.getElementById('pendingBadge');
             badge.textContent = Number(badge.textContent) + delta;
-            KrishiToast.show(`${delta} new booking request${delta > 1 ? 's' : ''} received`, { iconClass: 'bi-bell-fill text-success' });
+            KrishiToast.show('@L["{0} new booking request(s) received"]'.replace('{0}', delta), { iconClass: 'bi-bell-fill text-success' });
         });
 
         refreshFitIndicators();

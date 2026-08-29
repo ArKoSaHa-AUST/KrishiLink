@@ -1,12 +1,14 @@
 @model KrishiLink.Models.ViewModels.EquipmentBrowseViewModel
 @{
-    ViewData["Title"] = "Browse & Rent Equipment";
+    ViewData["Title"] = L["Browse & Rent Equipment"];
     var activeFiltersCount = 0;
     if (!string.IsNullOrWhiteSpace(Model.SearchTerm)) activeFiltersCount++;
     if (Model.SelectedCategories.Any()) activeFiltersCount += Model.SelectedCategories.Count;
     if (!string.IsNullOrWhiteSpace(Model.Location)) activeFiltersCount++;
     if (Model.SelectedMaxPrice.HasValue && Model.SelectedMaxPrice.Value < Model.MaxPrice) activeFiltersCount++;
     if (Model.AvailabilityDate.HasValue) activeFiltersCount++;
+    var localizedCategoriesJson = System.Text.Json.JsonSerializer.Serialize(Model.AvailableCategories.ToDictionary(c => c, c => L[c].Value));
+    var localizedLocationsJson = System.Text.Json.JsonSerializer.Serialize(Model.AvailableLocations.ToDictionary(loc => loc, loc => L[loc].Value));
 }
 
 <!-- Page Header & Hero Banner -->
@@ -14,18 +16,18 @@
     <div class="row align-items-center position-relative" style="z-index: 2;">
         <div class="col-lg-8">
             <span class="badge bg-light text-success fw-bold px-3 py-1.5 rounded-pill mb-2 mb-md-3">
-                <i class="bi bi-gear-wide-connected me-1"></i> Agricultural Equipment Marketplace
+                <i class="bi bi-gear-wide-connected me-1"></i> @L["Agricultural Equipment Marketplace"]
             </span>
-            <h1 class="display-6 fw-bold mb-2 text-white">Find & Rent Agricultural Machinery</h1>
+            <h1 class="display-6 fw-bold mb-2 text-white">@L["Find & Rent Agricultural Machinery"]</h1>
             <p class="lead text-white-50 mb-0 fs-6">
-                Discover modern tractors, combine harvesters, power tillers, and sprayers from verified nearby owners at affordable daily or hourly rates.
+                @L["Discover modern tractors, combine harvesters, power tillers, and sprayers from verified nearby owners at affordable daily or hourly rates."]
             </p>
         </div>
         <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
             <div class="d-inline-flex flex-column align-items-lg-end bg-white bg-opacity-10 border border-white border-opacity-25 rounded-3 p-3 text-white text-start">
-                <span class="small text-white-50">Verified Machinery</span>
-                <span class="fs-4 fw-bold" id="heroListingCount">@Model.EquipmentList.Count Available Items</span>
-                <span class="small text-white-50"><i class="bi bi-shield-check text-warning me-1"></i>Live availability</span>
+                <span class="small text-white-50">@L["Verified Machinery"]</span>
+                <span class="fs-4 fw-bold" id="heroListingCount">@L["{0} Available Items", Model.EquipmentList.Count]</span>
+                <span class="small text-white-50"><i class="bi bi-shield-check text-warning me-1"></i>@L["Live availability"]</span>
             </div>
         </div>
     </div>
@@ -41,13 +43,13 @@
         <button class="btn btn-krishi-primary flex-grow-1 d-flex justify-content-between align-items-center py-2.5 px-3 rounded-3 shadow-sm" 
                 type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileFilterBottomSheet" aria-controls="mobileFilterBottomSheet">
             <span class="d-flex align-items-center gap-2 fw-semibold">
-                <i class="bi bi-sliders2"></i> Filter Equipment
+                <i class="bi bi-sliders2"></i> @L["Filter Equipment"]
             </span>
             <span class="badge bg-white text-success rounded-pill px-2.5 py-1" id="mobileFilterBadge">
-                @(activeFiltersCount > 0 ? $"{activeFiltersCount} active" : "Filters")
+                @(activeFiltersCount > 0 ? L["{0} active", activeFiltersCount] : L["Filters"])
             </span>
         </button>
-        <button type="button" class="btn btn-outline-secondary rounded-3 px-3" onclick="resetAllFilters()" title="Reset Filters">
+        <button type="button" class="btn btn-outline-secondary rounded-3 px-3" onclick="resetAllFilters()" title="@L["Reset Filters"]">
             <i class="bi bi-arrow-counterclockwise"></i>
         </button>
     </div>
@@ -64,17 +66,17 @@
             <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-sliders text-success fs-5"></i>
-                    <h5 class="fw-bold mb-0 text-dark">Filters</h5>
+                    <h5 class="fw-bold mb-0 text-dark">@L["Filters"]</h5>
                 </div>
                 <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0 fw-semibold clear-filters-btn @(activeFiltersCount > 0 ? "" : "d-none")" onclick="resetAllFilters()">
-                    <i class="bi bi-x-circle me-1"></i>Clear Filters
+                    <i class="bi bi-x-circle me-1"></i>@L["Clear Filters"]
                 </button>
             </div>
 
             <!-- 1. Equipment Type / Category Filter -->
             <div class="mb-4">
                 <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2.5 d-flex justify-content-between align-items-center">
-                    <span>Equipment Type</span>
+                    <span>@L["Equipment Type"]</span>
                     <span class="badge bg-light text-muted border">@Model.AvailableCategories.Count</span>
                 </label>
                 <div class="d-flex flex-column gap-2" style="max-height: 220px; overflow-y: auto;">
@@ -85,7 +87,7 @@
                             <input class="form-check-input filter-input desktop-cat-filter" type="checkbox" name="selectedCategories" 
                                    value="@category" id="desk_cat_@category.Replace(" ", "_").Replace("/", "_")" @(isChecked ? "checked" : "") onchange="onFilterChanged()" />
                             <label class="form-check-label text-secondary small user-select-none d-flex justify-content-between" for="desk_cat_@category.Replace(" ", "_").Replace("/", "_")">
-                                <span>@category</span>
+                                <span>@L[category]</span>
                             </label>
                         </div>
                     }
@@ -95,17 +97,17 @@
             <!-- 2. Location Filter -->
             <div class="mb-4">
                 <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="desktopLocationSelect">
-                    Location / District
+                    @L["Location / District"]
                 </label>
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0 text-muted">
                         <i class="bi bi-geo-alt-fill text-success"></i>
                     </span>
                     <select class="form-select border-start-0 filter-input" id="desktopLocationSelect" onchange="syncLocation(this.value); onFilterChanged();">
-                        <option value="">All Locations (Bangladesh)</option>
+                        <option value="">@L["All Locations (Bangladesh)"]</option>
                         @foreach (var loc in Model.AvailableLocations)
                         {
-                            <option value="@loc" selected="@(Model.Location == loc ? "selected" : null)">@loc</option>
+                            <option value="@loc" selected="@(Model.Location == loc ? "selected" : null)">@L[loc]</option>
                         }
                     </select>
                 </div>
@@ -115,10 +117,10 @@
             <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0" for="desktopPriceSlider">
-                        Max Daily Rate
+                        @L["Max Daily Rate"]
                     </label>
                     <span class="badge bg-success-subtle text-success fw-bold px-2 py-1 desktop-price-display">
-                        ৳@((Model.SelectedMaxPrice ?? Model.MaxPrice).ToString("N0")) / day
+                        ৳@((Model.SelectedMaxPrice ?? Model.MaxPrice).ToString("N0")) @L["/ Day"]
                     </span>
                 </div>
                 <input type="range" class="form-range filter-input" id="desktopPriceSlider"
@@ -135,7 +137,7 @@
             <!-- 4. Availability Date Picker -->
             <div class="mb-4">
                 <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="desktopDateInput">
-                    Required Date
+                    @L["Required Date"]
                 </label>
                 <div class="input-group">
                     <span class="input-group-text bg-light border-end-0 text-muted">
@@ -150,7 +152,7 @@
             <!-- Clear Filters Link -->
             <div class="pt-2">
                 <button type="button" class="btn btn-outline-secondary w-100 btn-sm py-2 rounded-3" onclick="resetAllFilters()">
-                    <i class="bi bi-arrow-counterclockwise me-1"></i> Clear Filters
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> @L["Clear Filters"]
                 </button>
             </div>
 
@@ -173,7 +175,7 @@
                             <i class="bi bi-search text-success"></i>
                         </span>
                         <input type="text" class="form-control border-start-0 py-2" id="mainSearchInput" 
-                               value="@Model.SearchTerm" placeholder="Search machinery name, type, owner, or area..." 
+                               value="@Model.SearchTerm" placeholder="@L["Search machinery name, type, owner, or area..."]"
                                oninput="onSearchInput(this.value)" />
                         <button class="btn btn-outline-light border text-muted d-none" type="button" id="clearSearchBtn" onclick="clearSearch()">
                             <i class="bi bi-x-lg small"></i>
@@ -185,13 +187,13 @@
                 <div class="col-12 col-md-5 col-xl-4">
                     <div class="d-flex align-items-center justify-content-md-end gap-2">
                         <label class="small text-muted text-nowrap fw-semibold d-none d-sm-inline" for="mainSortSelect">
-                            <i class="bi bi-arrow-down-up me-1"></i>Sort:
+                            <i class="bi bi-arrow-down-up me-1"></i>@L["Sort:"]
                         </label>
                         <select class="form-select form-select-sm py-2" id="mainSortSelect" onchange="onFilterChanged()">
-                            <option value="newest" selected="@(Model.SortBy == "newest" ? "selected" : null)">Newest First</option>
-                            <option value="price_asc" selected="@(Model.SortBy == "price_asc" ? "selected" : null)">Price: Low to High</option>
-                            <option value="price_desc" selected="@(Model.SortBy == "price_desc" ? "selected" : null)">Price: High to Low</option>
-                            <option value="distance" selected="@(Model.SortBy == "distance" ? "selected" : null)">Distance: Nearest</option>
+                            <option value="newest" selected="@(Model.SortBy == "newest" ? "selected" : null)">@L["Newest First"]</option>
+                            <option value="price_asc" selected="@(Model.SortBy == "price_asc" ? "selected" : null)">@L["Price: Low to High"]</option>
+                            <option value="price_desc" selected="@(Model.SortBy == "price_desc" ? "selected" : null)">@L["Price: High to Low"]</option>
+                            <option value="distance" selected="@(Model.SortBy == "distance" ? "selected" : null)">@L["Distance: Nearest"]</option>
                         </select>
                     </div>
                 </div>
@@ -202,7 +204,7 @@
         <!-- Results Summary & Active Filter Tags Bar -->
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 px-1">
             <span class="text-secondary small fw-medium" id="resultsCountSummary">
-                Showing <strong class="text-dark" id="resultsCountNumber">@Model.EquipmentList.Count</strong> equipment available for rent
+                @L["Showing"] <strong class="text-dark" id="resultsCountNumber">@Model.EquipmentList.Count</strong> @L["equipment available for rent"]
             </span>
 
             <div class="d-flex flex-wrap align-items-center gap-1.5" id="activeFilterTagsContainer">
@@ -247,7 +249,7 @@
                             <!-- Category Pill -->
                             <div class="position-absolute top-0 start-0 m-2.5">
                                 <span class="badge bg-white text-dark shadow-sm rounded-pill px-2.5 py-1 small fw-semibold opacity-95">
-                                    @item.Category
+                                    @L[item.Category]
                                 </span>
                             </div>
 
@@ -256,13 +258,13 @@
                                 @if (item.IsAvailable)
                                 {
                                     <span class="krishi-badge krishi-badge-available shadow-sm">
-                                        <i class="bi bi-check-circle-fill"></i> Available
+                                        <i class="bi bi-check-circle-fill"></i> @L["Available"]
                                     </span>
                                 }
                                 else
                                 {
                                     <span class="krishi-badge krishi-badge-unavailable shadow-sm">
-                                        <i class="bi bi-clock-fill"></i> Booked
+                                        <i class="bi bi-clock-fill"></i> @L["Booked"]
                                     </span>
                                 }
                             </div>
@@ -270,7 +272,7 @@
                             <!-- Distance Badge -->
                             <div class="position-absolute bottom-0 start-0 m-2">
                                 <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2.5 py-1 small" style="font-size: 0.75rem;">
-                                    <i class="bi bi-compass me-1"></i>@item.DistanceKm.ToString("0.0") km away
+                                    <i class="bi bi-compass me-1"></i>@L["{0} km away", item.DistanceKm.ToString("0.0")]
                                 </span>
                             </div>
                         </div>
@@ -287,7 +289,7 @@
                             <div class="small text-muted mb-3">
                                 <div class="d-flex align-items-center gap-1 text-truncate mb-1">
                                     <i class="bi bi-geo-alt text-success"></i>
-                                    <span class="text-truncate">@item.Location</span>
+                                    <span class="text-truncate">@L[item.Location]</span>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between">
                                     <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>@item.OwnerName</span>
@@ -299,16 +301,16 @@
                             <div class="pt-3 border-top mt-auto">
                                 <div class="d-flex justify-content-between align-items-baseline mb-3">
                                     <div>
-                                        <span class="text-muted small d-block">Daily Rate</span>
+                                        <span class="text-muted small d-block">@L["Daily Rate"]</span>
                                         <span class="fw-bold text-success fs-5">৳@item.DailyRate.ToString("N0")</span>
-                                        <span class="text-muted small">/ day</span>
+                                        <span class="text-muted small">@L["/ Day"]</span>
                                     </div>
                                     @if (item.HourlyRate.HasValue)
                                     {
                                         <div class="text-end">
-                                            <span class="text-muted small d-block">Hourly</span>
+                                            <span class="text-muted small d-block">@L["Hourly"]</span>
                                             <span class="fw-semibold text-dark">৳@item.HourlyRate.Value.ToString("N0")</span>
-                                            <span class="text-muted small">/ hr</span>
+                                            <span class="text-muted small">@L["/ hr"]</span>
                                         </div>
                                     }
                                 </div>
@@ -316,7 +318,7 @@
                                 <a asp-controller="Equipment" asp-action="Details" asp-route-id="@item.Id" 
                                    class="btn btn-krishi-primary w-100 fw-semibold rounded-3 py-2 d-flex align-items-center justify-content-center gap-1.5 shadow-sm"
                                    onclick="event.stopPropagation();">
-                                    <span>View Details</span>
+                                    <span>@L["View Details"]</span>
                                     <i class="bi bi-arrow-right small"></i>
                                 </a>
                             </div>
@@ -336,13 +338,13 @@
                     <i class="bi bi-search text-success" style="font-size: 3rem;"></i>
                 </div>
             </div>
-            <h4 class="fw-bold text-dark mb-2">No equipment matches your filters</h4>
+            <h4 class="fw-bold text-dark mb-2">@L["No equipment matches your filters"]</h4>
             <p class="text-secondary mb-4 mx-auto" style="max-width: 460px;">
-                No equipment matches your filters — try widening your search criteria, adjusting the price slider, or selecting a different location.
+                @L["No equipment matches your filters — try widening your search criteria, adjusting the price slider, or selecting a different location."]
             </p>
             <div>
                 <button type="button" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm" onclick="resetAllFilters()">
-                    <i class="bi bi-arrow-counterclockwise me-1.5"></i> Clear Filters
+                    <i class="bi bi-arrow-counterclockwise me-1.5"></i> @L["Clear Filters"]
                 </button>
             </div>
         </div>
@@ -358,16 +360,16 @@
         <div class="krishi-sheet-handle"></div>
         <div class="d-flex justify-content-between align-items-center w-100">
             <h5 class="offcanvas-title fw-bold text-dark d-flex align-items-center gap-2" id="mobileFilterBottomSheetLabel">
-                <i class="bi bi-sliders2 text-success"></i> Filter Machinery
+                <i class="bi bi-sliders2 text-success"></i> @L["Filter Machinery"]
             </h5>
-            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="@L["Close"]"></button>
         </div>
     </div>
     <div class="offcanvas-body px-4 py-3" style="overflow-y: auto;">
         
         <!-- Mobile: Equipment Type -->
         <div class="mb-4">
-            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2">Equipment Type</label>
+            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2">@L["Equipment Type"]</label>
             <div class="d-flex flex-wrap gap-2">
                 @foreach (var category in Model.AvailableCategories)
                 {
@@ -376,7 +378,7 @@
                         <input class="form-check-input mobile-cat-filter" type="checkbox" 
                                value="@category" id="mob_cat_@category.Replace(" ", "_").Replace("/", "_")" @(isChecked ? "checked" : "") onchange="syncMobileToDesktopCategory(); onFilterChanged();" />
                         <label class="form-check-label text-secondary small" for="mob_cat_@category.Replace(" ", "_").Replace("/", "_")">
-                            @category
+                            @L[category]
                         </label>
                     </div>
                 }
@@ -385,12 +387,12 @@
 
         <!-- Mobile: Location -->
         <div class="mb-4">
-            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="mobileLocationSelect">Location</label>
+            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="mobileLocationSelect">@L["Location"]</label>
             <select class="form-select" id="mobileLocationSelect" onchange="syncLocation(this.value); onFilterChanged();">
-                <option value="">All Locations (Bangladesh)</option>
+                <option value="">@L["All Locations (Bangladesh)"]</option>
                 @foreach (var loc in Model.AvailableLocations)
                 {
-                    <option value="@loc" selected="@(Model.Location == loc ? "selected" : null)">@loc</option>
+                    <option value="@loc" selected="@(Model.Location == loc ? "selected" : null)">@L[loc]</option>
                 }
             </select>
         </div>
@@ -398,9 +400,9 @@
         <!-- Mobile: Price Slider -->
         <div class="mb-4">
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0" for="mobilePriceSlider">Max Daily Rate</label>
+                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0" for="mobilePriceSlider">@L["Max Daily Rate"]</label>
                 <span class="badge bg-success-subtle text-success fw-bold px-2 py-1 mobile-price-display">
-                    ৳@((Model.SelectedMaxPrice ?? Model.MaxPrice).ToString("N0")) / day
+                    ৳@((Model.SelectedMaxPrice ?? Model.MaxPrice).ToString("N0")) @L["/ Day"]
                 </span>
             </div>
             <input type="range" class="form-range" id="mobilePriceSlider"
@@ -412,7 +414,7 @@
 
         <!-- Mobile: Availability Date -->
         <div class="mb-4">
-            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="mobileDateInput">Required Date</label>
+            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="mobileDateInput">@L["Required Date"]</label>
             <input type="date" class="form-control" id="mobileDateInput"
                    value="@(Model.AvailabilityDate.HasValue ? Model.AvailabilityDate.Value.ToString("yyyy-MM-dd") : "")" 
                    min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncDate(this.value); onFilterChanged();" />
@@ -421,10 +423,10 @@
         <!-- Bottom Sheet Actions -->
         <div class="d-grid gap-2 pt-2 pb-3">
             <button type="button" class="btn btn-krishi-primary py-2.5 fw-bold rounded-pill" data-bs-dismiss="offcanvas">
-                View Results (<span id="mobileSheetResultCount">@Model.EquipmentList.Count</span>)
+                @L["View Results ("]<span id="mobileSheetResultCount">@Model.EquipmentList.Count</span>)
             </button>
             <button type="button" class="btn btn-outline-danger btn-sm py-2 rounded-pill" onclick="resetAllFilters()">
-                Clear Filters
+                @L["Clear Filters"]
             </button>
         </div>
 
@@ -436,10 +438,12 @@
         let searchDebounceTimer = null;
         const DEFAULT_MAX_PRICE = @Model.MaxPrice;
         const DEFAULT_MIN_PRICE = @Model.MinPrice;
+        const localizedCategories = @Html.Raw(localizedCategoriesJson);
+        const localizedLocations = @Html.Raw(localizedLocationsJson);
 
         // Synchronize desktop & mobile inputs
         function syncPrice(val) {
-            const formatted = '৳' + Number(val).toLocaleString() + ' / day';
+            const formatted = '৳' + Number(val).toLocaleString() + ' @L["/ Day"]';
             document.querySelectorAll('.desktop-price-display, .mobile-price-display').forEach(el => el.innerText = formatted);
             const deskSlider = document.getElementById('desktopPriceSlider');
             const mobSlider = document.getElementById('mobilePriceSlider');
@@ -582,8 +586,8 @@
 
             const count = data.totalCount || 0;
             if (countNum) countNum.innerText = count;
-            if (heroCount) heroCount.innerText = count + ' Available Items';
-            if (mobileCount) mobileCount.innerText = count + ' items';
+            if (heroCount) heroCount.innerText = '@L["{0} Available Items", "__COUNT__"]'.replace('__COUNT__', count);
+            if (mobileCount) mobileCount.innerText = '@L["{0} items", "__COUNT__"]'.replace('__COUNT__', count);
 
             // Active filters count calculation
             const searchTerm = document.getElementById('mainSearchInput')?.value || '';
@@ -600,7 +604,7 @@
             if (date) activeCount++;
 
             if (mobileFilterBadge) {
-                mobileFilterBadge.innerText = activeCount > 0 ? `${activeCount} active` : 'Filters';
+                mobileFilterBadge.innerText = activeCount > 0 ? '@L["{0} active", "__COUNT__"]'.replace('__COUNT__', activeCount) : '@L["Filters"]';
             }
 
             document.querySelectorAll('.clear-filters-btn').forEach(btn => {
@@ -634,20 +638,20 @@
                                 
                                 <div class="position-absolute top-0 start-0 m-2.5">
                                     <span class="badge bg-white text-dark shadow-sm rounded-pill px-2.5 py-1 small fw-semibold opacity-95">
-                                        ${item.category}
+                                        ${localizedCategories[item.category] || item.category}
                                     </span>
                                 </div>
 
                                 <div class="position-absolute top-0 end-0 m-2.5">
                                     ${item.isAvailable 
-                                        ? `<span class="krishi-badge krishi-badge-available shadow-sm"><i class="bi bi-check-circle-fill"></i> Available</span>`
-                                        : `<span class="krishi-badge krishi-badge-unavailable shadow-sm"><i class="bi bi-clock-fill"></i> Booked</span>`
+                                        ? `<span class="krishi-badge krishi-badge-available shadow-sm"><i class="bi bi-check-circle-fill"></i> @L["Available"]</span>`
+                                        : `<span class="krishi-badge krishi-badge-unavailable shadow-sm"><i class="bi bi-clock-fill"></i> @L["Booked"]</span>`
                                     }
                                 </div>
 
                                 <div class="position-absolute bottom-0 start-0 m-2">
                                     <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2.5 py-1 small" style="font-size: 0.75rem;">
-                                        <i class="bi bi-compass me-1"></i>${item.distanceKmFormatted}
+                                        <i class="bi bi-compass me-1"></i>${'@L["{0} km away", "__DISTANCE__"]'.replace('__DISTANCE__', Number(item.distanceKm).toFixed(1))}
                                     </span>
                                 </div>
                             </div>
@@ -661,7 +665,7 @@
                                 <div class="small text-muted mb-3">
                                     <div class="d-flex align-items-center gap-1 text-truncate mb-1">
                                         <i class="bi bi-geo-alt text-success"></i>
-                                        <span class="text-truncate">${item.location}</span>
+                                        <span class="text-truncate">${localizedLocations[item.location] || item.location}</span>
                                     </div>
                                     <div class="d-flex align-items-center justify-content-between">
                                         <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>${item.ownerName}</span>
@@ -672,15 +676,15 @@
                                 <div class="pt-3 border-top mt-auto">
                                     <div class="d-flex justify-content-between align-items-baseline mb-3">
                                         <div>
-                                            <span class="text-muted small d-block">Daily Rate</span>
+                                            <span class="text-muted small d-block">@L["Daily Rate"]</span>
                                             <span class="fw-bold text-success fs-5">${item.dailyRateFormatted}</span>
-                                            <span class="text-muted small">/ day</span>
+                                            <span class="text-muted small">@L["/ Day"]</span>
                                         </div>
                                         ${item.hourlyRateFormatted ? `
                                             <div class="text-end">
-                                                <span class="text-muted small d-block">Hourly</span>
+                                                <span class="text-muted small d-block">@L["Hourly"]</span>
                                                 <span class="fw-semibold text-dark">${item.hourlyRateFormatted}</span>
-                                                <span class="text-muted small">/ hr</span>
+                                                <span class="text-muted small">@L["/ hr"]</span>
                                             </div>
                                         ` : ''}
                                     </div>
@@ -688,7 +692,7 @@
                                     <a href="${item.detailsUrl}" 
                                        class="btn btn-krishi-primary w-100 fw-semibold rounded-3 py-2 d-flex align-items-center justify-content-center gap-1.5 shadow-sm"
                                        onclick="event.stopPropagation();">
-                                        <span>View Details</span>
+                                        <span>@L["View Details"]</span>
                                         <i class="bi bi-arrow-right small"></i>
                                     </a>
                                 </div>
@@ -707,22 +711,22 @@
             let html = '';
             if (search.trim()) {
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small d-inline-flex align-items-center gap-1">
-                    Search: "${search.trim()}" <i class="bi bi-x-circle-fill text-muted ms-1" style="cursor:pointer;" onclick="clearSearch()"></i>
+                    @L["Search:"] "${search.trim()}" <i class="bi bi-x-circle-fill text-muted ms-1" style="cursor:pointer;" onclick="clearSearch()"></i>
                 </span>`;
             }
             categories.forEach(cat => {
                 html += `<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill small">
-                    ${cat}
+                    ${localizedCategories[cat] || cat}
                 </span>`;
             });
             if (location) {
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
-                    <i class="bi bi-geo-alt me-1"></i>${location}
+                    <i class="bi bi-geo-alt me-1"></i>${localizedLocations[location] || location}
                 </span>`;
             }
             if (maxPrice < DEFAULT_MAX_PRICE) {
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
-                    ≤ ৳${maxPrice.toLocaleString()} / day
+                    ≤ ৳${maxPrice.toLocaleString()} @L["/ Day"]
                 </span>`;
             }
             if (date) {

@@ -1,6 +1,6 @@
 @model KrishiLink.Models.ViewModels.RegisterViewModel
 @{
-    ViewData["Title"] = "Register - Create Account";
+    ViewData["Title"] = L["Register - Create Account"];
 }
 
 <div class="row justify-content-center py-3 py-md-4">
@@ -12,54 +12,54 @@
                 <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-2 p-2.5 shadow-sm" style="background-color: var(--krishi-primary-subtle); color: var(--krishi-primary); width: 54px; height: 54px;">
                     <i class="bi bi-person-plus-fill fs-4"></i>
                 </div>
-                <h3 class="fw-bold mb-1" style="color: var(--krishi-primary);">Join KrishiLink</h3>
-                <p class="text-muted small mb-0">Create your account to access equipment, storage, and crop advisory.</p>
+                <h3 class="fw-bold mb-1" style="color: var(--krishi-primary);">@L["Join KrishiLink"]</h3>
+                <p class="text-muted small mb-0">@L["Create your account to access equipment, storage, and crop advisory."]</p>
             </div>
 
             <div class="card-body p-4 p-md-4">
                 <!-- Role Selector at Top (3 Tabs / Pills) -->
                 <div class="mb-4">
                     <label class="form-label small fw-bold text-uppercase text-muted mb-2 d-block text-center">
-                        Select Your Account Role
+                        @L["Select Your Account Role"]
                     </label>
                     <div class="role-selector-grid">
                         <!-- Role: Farmer -->
-                        <button type="button" 
-                                class="role-card-pill @(Model.Role == "Farmer" ? "active" : "")" 
+                        <button type="button"
+                                class="role-card-pill @(Model.Role == "Farmer" ? "active" : "")"
                                 data-role="Farmer"
                                 id="roleTabFarmer"
-                                title="Farmer Account">
+                                title="@L["Farmer Account"]">
                             <div class="role-icon-wrap">
                                 <i class="bi bi-flower1"></i>
                             </div>
-                            <span class="role-title">Farmer</span>
-                            <span class="role-sub">Rent & Advisory</span>
+                            <span class="role-title">@L["Farmer"]</span>
+                            <span class="role-sub">@L["Rent & Advisory"]</span>
                         </button>
 
                         <!-- Role: Equipment Owner -->
-                        <button type="button" 
-                                class="role-card-pill @(Model.Role == "EquipmentOwner" ? "active" : "")" 
+                        <button type="button"
+                                class="role-card-pill @(Model.Role == "EquipmentOwner" ? "active" : "")"
                                 data-role="EquipmentOwner"
                                 id="roleTabEquipmentOwner"
-                                title="Equipment Owner Account">
+                                title="@L["Equipment Owner Account"]">
                             <div class="role-icon-wrap">
                                 <i class="bi bi-truck"></i>
                             </div>
-                            <span class="role-title">Equipment Owner</span>
-                            <span class="role-sub">List Machinery</span>
+                            <span class="role-title">@L["Equipment Owner"]</span>
+                            <span class="role-sub">@L["List Machinery"]</span>
                         </button>
 
                         <!-- Role: Godown Owner -->
-                        <button type="button" 
-                                class="role-card-pill @(Model.Role == "GodownOwner" ? "active" : "")" 
+                        <button type="button"
+                                class="role-card-pill @(Model.Role == "GodownOwner" ? "active" : "")"
                                 data-role="GodownOwner"
                                 id="roleTabGodownOwner"
-                                title="Godown Owner Account">
+                                title="@L["Godown Owner Account"]">
                             <div class="role-icon-wrap">
                                 <i class="bi bi-building"></i>
                             </div>
-                            <span class="role-title">Godown Owner</span>
-                            <span class="role-sub">List Storage</span>
+                            <span class="role-title">@L["Godown Owner"]</span>
+                            <span class="role-sub">@L["List Storage"]</span>
                         </button>
                     </div>
                 </div>
@@ -88,16 +88,16 @@
                     <!-- Full Name -->
                     <div class="mb-3">
                         <label asp-for="FullName" class="form-label fw-semibold small text-dark mb-1">
-                            Full Name <span class="text-danger">*</span>
+                            @L["Full Name"] <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
                                 <i class="bi bi-person"></i>
                             </span>
-                            <input asp-for="FullName" 
-                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2" 
-                                   placeholder="e.g. Rahim Uddin" 
-                                   autocomplete="name" 
+                            <input asp-for="FullName"
+                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2"
+                                   placeholder="@L["e.g. Rahim Uddin"]"
+                                   autocomplete="name"
                                    required />
                         </div>
                         <span asp-validation-for="FullName" class="text-danger small mt-1 d-block ms-2"></span>
@@ -106,16 +106,16 @@
                     <!-- Phone Number -->
                     <div class="mb-3">
                         <label asp-for="PhoneNumber" class="form-label fw-semibold small text-dark mb-1">
-                            Phone Number <span class="text-danger">*</span>
+                            @L["Phone Number"] <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
                                 <i class="bi bi-telephone"></i>
                             </span>
-                            <input asp-for="PhoneNumber" 
-                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2" 
-                                   placeholder="017XXXXXXXX" 
-                                   autocomplete="tel" 
+                            <input asp-for="PhoneNumber"
+                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2"
+                                   placeholder="017XXXXXXXX"
+                                   autocomplete="tel"
                                    type="tel"
                                    id="phoneInput"
                                    required />
@@ -126,17 +126,17 @@
                     <!-- Email (Optional) -->
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label asp-for="Email" class="form-label fw-semibold small text-dark mb-0">Email Address</label>
-                            <span class="text-muted small" style="font-size: 0.75rem;">Optional</span>
+                            <label asp-for="Email" class="form-label fw-semibold small text-dark mb-0">@L["Email Address"]</label>
+                            <span class="text-muted small" style="font-size: 0.75rem;">@L["Optional"]</span>
                         </div>
                         <div class="input-group">
                             <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
                                 <i class="bi bi-envelope"></i>
                             </span>
-                            <input asp-for="Email" 
-                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2" 
-                                   placeholder="name@example.com" 
-                                   autocomplete="email" 
+                            <input asp-for="Email"
+                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2"
+                                   placeholder="name@example.com"
+                                   autocomplete="email"
                                    type="email" />
                         </div>
                         <span asp-validation-for="Email" class="text-danger small mt-1 d-block ms-2"></span>
@@ -145,17 +145,17 @@
                     <!-- Location (Searchable / Dropdown selection) -->
                     <div class="mb-3">
                         <label asp-for="Location" class="form-label fw-semibold small text-dark mb-1">
-                            Location (District / Upazila) <span class="text-danger">*</span>
+                            @L["Location (District / Upazila)"] <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
                                 <i class="bi bi-geo-alt"></i>
                             </span>
-                            <input asp-for="Location" 
-                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2" 
-                                   list="locationSuggestions" 
-                                   placeholder="Type or select District (e.g. Bogra, Dinajpur)" 
-                                   autocomplete="address-level2" 
+                            <input asp-for="Location"
+                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2"
+                                   list="locationSuggestions"
+                                   placeholder="@L["Type or select District (e.g. Bogra, Dinajpur)"]"
+                                   autocomplete="address-level2"
                                    required />
                             <datalist id="locationSuggestions">
                                 <option value="Bogra Sadar, Bogra" />
@@ -184,16 +184,16 @@
                     <!-- Conditional Field: Business/Farm Name (For Equipment Owner & Godown Owner) -->
                     <div class="mb-3 conditional-business-field @(Model.Role == "Farmer" ? "d-none" : "")" id="businessNameSection">
                         <label asp-for="BusinessOrFarmName" class="form-label fw-semibold small text-dark mb-1" id="businessLabel">
-                            @(Model.Role == "GodownOwner" ? "Storage Facility / Godown Name" : "Business / Equipment Farm Name")
+                            @(Model.Role == "GodownOwner" ? L["Storage Facility / Godown Name"] : L["Business / Equipment Farm Name"])
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
                                 <i class="bi bi-shop"></i>
                             </span>
-                            <input asp-for="BusinessOrFarmName" 
-                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2" 
+                            <input asp-for="BusinessOrFarmName"
+                                   class="form-control border-start-0 rounded-end-pill pe-3 py-2"
                                    id="businessNameInput"
-                                   placeholder="e.g. Green Agro Farm or Dinajpur Cold Storage" />
+                                   placeholder="@L["e.g. Green Agro Farm or Dinajpur Cold Storage"]" />
                         </div>
                         <span asp-validation-for="BusinessOrFarmName" class="text-danger small mt-1 d-block ms-2"></span>
                     </div>
@@ -201,52 +201,52 @@
                     <!-- Password -->
                     <div class="mb-3">
                         <label asp-for="Password" class="form-label fw-semibold small text-dark mb-1">
-                            Password <span class="text-danger">*</span>
+                            @L["Password"] <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
                                 <i class="bi bi-lock"></i>
                             </span>
-                            <input asp-for="Password" 
-                                   type="password" 
-                                   class="form-control border-start-0 border-end-0 py-2" 
-                                   placeholder="At least 6 characters" 
+                            <input asp-for="Password"
+                                   type="password"
+                                   class="form-control border-start-0 border-end-0 py-2"
+                                   placeholder="@L["At least 6 characters"]"
                                    id="passwordInput"
-                                   autocomplete="new-password" 
+                                   autocomplete="new-password"
                                    required />
-                            <button type="button" 
-                                    class="input-group-text bg-white text-muted border-start-0 rounded-end-pill pe-3 toggle-password-btn" 
+                            <button type="button"
+                                    class="input-group-text bg-white text-muted border-start-0 rounded-end-pill pe-3 toggle-password-btn"
                                     data-target="passwordInput"
-                                    aria-label="Toggle password visibility">
+                                    aria-label="@L["Toggle password visibility"]">
                                 <i class="bi bi-eye"></i>
                             </button>
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-1 ms-2">
                             <span asp-validation-for="Password" class="text-danger small" id="passwordError"></span>
-                            <span class="text-muted small ms-auto" id="passwordLengthHint" style="font-size: 0.75rem;">Min. 6 chars</span>
+                            <span class="text-muted small ms-auto" id="passwordLengthHint" style="font-size: 0.75rem;">@L["Min. 6 chars"]</span>
                         </div>
                     </div>
 
                     <!-- Confirm Password -->
                     <div class="mb-4">
                         <label asp-for="ConfirmPassword" class="form-label fw-semibold small text-dark mb-1">
-                            Confirm Password <span class="text-danger">*</span>
+                            @L["Confirm Password"] <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
                                 <i class="bi bi-shield-check"></i>
                             </span>
-                            <input asp-for="ConfirmPassword" 
-                                   type="password" 
-                                   class="form-control border-start-0 border-end-0 py-2" 
-                                   placeholder="Re-enter password" 
+                            <input asp-for="ConfirmPassword"
+                                   type="password"
+                                   class="form-control border-start-0 border-end-0 py-2"
+                                   placeholder="@L["Re-enter password"]"
                                    id="confirmPasswordInput"
-                                   autocomplete="new-password" 
+                                   autocomplete="new-password"
                                    required />
-                            <button type="button" 
-                                    class="input-group-text bg-white text-muted border-start-0 rounded-end-pill pe-3 toggle-password-btn" 
+                            <button type="button"
+                                    class="input-group-text bg-white text-muted border-start-0 rounded-end-pill pe-3 toggle-password-btn"
                                     data-target="confirmPasswordInput"
-                                    aria-label="Toggle confirm password visibility">
+                                    aria-label="@L["Toggle confirm password visibility"]">
                                 <i class="bi bi-eye"></i>
                             </button>
                         </div>
@@ -255,21 +255,21 @@
 
                     <!-- Primary Submit Button -->
                     <div class="d-grid mb-3">
-                        <button type="submit" 
-                                class="btn btn-krishi btn-lg py-2.5 rounded-pill fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2" 
+                        <button type="submit"
+                                class="btn btn-krishi btn-lg py-2.5 rounded-pill fw-bold text-white shadow-sm d-flex align-items-center justify-content-center gap-2"
                                 id="submitBtn">
                             <span class="btn-spinner spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                             <i class="bi bi-check2-circle fs-5 btn-icon"></i>
-                            <span class="btn-text">Create Account</span>
+                            <span class="btn-text">@L["Create Account"]</span>
                         </button>
                     </div>
 
                     <!-- Secondary Link -->
                     <div class="text-center pt-2 border-top">
                         <p class="small text-muted mb-0">
-                            Already have an account? 
+                            @L["Already have an account?"]
                             <a asp-controller="Account" asp-action="Login" class="fw-bold text-decoration-none ms-1" style="color: var(--krishi-primary);">
-                                Login here
+                                @L["Login here"]
                             </a>
                         </p>
                     </div>
@@ -280,7 +280,7 @@
         <!-- Role Benefits Helper -->
         <div class="text-center mt-3 text-muted small">
             <span class="d-inline-flex align-items-center gap-1.5">
-                <i class="bi bi-shield-lock-fill text-success"></i> Safe & Verified Agricultural Community
+                <i class="bi bi-shield-lock-fill text-success"></i> @L["Safe & Verified Agricultural Community"]
             </span>
         </div>
     </div>
@@ -408,11 +408,11 @@
                 if (selectedRole === 'EquipmentOwner' || selectedRole === 'GodownOwner') {
                     $('#businessNameSection').removeClass('d-none');
                     if (selectedRole === 'GodownOwner') {
-                        $('#businessLabel').text('Storage Facility / Godown Name');
-                        $('#businessNameInput').attr('placeholder', 'e.g. Dinajpur Modern Cold Storage');
+                        $('#businessLabel').text('@L["Storage Facility / Godown Name"]');
+                        $('#businessNameInput').attr('placeholder', '@L["e.g. Dinajpur Modern Cold Storage"]');
                     } else {
-                        $('#businessLabel').text('Business / Equipment Farm Name');
-                        $('#businessNameInput').attr('placeholder', 'e.g. Green Agro Machinery');
+                        $('#businessLabel').text('@L["Business / Equipment Farm Name"]');
+                        $('#businessNameInput').attr('placeholder', '@L["e.g. Green Agro Machinery"]');
                     }
                 } else {
                     $('#businessNameSection').addClass('d-none');
@@ -450,7 +450,7 @@
                 const phoneVal = $(this).val().trim();
                 const phoneRegex = /^(?:\+?880|0)?1[3-9]\d{8}$/;
                 if (phoneVal.length > 0 && !phoneRegex.test(phoneVal)) {
-                    $('#phoneError').text('Enter a valid 11-digit Bangladeshi number (e.g. 017XXXXXXXX)');
+                    $('#phoneError').text('@L["Enter a valid 11-digit Bangladeshi number (e.g. 017XXXXXXXX)"]');
                 } else {
                     $('#phoneError').text('');
                 }
@@ -462,7 +462,7 @@
                 const confirmPass = $('#confirmPasswordInput').val();
 
                 if (confirmPass.length > 0 && pass !== confirmPass) {
-                    $('#confirmPasswordError').text('Passwords do not match.');
+                    $('#confirmPasswordError').text('@L["Passwords do not match."]');
                 } else {
                     $('#confirmPasswordError').text('');
                 }
@@ -479,7 +479,7 @@
 
                     spinner.removeClass('d-none');
                     icon.addClass('d-none');
-                    text.text('Creating Account...');
+                    text.text('@L["Creating Account..."]');
                     submitBtn.prop('disabled', true);
 
                     // Form submits to server

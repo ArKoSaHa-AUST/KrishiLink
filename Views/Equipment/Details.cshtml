@@ -6,10 +6,10 @@
 }
 
 <!-- Breadcrumb Navigation -->
-<nav aria-label="breadcrumb" class="mb-3">
+<nav aria-label="@L["breadcrumb"]" class="mb-3">
     <ol class="breadcrumb small">
-        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-success text-decoration-none">Home</a></li>
-        <li class="breadcrumb-item"><a asp-controller="Equipment" asp-action="Index" class="text-success text-decoration-none">Equipment</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-success text-decoration-none">@L["Home"]</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Equipment" asp-action="Index" class="text-success text-decoration-none">@L["Equipment"]</a></li>
         <li class="breadcrumb-item active text-muted" aria-current="page">@Model.Name</li>
     </ol>
 </nav>
@@ -17,8 +17,8 @@
 <!-- Page Header & Action State Alert -->
 <div id="requestSuccessAlert" class="alert alert-success border-0 shadow-sm rounded-3 mb-4 d-none align-items-center gap-3">
     <div>
-        <h6 class="fw-bold mb-1 text-success-emphasis">Rental Request Submitted Successfully!</h6>
-        <p class="mb-0 small text-success-emphasis">Your request has been sent to <strong>@Model.OwnerName</strong>. You will receive a notification as soon as the request is accepted.</p>
+        <h6 class="fw-bold mb-1 text-success-emphasis">@L["Rental Request Submitted Successfully!"]</h6>
+        <p class="mb-0 small text-success-emphasis">@L["Your request has been sent to"] <strong>@Model.OwnerName</strong>@L[". You will receive a notification as soon as the request is accepted."]</p>
     </div>
 </div>
 
@@ -43,8 +43,8 @@
                         {
                             var imgUrl = Model.ImageUrls[i];
                             <button type="button" class="btn p-0 border rounded overflow-hidden gallery-thumb-btn @(i == 0 ? "border-success border-2" : "border-light-subtle")"
-                                    onclick="switchMainImage('@imgUrl', this)" aria-label="View equipment photo @(i+1)">
-                                <img src="@imgUrl" class="object-fit-cover" style="width: 76px; height: 60px;" alt="Thumbnail @(i+1)" />
+                                    onclick="switchMainImage('@imgUrl', this)" aria-label="@L["View equipment photo {0}", i+1]">
+                                <img src="@imgUrl" class="object-fit-cover" style="width: 76px; height: 60px;" alt="@L["Thumbnail {0}", i+1]" />
                             </button>
                         }
                     </div>
@@ -56,10 +56,10 @@
         <div class="card krishi-card p-4 mb-4 border-0 shadow-sm">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                 <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold">
-                    @Model.Category
+                    @L[Model.Category]
                 </span>
                 <span class="text-muted small d-flex align-items-center gap-1">
-                    @Model.Location
+                    @L[Model.Location]
                 </span>
             </div>
 
@@ -68,21 +68,21 @@
             <!-- Rates Highlight Box -->
             <div class="row g-3 p-3 rounded-3 mb-4 bg-light text-dark border">
                 <div class="col-6 col-sm-4">
-                    <span class="text-muted small d-block">Daily Rental Rate</span>
+                    <span class="text-muted small d-block">@L["Daily Rental Rate"]</span>
                     <span class="fs-4 fw-bold text-success">@Model.DailyRate</span>
                 </div>
                 <div class="col-6 col-sm-4">
-                    <span class="text-muted small d-block">Hourly Rate</span>
+                    <span class="text-muted small d-block">@L["Hourly Rate"]</span>
                     <span class="fs-5 fw-semibold text-dark">@Model.HourlyRate</span>
                 </div>
                 <div class="col-12 col-sm-4 border-start-sm pt-2 pt-sm-0">
-                    <span class="text-muted small d-block">Min. Duration</span>
-                    <span class="fw-semibold text-dark">1 Day / 2 Hours</span>
+                    <span class="text-muted small d-block">@L["Min. Duration"]</span>
+                    <span class="fw-semibold text-dark">@L["1 Day / 2 Hours"]</span>
                 </div>
             </div>
 
             <!-- Description -->
-            <h5 class="fw-bold text-dark mb-2">Equipment Description</h5>
+            <h5 class="fw-bold text-dark mb-2">@L["Equipment Description"]</h5>
             <p class="text-secondary leading-relaxed mb-4">@Model.Description</p>
 
             <!-- Owner Info Card -->
@@ -91,14 +91,14 @@
                     <div>
                         <h6 class="fw-bold mb-0 text-dark">@Model.OwnerName</h6>
                         <div class="d-flex align-items-center gap-2 small text-muted">
-                            <span class="text-success fw-semibold">Rating: @Model.OwnerRating</span>
-                            <span>(@Model.TotalReviews reviews)</span>
-                            <span>Member since @Model.OwnerMemberSince</span>
+                            <span class="text-success fw-semibold">@L["Rating:"] @Model.OwnerRating</span>
+                            <span>(@L["{0} reviews", Model.TotalReviews])</span>
+                            <span>@L["Member since {0}", Model.OwnerMemberSince]</span>
                         </div>
                     </div>
                 </div>
                 <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill small">
-                    Verified Owner
+                    @L["Verified Owner"]
                 </span>
             </div>
         </div>
@@ -107,38 +107,38 @@
         <div class="card krishi-card p-4 mb-4 border-0 shadow-sm">
             <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                 <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                    Current Availability Calendar
+                    @L["Current Availability Calendar"]
                 </h5>
                 <!-- Legend -->
                 <div class="d-flex gap-3 small">
                     <span class="d-flex align-items-center gap-1">
                         <span class="d-inline-block rounded-circle bg-success" style="width: 10px; height: 10px;"></span>
-                        Available
+                        @L["Available"]
                     </span>
                     <span class="d-flex align-items-center gap-1">
                         <span class="d-inline-block rounded-circle bg-secondary" style="width: 10px; height: 10px;"></span>
-                        Booked / Blocked
+                        @L["Booked / Blocked"]
                     </span>
                 </div>
             </div>
 
-            <p class="text-muted small mb-3">Dates marked in gray are already booked or reserved by other farmers.</p>
+            <p class="text-muted small mb-3">@L["Dates marked in gray are already booked or reserved by other farmers."]</p>
 
             <!-- Calendar Month Visual Grid -->
             <div class="bg-light p-3 rounded-3 border">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="fw-bold text-dark">@DateTime.Today.ToString("MMMM yyyy")</span>
-                    <span class="badge bg-white text-secondary border small">Current Month</span>
+                    <span class="fw-bold text-dark">@L[DateTime.Today.ToString("MMMM")] @DateTime.Today.ToString("yyyy")</span>
+                    <span class="badge bg-white text-secondary border small">@L["Current Month"]</span>
                 </div>
 
                 <div class="row row-cols-7 g-1 text-center small fw-semibold text-muted mb-2">
-                    <div class="col">Sun</div>
-                    <div class="col">Mon</div>
-                    <div class="col">Tue</div>
-                    <div class="col">Wed</div>
-                    <div class="col">Thu</div>
-                    <div class="col">Fri</div>
-                    <div class="col">Sat</div>
+                    <div class="col">@L["Sun"]</div>
+                    <div class="col">@L["Mon"]</div>
+                    <div class="col">@L["Tue"]</div>
+                    <div class="col">@L["Wed"]</div>
+                    <div class="col">@L["Thu"]</div>
+                    <div class="col">@L["Fri"]</div>
+                    <div class="col">@L["Sat"]</div>
                 </div>
 
                 <div class="row row-cols-7 g-1 text-center small" id="calendarDaysGrid">
@@ -160,13 +160,13 @@
 
                             if (isBooked || isPast)
                             {
-                                <div class="col p-2 rounded bg-secondary-subtle text-secondary text-decoration-line-through fw-medium" title="@(isPast ? "Past Date" : "Already Booked")">
+                                <div class="col p-2 rounded bg-secondary-subtle text-secondary text-decoration-line-through fw-medium" title="@(isPast ? L["Past Date"] : L["Already Booked"])">
                                     @day
                                 </div>
                             }
                             else
                             {
-                                <div class="col p-2 rounded bg-white border border-success-subtle text-success fw-bold calendar-day-available" onclick="selectCalendarDate('@currentDate.ToString("yyyy-MM-dd")')" title="Available for booking">
+                                <div class="col p-2 rounded bg-white border border-success-subtle text-success fw-bold calendar-day-available" onclick="selectCalendarDate('@currentDate.ToString("yyyy-MM-dd")')" title="@L["Available for booking"]">
                                     @day
                                 </div>
                             }
@@ -183,7 +183,7 @@
             <div class="card krishi-card border-0 shadow p-4" style="border-radius: var(--krishi-radius-lg);">
                 <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
                     <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-                        Rental Request Form
+                        @L["Rental Request Form"]
                     </h5>
                     <span class="fs-5 fw-bold text-success">@Model.DailyRate</span>
                 </div>
@@ -192,7 +192,7 @@
                     <!-- Start Date -->
                     <div class="mb-3">
                         <label for="startDateInput" class="form-label small fw-bold text-dark">
-                            Start Date <span class="text-danger">*</span>
+                            @L["Start Date"] <span class="text-danger">*</span>
                         </label>
                         <input type="date" class="form-control form-control-lg rounded-3" id="startDateInput" required
                                min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="validateDates()" />
@@ -201,43 +201,43 @@
                     <!-- End Date -->
                     <div class="mb-3">
                         <label for="endDateInput" class="form-label small fw-bold text-dark">
-                            End Date <span class="text-danger">*</span>
+                            @L["End Date"] <span class="text-danger">*</span>
                         </label>
                         <input type="date" class="form-control form-control-lg rounded-3" id="endDateInput" required
                                min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="validateDates()" />
                         <div id="dateValidationError" class="form-text text-danger d-none mt-1">
-                            End Date must be after Start Date and not overlap booked dates.
+                            @L["End Date must be after Start Date and not overlap booked dates."]
                         </div>
                     </div>
 
                     <!-- Estimated Cost Summary -->
                     <div id="costSummaryBox" class="p-3 bg-success-subtle text-success border border-success-subtle rounded-3 mb-3 d-none">
                         <div class="d-flex justify-content-between small fw-medium">
-                            <span>Total Rental Duration:</span>
-                            <span id="summaryDaysCount">0 Days</span>
+                            <span>@L["Total Rental Duration:"]</span>
+                            <span id="summaryDaysCount">@L["0 Days"]</span>
                         </div>
                         <div class="d-flex justify-content-between fw-bold fs-6 mt-1">
-                            <span>Estimated Rental Fee:</span>
-                            <span id="summaryTotalFee">Tk 0</span>
+                            <span>@L["Estimated Rental Fee:"]</span>
+                            <span id="summaryTotalFee">@L["Tk {0}", 0]</span>
                         </div>
                     </div>
 
                     <!-- Optional Note -->
                     <div class="mb-4">
                         <label for="noteInput" class="form-label small fw-bold text-dark">
-                            Note to Owner <span class="text-muted">(Optional)</span>
+                            @L["Note to Owner"] <span class="text-muted">@L["(Optional)"]</span>
                         </label>
-                        <textarea class="form-control rounded-3" id="noteInput" rows="3" placeholder="e.g. Need operator, location details, or specific crop field details..."></textarea>
+                        <textarea class="form-control rounded-3" id="noteInput" rows="3" placeholder="@L["e.g. Need operator, location details, or specific crop field details..."]"></textarea>
                     </div>
 
                     <!-- Submit Button -->
                     <button type="submit" id="submitRequestBtn" class="btn btn-krishi-primary w-100 py-3 rounded-pill fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm fs-6">
-                        <span id="btnText">Send Rental Request</span>
+                        <span id="btnText">@L["Send Rental Request"]</span>
                     </button>
                 </form>
 
                 <p class="text-muted small text-center mb-0 mt-3">
-                    No immediate payment required. Owner will confirm availability.
+                    @L["No immediate payment required. Owner will confirm availability."]
                 </p>
             </div>
         </div>
@@ -248,11 +248,11 @@
 <div class="d-lg-none position-fixed bottom-0 start-0 end-0 bg-white border-top shadow-lg p-3" style="z-index: 1040;">
     <div class="container d-flex align-items-center justify-content-between gap-2">
         <div>
-            <span class="text-muted small d-block">Daily Rate</span>
+            <span class="text-muted small d-block">@L["Daily Rate"]</span>
             <span class="fw-bold text-success fs-5">@Model.DailyRate</span>
         </div>
         <button type="button" id="mobileRequestBtn" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-bold" onclick="scrollToRequestForm()">
-            Request Equipment
+            @L["Request Equipment"]
         </button>
     </div>
 </div>
@@ -312,7 +312,7 @@
             const endDate = new Date(endInput.value);
 
             if (endDate < startDate) {
-                errorDiv.textContent = 'End Date must be on or after Start Date.';
+                errorDiv.textContent = '@L["End Date must be on or after Start Date."]';
                 errorDiv.classList.remove('d-none');
                 costBox.classList.add('d-none');
                 submitBtn.disabled = true;
@@ -334,7 +334,7 @@
             }
 
             if (hasOverlap) {
-                errorDiv.textContent = 'Selected date range overlaps with an already booked date.';
+                errorDiv.textContent = '@L["Selected date range overlaps with an already booked date."]';
                 errorDiv.classList.remove('d-none');
                 costBox.classList.add('d-none');
                 submitBtn.disabled = true;
@@ -347,8 +347,10 @@
             const summaryDaysCount = document.getElementById('summaryDaysCount');
             const summaryTotalFee = document.getElementById('summaryTotalFee');
             if (summaryDaysCount && summaryTotalFee) {
-                summaryDaysCount.textContent = `${daysCount} Day${daysCount > 1 ? 's' : ''}`;
-                summaryTotalFee.textContent = `Tk ${(daysCount * 1500).toLocaleString()}`;
+                summaryDaysCount.textContent = daysCount > 1
+                    ? '@L["{0} Days", "__COUNT__"]'.replace('__COUNT__', daysCount)
+                    : '@L["{0} Day", "__COUNT__"]'.replace('__COUNT__', daysCount);
+                summaryTotalFee.textContent = '@L["Tk {0}", "__AMOUNT__"]'.replace('__AMOUNT__', (daysCount * 1500).toLocaleString());
                 costBox.classList.remove('d-none');
             }
 
@@ -370,10 +372,10 @@
             const endVal = document.getElementById('endDateInput').value;
 
             window.KrishiModal.confirm({
-                title: 'Confirm Rental Request',
-                body: `Are you sure you want to send a rental request for <strong>@Model.Name</strong> from <strong>${startVal}</strong> to <strong>${endVal}</strong>?`,
-                confirmText: 'Send Request',
-                cancelText: 'Cancel',
+                title: '@L["Confirm Rental Request"]',
+                body: `@L["Are you sure you want to send a rental request for"] <strong>@Model.Name</strong> @L["From"] <strong>${startVal}</strong> @L["To"] <strong>${endVal}</strong>?`,
+                confirmText: '@L["Send Request"]',
+                cancelText: '@L["Cancel"]',
                 confirmClass: 'btn-krishi-primary',
                 onConfirm: function () {
                     const submitBtn = document.getElementById('submitRequestBtn');
@@ -385,10 +387,10 @@
                         submitBtn.classList.remove('btn-krishi-primary');
                         submitBtn.classList.add('btn-secondary');
                     }
-                    if (btnText) btnText.textContent = 'Request Submitted';
+                    if (btnText) btnText.textContent = '@L["Request Submitted"]';
                     if (mobileBtn) {
                         mobileBtn.disabled = true;
-                        mobileBtn.textContent = 'Request Submitted';
+                        mobileBtn.textContent = '@L["Request Submitted"]';
                         mobileBtn.classList.remove('btn-krishi-primary');
                         mobileBtn.classList.add('btn-secondary');
                     }

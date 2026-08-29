@@ -67,8 +67,13 @@ html {
 body {
     background-color: var(--krishi-bg);
     color: var(--krishi-text-primary);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', 'Hind Siliguri', system-ui, -apple-system, sans-serif;
     line-height: 1.6;
+}
+
+/* Bangla mode: prefer Bangla-capable font for proper glyph rendering */
+body.lang-bn {
+    font-family: 'Hind Siliguri', 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 /* Opt-in page background: slight light greenish gradient */
