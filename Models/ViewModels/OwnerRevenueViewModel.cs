@@ -25,7 +25,7 @@ namespace KrishiLink.Models.ViewModels
         /// <summary>"Godown" | "Equipment" — drives labels and wording in the shared view.</summary>
         public string ListingLabel { get; set; } = "Godown";
 
-        /// <summary>Wording under the utilization bar, e.g. "of capacity booked (ton-days)" or "of days rented".</summary>
+        /// <summary>Wording after "X / Y days", e.g. "rented" or "at full capacity (ton-days)".</summary>
         public string UtilizationHint { get; set; } = string.Empty;
 
         public RevenueFilter Filter { get; set; } = new();
@@ -93,8 +93,17 @@ namespace KrishiLink.Models.ViewModels
         public decimal Revenue { get; set; }
         public decimal AveragePerBooking => Bookings > 0 ? Revenue / Bookings : 0;
 
-        /// <summary>Booked capacity-days ÷ available capacity-days across the selected range.</summary>
+        /// <summary>Full-capacity days booked (completed or ongoing) within the elapsed part of the selected range.</summary>
+        public double BookedDays { get; set; }
+
+        /// <summary>Elapsed days in the selected range (future days are excluded).</summary>
+        public int PeriodDays { get; set; }
+
+        /// <summary>BookedDays ÷ PeriodDays, as a percentage.</summary>
         public int UtilizationPercent { get; set; }
+
+        /// <summary>True when utilization is below the service's low-utilization threshold.</summary>
+        public bool IsUnderUtilized { get; set; }
 
         /// <summary>Top | Under | null</summary>
         public string? PerformanceFlag { get; set; }
@@ -143,6 +152,9 @@ namespace KrishiLink.Models.ViewModels
         public string? PeakSeason { get; set; }
         public int DistinctCustomers { get; set; }
         public int RepeatCustomers { get; set; }
+
+        /// <summary>Listings whose utilization fell below the low-utilization threshold in the range.</summary>
+        public int UnderUtilizedListings { get; set; }
 
         /// <summary>Top listing vs. weakest listing, e.g. multiplier of 3.2 → "earned 3.2× more".</summary>
         public string? TopListing { get; set; }

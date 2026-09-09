@@ -11,6 +11,7 @@
     var listingLabel = L[Model.ListingLabel].Value;
     string Money(decimal v) => "৳" + v.ToString("N0");
     string PeriodUrl(string period) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, Period = period })!;
+    string RangeUrl(DateTime from, DateTime to) => Url.Action("Revenue", new { From = from.ToString("yyyy-MM-dd"), To = to.ToString("yyyy-MM-dd"), f.ListingId, f.Status, f.Period })!;
     var csvRoute = new Dictionary<string, string>
     {
         ["From"] = f.From?.ToString("yyyy-MM-dd") ?? string.Empty,
@@ -154,12 +155,17 @@
             </button>
         </div>
     </div>
-    <div class="small mt-2" style="color: var(--krishi-text-muted);">
-        <i class="bi bi-calendar-range me-1"></i>@L["Showing"] <strong>@rangeText</strong>
+    <div class="small mt-2 d-flex flex-wrap align-items-center gap-2" style="color: var(--krishi-text-muted);">
+        <span><i class="bi bi-calendar-range me-1"></i>@L["Showing"] <strong>@rangeText</strong></span>
         @if (f.ListingId is not null)
         {
-            <span> · @Model.Listings.FirstOrDefault(g => g.Id == f.ListingId)?.Name</span>
+            <span>· @Model.Listings.FirstOrDefault(g => g.Id == f.ListingId)?.Name</span>
         }
+        <span class="ms-auto d-flex gap-1">
+            <a href="@RangeUrl(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1), DateTime.Today)" class="badge rounded-pill text-decoration-none border bg-white" style="color: var(--krishi-primary);">@L["This month"]</a>
+            <a href="@RangeUrl(DateTime.Today.AddDays(-89), DateTime.Today)" class="badge rounded-pill text-decoration-none border bg-white" style="color: var(--krishi-primary);">@L["Last 90 days"]</a>
+            <a href="@RangeUrl(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-11), DateTime.Today)" class="badge rounded-pill text-decoration-none border bg-white" style="color: var(--krishi-primary);">@L["Last 12 months"]</a>
+        </span>
     </div>
 </form>
 
@@ -280,6 +286,16 @@
         <div class="card border-0 shadow-sm h-100 p-3 p-md-4" style="border-radius: var(--krishi-radius-lg);">
             <h5 class="fw-bold mb-3" style="color: var(--krishi-text-primary);"><i class="bi bi-lightbulb me-2 text-success"></i>@L["Insights"]</h5>
             <ul class="list-unstyled d-flex flex-column gap-3 mb-0 small">
+                @if (Model.Insights.UnderUtilizedListings > 0)
+                {
+                    <li class="d-flex gap-3">
+                        <i class="bi bi-speedometer fs-5" style="color: var(--krishi-status-pending-text);"></i>
+                        <div>
+                            <strong>@L["{0} of {1} listings were booked less than {2}% of the time", Model.Insights.UnderUtilizedListings, Model.Breakdown.Count, KrishiLink.BLL.Services.OwnerRevenueService.LowUtilizationPercent]</strong>
+                            <div style="color: var(--krishi-text-muted);">@L["Idle assets are lost income. Lower the rate for off-peak weeks, add clear photos, and describe what the listing is best suited for."]</div>
+                        </div>
+                    </li>
+                }
                 <li class="d-flex gap-3">
                     <i class="bi bi-people-fill fs-5 text-success"></i>
                     <div>
@@ -355,7 +371,15 @@
                                 </div>
                                 <span class="small fw-semibold" style="min-width: 36px;">@b.UtilizationPercent%</span>
                             </div>
-                            <div class="small" style="color: var(--krishi-text-muted);">@L[Model.UtilizationHint]</div>
+                            <div class="small" style="color: var(--krishi-text-muted);">
+                                @L["{0} / {1} days", b.BookedDays.ToString("0"), b.PeriodDays] · @L[Model.UtilizationHint]
+                            </div>
+                            @if (b.IsUnderUtilized)
+                            {
+                                <div class="small mt-1" style="color: var(--krishi-status-pending-text);">
+                                    <i class="bi bi-lightbulb-fill me-1"></i>@L["Idle most of the time — try a lower rate, better photos or a clearer description."]
+                                </div>
+                            }
                         </td>
                         <td class="pe-4 text-end">
                             @if (b.PerformanceFlag == "Top")

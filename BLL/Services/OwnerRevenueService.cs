@@ -34,13 +34,13 @@ namespace KrishiLink.BLL.Services
     public class GodownRevenueService : OwnerRevenueService, IGodownRevenueService
     {
         public GodownRevenueService(IGodownRevenueRepository repo, IOptions<RevenueOptions> options)
-            : base(repo, options, new RevenueProfile("Godown", "of capacity booked (ton-days)", "KL-GB", "Godown Storage Receipt")) { }
+            : base(repo, options, new RevenueProfile("Godown", "at full capacity (ton-days)", "KL-GB", "Godown Storage Receipt")) { }
     }
 
     public class EquipmentRevenueService : OwnerRevenueService, IEquipmentRevenueService
     {
         public EquipmentRevenueService(IEquipmentRevenueRepository repo, IOptions<RevenueOptions> options)
-            : base(repo, options, new RevenueProfile("Equipment", "of days rented", "KL-EQ", "Equipment Rental Receipt")) { }
+            : base(repo, options, new RevenueProfile("Equipment", "rented", "KL-EQ", "Equipment Rental Receipt")) { }
     }
 
     /// <summary>
@@ -52,6 +52,9 @@ namespace KrishiLink.BLL.Services
     {
         private const int MaxMonthBuckets = 24;
         private const int MaxWeekBuckets = 16;
+
+        /// <summary>Below this share of elapsed days booked, a listing is flagged with a pricing/listing-quality suggestion.</summary>
+        public const int LowUtilizationPercent = 25;
         private static readonly string[] ConfirmedStatuses = { "Accepted", "Completed" };
 
         private readonly IOwnerRevenueRepository _repo;
@@ -103,7 +106,7 @@ namespace KrishiLink.BLL.Services
 
                 Settlement = BuildSettlement(totalRevenue, expenses, payouts),
                 Trend = BuildTrend(inRange, from, to, filter.IsWeekly),
-                Breakdown = BuildBreakdown(scopedListings, inRange, from, to),
+                Breakdown = BuildBreakdown(scopedListings, inRange, from, to, today),
                 Funnel = BuildFunnel(inRange, today),
                 Transactions = BuildTransactions(inRange, allBookings, expenseByBooking, filter.Status),
                 Insights = BuildInsights(inRange, allBookings),
@@ -115,6 +118,7 @@ namespace KrishiLink.BLL.Services
             };
 
             // Top vs. weakest listing in the range
+            model.Insights.UnderUtilizedListings = model.Breakdown.Count(b => b.IsUnderUtilized);
             if (model.Breakdown.Count > 1 && model.Breakdown[0].Revenue > 0)
             {
                 var weakest = model.Breakdown[^1];
@@ -278,16 +282,21 @@ namespace KrishiLink.BLL.Services
             return points;
         }
 
-        private static List<ListingRevenueBreakdownItem> BuildBreakdown(List<RevenueListing> listings, List<RevenueBooking> inRange, DateTime from, DateTime to)
+        private static List<ListingRevenueBreakdownItem> BuildBreakdown(List<RevenueListing> listings, List<RevenueBooking> inRange, DateTime from, DateTime to, DateTime today)
         {
-            var rangeDays = (to - from).TotalDays + 1;
+            // Utilization only counts days that have actually elapsed — future accepted days aren't "used" yet
+            var usageEnd = to < today ? to : today;
+            var periodDays = Math.Max(0, (usageEnd - from).TotalDays + 1);
+
             var items = listings.Select(l =>
             {
                 var completed = inRange.Where(b => b.ListingId == l.Id && b.Status == "Completed").ToList();
                 var bookedCapacityDays = inRange
                     .Where(b => b.ListingId == l.Id && ConfirmedStatuses.Contains(b.Status))
-                    .Sum(b => b.CapacityUsed * OverlapDays(b, from, to));
-                var availableCapacityDays = l.Capacity * rangeDays;
+                    .Sum(b => b.CapacityUsed * OverlapDays(b, from, usageEnd));
+                // Normalise to "full-capacity days" so godowns (tons) and equipment (1 unit) read the same way
+                var bookedDays = l.Capacity > 0 ? Math.Min(periodDays, bookedCapacityDays / l.Capacity) : 0;
+                var utilization = periodDays > 0 ? (int)Math.Round(bookedDays / periodDays * 100) : 0;
 
                 return new ListingRevenueBreakdownItem
                 {
@@ -295,7 +304,10 @@ namespace KrishiLink.BLL.Services
                     Name = l.Name,
                     Bookings = completed.Count,
                     Revenue = completed.Sum(b => b.Gross),
-                    UtilizationPercent = availableCapacityDays > 0 ? (int)Math.Round(Math.Min(100, bookedCapacityDays / availableCapacityDays * 100)) : 0
+                    BookedDays = bookedDays,
+                    PeriodDays = (int)periodDays,
+                    UtilizationPercent = utilization,
+                    IsUnderUtilized = periodDays > 0 && utilization < LowUtilizationPercent
                 };
             })
             .OrderByDescending(i => i.Revenue)
