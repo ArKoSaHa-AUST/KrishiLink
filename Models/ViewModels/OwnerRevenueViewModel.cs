@@ -1,6 +1,6 @@
 namespace KrishiLink.Models.ViewModels
 {
-    /// <summary>Query-string bound filters for the revenue page and CSV export.</summary>
+    /// <summary>Query-string bound filters for the revenue page.</summary>
     public class RevenueFilter
     {
         public DateTime? From { get; set; }

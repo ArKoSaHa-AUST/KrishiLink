@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
@@ -19,7 +18,6 @@ namespace KrishiLink.BLL.Services
     public interface IOwnerRevenueService
     {
         OwnerRevenueViewModel GetReport(string ownerId, RevenueFilter filter);
-        string ExportCsv(string ownerId, RevenueFilter filter);
         BookingInvoiceViewModel? GetInvoice(string ownerId, int bookingId);
         bool AddExpense(string ownerId, int bookingId, decimal amount, string? note);
     }
@@ -130,29 +128,6 @@ namespace KrishiLink.BLL.Services
             }
 
             return model;
-        }
-
-        public string ExportCsv(string ownerId, RevenueFilter filter)
-        {
-            var report = GetReport(ownerId, filter);
-            var sb = new StringBuilder();
-            sb.AppendLine($"Booking ID,Start Date,End Date,Customer,{_profile.ListingLabel},Quantity,Gross (BDT),Commission (BDT),Expenses (BDT),Net (BDT),Status");
-            foreach (var t in report.Transactions)
-            {
-                sb.AppendLine(string.Join(",",
-                    t.BookingId,
-                    t.StartDate.ToString("yyyy-MM-dd"),
-                    t.EndDate.ToString("yyyy-MM-dd"),
-                    Csv(t.CustomerName),
-                    Csv(t.ListingName),
-                    Csv(t.QuantityText),
-                    t.Gross.ToString("0.##", CultureInfo.InvariantCulture),
-                    t.Commission.ToString("0.##", CultureInfo.InvariantCulture),
-                    t.Expenses.ToString("0.##", CultureInfo.InvariantCulture),
-                    t.Net.ToString("0.##", CultureInfo.InvariantCulture),
-                    t.Status));
-            }
-            return sb.ToString();
         }
 
         public BookingInvoiceViewModel? GetInvoice(string ownerId, int bookingId)
@@ -383,10 +358,5 @@ namespace KrishiLink.BLL.Services
 
             return insights;
         }
-
-        private static string Csv(string value) =>
-            value.Contains(',') || value.Contains('"') || value.Contains('\n')
-                ? $"\"{value.Replace("\"", "\"\"")}\""
-                : value;
     }
 }

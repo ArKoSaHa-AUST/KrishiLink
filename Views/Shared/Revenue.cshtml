@@ -12,13 +12,6 @@
     string Money(decimal v) => "৳" + v.ToString("N0");
     string PeriodUrl(string period) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, Period = period })!;
     string RangeUrl(DateTime from, DateTime to) => Url.Action("Revenue", new { From = from.ToString("yyyy-MM-dd"), To = to.ToString("yyyy-MM-dd"), f.ListingId, f.Status, f.Period })!;
-    var csvRoute = new Dictionary<string, string>
-    {
-        ["From"] = f.From?.ToString("yyyy-MM-dd") ?? string.Empty,
-        ["To"] = f.To?.ToString("yyyy-MM-dd") ?? string.Empty,
-        ["ListingId"] = f.ListingId?.ToString() ?? string.Empty,
-        ["Status"] = f.Status ?? string.Empty
-    };
 }
 
 <!-- Page Header -->
@@ -111,7 +104,7 @@
     </div>
 </div>
 
-<!-- Filters (GET form: bookmarkable and shared with the CSV export) -->
+<!-- Filters (GET form: bookmarkable) -->
 <form method="get" asp-action="Revenue" class="card border-0 shadow-sm p-3 mb-4 d-print-none" style="border-radius: var(--krishi-radius-lg);">
     <input type="hidden" name="Period" value="@f.Period" />
     <div class="row g-2 align-items-end">
@@ -146,10 +139,6 @@
         <div class="col-12 col-lg-3 d-flex flex-wrap gap-2 justify-content-lg-end">
             <button type="submit" class="btn btn-krishi-primary btn-sm rounded-pill px-3 fw-semibold"><i class="bi bi-funnel me-1"></i>@L["Apply"]</button>
             <a asp-action="Revenue" class="btn btn-outline-secondary btn-sm rounded-pill px-3">@L["Reset"]</a>
-            <a asp-action="RevenueCsv" asp-all-route-data="csvRoute"
-               class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold" title="@L["Export the filtered transactions as CSV"]">
-                <i class="bi bi-filetype-csv me-1"></i>CSV
-            </a>
             <button type="button" class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold" onclick="window.print()" title="@L["Print or save this report as PDF"]">
                 <i class="bi bi-filetype-pdf me-1"></i>PDF
             </button>

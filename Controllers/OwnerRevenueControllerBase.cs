@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Text;
 using KrishiLink.BLL.Services;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
@@ -32,15 +31,6 @@ namespace KrishiLink.Controllers
         public IActionResult Revenue(RevenueFilter filter)
         {
             return View(_revenueService.GetReport(OwnerId, filter));
-        }
-
-        /// <summary>GET: /{Owner}/RevenueCsv — filtered transactions as UTF-8 (BOM) CSV so Excel renders ৳ correctly.</summary>
-        [HttpGet]
-        public IActionResult RevenueCsv(RevenueFilter filter)
-        {
-            var csv = _revenueService.ExportCsv(OwnerId, filter);
-            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv)).ToArray();
-            return File(bytes, "text/csv; charset=utf-8", $"revenue-{DateTime.Today:yyyy-MM-dd}.csv");
         }
 
         /// <summary>GET: /{Owner}/Invoice/185 — printable receipt for a completed booking (browser "Save as PDF").</summary>
