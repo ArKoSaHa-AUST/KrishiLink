@@ -51,10 +51,12 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     };
 });
 
-// Revenue reporting: in-memory sample repository until bookings/payouts are persisted
+// Revenue reporting: in-memory sample repositories until bookings/payouts are persisted
 builder.Services.Configure<RevenueOptions>(builder.Configuration.GetSection(RevenueOptions.SectionName));
 builder.Services.AddSingleton<IGodownRevenueRepository, InMemoryGodownRevenueRepository>();
+builder.Services.AddSingleton<IEquipmentRevenueRepository, InMemoryEquipmentRevenueRepository>();
 builder.Services.AddScoped<IGodownRevenueService, GodownRevenueService>();
+builder.Services.AddScoped<IEquipmentRevenueService, EquipmentRevenueService>();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

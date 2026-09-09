@@ -16,73 +16,97 @@ namespace KrishiLink.BLL.Services
         public decimal PlatformCommissionRate { get; set; } = 0.05m;
     }
 
-    public interface IGodownRevenueService
+    public interface IOwnerRevenueService
     {
-        GodownRevenueViewModel GetReport(string ownerId, RevenueFilter filter);
+        OwnerRevenueViewModel GetReport(string ownerId, RevenueFilter filter);
         string ExportCsv(string ownerId, RevenueFilter filter);
         BookingInvoiceViewModel? GetInvoice(string ownerId, int bookingId);
         bool AddExpense(string ownerId, int bookingId, decimal amount, string? note);
     }
 
+    public interface IGodownRevenueService : IOwnerRevenueService { }
+
+    public interface IEquipmentRevenueService : IOwnerRevenueService { }
+
+    /// <summary>Listing-type specific wording used by the shared revenue view and invoice.</summary>
+    public record RevenueProfile(string ListingLabel, string UtilizationHint, string InvoicePrefix, string InvoiceTitle);
+
+    public class GodownRevenueService : OwnerRevenueService, IGodownRevenueService
+    {
+        public GodownRevenueService(IGodownRevenueRepository repo, IOptions<RevenueOptions> options)
+            : base(repo, options, new RevenueProfile("Godown", "of capacity booked (ton-days)", "KL-GB", "Godown Storage Receipt")) { }
+    }
+
+    public class EquipmentRevenueService : OwnerRevenueService, IEquipmentRevenueService
+    {
+        public EquipmentRevenueService(IEquipmentRevenueRepository repo, IOptions<RevenueOptions> options)
+            : base(repo, options, new RevenueProfile("Equipment", "of days rented", "KL-EQ", "Equipment Rental Receipt")) { }
+    }
+
     /// <summary>
-    /// Revenue analytics for godown owners. Storage revenue is recognised when a booking completes
-    /// (its EndDate); Accepted bookings count as upcoming revenue. All money is in BDT.
+    /// Revenue analytics shared by godown and equipment owners. Revenue is recognised when a booking
+    /// completes (its EndDate); Accepted bookings count as upcoming revenue. All money is in BDT.
+    /// Pricing is resolved by the repository, so this class only aggregates.
     /// </summary>
-    public class GodownRevenueService : IGodownRevenueService
+    public class OwnerRevenueService : IOwnerRevenueService
     {
         private const int MaxMonthBuckets = 24;
         private const int MaxWeekBuckets = 16;
-        private const double DaysPerMonth = 30.0;
         private static readonly string[] ConfirmedStatuses = { "Accepted", "Completed" };
 
-        private readonly IGodownRevenueRepository _repo;
+        private readonly IOwnerRevenueRepository _repo;
+        private readonly RevenueProfile _profile;
         private readonly decimal _commissionRate;
 
-        public GodownRevenueService(IGodownRevenueRepository repo, IOptions<RevenueOptions> options)
+        public OwnerRevenueService(IOwnerRevenueRepository repo, IOptions<RevenueOptions> options, RevenueProfile profile)
         {
             _repo = repo;
+            _profile = profile;
             _commissionRate = options.Value.PlatformCommissionRate;
         }
 
-        public GodownRevenueViewModel GetReport(string ownerId, RevenueFilter filter)
+        public OwnerRevenueViewModel GetReport(string ownerId, RevenueFilter filter)
         {
             var today = DateTime.Today;
             var (from, to) = ResolveRange(filter, today);
 
-            var godowns = _repo.GetGodowns(ownerId);
+            var listings = _repo.GetListings(ownerId);
             var allBookings = _repo.GetBookings(ownerId);
             var expenses = _repo.GetExpenses(ownerId);
             var payouts = _repo.GetPayouts(ownerId);
-            var expenseByBooking = expenses.GroupBy(e => e.GodownBookingId).ToDictionary(g => g.Key, g => g.Sum(e => e.Amount));
+            var expenseByBooking = expenses.GroupBy(e => e.BookingId).ToDictionary(g => g.Key, g => g.Sum(e => e.Amount));
 
-            // Range + godown filters drive every analytics block; the status filter is for the transaction list only.
+            // Range + listing filters drive every analytics block; the status filter is for the transaction list only.
             var inRange = allBookings
-                .Where(b => Overlaps(b, from, to) && (filter.GodownId is null || b.GodownId == filter.GodownId))
+                .Where(b => Overlaps(b, from, to) && (filter.ListingId is null || b.ListingId == filter.ListingId))
                 .ToList();
-            var scopedGodowns = godowns.Where(g => filter.GodownId is null || g.Id == filter.GodownId).ToList();
+            var scopedListings = listings.Where(l => filter.ListingId is null || l.Id == filter.ListingId).ToList();
 
             var completedLifetime = allBookings.Where(b => b.Status == "Completed").ToList();
-            var totalRevenue = completedLifetime.Sum(Gross);
+            var totalRevenue = completedLifetime.Sum(b => b.Gross);
 
-            var model = new GodownRevenueViewModel
+            var model = new OwnerRevenueViewModel
             {
+                ListingLabel = _profile.ListingLabel,
+                UtilizationHint = _profile.UtilizationHint,
                 Filter = filter,
                 RangeStart = from,
                 RangeEnd = to,
-                Godowns = godowns.Select(g => new RevenueGodownOption { Id = g.Id, Name = g.Name }).ToList(),
+                Listings = listings.Select(l => new RevenueListingOption { Id = l.Id, Name = l.Name }).ToList(),
 
                 TotalRevenue = totalRevenue,
                 ThisMonthRevenue = completedLifetime
                     .Where(b => b.EndDate.Year == today.Year && b.EndDate.Month == today.Month)
-                    .Sum(Gross),
-                UpcomingRevenue = allBookings.Where(b => b.Status == "Accepted").Sum(Gross),
+                    .Sum(b => b.Gross),
+                UpcomingRevenue = allBookings.Where(b => b.Status == "Accepted").Sum(b => b.Gross),
                 CompletedBookings = completedLifetime.Count,
 
                 Settlement = BuildSettlement(totalRevenue, expenses, payouts),
                 Trend = BuildTrend(inRange, from, to, filter.IsWeekly),
-                Breakdown = BuildBreakdown(scopedGodowns, inRange, from, to),
+                Breakdown = BuildBreakdown(scopedListings, inRange, from, to),
                 Funnel = BuildFunnel(inRange, today),
                 Transactions = BuildTransactions(inRange, allBookings, expenseByBooking, filter.Status),
+                Insights = BuildInsights(inRange, allBookings),
                 RecentPayout = payouts
                     .Where(p => p.Status == "Completed" && p.TransactionDate >= today.AddDays(-7))
                     .OrderByDescending(p => p.TransactionDate)
@@ -90,7 +114,17 @@ namespace KrishiLink.BLL.Services
                     .FirstOrDefault()
             };
 
-            model.Insights = BuildInsights(inRange, allBookings, model.Breakdown);
+            // Top vs. weakest listing in the range
+            if (model.Breakdown.Count > 1 && model.Breakdown[0].Revenue > 0)
+            {
+                var weakest = model.Breakdown[^1];
+                model.Insights.TopListing = model.Breakdown[0].Name;
+                model.Insights.WeakestListing = weakest.Name;
+                model.Insights.TopVsWeakestMultiplier = weakest.Revenue > 0
+                    ? Math.Round((double)(model.Breakdown[0].Revenue / weakest.Revenue), 1)
+                    : null;
+            }
+
             return model;
         }
 
@@ -98,17 +132,16 @@ namespace KrishiLink.BLL.Services
         {
             var report = GetReport(ownerId, filter);
             var sb = new StringBuilder();
-            sb.AppendLine("Booking ID,Start Date,End Date,Farmer,Godown,Storage (Tons),Months,Gross (BDT),Commission (BDT),Expenses (BDT),Net (BDT),Status");
+            sb.AppendLine($"Booking ID,Start Date,End Date,Customer,{_profile.ListingLabel},Quantity,Gross (BDT),Commission (BDT),Expenses (BDT),Net (BDT),Status");
             foreach (var t in report.Transactions)
             {
                 sb.AppendLine(string.Join(",",
                     t.BookingId,
                     t.StartDate.ToString("yyyy-MM-dd"),
                     t.EndDate.ToString("yyyy-MM-dd"),
-                    Csv(t.FarmerName),
-                    Csv(t.GodownName),
-                    t.StorageTons.ToString(CultureInfo.InvariantCulture),
-                    t.Months.ToString("0.##", CultureInfo.InvariantCulture),
+                    Csv(t.CustomerName),
+                    Csv(t.ListingName),
+                    Csv(t.QuantityText),
                     t.Gross.ToString("0.##", CultureInfo.InvariantCulture),
                     t.Commission.ToString("0.##", CultureInfo.InvariantCulture),
                     t.Expenses.ToString("0.##", CultureInfo.InvariantCulture),
@@ -120,27 +153,26 @@ namespace KrishiLink.BLL.Services
 
         public BookingInvoiceViewModel? GetInvoice(string ownerId, int bookingId)
         {
-            var booking = _repo.GetBookings(ownerId).FirstOrDefault(b => b.Id == bookingId && b.Status == "Completed");
-            if (booking?.Godown is null) return null;
+            var b = _repo.GetBookings(ownerId).FirstOrDefault(x => x.Id == bookingId && x.Status == "Completed");
+            if (b is null) return null;
 
-            var gross = Gross(booking);
             return new BookingInvoiceViewModel
             {
-                InvoiceNumber = $"KL-GB-{booking.Id:D6}",
-                IssuedOn = booking.EndDate,
-                FarmerName = booking.Farmer?.FullName ?? booking.FarmerId,
-                FarmerLocation = booking.Farmer?.Location,
-                GodownName = booking.Godown.Name,
-                GodownLocation = booking.Godown.Location,
-                StartDate = booking.StartDate,
-                EndDate = booking.EndDate,
-                StorageTons = booking.StorageTons,
-                RatePerTonPerMonth = booking.Godown.PricePerTonPerMonth,
-                Months = Months(booking),
-                Gross = gross,
+                InvoiceNumber = $"{_profile.InvoicePrefix}-{b.Id:D6}",
+                Title = _profile.InvoiceTitle,
+                IssuedOn = b.EndDate,
+                CustomerName = b.CustomerName,
+                CustomerLocation = b.CustomerLocation,
+                ListingName = b.ListingName,
+                ListingLocation = b.ListingLocation,
+                StartDate = b.StartDate,
+                EndDate = b.EndDate,
+                QuantityText = b.QuantityText,
+                RateText = b.RateText,
+                Gross = b.Gross,
                 CommissionRate = _commissionRate,
-                Commission = Commission(gross),
-                Status = booking.Status
+                Commission = Commission(b.Gross),
+                Status = b.Status
             };
         }
 
@@ -152,7 +184,7 @@ namespace KrishiLink.BLL.Services
 
             _repo.AddExpense(new BookingExpense
             {
-                GodownBookingId = bookingId,
+                BookingId = bookingId,
                 OwnerId = ownerId,
                 Amount = decimal.Round(amount, 2),
                 Note = (note ?? string.Empty).Trim(),
@@ -161,20 +193,19 @@ namespace KrishiLink.BLL.Services
             return true;
         }
 
-        // ---- Pricing -------------------------------------------------------------------------
-
-        private static double Months(GodownBooking b) =>
-            Math.Max(0, (b.EndDate.Date - b.StartDate.Date).TotalDays) / DaysPerMonth;
-
-        private static decimal Gross(GodownBooking b) =>
-            b.Godown is null ? 0 : decimal.Round((decimal)b.StorageTons * b.Godown.PricePerTonPerMonth * (decimal)Months(b), 0);
+        // ---- Helpers -------------------------------------------------------------------------
 
         private decimal Commission(decimal gross) => decimal.Round(gross * _commissionRate, 0);
 
-        private static bool Overlaps(GodownBooking b, DateTime from, DateTime to) =>
+        private static bool Overlaps(RevenueBooking b, DateTime from, DateTime to) =>
             b.StartDate.Date <= to && b.EndDate.Date >= from;
 
-        // ---- Blocks --------------------------------------------------------------------------
+        private static double OverlapDays(RevenueBooking b, DateTime from, DateTime to)
+        {
+            var start = b.StartDate.Date > from ? b.StartDate.Date : from;
+            var end = b.EndDate.Date < to ? b.EndDate.Date : to;
+            return Math.Max(0, (end - start).TotalDays + 1);
+        }
 
         private static (DateTime From, DateTime To) ResolveRange(RevenueFilter filter, DateTime today)
         {
@@ -205,7 +236,7 @@ namespace KrishiLink.BLL.Services
             Status = p.Status
         };
 
-        private static List<RevenueTrendPoint> BuildTrend(List<GodownBooking> inRange, DateTime from, DateTime to, bool weekly)
+        private static List<RevenueTrendPoint> BuildTrend(List<RevenueBooking> inRange, DateTime from, DateTime to, bool weekly)
         {
             var completed = inRange.Where(b => b.Status == "Completed").ToList();
             var points = new List<RevenueTrendPoint>();
@@ -225,7 +256,7 @@ namespace KrishiLink.BLL.Services
                     points.Add(new RevenueTrendPoint
                     {
                         Label = start.ToString("d MMM", CultureInfo.InvariantCulture),
-                        Amount = completed.Where(b => b.EndDate.Date >= start && b.EndDate.Date <= end).Sum(Gross)
+                        Amount = completed.Where(b => b.EndDate.Date >= start && b.EndDate.Date <= end).Sum(b => b.Gross)
                     });
                 }
                 return points;
@@ -241,30 +272,30 @@ namespace KrishiLink.BLL.Services
                 points.Add(new RevenueTrendPoint
                 {
                     Label = m.ToString("MMM yy", CultureInfo.InvariantCulture),
-                    Amount = completed.Where(b => b.EndDate.Year == m.Year && b.EndDate.Month == m.Month).Sum(Gross)
+                    Amount = completed.Where(b => b.EndDate.Year == m.Year && b.EndDate.Month == m.Month).Sum(b => b.Gross)
                 });
             }
             return points;
         }
 
-        private static List<GodownRevenueBreakdownItem> BuildBreakdown(List<Godown> godowns, List<GodownBooking> inRange, DateTime from, DateTime to)
+        private static List<ListingRevenueBreakdownItem> BuildBreakdown(List<RevenueListing> listings, List<RevenueBooking> inRange, DateTime from, DateTime to)
         {
             var rangeDays = (to - from).TotalDays + 1;
-            var items = godowns.Select(g =>
+            var items = listings.Select(l =>
             {
-                var completed = inRange.Where(b => b.GodownId == g.Id && b.Status == "Completed").ToList();
-                var bookedTonDays = inRange
-                    .Where(b => b.GodownId == g.Id && ConfirmedStatuses.Contains(b.Status))
-                    .Sum(b => b.StorageTons * OverlapDays(b, from, to));
-                var capacityTonDays = g.CapacityInTons * rangeDays;
+                var completed = inRange.Where(b => b.ListingId == l.Id && b.Status == "Completed").ToList();
+                var bookedCapacityDays = inRange
+                    .Where(b => b.ListingId == l.Id && ConfirmedStatuses.Contains(b.Status))
+                    .Sum(b => b.CapacityUsed * OverlapDays(b, from, to));
+                var availableCapacityDays = l.Capacity * rangeDays;
 
-                return new GodownRevenueBreakdownItem
+                return new ListingRevenueBreakdownItem
                 {
-                    GodownId = g.Id,
-                    Name = g.Name,
+                    ListingId = l.Id,
+                    Name = l.Name,
                     Bookings = completed.Count,
-                    Revenue = completed.Sum(Gross),
-                    UtilizationPercent = capacityTonDays > 0 ? (int)Math.Round(Math.Min(100, bookedTonDays / capacityTonDays * 100)) : 0
+                    Revenue = completed.Sum(b => b.Gross),
+                    UtilizationPercent = availableCapacityDays > 0 ? (int)Math.Round(Math.Min(100, bookedCapacityDays / availableCapacityDays * 100)) : 0
                 };
             })
             .OrderByDescending(i => i.Revenue)
@@ -279,14 +310,7 @@ namespace KrishiLink.BLL.Services
             return items;
         }
 
-        private static double OverlapDays(GodownBooking b, DateTime from, DateTime to)
-        {
-            var start = b.StartDate.Date > from ? b.StartDate.Date : from;
-            var end = b.EndDate.Date < to ? b.EndDate.Date : to;
-            return Math.Max(0, (end - start).TotalDays + 1);
-        }
-
-        private static BookingFunnel BuildFunnel(List<GodownBooking> inRange, DateTime today) => new()
+        private static BookingFunnel BuildFunnel(List<RevenueBooking> inRange, DateTime today) => new()
         {
             Requested = inRange.Count,
             Accepted = inRange.Count(b => b.Status == "Accepted"),
@@ -296,7 +320,7 @@ namespace KrishiLink.BLL.Services
             Rejected = inRange.Count(b => b.Status == "Rejected")
         };
 
-        private List<RevenueTransactionItem> BuildTransactions(List<GodownBooking> inRange, IReadOnlyList<GodownBooking> allBookings,
+        private List<RevenueTransactionItem> BuildTransactions(List<RevenueBooking> inRange, IReadOnlyList<RevenueBooking> allBookings,
             Dictionary<int, decimal> expenseByBooking, string? status)
         {
             var confirmed = allBookings.Where(b => ConfirmedStatuses.Contains(b.Status)).ToList();
@@ -304,65 +328,46 @@ namespace KrishiLink.BLL.Services
             return inRange
                 .Where(b => string.IsNullOrEmpty(status) || b.Status.Equals(status, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(b => b.StartDate)
-                .Select(b =>
+                .Select(b => new RevenueTransactionItem
                 {
-                    var gross = Gross(b);
-                    return new RevenueTransactionItem
-                    {
-                        BookingId = b.Id,
-                        StartDate = b.StartDate,
-                        EndDate = b.EndDate,
-                        FarmerName = b.Farmer?.FullName ?? b.FarmerId,
-                        GodownName = b.Godown?.Name ?? string.Empty,
-                        StorageTons = b.StorageTons,
-                        Months = Months(b),
-                        Gross = gross,
-                        Commission = Commission(gross),
-                        Expenses = expenseByBooking.GetValueOrDefault(b.Id),
-                        Status = b.Status,
-                        IsRepeatCustomer = confirmed.Any(o => o.FarmerId == b.FarmerId && o.Id != b.Id && o.StartDate < b.StartDate)
-                    };
+                    BookingId = b.Id,
+                    StartDate = b.StartDate,
+                    EndDate = b.EndDate,
+                    CustomerName = b.CustomerName,
+                    ListingName = b.ListingName,
+                    QuantityText = b.QuantityText,
+                    Gross = b.Gross,
+                    Commission = Commission(b.Gross),
+                    Expenses = expenseByBooking.GetValueOrDefault(b.Id),
+                    Status = b.Status,
+                    IsRepeatCustomer = confirmed.Any(o => o.CustomerId == b.CustomerId && o.Id != b.Id && o.StartDate < b.StartDate)
                 })
                 .ToList();
         }
 
-        private static RevenueInsights BuildInsights(List<GodownBooking> inRange,
-            IReadOnlyList<GodownBooking> allBookings, List<GodownRevenueBreakdownItem> breakdown)
+        private static RevenueInsights BuildInsights(List<RevenueBooking> inRange, IReadOnlyList<RevenueBooking> allBookings)
         {
             var insights = new RevenueInsights();
+            var confirmedAll = allBookings.Where(b => ConfirmedStatuses.Contains(b.Status)).ToList();
 
             // Peak season: best 3 consecutive calendar months by booking start date (demand signal), needs ≥ 6 months of history
             var byMonth = new decimal[12];
-            foreach (var b in allBookings.Where(b => ConfirmedStatuses.Contains(b.Status))) byMonth[b.StartDate.Month - 1] += Gross(b);
+            foreach (var b in confirmedAll) byMonth[b.StartDate.Month - 1] += b.Gross;
             if (byMonth.Count(v => v > 0) >= 6)
             {
                 var best = Enumerable.Range(0, 12)
                     .Select(i => (Start: i, Total: byMonth[i] + byMonth[(i + 1) % 12] + byMonth[(i + 2) % 12]))
                     .OrderByDescending(x => x.Total)
                     .First();
-                var culture = CultureInfo.InvariantCulture;
-                insights.PeakSeason = $"{culture.DateTimeFormat.GetMonthName(best.Start + 1)} – {culture.DateTimeFormat.GetMonthName((best.Start + 2) % 12 + 1)}";
+                var months = CultureInfo.InvariantCulture.DateTimeFormat;
+                insights.PeakSeason = $"{months.GetMonthName(best.Start + 1)} – {months.GetMonthName((best.Start + 2) % 12 + 1)}";
             }
 
             // Repeat customers among renters with confirmed/completed bookings in the range
-            var confirmedCounts = allBookings
-                .Where(b => ConfirmedStatuses.Contains(b.Status))
-                .GroupBy(b => b.FarmerId)
-                .ToDictionary(g => g.Key, g => g.Count());
-            var rentersInRange = inRange.Where(b => ConfirmedStatuses.Contains(b.Status)).Select(b => b.FarmerId).Distinct().ToList();
+            var confirmedCounts = confirmedAll.GroupBy(b => b.CustomerId).ToDictionary(g => g.Key, g => g.Count());
+            var rentersInRange = inRange.Where(b => ConfirmedStatuses.Contains(b.Status)).Select(b => b.CustomerId).Distinct().ToList();
             insights.DistinctCustomers = rentersInRange.Count;
-            insights.RepeatCustomers = rentersInRange.Count(f => confirmedCounts.GetValueOrDefault(f) >= 2);
-
-            // Top vs. weakest listing in the range
-            if (breakdown.Count > 1 && breakdown[0].Revenue > 0)
-            {
-                var weakest = breakdown[^1];
-                insights.TopListing = breakdown[0].Name;
-                insights.WeakestListing = weakest.Name;
-                insights.TopVsWeakestMultiplier = weakest.Revenue > 0
-                    ? Math.Round((double)(breakdown[0].Revenue / weakest.Revenue), 1)
-                    : null;
-            }
+            insights.RepeatCustomers = rentersInRange.Count(c => confirmedCounts.GetValueOrDefault(c) >= 2);
 
             return insights;
         }

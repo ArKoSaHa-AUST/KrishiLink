@@ -1,12 +1,20 @@
+using KrishiLink.BLL.Services;
+using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KrishiLink.Controllers
 {
     [Authorize(Roles = "EquipmentOwner")]
-    public class EquipmentOwnerController : Controller
+    public class EquipmentOwnerController : OwnerRevenueControllerBase
     {
+        public EquipmentOwnerController(IEquipmentRevenueService revenueService, UserManager<ApplicationUser> userManager)
+            : base(revenueService, userManager)
+        {
+        }
+
         public IActionResult Index()
         {
             var model = new EquipmentOwnerDashboardViewModel
@@ -14,6 +22,7 @@ namespace KrishiLink.Controllers
                 OwnerName = User.Identity?.Name ?? "Owner",
                 TotalListings = 5,
                 ActiveRentals = 2,
+                ThisMonthRevenue = ThisMonthRevenue,
                 Listings = new List<OwnerListingItem>
                 {
                     new() { Id = 1, Name = "Mahindra 575 DI Heavy Tractor", Category = "Tractor", Status = "Rented", DailyRate = "৳1,500 / Day",
