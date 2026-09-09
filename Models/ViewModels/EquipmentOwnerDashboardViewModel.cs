@@ -11,6 +11,7 @@ namespace KrishiLink.Models.ViewModels
         public int TotalListings { get; set; }
         public int ActiveRentals { get; set; }
         public int PendingRequests => PendingRequestItems.Count;
+        public decimal ThisMonthRevenue { get; set; }
 
         public List<OwnerListingItem> Listings { get; set; } = new();
         public List<RentalRequestItem> PendingRequestItems { get; set; } = new();

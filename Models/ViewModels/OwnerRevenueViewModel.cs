@@ -8,7 +8,7 @@ namespace KrishiLink.Models.ViewModels
 
         /// <summary>Completed | Accepted | Pending | Cancelled | Rejected (null = all)</summary>
         public string? Status { get; set; }
-        public int? GodownId { get; set; }
+        public int? ListingId { get; set; }
 
         /// <summary>Trend chart granularity: month | week</summary>
         public string Period { get; set; } = "month";
@@ -17,15 +17,21 @@ namespace KrishiLink.Models.ViewModels
     }
 
     /// <summary>
-    /// ViewModel for the Godown Owner Revenue page. KPI cards and settlement are lifetime figures;
-    /// trend, breakdown, funnel, utilization and transactions honour <see cref="Filter"/>.
+    /// ViewModel for the owner Revenue page (godown or equipment). KPI cards and settlement are lifetime
+    /// figures; trend, breakdown, funnel, utilization and transactions honour <see cref="Filter"/>.
     /// </summary>
-    public class GodownRevenueViewModel
+    public class OwnerRevenueViewModel
     {
+        /// <summary>"Godown" | "Equipment" — drives labels and wording in the shared view.</summary>
+        public string ListingLabel { get; set; } = "Godown";
+
+        /// <summary>Wording under the utilization bar, e.g. "of capacity booked (ton-days)" or "of days rented".</summary>
+        public string UtilizationHint { get; set; } = string.Empty;
+
         public RevenueFilter Filter { get; set; } = new();
         public DateTime RangeStart { get; set; }
         public DateTime RangeEnd { get; set; }
-        public List<RevenueGodownOption> Godowns { get; set; } = new();
+        public List<RevenueListingOption> Listings { get; set; } = new();
 
         // KPI cards
         public decimal TotalRevenue { get; set; }
@@ -35,7 +41,7 @@ namespace KrishiLink.Models.ViewModels
 
         public RevenueSettlement Settlement { get; set; } = new();
         public List<RevenueTrendPoint> Trend { get; set; } = new();
-        public List<GodownRevenueBreakdownItem> Breakdown { get; set; } = new();
+        public List<ListingRevenueBreakdownItem> Breakdown { get; set; } = new();
         public BookingFunnel Funnel { get; set; } = new();
         public List<RevenueTransactionItem> Transactions { get; set; } = new();
         public RevenueInsights Insights { get; set; } = new();
@@ -44,7 +50,7 @@ namespace KrishiLink.Models.ViewModels
         public PayoutItem? RecentPayout { get; set; }
     }
 
-    public class RevenueGodownOption
+    public class RevenueListingOption
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
@@ -79,15 +85,15 @@ namespace KrishiLink.Models.ViewModels
         public decimal Amount { get; set; }
     }
 
-    public class GodownRevenueBreakdownItem
+    public class ListingRevenueBreakdownItem
     {
-        public int GodownId { get; set; }
+        public int ListingId { get; set; }
         public string Name { get; set; } = string.Empty;
         public int Bookings { get; set; }
         public decimal Revenue { get; set; }
         public decimal AveragePerBooking => Bookings > 0 ? Revenue / Bookings : 0;
 
-        /// <summary>Booked ton-days ÷ capacity ton-days across the selected range.</summary>
+        /// <summary>Booked capacity-days ÷ available capacity-days across the selected range.</summary>
         public int UtilizationPercent { get; set; }
 
         /// <summary>Top | Under | null</summary>
@@ -120,10 +126,9 @@ namespace KrishiLink.Models.ViewModels
         public int BookingId { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
-        public string FarmerName { get; set; } = string.Empty;
-        public string GodownName { get; set; } = string.Empty;
-        public double StorageTons { get; set; }
-        public double Months { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public string ListingName { get; set; } = string.Empty;
+        public string QuantityText { get; set; } = string.Empty;
         public decimal Gross { get; set; }
         public decimal Commission { get; set; }
         public decimal Expenses { get; set; }
@@ -145,23 +150,23 @@ namespace KrishiLink.Models.ViewModels
         public double? TopVsWeakestMultiplier { get; set; }
     }
 
-    /// <summary>Printable receipt for a completed godown booking.</summary>
+    /// <summary>Printable receipt for a completed booking.</summary>
     public class BookingInvoiceViewModel
     {
         public string InvoiceNumber { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
         public DateTime IssuedOn { get; set; }
         public string OwnerName { get; set; } = string.Empty;
         public string? OwnerBusiness { get; set; }
         public string? OwnerLocation { get; set; }
-        public string FarmerName { get; set; } = string.Empty;
-        public string? FarmerLocation { get; set; }
-        public string GodownName { get; set; } = string.Empty;
-        public string GodownLocation { get; set; } = string.Empty;
+        public string CustomerName { get; set; } = string.Empty;
+        public string? CustomerLocation { get; set; }
+        public string ListingName { get; set; } = string.Empty;
+        public string ListingLocation { get; set; } = string.Empty;
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
-        public double StorageTons { get; set; }
-        public decimal RatePerTonPerMonth { get; set; }
-        public double Months { get; set; }
+        public string QuantityText { get; set; } = string.Empty;
+        public string RateText { get; set; } = string.Empty;
         public decimal Gross { get; set; }
         public decimal CommissionRate { get; set; }
         public decimal Commission { get; set; }

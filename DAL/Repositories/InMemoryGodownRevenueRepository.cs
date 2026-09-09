@@ -3,53 +3,34 @@ using KrishiLink.Models.Entities;
 namespace KrishiLink.DAL.Repositories
 {
     /// <summary>
-    /// Sample-data implementation shared until DB wiring. Mirrors the godowns and farmers used by
-    /// the Godown Owner dashboard/requests pages so the pages tell a consistent story.
-    /// Registered as a singleton so expenses added during a session persist across requests.
+    /// Sample godown revenue data. Mirrors the godowns and farmers used by the Godown Owner
+    /// dashboard/requests pages so the pages tell a consistent story.
+    /// Pricing: storage tons × price per ton per month × pro-rata 30-day months.
     /// </summary>
-    public class InMemoryGodownRevenueRepository : IGodownRevenueRepository
+    public class InMemoryGodownRevenueRepository : InMemoryOwnerRevenueRepository, IGodownRevenueRepository
     {
-        private readonly object _sync = new();
-        private readonly List<Godown> _godowns;
-        private readonly List<GodownBooking> _bookings;
-        private readonly List<Transaction> _payouts;
-        private readonly List<BookingExpense> _expenses;
-
-        public InMemoryGodownRevenueRepository()
+        private static readonly Godown[] Godowns =
         {
-            _godowns = new List<Godown>
-            {
-                new() { Id = 1, Name = "Green Grain Cold Storage Facility", Location = "Dinajpur Sadar, Dinajpur", CapacityInTons = 300, PricePerTonPerMonth = 450 },
-                new() { Id = 2, Name = "Dinajpur AgriHub Warehouse", Location = "Birganj, Dinajpur", CapacityInTons = 500, PricePerTonPerMonth = 300 },
-                new() { Id = 3, Name = "Riverside Seed Vault", Location = "Parbatipur, Dinajpur", CapacityInTons = 120, PricePerTonPerMonth = 600 }
-            };
+            new() { Id = 1, Name = "Green Grain Cold Storage Facility", Location = "Dinajpur Sadar, Dinajpur", CapacityInTons = 300, PricePerTonPerMonth = 450 },
+            new() { Id = 2, Name = "Dinajpur AgriHub Warehouse", Location = "Birganj, Dinajpur", CapacityInTons = 500, PricePerTonPerMonth = 300 },
+            new() { Id = 3, Name = "Riverside Seed Vault", Location = "Parbatipur, Dinajpur", CapacityInTons = 120, PricePerTonPerMonth = 600 }
+        };
 
-            var farmers = new Dictionary<string, ApplicationUser>
-            {
-                ["f1"] = new() { Id = "f1", FullName = "Rahim Uddin", Location = "Kaharole, Dinajpur" },
-                ["f2"] = new() { Id = "f2", FullName = "Salma Akter", Location = "Bochaganj, Dinajpur" },
-                ["f3"] = new() { Id = "f3", FullName = "Motaleb Hossain", Location = "Birol, Dinajpur" },
-                ["f4"] = new() { Id = "f4", FullName = "Abdul Halim", Location = "Chirirbandar, Dinajpur" },
-                ["f5"] = new() { Id = "f5", FullName = "Shafiq Islam", Location = "Khansama, Dinajpur" },
-                ["f6"] = new() { Id = "f6", FullName = "Jahanara Khatun", Location = "Nawabganj, Dinajpur" },
-                ["f7"] = new() { Id = "f7", FullName = "Kamal Mia", Location = "Fulbari, Dinajpur" },
-                ["f8"] = new() { Id = "f8", FullName = "Nasrin Begum", Location = "Ghoraghat, Dinajpur" }
-            };
+        private static readonly Dictionary<string, ApplicationUser> Farmers = new[]
+        {
+            Farmer("f1", "Rahim Uddin", "Kaharole, Dinajpur"),
+            Farmer("f2", "Salma Akter", "Bochaganj, Dinajpur"),
+            Farmer("f3", "Motaleb Hossain", "Birol, Dinajpur"),
+            Farmer("f4", "Abdul Halim", "Chirirbandar, Dinajpur"),
+            Farmer("f5", "Shafiq Islam", "Khansama, Dinajpur"),
+            Farmer("f6", "Jahanara Khatun", "Nawabganj, Dinajpur"),
+            Farmer("f7", "Kamal Mia", "Fulbari, Dinajpur"),
+            Farmer("f8", "Nasrin Begum", "Ghoraghat, Dinajpur")
+        }.ToDictionary(f => f.Id);
 
-            GodownBooking B(int id, int godownId, string farmerId, double tons, string start, string end, string status) => new()
-            {
-                Id = id,
-                GodownId = godownId,
-                Godown = _godowns.First(g => g.Id == godownId),
-                FarmerId = farmerId,
-                Farmer = farmers[farmerId],
-                StorageTons = tons,
-                StartDate = DateTime.Parse(start),
-                EndDate = DateTime.Parse(end),
-                Status = status
-            };
-
-            _bookings = new List<GodownBooking>
+        public InMemoryGodownRevenueRepository() : base(
+            Godowns.Select(g => new RevenueListing(g.Id, g.Name, g.Location, g.CapacityInTons)).ToList(),
+            new List<RevenueBooking>
             {
                 // Previous Aman season (Sep–Dec) and winter storage
                 B(150, 2, "f7", 100, "2025-09-15", "2025-11-15", "Completed"),
@@ -79,44 +60,36 @@ namespace KrishiLink.DAL.Repositories
                 B(201, 1, "f1", 25, "2026-09-02", "2026-11-30", "Pending"),
                 B(202, 2, "f2", 40, "2026-09-05", "2026-12-05", "Pending"),
                 B(203, 1, "f3", 200, "2026-09-10", "2026-10-10", "Pending")
-            };
-
-            _payouts = new List<Transaction>
+            },
+            new List<Transaction>
             {
-                new() { Id = 1, Amount = 210000, PaymentMethod = "bKash", Status = "Completed", TransactionDate = DateTime.Parse("2026-06-05") },
-                new() { Id = 2, Amount = 180000, PaymentMethod = "Bank Transfer", Status = "Completed", TransactionDate = DateTime.Parse("2026-07-05") },
-                new() { Id = 3, Amount = 165000, PaymentMethod = "bKash", Status = "Completed", TransactionDate = DateTime.Parse("2026-08-05") },
-                new() { Id = 4, Amount = 95000, PaymentMethod = "bKash", Status = "Completed", TransactionDate = DateTime.Today.AddDays(-2) },
-                new() { Id = 5, Amount = 60000, PaymentMethod = "Nagad", Status = "Processing", TransactionDate = DateTime.Today }
-            };
-
-            _expenses = new List<BookingExpense>
+                Payout(1, 210000, "bKash", "2026-06-05"),
+                Payout(2, 180000, "Bank Transfer", "2026-07-05"),
+                Payout(3, 165000, "bKash", "2026-08-05"),
+                Payout(4, 95000, "bKash", DateTime.Today.AddDays(-2).ToString("yyyy-MM-dd")),
+                Payout(5, 60000, "Nagad", DateTime.Today.ToString("yyyy-MM-dd"), "Processing")
+            },
+            new List<BookingExpense>
             {
-                new() { Id = 1, GodownBookingId = 185, Amount = 2500, Note = "Fumigation before intake", RecordedOn = DateTime.Parse("2026-05-02") },
-                new() { Id = 2, GodownBookingId = 173, Amount = 6000, Note = "Loading & unloading labour", RecordedOn = DateTime.Parse("2026-04-16") },
-                new() { Id = 3, GodownBookingId = 176, Amount = 1800, Note = "Generator fuel during outage", RecordedOn = DateTime.Parse("2026-06-12") }
-            };
+                Expense(1, 185, 2500, "Fumigation before intake", "2026-05-02"),
+                Expense(2, 173, 6000, "Loading & unloading labour", "2026-04-16"),
+                Expense(3, 176, 1800, "Generator fuel during outage", "2026-06-12")
+            })
+        {
         }
 
-        // Sample data is not owner-scoped yet; the ownerId parameter is kept so callers are DB-ready.
-        public IReadOnlyList<Godown> GetGodowns(string ownerId) => _godowns;
-
-        public IReadOnlyList<GodownBooking> GetBookings(string ownerId) => _bookings;
-
-        public IReadOnlyList<Transaction> GetPayouts(string ownerId) => _payouts;
-
-        public IReadOnlyList<BookingExpense> GetExpenses(string ownerId)
+        private static RevenueBooking B(int id, int godownId, string farmerId, double tons, string start, string end, string status)
         {
-            lock (_sync) return _expenses.ToList();
-        }
-
-        public void AddExpense(BookingExpense expense)
-        {
-            lock (_sync)
-            {
-                expense.Id = _expenses.Count == 0 ? 1 : _expenses.Max(e => e.Id) + 1;
-                _expenses.Add(expense);
-            }
+            var g = Godowns.First(x => x.Id == godownId);
+            var f = Farmers[farmerId];
+            var startDate = DateTime.Parse(start);
+            var endDate = DateTime.Parse(end);
+            var months = (endDate - startDate).TotalDays / 30.0;
+            return new RevenueBooking(id, g.Id, g.Name, g.Location, f.Id, f.FullName, f.Location, startDate, endDate, status,
+                Gross: decimal.Round((decimal)tons * g.PricePerTonPerMonth * (decimal)months, 0),
+                CapacityUsed: tons,
+                QuantityText: $"{tons:N0} t × {months:0.##} mo",
+                RateText: $"৳{g.PricePerTonPerMonth:N0} / t / mo");
         }
     }
 }
