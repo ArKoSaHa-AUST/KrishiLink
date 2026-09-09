@@ -640,3 +640,65 @@ a:hover {
         height: 105px;
     }
 }
+
+/* ==========================================================================
+   Godown Owner Revenue: inline SVG trend chart & printable report/invoice
+   ========================================================================== */
+.krishi-revenue-chart .chart-grid {
+    stroke: var(--krishi-border-color);
+    stroke-width: 1;
+}
+
+.krishi-revenue-chart .chart-axis {
+    fill: var(--krishi-text-muted);
+    font-size: 11px;
+}
+
+.krishi-revenue-chart .chart-bar {
+    fill: var(--krishi-accent);
+    transition: fill 0.2s ease;
+}
+
+.krishi-revenue-chart .chart-bar-current {
+    fill: var(--krishi-primary);
+}
+
+.krishi-revenue-chart .chart-bar-group:hover .chart-bar {
+    fill: var(--krishi-primary-hover);
+}
+
+.krishi-revenue-chart .chart-value {
+    fill: var(--krishi-text-primary);
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.krishi-revenue-chart .chart-empty {
+    fill: var(--krishi-text-muted);
+    font-size: 13px;
+}
+
+@media print {
+    body,
+    body.krishi-body-gradient {
+        background: #fff !important;
+    }
+
+    .container {
+        max-width: 100% !important;
+    }
+
+    .card {
+        box-shadow: none !important;
+        border: 1px solid var(--krishi-border-color) !important;
+        break-inside: avoid;
+    }
+
+    .table-responsive {
+        overflow: visible !important;
+    }
+
+    .krishi-invoice {
+        max-width: 100% !important;
+    }
+}

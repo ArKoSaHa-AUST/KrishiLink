@@ -1,0 +1,93 @@
+@model KrishiLink.Models.ViewModels.BookingInvoiceViewModel
+@{
+    ViewData["Title"] = $"Invoice {Model.InvoiceNumber}";
+    string Money(decimal v) => "৳" + v.ToString("N2");
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 d-print-none">
+    <a asp-action="Revenue" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold"><i class="bi bi-arrow-left me-1"></i>@L["Back to Revenue"]</a>
+    <button type="button" class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-semibold" onclick="window.print()">
+        <i class="bi bi-printer me-1"></i>@L["Print / Save as PDF"]
+    </button>
+</div>
+
+<div class="card border-0 shadow-sm mx-auto p-4 p-md-5 krishi-invoice" style="border-radius: var(--krishi-radius-lg); max-width: 820px;">
+    <div class="d-flex flex-column flex-sm-row justify-content-between gap-3 mb-4 pb-3 border-bottom">
+        <div class="d-flex align-items-center gap-2">
+            <img src="~/images/dp.png" alt="KrishiLink" class="rounded-circle object-fit-cover" style="width: 44px; height: 44px;" />
+            <div>
+                <div class="fw-bold fs-4" style="color: var(--krishi-primary);">KrishiLink</div>
+                <div class="small" style="color: var(--krishi-text-muted);">@L["Godown Storage Receipt"]</div>
+            </div>
+        </div>
+        <div class="text-sm-end">
+            <div class="fw-bold fs-5">@Model.InvoiceNumber</div>
+            <div class="small" style="color: var(--krishi-text-muted);">@L["Issued"] @Model.IssuedOn.ToString("dd MMM yyyy")</div>
+            <partial name="_StatusBadge" model="Model.Status" />
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-6">
+            <h6 class="small text-uppercase fw-bold mb-2" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L["Storage provider"]</h6>
+            <div class="fw-semibold">@(Model.OwnerBusiness ?? Model.OwnerName)</div>
+            @if (Model.OwnerBusiness is not null)
+            {
+                <div class="small">@Model.OwnerName</div>
+            }
+            @if (Model.OwnerLocation is not null)
+            {
+                <div class="small" style="color: var(--krishi-text-muted);">@Model.OwnerLocation</div>
+            }
+        </div>
+        <div class="col-6 text-end">
+            <h6 class="small text-uppercase fw-bold mb-2" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L["Billed to"]</h6>
+            <div class="fw-semibold">@Model.FarmerName</div>
+            @if (Model.FarmerLocation is not null)
+            {
+                <div class="small" style="color: var(--krishi-text-muted);">@Model.FarmerLocation</div>
+            }
+        </div>
+    </div>
+
+    <table class="table align-middle mb-4">
+        <thead>
+            <tr>
+                <th class="text-uppercase small fw-bold text-muted">@L["Description"]</th>
+                <th class="text-uppercase small fw-bold text-muted text-end">@L["Qty"]</th>
+                <th class="text-uppercase small fw-bold text-muted text-end">@L["Rate"]</th>
+                <th class="text-uppercase small fw-bold text-muted text-end">@L["Amount"]</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <div class="fw-semibold">@Model.GodownName</div>
+                    <div class="small" style="color: var(--krishi-text-muted);">@Model.GodownLocation</div>
+                    <div class="small" style="color: var(--krishi-text-muted);">@Model.StartDate.ToString("dd MMM yyyy") – @Model.EndDate.ToString("dd MMM yyyy")</div>
+                </td>
+                <td class="text-end text-nowrap">@Model.StorageTons.ToString("N0") t × @Model.Months.ToString("0.##") @L["mo"]</td>
+                <td class="text-end text-nowrap">@Money(Model.RatePerTonPerMonth) <span class="small" style="color: var(--krishi-text-muted);">/ t / @L["mo"]</span></td>
+                <td class="text-end fw-semibold">@Money(Model.Gross)</td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" class="text-end" style="color: var(--krishi-text-muted);">@L["Gross"]</td>
+                <td class="text-end">@Money(Model.Gross)</td>
+            </tr>
+            <tr>
+                <td colspan="3" class="text-end" style="color: var(--krishi-text-muted);">@L["Platform commission ({0}%)", (Model.CommissionRate * 100).ToString("0.#")]</td>
+                <td class="text-end text-danger">− @Money(Model.Commission)</td>
+            </tr>
+            <tr class="fw-bold fs-5">
+                <td colspan="3" class="text-end border-0" style="color: var(--krishi-primary);">@L["Net payable to provider"]</td>
+                <td class="text-end border-0" style="color: var(--krishi-primary);">@Money(Model.NetPayable)</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <p class="small mb-0" style="color: var(--krishi-text-muted);">
+        @L["Storage charged pro-rata at the listed rate per ton per 30-day month. Settled through KrishiLink; keep this receipt for your records."]
+    </p>
+</div>
