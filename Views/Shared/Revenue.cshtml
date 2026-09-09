@@ -1,4 +1,4 @@
-@model KrishiLink.Models.ViewModels.GodownRevenueViewModel
+@model KrishiLink.Models.ViewModels.OwnerRevenueViewModel
 @{
     ViewData["Title"] = "Revenue";
     ViewData["BodyClass"] = "krishi-body-gradient";
@@ -7,13 +7,15 @@
     var statuses = new[] { "Completed", "Accepted", "Pending", "Cancelled", "Rejected" };
     var currentUrl = Context.Request.Path + Context.Request.QueryString;
     var rangeText = $"{Model.RangeStart:dd MMM yyyy} – {Model.RangeEnd:dd MMM yyyy}";
+    var isEquipment = Model.ListingLabel == "Equipment";
+    var listingLabel = L[Model.ListingLabel].Value;
     string Money(decimal v) => "৳" + v.ToString("N0");
-    string PeriodUrl(string period) => Url.Action("Revenue", "GodownOwner", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.GodownId, f.Status, Period = period })!;
+    string PeriodUrl(string period) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, Period = period })!;
     var csvRoute = new Dictionary<string, string>
     {
         ["From"] = f.From?.ToString("yyyy-MM-dd") ?? string.Empty,
         ["To"] = f.To?.ToString("yyyy-MM-dd") ?? string.Empty,
-        ["GodownId"] = f.GodownId?.ToString() ?? string.Empty,
+        ["ListingId"] = f.ListingId?.ToString() ?? string.Empty,
         ["Status"] = f.Status ?? string.Empty
     };
 }
@@ -23,14 +25,14 @@
     <div>
         <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">@L["Revenue & Earnings"]</h2>
         <p class="mb-0" style="color: var(--krishi-text-muted);">
-            @L["Track what your godowns earn, what has been paid out, and which listings perform best."]
+            @L["Track what your listings earn, what has been paid out, and which ones perform best."]
         </p>
     </div>
     <div class="d-flex gap-2 flex-shrink-0 d-print-none">
-        <a asp-controller="GodownOwner" asp-action="Requests" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold">
+        <a asp-action="Requests" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold">
             <i class="bi bi-inbox me-1"></i> @L["Booking Requests"]
         </a>
-        <a asp-controller="GodownOwner" asp-action="Index" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold">
+        <a asp-action="Index" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold">
             <i class="bi bi-speedometer2 me-1"></i> @L["Dashboard"]
         </a>
     </div>
@@ -121,12 +123,12 @@
             <input type="date" class="form-control form-control-sm" id="To" name="To" value="@f.To?.ToString("yyyy-MM-dd")" />
         </div>
         <div class="col-6 col-md-3 col-lg-3">
-            <label for="GodownId" class="form-label small fw-semibold mb-1">@L["Godown"]</label>
-            <select class="form-select form-select-sm" id="GodownId" name="GodownId">
-                <option value="">@L["All godowns"]</option>
-                @foreach (var g in Model.Godowns)
+            <label for="ListingId" class="form-label small fw-semibold mb-1">@listingLabel</label>
+            <select class="form-select form-select-sm" id="ListingId" name="ListingId">
+                <option value="">@L["All"]</option>
+                @foreach (var g in Model.Listings)
                 {
-                    <option value="@g.Id" selected="@(f.GodownId == g.Id)">@g.Name</option>
+                    <option value="@g.Id" selected="@(f.ListingId == g.Id)">@g.Name</option>
                 }
             </select>
         </div>
@@ -154,9 +156,9 @@
     </div>
     <div class="small mt-2" style="color: var(--krishi-text-muted);">
         <i class="bi bi-calendar-range me-1"></i>@L["Showing"] <strong>@rangeText</strong>
-        @if (f.GodownId is not null)
+        @if (f.ListingId is not null)
         {
-            <span> · @Model.Godowns.FirstOrDefault(g => g.Id == f.GodownId)?.Name</span>
+            <span> · @Model.Listings.FirstOrDefault(g => g.Id == f.ListingId)?.Name</span>
         }
     </div>
 </form>
@@ -300,7 +302,7 @@
                                     @L["{0} is your top earner; {1} earned nothing in this period", Model.Insights.TopListing, Model.Insights.WeakestListing!]
                                 }
                             </strong>
-                            <div style="color: var(--krishi-text-muted);">@L["Consider re-pricing or promoting under-performing godowns before the next harvest."]</div>
+                            <div style="color: var(--krishi-text-muted);">@L["Consider re-pricing or promoting under-performing listings before the next harvest."]</div>
                         </div>
                     </li>
                 }
@@ -319,17 +321,17 @@
     </div>
 </div>
 
-<!-- Revenue by Godown -->
+<!-- Revenue by Listing -->
 <div class="card border-0 shadow-sm mb-4 overflow-hidden" style="border-radius: var(--krishi-radius-lg);">
     <div class="p-3 px-4 d-flex align-items-center justify-content-between" style="background-color: var(--krishi-primary-light);">
-        <h5 class="fw-bold mb-0" style="color: var(--krishi-primary);"><i class="bi bi-building me-2"></i>@L["Revenue by Godown"]</h5>
+        <h5 class="fw-bold mb-0" style="color: var(--krishi-primary);"><i class="bi @(isEquipment ? "bi-tools" : "bi-building") me-2"></i>@L["Revenue by {0}", listingLabel]</h5>
         <span class="small" style="color: var(--krishi-text-muted);">@rangeText</span>
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead>
                 <tr>
-                    <th class="ps-4 py-3 text-uppercase small fw-bold text-muted">@L["Godown"]</th>
+                    <th class="ps-4 py-3 text-uppercase small fw-bold text-muted">@listingLabel</th>
                     <th class="py-3 text-uppercase small fw-bold text-muted text-end">@L["Bookings"]</th>
                     <th class="py-3 text-uppercase small fw-bold text-muted text-end">@L["Revenue Earned"]</th>
                     <th class="py-3 text-uppercase small fw-bold text-muted text-end">@L["Avg. / Booking"]</th>
@@ -353,7 +355,7 @@
                                 </div>
                                 <span class="small fw-semibold" style="min-width: 36px;">@b.UtilizationPercent%</span>
                             </div>
-                            <div class="small" style="color: var(--krishi-text-muted);">@L["of capacity booked (ton-days)"]</div>
+                            <div class="small" style="color: var(--krishi-text-muted);">@L[Model.UtilizationHint]</div>
                         </td>
                         <td class="pe-4 text-end">
                             @if (b.PerformanceFlag == "Top")
@@ -398,7 +400,7 @@
                     <tr>
                         <th class="ps-4 py-3 text-uppercase small fw-bold text-muted">@L["Date"]</th>
                         <th class="py-3 text-uppercase small fw-bold text-muted">@L["Farmer"]</th>
-                        <th class="py-3 text-uppercase small fw-bold text-muted">@L["Godown"]</th>
+                        <th class="py-3 text-uppercase small fw-bold text-muted">@listingLabel</th>
                         <th class="py-3 text-uppercase small fw-bold text-muted">@L["Duration"]</th>
                         <th class="py-3 text-uppercase small fw-bold text-muted text-end">@L["Amount"]</th>
                         <th class="py-3 text-uppercase small fw-bold text-muted text-end">@L["Net"]</th>
@@ -416,16 +418,16 @@
                                 <div class="small" style="color: var(--krishi-text-muted);">#@t.BookingId</div>
                             </td>
                             <td>
-                                @t.FarmerName
+                                @t.CustomerName
                                 @if (t.IsRepeatCustomer)
                                 {
                                     <i class="bi bi-arrow-repeat text-success ms-1" title="@L["Repeat customer"]"></i>
                                 }
                             </td>
-                            <td>@t.GodownName</td>
+                            <td>@t.ListingName</td>
                             <td class="text-nowrap">
                                 @t.StartDate.ToString("dd MMM") – @t.EndDate.ToString("dd MMM")
-                                <div class="small" style="color: var(--krishi-text-muted);">@L["{0} mo · {1} t", t.Months.ToString("0.#"), t.StorageTons.ToString("N0")]</div>
+                                <div class="small" style="color: var(--krishi-text-muted);">@t.QuantityText</div>
                             </td>
                             <td class="text-end fw-semibold">@Money(t.Gross)</td>
                             <td class="text-end text-nowrap">
@@ -446,7 +448,7 @@
                                 @if (canExpense)
                                 {
                                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 add-expense-btn"
-                                            data-booking-id="@t.BookingId" data-booking-label="#@t.BookingId · @t.GodownName" data-bs-toggle="modal" data-bs-target="#expenseModal" title="@L["Add expense"]">
+                                            data-booking-id="@t.BookingId" data-booking-label="#@t.BookingId · @t.ListingName" data-bs-toggle="modal" data-bs-target="#expenseModal" title="@L["Add expense"]">
                                         <i class="bi bi-plus-circle"></i>
                                     </button>
                                 }

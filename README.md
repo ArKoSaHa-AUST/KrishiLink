@@ -19,7 +19,7 @@
 | **Equipment Marketplace** | Browse & Rent Machinery | List Equipment & Set Rates | View Catalog |
 | **Godown Storage Directory** | Book Storage Space | View Storage Directory | List Godowns & Manage Space |
 | **Booking Management** | Track Active & Past Requests | Accept/Reject Rental Requests | Accept/Reject Storage Requests |
-| **Revenue & Earnings** | — | — | KPIs, Trend Chart, Settlement/Payouts, Utilization, CSV/PDF Export, Invoices |
+| **Revenue & Earnings** | — | KPIs, Trend Chart, Settlement/Payouts, Utilization, CSV/PDF Export, Invoices | KPIs, Trend Chart, Settlement/Payouts, Utilization, CSV/PDF Export, Invoices |
 | **Advisory Services** | Real-Time Weather & Crop Tips | — | — |
 
 ---
@@ -38,10 +38,11 @@ KrishiLink/
 │   ├── GodownController.cs        # Storage Facilities Directory & Booking
 │   ├── AdvisoryController.cs      # Weather Forecasts & Crop Recommendations
 │   ├── BookingsController.cs      # User Booking History & Status Updates
-│   ├── EquipmentOwnerController.cs# Owner Listings & Rental Request Management
-│   └── GodownOwnerController.cs   # Facility Listings, Storage Booking Requests & Revenue Reports
+│   ├── EquipmentOwnerController.cs# Owner Listings, Rental Request Management & Revenue Reports
+│   ├── GodownOwnerController.cs   # Facility Listings, Storage Booking Requests & Revenue Reports
+│   └── OwnerRevenueControllerBase.cs # Shared Revenue / CSV / Invoice / Expense actions for both owner roles
 ├── Views/                         # Razor Views & Component Partials
-│   ├── Shared/                    # Base Layouts (_Layout.cshtml, _LoginPartial, Partials, SVG Revenue Chart)
+│   ├── Shared/                    # Base Layouts, Partials, shared Revenue & Invoice pages, SVG Revenue Chart
 │   ├── Home/                      # Landing Page
 │   ├── Account/                   # Login, Register, Profile UI
 │   ├── Farmer/                    # Farmer Dashboard
@@ -50,12 +51,12 @@ KrishiLink/
 │   ├── Advisory/                  # Advisory Dashboard
 │   ├── Bookings/                  # History Views
 │   ├── EquipmentOwner/            # Equipment Management Views
-│   └── GodownOwner/               # Godown Management, Revenue Dashboard & Invoice Views
+│   └── GodownOwner/               # Godown Management Views
 ├── Models/                        # Data Transfer & Entity Models
 │   ├── Entities/                  # EF Core Domain Entities (User, Equipment, Godown, etc.)
 │   └── ViewModels/                # Strongly-typed Razor ViewModels
 ├── BLL/                           # Business Logic Layer Services
-│   └── Services/                  # Business Logic & Validation Services (incl. GodownRevenueService)
+│   └── Services/                  # Business Logic & Validation Services (incl. OwnerRevenueService)
 ├── DAL/                           # Data Access Layer
 │   ├── ApplicationDbContext.cs    # EF Core DbContext with Identity Integration
 │   ├── Repositories/              # Repository Interfaces (+ in-memory sample implementations until DB wiring)

@@ -106,10 +106,10 @@
                                             <span>@L["Dashboard"]</span>
                                         </a>
                                     </li>
-                                    @if (roleDisplay == "GodownOwner")
+                                    @if (roleDisplay is "GodownOwner" or "EquipmentOwner")
                                     {
                                         <li>
-                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="GodownOwner" asp-action="Revenue">
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="@dashboardController" asp-action="Revenue">
                                                 <i class="bi bi-graph-up-arrow text-success"></i>
                                                 <span>@L["Revenue"]</span>
                                             </a>

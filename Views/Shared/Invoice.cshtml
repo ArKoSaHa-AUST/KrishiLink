@@ -17,7 +17,7 @@
             <img src="~/images/dp.png" alt="KrishiLink" class="rounded-circle object-fit-cover" style="width: 44px; height: 44px;" />
             <div>
                 <div class="fw-bold fs-4" style="color: var(--krishi-primary);">KrishiLink</div>
-                <div class="small" style="color: var(--krishi-text-muted);">@L["Godown Storage Receipt"]</div>
+                <div class="small" style="color: var(--krishi-text-muted);">@L[Model.Title]</div>
             </div>
         </div>
         <div class="text-sm-end">
@@ -29,7 +29,7 @@
 
     <div class="row g-4 mb-4">
         <div class="col-6">
-            <h6 class="small text-uppercase fw-bold mb-2" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L["Storage provider"]</h6>
+            <h6 class="small text-uppercase fw-bold mb-2" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L["Provider"]</h6>
             <div class="fw-semibold">@(Model.OwnerBusiness ?? Model.OwnerName)</div>
             @if (Model.OwnerBusiness is not null)
             {
@@ -42,10 +42,10 @@
         </div>
         <div class="col-6 text-end">
             <h6 class="small text-uppercase fw-bold mb-2" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L["Billed to"]</h6>
-            <div class="fw-semibold">@Model.FarmerName</div>
-            @if (Model.FarmerLocation is not null)
+            <div class="fw-semibold">@Model.CustomerName</div>
+            @if (Model.CustomerLocation is not null)
             {
-                <div class="small" style="color: var(--krishi-text-muted);">@Model.FarmerLocation</div>
+                <div class="small" style="color: var(--krishi-text-muted);">@Model.CustomerLocation</div>
             }
         </div>
     </div>
@@ -62,12 +62,12 @@
         <tbody>
             <tr>
                 <td>
-                    <div class="fw-semibold">@Model.GodownName</div>
-                    <div class="small" style="color: var(--krishi-text-muted);">@Model.GodownLocation</div>
+                    <div class="fw-semibold">@Model.ListingName</div>
+                    <div class="small" style="color: var(--krishi-text-muted);">@Model.ListingLocation</div>
                     <div class="small" style="color: var(--krishi-text-muted);">@Model.StartDate.ToString("dd MMM yyyy") – @Model.EndDate.ToString("dd MMM yyyy")</div>
                 </td>
-                <td class="text-end text-nowrap">@Model.StorageTons.ToString("N0") t × @Model.Months.ToString("0.##") @L["mo"]</td>
-                <td class="text-end text-nowrap">@Money(Model.RatePerTonPerMonth) <span class="small" style="color: var(--krishi-text-muted);">/ t / @L["mo"]</span></td>
+                <td class="text-end text-nowrap">@Model.QuantityText</td>
+                <td class="text-end text-nowrap">@Model.RateText</td>
                 <td class="text-end fw-semibold">@Money(Model.Gross)</td>
             </tr>
         </tbody>
@@ -88,6 +88,6 @@
     </table>
 
     <p class="small mb-0" style="color: var(--krishi-text-muted);">
-        @L["Storage charged pro-rata at the listed rate per ton per 30-day month. Settled through KrishiLink; keep this receipt for your records."]
+        @L["Charged at the listed rate for the booked period. Settled through KrishiLink; keep this receipt for your records."]
     </p>
 </div>
