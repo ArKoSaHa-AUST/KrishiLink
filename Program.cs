@@ -9,6 +9,9 @@ using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// QuestPDF community licence (free for organisations under USD 1M annual revenue)
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
 // Add DbContext with MsSQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");

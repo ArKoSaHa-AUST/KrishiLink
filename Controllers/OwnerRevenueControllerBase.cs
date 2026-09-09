@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Claims;
 using KrishiLink.BLL.Services;
 using KrishiLink.Models.Entities;
@@ -31,6 +32,21 @@ namespace KrishiLink.Controllers
         public IActionResult Revenue(RevenueFilter filter)
         {
             return View(_revenueService.GetReport(OwnerId, filter));
+        }
+
+        /// <summary>GET: /{Owner}/Statement?month=2026-09 — downloads the monthly statement PDF (defaults to the current month).</summary>
+        [HttpGet]
+        public async Task<IActionResult> Statement(string? month)
+        {
+            var period = DateTime.TryParseExact(month, "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed)
+                ? parsed
+                : DateTime.Today;
+            if (period > DateTime.Today) return BadRequest("Statements are only available for current or past months.");
+
+            var owner = await _userManager.GetUserAsync(User);
+            var statement = _revenueService.GenerateMonthlyStatement(OwnerId, period,
+                new StatementOwner(owner?.FullName ?? User.Identity?.Name ?? "Owner", owner?.BusinessOrFarmName, owner?.Location));
+            return File(statement.Content, "application/pdf", statement.FileName);
         }
 
         /// <summary>GET: /{Owner}/Invoice/185 — printable receipt for a completed booking (browser "Save as PDF").</summary>

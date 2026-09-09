@@ -19,7 +19,7 @@
 | **Equipment Marketplace** | Browse & Rent Machinery | List Equipment & Set Rates | View Catalog |
 | **Godown Storage Directory** | Book Storage Space | View Storage Directory | List Godowns & Manage Space |
 | **Booking Management** | Track Active & Past Requests | Accept/Reject Rental Requests | Accept/Reject Storage Requests |
-| **Revenue & Earnings** | — | KPIs, Trend Chart, Settlement/Payouts, Utilization, PDF Export, Invoices | KPIs, Trend Chart, Settlement/Payouts, Utilization, PDF Export, Invoices |
+| **Revenue & Earnings** | — | KPIs, Trend Chart, Settlement/Payouts, Utilization, Monthly PDF Statement, Invoices | KPIs, Trend Chart, Settlement/Payouts, Utilization, Monthly PDF Statement, Invoices |
 | **Advisory Services** | Real-Time Weather & Crop Tips | — | — |
 
 ---
@@ -72,6 +72,7 @@ KrishiLink/
 - **Backend**: C# / ASP.NET Core MVC (.NET 9 / .NET 8 LTS)
 - **Data Access & ORM**: Entity Framework Core, MsSQL (Microsoft SQL Server / LocalDB)
 - **Security & Authentication**: ASP.NET Core Identity (Role-Based Authorization)
+- **Reporting**: QuestPDF (Community licence) for server-generated monthly owner statements
 - **Frontend**: Razor Views (HTML5), Bootstrap 5, Bootstrap Icons, Google Fonts (Inter)
 
 ---

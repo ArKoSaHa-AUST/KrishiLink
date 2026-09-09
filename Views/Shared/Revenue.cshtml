@@ -22,7 +22,19 @@
             @L["Track what your listings earn, what has been paid out, and which ones perform best."]
         </p>
     </div>
-    <div class="d-flex gap-2 flex-shrink-0 d-print-none">
+    <div class="d-flex flex-wrap gap-2 flex-shrink-0 d-print-none">
+        <form method="get" asp-action="Statement" class="input-group input-group-sm w-auto" title="@L["Download a PDF statement for the selected month"]">
+            <select name="month" class="form-select" aria-label="@L["Statement month"]" style="max-width: 150px;">
+                @for (var i = 0; i < 12; i++)
+                {
+                    var m = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-i);
+                    <option value="@m.ToString("yyyy-MM")">@m.ToString("MMMM yyyy")</option>
+                }
+            </select>
+            <button type="submit" class="btn btn-krishi-primary fw-semibold">
+                <i class="bi bi-file-earmark-pdf me-1"></i>@L["Download Statement"]
+            </button>
+        </form>
         <a asp-action="Requests" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold">
             <i class="bi bi-inbox me-1"></i> @L["Booking Requests"]
         </a>

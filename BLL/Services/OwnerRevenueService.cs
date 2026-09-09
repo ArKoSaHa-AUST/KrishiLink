@@ -3,6 +3,7 @@ using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
 using Microsoft.Extensions.Options;
+using QuestPDF.Fluent;
 
 namespace KrishiLink.BLL.Services
 {
@@ -19,6 +20,9 @@ namespace KrishiLink.BLL.Services
     {
         OwnerRevenueViewModel GetReport(string ownerId, RevenueFilter filter);
         BookingInvoiceViewModel? GetInvoice(string ownerId, int bookingId);
+
+        /// <summary>Builds the bank-statement style PDF for one calendar month; returns the bytes and a file name.</summary>
+        (byte[] Content, string FileName) GenerateMonthlyStatement(string ownerId, DateTime month, StatementOwner owner);
         bool AddExpense(string ownerId, int bookingId, decimal amount, string? note);
     }
 
@@ -153,6 +157,14 @@ namespace KrishiLink.BLL.Services
                 Commission = Commission(b.Gross),
                 Status = b.Status
             };
+        }
+
+        public (byte[] Content, string FileName) GenerateMonthlyStatement(string ownerId, DateTime month, StatementOwner owner)
+        {
+            var first = new DateTime(month.Year, month.Month, 1);
+            var report = GetReport(ownerId, new RevenueFilter { From = first, To = first.AddMonths(1).AddDays(-1) });
+            var document = new MonthlyStatementDocument(report, owner, first);
+            return (document.GeneratePdf(), document.FileName);
         }
 
         public bool AddExpense(string ownerId, int bookingId, decimal amount, string? note)
