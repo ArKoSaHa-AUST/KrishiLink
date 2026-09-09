@@ -1,4 +1,6 @@
+using KrishiLink.BLL.Services;
 using KrishiLink.DAL;
+using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -48,6 +50,11 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
         new CookieRequestCultureProvider()
     };
 });
+
+// Revenue reporting: in-memory sample repository until bookings/payouts are persisted
+builder.Services.Configure<RevenueOptions>(builder.Configuration.GetSection(RevenueOptions.SectionName));
+builder.Services.AddSingleton<IGodownRevenueRepository, InMemoryGodownRevenueRepository>();
+builder.Services.AddScoped<IGodownRevenueService, GodownRevenueService>();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

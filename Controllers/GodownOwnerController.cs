@@ -1,5 +1,10 @@
+using System.Security.Claims;
+using System.Text;
+using KrishiLink.BLL.Services;
+using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KrishiLink.Controllers
@@ -7,6 +12,17 @@ namespace KrishiLink.Controllers
     [Authorize(Roles = "GodownOwner")]
     public class GodownOwnerController : Controller
     {
+        private readonly IGodownRevenueService _revenueService;
+        private readonly UserManager<ApplicationUser> _userManager;
+
+        public GodownOwnerController(IGodownRevenueService revenueService, UserManager<ApplicationUser> userManager)
+        {
+            _revenueService = revenueService;
+            _userManager = userManager;
+        }
+
+        private string OwnerId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+
         // Sample data shared by the dashboard and the booking requests page until DB wiring
         private static List<OwnerGodownItem> GetSampleGodowns() => new()
         {
@@ -70,10 +86,66 @@ namespace KrishiLink.Controllers
                 PendingRequestItems = GetSampleRequests()
                     .Where(r => r.Status == "Pending")
                     .OrderByDescending(r => r.RequestedOn)
-                    .ToList()
+                    .ToList(),
+                ThisMonthRevenue = _revenueService.GetReport(OwnerId, new RevenueFilter()).ThisMonthRevenue
             };
 
             return View(model);
+        }
+
+        /// <summary>
+        /// GET: /GodownOwner/Revenue
+        /// Revenue dashboard: KPIs, settlement, trend, per-godown breakdown, funnel and transactions.
+        /// </summary>
+        [HttpGet]
+        public IActionResult Revenue(RevenueFilter filter)
+        {
+            return View(_revenueService.GetReport(OwnerId, filter));
+        }
+
+        /// <summary>
+        /// GET: /GodownOwner/RevenueCsv
+        /// Downloads the filtered transaction list as UTF-8 (BOM) CSV so Excel renders ৳ correctly.
+        /// </summary>
+        [HttpGet]
+        public IActionResult RevenueCsv(RevenueFilter filter)
+        {
+            var csv = _revenueService.ExportCsv(OwnerId, filter);
+            var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv)).ToArray();
+            return File(bytes, "text/csv; charset=utf-8", $"godown-revenue-{DateTime.Today:yyyy-MM-dd}.csv");
+        }
+
+        /// <summary>
+        /// GET: /GodownOwner/Invoice/185
+        /// Printable receipt for a completed booking (use the browser's "Save as PDF").
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> Invoice(int id)
+        {
+            var model = _revenueService.GetInvoice(OwnerId, id);
+            if (model is null) return NotFound();
+
+            var owner = await _userManager.GetUserAsync(User);
+            model.OwnerName = owner?.FullName ?? User.Identity?.Name ?? "Owner";
+            model.OwnerBusiness = owner?.BusinessOrFarmName;
+            model.OwnerLocation = owner?.Location;
+            return View(model);
+        }
+
+        /// <summary>
+        /// POST: /GodownOwner/AddExpense
+        /// Records a cost against a booking so the revenue page can show net profit.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult AddExpense(int bookingId, decimal amount, string? note, string? returnUrl)
+        {
+            if (_revenueService.AddExpense(OwnerId, bookingId, amount, note))
+                TempData["SuccessMessage"] = $"Expense of ৳{amount:N0} recorded against booking #{bookingId}.";
+            else
+                TempData["ErrorMessage"] = "Expense must be a positive amount on an accepted or completed booking.";
+
+            return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Revenue));
         }
 
         /// <summary>
