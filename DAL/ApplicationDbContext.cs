@@ -92,8 +92,15 @@ namespace KrishiLink.DAL
 
             builder.Entity<Transaction>(t =>
             {
+                t.Property(x => x.Reference).HasMaxLength(30);
+                t.Property(x => x.PaymentMethod).HasMaxLength(30);
+                t.Property(x => x.PayoutAccount).HasMaxLength(40);
+                t.Property(x => x.Status).HasMaxLength(20);
+                t.Property(x => x.GrossAmount).HasPrecision(18, 2);
+                t.Property(x => x.Commission).HasPrecision(18, 2);
                 t.Property(x => x.Amount).HasPrecision(18, 2);
                 t.HasIndex(x => x.UserId);
+                t.HasIndex(x => x.Reference).IsUnique();
             });
         }
     }

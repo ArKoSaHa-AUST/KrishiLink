@@ -67,6 +67,8 @@ namespace KrishiLink.Models.ViewModels
         public decimal NetProfit => NetEarned - Expenses;
         public decimal PaidOut { get; set; }
         public decimal Processing { get; set; }
+
+        /// <summary>Running "pending payout": net earnings not yet paid or in transfer.</summary>
         public decimal Owed => Math.Max(0, NetEarned - PaidOut - Processing);
         public List<PayoutItem> Payouts { get; set; } = new();
     }
@@ -74,9 +76,24 @@ namespace KrishiLink.Models.ViewModels
     public class PayoutItem
     {
         public DateTime Date { get; set; }
+        public string Reference { get; set; } = string.Empty;
+        public decimal Gross { get; set; }
+        public decimal Commission { get; set; }
+
+        /// <summary>Net amount paid to the owner.</summary>
         public decimal Amount { get; set; }
         public string Method { get; set; } = string.Empty;
+        public string? Account { get; set; }
         public string Status { get; set; } = "Completed";
+    }
+
+    /// <summary>Dedicated payouts page: pending balance, commission explainer and the full settlement history.</summary>
+    public class PayoutHistoryViewModel
+    {
+        public string ListingLabel { get; set; } = string.Empty;
+        public RevenueSettlement Settlement { get; set; } = new();
+        public int CompletedBookings { get; set; }
+        public static readonly string[] PayoutMethods = { "bKash", "Nagad", "Rocket", "Bank Transfer" };
     }
 
     public class RevenueTrendPoint
