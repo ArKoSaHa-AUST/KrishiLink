@@ -1,0 +1,23 @@
+@using KrishiLink.Models.Entities
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
+@*
+    Gentle reminder on dashboards for users who skipped the post-registration setup.
+    Disappears once Account/Onboarding has been completed.
+*@
+@{
+    var user = User.Identity?.IsAuthenticated == true ? await UserManager.GetUserAsync(User) : null;
+}
+@if (user is not null && user.OnboardingCompletedAt is null)
+{
+    <div class="alert border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center justify-content-between gap-3 flex-wrap" style="background-color: var(--krishi-primary-light);">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-stars fs-4" style="color: var(--krishi-primary);"></i>
+            <div>
+                <strong style="color: var(--krishi-text-primary);">@L["Finish setting up your account"]</strong>
+                <span class="small d-block" style="color: var(--krishi-text-muted);">@L["Add your district and what you grow or list — it takes under a minute."]</span>
+            </div>
+        </div>
+        <a asp-controller="Account" asp-action="Onboarding" class="btn btn-krishi-primary btn-sm rounded-pill px-3 fw-semibold">@L["Complete Setup"]</a>
+    </div>
+}

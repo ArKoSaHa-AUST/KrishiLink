@@ -100,8 +100,8 @@ namespace KrishiLink.Controllers
                 // Sign in user
                 await _signInManager.SignInAsync(user, isPersistent: true);
 
-                // Redirect to role-specific dashboard
-                return RedirectBasedOnRole(model.Role);
+                // Walk the new user through the short setup before their dashboard
+                return RedirectToAction(nameof(Onboarding));
             }
 
             // Append Identity errors to ModelState
@@ -173,7 +173,9 @@ namespace KrishiLink.Controllers
                     return Redirect(model.ReturnUrl);
                 }
 
-                return RedirectBasedOnRole(user.UserRole);
+                return user.OnboardingCompletedAt is null
+                    ? RedirectToAction(nameof(Onboarding))
+                    : RedirectBasedOnRole(user.UserRole);
             }
 
             ModelState.AddModelError(nameof(model.Password), "Incorrect phone number or password.");
@@ -203,10 +205,79 @@ namespace KrishiLink.Controllers
                 Location = currentUser.Location ?? string.Empty,
                 BusinessOrFarmName = currentUser.BusinessOrFarmName,
                 Role = string.IsNullOrEmpty(currentUser.UserRole) ? AppRoles.Farmer : currentUser.UserRole,
+                District = currentUser.District,
+                Specialization = currentUser.Specialization,
+                OnboardingComplete = currentUser.OnboardingCompletedAt is not null,
                 MemberSince = currentUser.CreatedAt
             };
             return View(model);
         }
+
+        /// <summary>
+        /// GET: /Account/Onboarding — asks only for the profile details still missing (district, main crop / listing type).
+        /// The role was chosen at registration and is not re-asked. <paramref name="edit"/> shows every field for later changes.
+        /// </summary>
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> Onboarding(bool edit = false)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null) return Challenge();
+
+            var model = BuildOnboarding(user, edit);
+            if (!model.AskDistrict && !model.AskSpecialization)
+            {
+                // Nothing left to ask — mark the setup done and move on
+                user.OnboardingCompletedAt ??= DateTime.UtcNow;
+                await _userManager.UpdateAsync(user);
+                return RedirectBasedOnRole(user.UserRole);
+            }
+            return View(model);
+        }
+
+        /// <summary>POST: /Account/Onboarding — saves whichever fields were asked for and marks the setup complete.</summary>
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Onboarding(OnboardingViewModel model)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null) return Challenge();
+
+            // Fields shown on the form (posted back as hidden flags) plus anything still missing on the profile
+            var view = BuildOnboarding(user, edit: false);
+            view.AskDistrict |= model.AskDistrict;
+            view.AskSpecialization |= model.AskSpecialization;
+            view.District = model.District;
+            view.Specialization = model.Specialization;
+
+            if (view.AskDistrict && !OnboardingOptions.Districts.Contains(model.District ?? string.Empty))
+                ModelState.AddModelError(nameof(model.District), "Please select your district from the list.");
+            if (view.AskSpecialization && !view.SpecializationOptions.Contains(model.Specialization ?? string.Empty))
+                ModelState.AddModelError(nameof(model.Specialization), "Please pick one of the listed options.");
+            if (!ModelState.IsValid) return View(view);
+
+            if (view.AskDistrict) user.District = model.District;
+            if (view.AskSpecialization) user.Specialization = model.Specialization;
+            var firstTime = user.OnboardingCompletedAt is null;
+            user.OnboardingCompletedAt ??= DateTime.UtcNow;
+            await _userManager.UpdateAsync(user);
+
+            TempData["SuccessMessage"] = firstTime
+                ? $"Welcome to KrishiLink, {user.FullName}! Your profile is set up."
+                : "Profile details updated.";
+            return firstTime ? RedirectBasedOnRole(user.UserRole) : RedirectToAction(nameof(Profile));
+        }
+
+        private static OnboardingViewModel BuildOnboarding(ApplicationUser user, bool edit) => new()
+        {
+            FullName = user.FullName,
+            Role = string.IsNullOrEmpty(user.UserRole) ? AppRoles.Farmer : user.UserRole,
+            AskDistrict = edit || string.IsNullOrEmpty(user.District),
+            AskSpecialization = edit || string.IsNullOrEmpty(user.Specialization),
+            District = user.District ?? OnboardingOptions.GuessDistrict(user.Location),
+            Specialization = user.Specialization
+        };
 
         [HttpPost]
         [Authorize]
