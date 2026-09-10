@@ -119,8 +119,8 @@ namespace KrishiLink.DAL
                 StorageBooking(godowns[0], karim, 200, 10, 40, BookingStatus.Pending, -1, "Potato harvest, needs 2-8°C climate control."));
 
             db.Transactions.AddRange(
-                Payout(eqOwner, 45000, "bKash", -95), Payout(eqOwner, 35000, "Nagad", -65), Payout(eqOwner, 20000, "bKash", -35),
-                Payout(eqOwner, 15000, "bKash", -3), Payout(eqOwner, 10000, "Bank Transfer", 0, "Processing"),
+                Payout(eqOwner, 25000, "bKash", -95), Payout(eqOwner, 20000, "Nagad", -65), Payout(eqOwner, 15000, "bKash", -35),
+                Payout(eqOwner, 8000, "bKash", -3), Payout(eqOwner, 4000, "Bank Transfer", 0, "Processing"),
                 Payout(gdOwner, 120000, "Bank Transfer", -90), Payout(gdOwner, 80000, "bKash", -60), Payout(gdOwner, 60000, "Bank Transfer", -30),
                 Payout(gdOwner, 25000, "bKash", -2), Payout(gdOwner, 15000, "Nagad", 0, "Processing"));
             await db.SaveChangesAsync();
@@ -219,7 +219,23 @@ namespace KrishiLink.DAL
                 UpdatedOn = status == BookingStatus.Pending ? null : DateTime.Now.AddDays(requestedOffset).AddHours(5)
             };
 
-        private static Transaction Payout(ApplicationUser owner, decimal amount, string method, int daysAgo, string status = "Completed") =>
-            new() { UserId = owner.Id, Amount = amount, PaymentMethod = method, Status = status, TransactionDate = DateTime.Today.AddDays(daysAgo) };
+        private static Transaction Payout(ApplicationUser owner, decimal net, string method, int daysAgo, string status = "Completed")
+        {
+            // Seed payouts settle net amounts; back out the 5% commission so the history shows what the platform kept
+            var gross = decimal.Round(net / 0.95m, 0);
+            var date = DateTime.Today.AddDays(daysAgo);
+            return new()
+            {
+                UserId = owner.Id,
+                Reference = $"KL-PO-{date:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
+                GrossAmount = gross,
+                Commission = gross - net,
+                Amount = net,
+                PaymentMethod = method,
+                PayoutAccount = method == "Bank Transfer" ? "0123456789012" : owner.PhoneNumber,
+                Status = status,
+                TransactionDate = date
+            };
+        }
     }
 }

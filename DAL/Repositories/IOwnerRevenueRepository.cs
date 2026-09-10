@@ -38,6 +38,7 @@ namespace KrishiLink.DAL.Repositories
 
         /// <summary>Platform payouts made to the owner.</summary>
         IReadOnlyList<Transaction> GetPayouts(string ownerId);
+        void AddPayout(Transaction payout);
 
         IReadOnlyList<BookingExpense> GetExpenses(string ownerId);
         void AddExpense(BookingExpense expense);

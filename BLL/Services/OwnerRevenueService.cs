@@ -24,6 +24,11 @@ namespace KrishiLink.BLL.Services
         /// <summary>Builds the bank-statement style PDF for one calendar month; returns the bytes and a file name.</summary>
         (byte[] Content, string FileName) GenerateMonthlyStatement(string ownerId, DateTime month, StatementOwner owner);
         bool AddExpense(string ownerId, int bookingId, decimal amount, string? note);
+
+        PayoutHistoryViewModel GetPayoutHistory(string ownerId);
+
+        /// <summary>Creates a "Processing" payout for the whole pending balance. Returns an error message, or null on success.</summary>
+        string? RequestPayout(string ownerId, string method, string? account);
     }
 
     public interface IGodownRevenueService : IOwnerRevenueService { }
@@ -184,6 +189,43 @@ namespace KrishiLink.BLL.Services
             return true;
         }
 
+        public PayoutHistoryViewModel GetPayoutHistory(string ownerId)
+        {
+            var completed = _repo.GetBookings(ownerId).Where(b => b.Status == "Completed").ToList();
+            return new PayoutHistoryViewModel
+            {
+                ListingLabel = _profile.ListingLabel,
+                CompletedBookings = completed.Count,
+                Settlement = BuildSettlement(completed.Sum(b => b.Gross), _repo.GetExpenses(ownerId), _repo.GetPayouts(ownerId))
+            };
+        }
+
+        public string? RequestPayout(string ownerId, string method, string? account)
+        {
+            if (!PayoutHistoryViewModel.PayoutMethods.Contains(method)) return "Please choose a valid payout method.";
+            if (string.IsNullOrWhiteSpace(account) || account.Trim().Length < 6) return "Please enter the account or wallet number the payout should go to.";
+
+            var settlement = GetPayoutHistory(ownerId).Settlement;
+            if (settlement.Processing > 0) return "A payout is already being processed. Please wait for it to complete.";
+            if (settlement.Owed <= 0) return "There is no pending balance to pay out yet.";
+
+            // The pending balance is net; back out the gross it came from so the record shows what the platform kept.
+            var gross = decimal.Round(settlement.Owed / (1 - _commissionRate), 0);
+            _repo.AddPayout(new Transaction
+            {
+                UserId = ownerId,
+                Reference = $"KL-PO-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
+                GrossAmount = gross,
+                Commission = gross - settlement.Owed,
+                Amount = settlement.Owed,
+                PaymentMethod = method,
+                PayoutAccount = account.Trim(),
+                Status = "Processing",
+                TransactionDate = DateTime.Now
+            });
+            return null;
+        }
+
         // ---- Helpers -------------------------------------------------------------------------
 
         private decimal Commission(decimal gross) => decimal.Round(gross * _commissionRate, 0);
@@ -222,8 +264,12 @@ namespace KrishiLink.BLL.Services
         private static PayoutItem ToPayoutItem(Transaction p) => new()
         {
             Date = p.TransactionDate,
+            Reference = p.Reference,
+            Gross = p.GrossAmount,
+            Commission = p.Commission,
             Amount = p.Amount,
             Method = p.PaymentMethod,
+            Account = p.PayoutAccount,
             Status = p.Status
         };
 

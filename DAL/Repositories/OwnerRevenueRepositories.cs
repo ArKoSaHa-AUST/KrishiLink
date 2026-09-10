@@ -25,6 +25,12 @@ namespace KrishiLink.DAL.Repositories
                 .OrderByDescending(t => t.TransactionDate)
                 .ToList();
 
+        public void AddPayout(Transaction payout)
+        {
+            Db.Transactions.Add(payout);
+            Db.SaveChanges();
+        }
+
         public IReadOnlyList<BookingExpense> GetExpenses(string ownerId) =>
             Db.BookingExpenses.AsNoTracking()
                 .Where(e => e.OwnerId == ownerId && e.BookingType == _bookingType)
