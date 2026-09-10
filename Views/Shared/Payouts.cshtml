@@ -34,7 +34,7 @@
         <div class="card border-0 shadow-sm h-100 p-3" style="border-radius: var(--krishi-radius-lg); border-left: 4px solid var(--krishi-primary) !important;">
             <span class="small" style="color: var(--krishi-text-muted);">@L["Pending payout"]</span>
             <span class="fs-3 fw-bold" style="color: var(--krishi-primary);">@Money(s.Owed)</span>
-            <span class="small" style="color: var(--krishi-text-muted);">@L["Net earnings not yet paid to you"]</span>
+            <span class="small" style="color: var(--krishi-text-muted);">@L["Net from {0} completed bookings not yet paid out", s.UnpaidBookings]</span>
         </div>
     </div>
     <div class="col-12 col-md-6 col-xl-3">
@@ -103,7 +103,7 @@
             else
             {
                 <form asp-action="RequestPayout" method="post">
-                    <p class="small mb-3">@L["Your full pending balance of"] <strong>@Money(s.Owed)</strong> @L["will be transferred."]</p>
+                    <p class="small mb-3">@L["Your full pending balance of"] <strong>@Money(s.Owed)</strong> @L["({0} unpaid bookings) will be transferred.", s.UnpaidBookings]</p>
                     <div class="mb-3">
                         <label for="payoutMethod" class="form-label small fw-semibold">@L["Payout method"]</label>
                         <select id="payoutMethod" name="method" class="form-select" required>
@@ -146,6 +146,7 @@
                     <tr>
                         <th>@L["Date"]</th>
                         <th>@L["Reference"]</th>
+                        <th class="text-end">@L["Bookings"]</th>
                         <th class="text-end">@L["Gross settled"]</th>
                         <th class="text-end">@L["Commission ({0}%)", ratePercent]</th>
                         <th class="text-end">@L["Net paid"]</th>
@@ -159,6 +160,16 @@
                         <tr>
                             <td class="text-nowrap">@p.Date.ToString("dd MMM yyyy")</td>
                             <td><code class="small">@p.Reference</code></td>
+                            <td class="text-end">
+                                @if (p.BookingCount > 0)
+                                {
+                                    <a asp-action="Revenue" asp-route-Status="Completed" asp-route-From="2000-01-01" class="text-decoration-none" title="@L["See the settled bookings in the transactions table"]">@p.BookingCount</a>
+                                }
+                                else
+                                {
+                                    <span style="color: var(--krishi-text-muted);">—</span>
+                                }
+                            </td>
                             <td class="text-end">@Money(p.Gross)</td>
                             <td class="text-end text-danger">− @Money(p.Commission)</td>
                             <td class="text-end fw-bold">@Money(p.Amount)</td>
@@ -175,7 +186,7 @@
                 </tbody>
                 <tfoot class="table-light fw-semibold">
                     <tr>
-                        <td colspan="2">@L["Total"]</td>
+                        <td colspan="3">@L["Total"]</td>
                         <td class="text-end">@Money(s.Payouts.Sum(p => p.Gross))</td>
                         <td class="text-end text-danger">− @Money(s.Payouts.Sum(p => p.Commission))</td>
                         <td class="text-end">@Money(s.Payouts.Sum(p => p.Amount))</td>

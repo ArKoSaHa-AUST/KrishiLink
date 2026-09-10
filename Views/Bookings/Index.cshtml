@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = L["Booking & Rental History"];
     var hasActiveFilters = Model.StatusFilter != "all" || Model.DateFrom.HasValue || Model.DateTo.HasValue || !string.IsNullOrWhiteSpace(Model.SearchTerm);
+    var currentUrl = Context.Request.Path + Context.Request.QueryString;
 }
 
 <!-- Page Header & Overview -->
@@ -23,6 +24,15 @@
         </a>
     </div>
 </div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2"><i class="bi bi-check-circle-fill text-success"></i><span class="small">@TempData["SuccessMessage"]</span></div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2"><i class="bi bi-exclamation-triangle-fill"></i><span class="small">@TempData["ErrorMessage"]</span></div>
+}
 
 <!-- Tabs Navigation: All | Equipment Rentals | Godown Bookings -->
 <div class="card krishi-card border-0 shadow-sm rounded-4 p-2.5 mb-4">
@@ -87,6 +97,7 @@
                     <option value="accepted" selected="@(Model.StatusFilter == "accepted" ? "selected" : null)">@L["Accepted / Active ({0})", Model.AcceptedCount]</option>
                     <option value="completed" selected="@(Model.StatusFilter == "completed" ? "selected" : null)">@L["Completed ({0})", Model.CompletedCount]</option>
                     <option value="rejected" selected="@(Model.StatusFilter == "rejected" ? "selected" : null)">@L["Rejected ({0})", Model.RejectedCount]</option>
+                    <option value="cancelled" selected="@(Model.StatusFilter == "cancelled" ? "selected" : null)">@L["Cancelled ({0})", Model.CancelledCount]</option>
                 </select>
             </div>
 
@@ -292,7 +303,18 @@
                                                 }
                                             </div>
 
-                                            <div class="mt-3 text-end">
+                                            <div class="mt-3 d-flex justify-content-end gap-2 flex-wrap">
+                                                @if (b.CanCancel)
+                                                {
+                                                    <form asp-action="Cancel" method="post" onsubmit="return confirm('@L["Cancel this booking? The dates will be released to other farmers."]');">
+                                                        <input type="hidden" name="type" value="@b.BookingType" />
+                                                        <input type="hidden" name="id" value="@b.Id" />
+                                                        <input type="hidden" name="returnUrl" value="@currentUrl" />
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3.5 py-1.5 fw-semibold">
+                                                            <i class="bi bi-x-circle me-1"></i>@L["Cancel Booking"]
+                                                        </button>
+                                                    </form>
+                                                }
                                                 <a href="@b.ListingDetailUrl" class="btn btn-krishi-primary btn-sm rounded-pill px-3.5 py-1.5 fw-semibold">
                                                     <span>@L["View Original Listing"]</span>
                                                     <i class="bi bi-arrow-right small ms-1"></i>
@@ -395,6 +417,15 @@
                         <a href="@b.ListingDetailUrl" class="btn btn-krishi-primary btn-sm w-100 rounded-pill py-2 fw-semibold mt-2">
                             @L["View Original Listing"]
                         </a>
+                        @if (b.CanCancel)
+                        {
+                            <form asp-action="Cancel" method="post" class="mt-2" onsubmit="return confirm('@L["Cancel this booking? The dates will be released to other farmers."]');">
+                                <input type="hidden" name="type" value="@b.BookingType" />
+                                <input type="hidden" name="id" value="@b.Id" />
+                                <input type="hidden" name="returnUrl" value="@currentUrl" />
+                                <button type="submit" class="btn btn-outline-danger btn-sm w-100 rounded-pill py-2 fw-semibold"><i class="bi bi-x-circle me-1"></i>@L["Cancel Booking"]</button>
+                            </form>
+                        }
                     </div>
 
                 </div>

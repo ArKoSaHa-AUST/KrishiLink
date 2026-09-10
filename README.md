@@ -112,6 +112,12 @@ KrishiLink/
    On startup the app applies any pending EF Core migrations and creates the three Identity roles automatically.
    (You can still apply migrations manually with `dotnet ef database update`.)
 
+   **Optional — emailed monthly statements:** a background service emails every owner their previous month's PDF
+   statement once the month rolls over. Enable it by setting the `Email` section in `appsettings.json`
+   (`Enabled`, `Host`, `Port`, `Username`, `FromAddress`) and supplying the SMTP password out-of-band, e.g.
+   `dotnet user-secrets set "Email:Password" "..."` or the `Email__Password` environment variable. When disabled,
+   the sender logs what it would have sent.
+
 4. **Access the Application**:
    Open your browser and navigate to `http://localhost:5141` or `https://localhost:7276`.
 

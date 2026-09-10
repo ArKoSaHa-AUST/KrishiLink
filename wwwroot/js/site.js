@@ -331,12 +331,13 @@ window.KrishiRequests = {
  */
 window.KrishiRequestsPage = {
     init: function (cfg) {
-        const TABS = ['Pending', 'Accepted', 'Rejected', 'Completed'];
+        const TABS = ['Pending', 'Accepted', 'Rejected', 'Completed', 'Cancelled'];
         const BADGE = {
             Pending: 'krishi-badge-pending d-none d-md-inline-flex',
             Accepted: 'krishi-badge-available',
             Rejected: 'krishi-badge-unavailable',
-            Completed: 'krishi-badge-completed'
+            Completed: 'krishi-badge-completed',
+            Cancelled: 'krishi-badge-unavailable'
         };
         const MOVES = {
             accept: { from: 'Pending', to: 'Accepted' },
@@ -542,7 +543,7 @@ window.KrishiRequestsPage = {
         };
 
         // Deep-linking: #accepted etc. selects the tab; tab changes update the hash (keeping ?q=)
-        const hashMap = { pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected', completed: 'Completed' };
+        const hashMap = { pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected', completed: 'Completed', cancelled: 'Cancelled' };
         const hash = location.hash.replace('#', '').toLowerCase();
         if (hashMap[hash]) bootstrap.Tab.getOrCreateInstance(document.getElementById('tab-' + hashMap[hash])).show();
         document.querySelectorAll('#requestTabs [data-bs-toggle="pill"]').forEach(t =>

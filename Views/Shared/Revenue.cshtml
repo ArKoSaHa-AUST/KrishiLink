@@ -10,8 +10,11 @@
     var isEquipment = Model.ListingLabel == "Equipment";
     var listingLabel = L[Model.ListingLabel].Value;
     string Money(decimal v) => "৳" + v.ToString("N0");
-    string PeriodUrl(string period) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, Period = period })!;
-    string RangeUrl(DateTime from, DateTime to) => Url.Action("Revenue", new { From = from.ToString("yyyy-MM-dd"), To = to.ToString("yyyy-MM-dd"), f.ListingId, f.Status, f.Period })!;
+    string PeriodUrl(string period) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, Period = period, f.Sort })!;
+    string RangeUrl(DateTime from, DateTime to) => Url.Action("Revenue", new { From = from.ToString("yyyy-MM-dd"), To = to.ToString("yyyy-MM-dd"), f.ListingId, f.Status, f.Period, f.Sort })!;
+    string SortUrl(string sort) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, f.Period, Sort = sort, f.Page })! + "#breakdown";
+    string PageUrl(int page) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, f.Period, f.Sort, Page = page })! + "#transactions";
+    var sortKey = (f.Sort ?? "revenue").ToLowerInvariant();
 }
 
 <!-- Page Header -->
@@ -99,6 +102,16 @@
             <div>
                 <span class="fs-3 fw-bold d-block lh-1 krishi-summary-value">@Money(Model.ThisMonthRevenue)</span>
                 <span class="small krishi-summary-label">@L["This Month's Revenue"]</span>
+                @if (Model.MonthChangePercent is int delta)
+                {
+                    <span class="small fw-semibold d-block @(delta >= 0 ? "text-success" : "text-danger")" title="@L["vs. last month ({0})", Money(Model.LastMonthRevenue)]">
+                        @(delta >= 0 ? "▲" : "▼") @Math.Abs(delta)% @L["vs last month"]
+                    </span>
+                }
+                else if (Model.LastMonthRevenue == 0 && Model.ThisMonthRevenue > 0)
+                {
+                    <span class="small d-block" style="color: var(--krishi-text-muted);">@L["No revenue last month"]</span>
+                }
             </div>
         </div>
     </div>
@@ -129,6 +142,7 @@
 <!-- Filters (GET form: bookmarkable) -->
 <form method="get" asp-action="Revenue" class="card border-0 shadow-sm p-3 mb-4 d-print-none" style="border-radius: var(--krishi-radius-lg);">
     <input type="hidden" name="Period" value="@f.Period" />
+    <input type="hidden" name="Sort" value="@f.Sort" />
     <div class="row g-2 align-items-end">
         <div class="col-6 col-md-3 col-lg-2">
             <label for="From" class="form-label small fw-semibold mb-1">@L["From"]</label>
@@ -188,12 +202,16 @@
                 <h5 class="fw-bold mb-0" style="color: var(--krishi-text-primary);"><i class="bi bi-bar-chart-line me-2 text-success"></i>@L["Revenue Trend"]</h5>
                 <div class="btn-group btn-group-sm d-print-none" role="group" aria-label="@L["Chart granularity"]">
                     <a href="@PeriodUrl("month")" class="btn @(f.IsWeekly ? "btn-outline-secondary" : "btn-krishi-primary") rounded-start-pill px-3">@L["Monthly"]</a>
-                    <a href="@PeriodUrl("week")" class="btn @(f.IsWeekly ? "btn-krishi-primary" : "btn-outline-secondary") rounded-end-pill px-3">@L["Weekly"]</a>
+                    <a href="@PeriodUrl("week")" class="btn @(f.IsWeekly ? "btn-krishi-primary" : "btn-outline-secondary") rounded-end-pill px-3">@(Model.TrendBucketDays == 14 ? L["Fortnightly"] : L["Weekly"])</a>
                 </div>
             </div>
             <partial name="_RevenueTrendChart" model="Model.Trend" />
             <p class="small mb-0 mt-2" style="color: var(--krishi-text-muted);">
                 @L["Revenue is recognised when a booking completes (its end date)."]
+                @if (Model.TrendNote is not null)
+                {
+                    <span class="ms-1"><i class="bi bi-info-circle me-1"></i>@L[Model.TrendNote]</span>
+                }
                 @if (Model.Insights.PeakSeason is not null)
                 {
                     <span class="ms-1"><i class="bi bi-sun text-warning me-1"></i>@L["Peak season: {0}", Model.Insights.PeakSeason]</span>
@@ -305,7 +323,7 @@
                     <li class="d-flex gap-3">
                         <i class="bi bi-speedometer fs-5" style="color: var(--krishi-status-pending-text);"></i>
                         <div>
-                            <strong>@L["{0} of {1} listings were booked less than {2}% of the time", Model.Insights.UnderUtilizedListings, Model.Breakdown.Count, KrishiLink.BLL.Services.OwnerRevenueService.LowUtilizationPercent]</strong>
+                            <strong>@L["{0} of {1} listings were booked less than {2}% of the time", Model.Insights.UnderUtilizedListings, Model.Breakdown.Count, Model.Insights.LowUtilizationPercent]</strong>
                             <div style="color: var(--krishi-text-muted);">@L["Idle assets are lost income. Lower the rate for off-peak weeks, add clear photos, and describe what the listing is best suited for."]</div>
                         </div>
                     </li>
@@ -352,7 +370,7 @@
 </div>
 
 <!-- Revenue by Listing -->
-<div class="card border-0 shadow-sm mb-4 overflow-hidden" style="border-radius: var(--krishi-radius-lg);">
+<div class="card border-0 shadow-sm mb-4 overflow-hidden" id="breakdown" style="border-radius: var(--krishi-radius-lg);">
     <div class="p-3 px-4 d-flex align-items-center justify-content-between" style="background-color: var(--krishi-primary-light);">
         <h5 class="fw-bold mb-0" style="color: var(--krishi-primary);"><i class="bi @(isEquipment ? "bi-tools" : "bi-building") me-2"></i>@L["Revenue by {0}", listingLabel]</h5>
         <span class="small" style="color: var(--krishi-text-muted);">@rangeText</span>
@@ -362,10 +380,24 @@
             <thead>
                 <tr>
                     <th class="ps-4 py-3 text-uppercase small fw-bold text-muted">@listingLabel</th>
-                    <th class="py-3 text-uppercase small fw-bold text-muted text-end">@L["Bookings"]</th>
-                    <th class="py-3 text-uppercase small fw-bold text-muted text-end">@L["Revenue Earned"]</th>
-                    <th class="py-3 text-uppercase small fw-bold text-muted text-end">@L["Avg. / Booking"]</th>
-                    <th class="py-3 text-uppercase small fw-bold text-muted" style="min-width: 180px;">@L["Utilization"]</th>
+                    @{
+                        // Clickable headers re-sort server-side; the active one is highlighted with a down arrow
+                        var sortColumns = new (string Key, string Label, string Align)[]
+                        {
+                            ("bookings", L["Bookings"].Value, "text-end"),
+                            ("revenue", L["Revenue Earned"].Value, "text-end"),
+                            ("avg", L["Avg. / Booking"].Value, "text-end"),
+                            ("utilization", L["Utilization"].Value, "")
+                        };
+                    }
+                    @foreach (var col in sortColumns)
+                    {
+                        <th class="py-3 text-uppercase small fw-bold @col.Align" style="@(col.Key == "utilization" ? "min-width: 180px;" : "")">
+                            <a href="@SortUrl(col.Key)" class="text-decoration-none @(sortKey == col.Key ? "text-success" : "text-muted")" title="@L["Sort by {0}", col.Label]">
+                                @col.Label @if (sortKey == col.Key) { <i class="bi bi-arrow-down-short"></i> }
+                            </a>
+                        </th>
+                    }
                     <th class="pe-4 py-3"></th>
                 </tr>
             </thead>
@@ -413,10 +445,10 @@
 </div>
 
 <!-- Transactions -->
-<div class="card border-0 shadow-sm mb-4 overflow-hidden" style="border-radius: var(--krishi-radius-lg);">
+<div class="card border-0 shadow-sm mb-4 overflow-hidden" id="transactions" style="border-radius: var(--krishi-radius-lg);">
     <div class="p-3 px-4 d-flex align-items-center justify-content-between" style="background-color: var(--krishi-primary-light);">
         <h5 class="fw-bold mb-0" style="color: var(--krishi-primary);"><i class="bi bi-receipt me-2"></i>@L["Transactions"]
-            <span class="badge rounded-pill bg-white shadow-sm ms-1" style="color: var(--krishi-primary);">@Model.Transactions.Count</span>
+            <span class="badge rounded-pill bg-white shadow-sm ms-1" style="color: var(--krishi-primary);">@Model.TransactionsTotal</span>
         </h5>
         @if (!string.IsNullOrEmpty(f.Status))
         {
@@ -443,6 +475,7 @@
                         <th class="py-3 text-uppercase small fw-bold text-muted text-end">@L["Amount"]</th>
                         <th class="py-3 text-uppercase small fw-bold text-muted text-end">@L["Net"]</th>
                         <th class="py-3 text-uppercase small fw-bold text-muted">@L["Status"]</th>
+                        <th class="py-3 text-uppercase small fw-bold text-muted">@L["Payout"]</th>
                         <th class="pe-4 py-3 text-end d-print-none"></th>
                     </tr>
                 </thead>
@@ -470,12 +503,39 @@
                             <td class="text-end fw-semibold">@Money(t.Gross)</td>
                             <td class="text-end text-nowrap">
                                 @Money(t.Net)
-                                @if (t.Expenses > 0)
+                                @foreach (var e in t.ExpenseLines)
                                 {
-                                    <div class="small text-danger">− @Money(t.Expenses) @L["exp."]</div>
+                                    <div class="small text-danger d-flex justify-content-end align-items-center gap-1">
+                                        <span title="@e.Note">− @Money(e.Amount) <span style="color: var(--krishi-text-muted);">@(string.IsNullOrEmpty(e.Note) ? L["exp."].Value : e.Note)</span></span>
+                                        @if (canExpense)
+                                        {
+                                            <button type="button" class="btn btn-link btn-sm p-0 text-secondary d-print-none add-expense-btn" title="@L["Edit expense"]"
+                                                    data-booking-id="@t.BookingId" data-booking-label="#@t.BookingId · @t.ListingName" data-expense-id="@e.Id" data-amount="@e.Amount" data-note="@e.Note"
+                                                    data-bs-toggle="modal" data-bs-target="#expenseModal"><i class="bi bi-pencil-square"></i></button>
+                                            <form asp-action="DeleteExpense" method="post" class="d-inline d-print-none" onsubmit="return confirm('@L["Remove this expense?"]');">
+                                                <input type="hidden" name="expenseId" value="@e.Id" />
+                                                <input type="hidden" name="returnUrl" value="@currentUrl" />
+                                                <button type="submit" class="btn btn-link btn-sm p-0 text-secondary" title="@L["Remove expense"]"><i class="bi bi-trash3"></i></button>
+                                            </form>
+                                        }
+                                    </div>
                                 }
                             </td>
                             <td><partial name="_StatusBadge" model="t.Status" /></td>
+                            <td class="text-nowrap">
+                                @if (t.Status == "Completed")
+                                {
+                                    if (t.IsPaid)
+                                    {
+                                        <span class="krishi-badge krishi-badge-available" title="@t.PayoutReference"><i class="bi bi-check2-circle"></i>@L["Paid"]</span>
+                                        <div class="small" style="color: var(--krishi-text-muted);"><code>@t.PayoutReference</code></div>
+                                    }
+                                    else
+                                    {
+                                        <span class="krishi-badge krishi-badge-pending"><i class="bi bi-hourglass"></i>@L["Unpaid"]</span>
+                                    }
+                                }
+                            </td>
                             <td class="pe-4 text-end text-nowrap d-print-none">
                                 @if (t.Status == "Completed")
                                 {
@@ -496,18 +556,33 @@
                 </tbody>
             </table>
         </div>
+        @if (Model.PageCount > 1)
+        {
+            <nav class="d-flex justify-content-between align-items-center px-4 py-3 border-top d-print-none" aria-label="@L["Transactions pages"]">
+                <span class="small" style="color: var(--krishi-text-muted);">@L["Page {0} of {1} · {2} bookings", f.Page, Model.PageCount, Model.TransactionsTotal]</span>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(f.Page <= 1 ? "disabled" : "")"><a class="page-link" href="@PageUrl(f.Page - 1)" aria-label="@L["Previous"]">&laquo;</a></li>
+                    @for (var p = Math.Max(1, f.Page - 2); p <= Math.Min(Model.PageCount, f.Page + 2); p++)
+                    {
+                        <li class="page-item @(p == f.Page ? "active" : "")"><a class="page-link" href="@PageUrl(p)">@p</a></li>
+                    }
+                    <li class="page-item @(f.Page >= Model.PageCount ? "disabled" : "")"><a class="page-link" href="@PageUrl(f.Page + 1)" aria-label="@L["Next"]">&raquo;</a></li>
+                </ul>
+            </nav>
+        }
     }
 </div>
 
-<!-- Add Expense Modal -->
+<!-- Add / Edit Expense Modal -->
 <div class="modal fade d-print-none" id="expenseModal" tabindex="-1" aria-labelledby="expenseModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <form asp-action="AddExpense" method="post" class="modal-content border-0 shadow-lg rounded-3">
+        <form asp-action="SaveExpense" method="post" class="modal-content border-0 shadow-lg rounded-3">
             @Html.AntiForgeryToken()
             <input type="hidden" name="bookingId" id="expenseBookingId" />
+            <input type="hidden" name="expenseId" id="expenseId" />
             <input type="hidden" name="returnUrl" value="@currentUrl" />
             <div class="modal-header border-bottom-0 pb-2">
-                <h5 class="modal-title fw-bold" id="expenseModalLabel">@L["Add Expense"] <span class="small fw-normal" id="expenseBookingLabel" style="color: var(--krishi-text-muted);"></span></h5>
+                <h5 class="modal-title fw-bold" id="expenseModalLabel"><span id="expenseModalTitle">@L["Add Expense"]</span> <span class="small fw-normal" id="expenseBookingLabel" style="color: var(--krishi-text-muted);"></span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body py-2">
@@ -543,13 +618,16 @@
 
 @section Scripts {
     <script>
-        // Point the shared expense modal at the clicked booking
+        // Point the shared expense modal at the clicked booking (and prefill when editing an existing expense)
         document.getElementById('expenseModal').addEventListener('show.bs.modal', e => {
             const btn = e.relatedTarget;
+            const editing = !!btn.dataset.expenseId;
             document.getElementById('expenseBookingId').value = btn.dataset.bookingId;
+            document.getElementById('expenseId').value = btn.dataset.expenseId || '';
             document.getElementById('expenseBookingLabel').textContent = btn.dataset.bookingLabel;
-            document.getElementById('expenseAmount').value = '';
-            document.getElementById('expenseNote').value = '';
+            document.getElementById('expenseModalTitle').textContent = editing ? '@L["Edit Expense"]' : '@L["Add Expense"]';
+            document.getElementById('expenseAmount').value = editing ? btn.dataset.amount : '';
+            document.getElementById('expenseNote').value = editing ? btn.dataset.note : '';
         });
     </script>
 }
