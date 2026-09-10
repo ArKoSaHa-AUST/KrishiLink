@@ -22,5 +22,6 @@ namespace KrishiLink.Models.Entities
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<GodownBooking> Bookings { get; set; } = new List<GodownBooking>();
+        public ICollection<GodownBlockedDate> BlockedDates { get; set; } = new List<GodownBlockedDate>();
     }
 }

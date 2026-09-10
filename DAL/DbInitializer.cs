@@ -102,6 +102,10 @@ namespace KrishiLink.DAL
                 new EquipmentBlockedDate { EquipmentId = equipment[0].Id, Date = today.AddDays(9) },
                 new EquipmentBlockedDate { EquipmentId = equipment[1].Id, Date = today.AddDays(22) });
 
+            db.GodownBlockedDates.AddRange(
+                new GodownBlockedDate { GodownId = godowns[2].Id, Date = today.AddDays(12) },
+                new GodownBlockedDate { GodownId = godowns[2].Id, Date = today.AddDays(13) });
+
             db.GodownBookings.AddRange(
                 StorageBooking(godowns[1], motaleb, 100, -150, -90, BookingStatus.Completed, -158, "Boro season paddy."),
                 StorageBooking(godowns[0], farmer, 45, -140, -50, BookingStatus.Completed, -145),

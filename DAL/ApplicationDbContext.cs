@@ -16,6 +16,7 @@ namespace KrishiLink.DAL
         public DbSet<EquipmentBlockedDate> EquipmentBlockedDates { get; set; } = null!;
         public DbSet<Godown> Godowns { get; set; } = null!;
         public DbSet<GodownBooking> GodownBookings { get; set; } = null!;
+        public DbSet<GodownBlockedDate> GodownBlockedDates { get; set; } = null!;
         public DbSet<BookingExpense> BookingExpenses { get; set; } = null!;
         public DbSet<Crop> Crops { get; set; } = null!;
         public DbSet<CropRecommendation> CropRecommendations { get; set; } = null!;
@@ -67,6 +68,12 @@ namespace KrishiLink.DAL
                 b.HasIndex(x => new { x.GodownId, x.Status });
                 b.HasOne(x => x.Godown).WithMany(x => x.Bookings).HasForeignKey(x => x.GodownId).OnDelete(DeleteBehavior.Cascade);
                 b.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            builder.Entity<GodownBlockedDate>(d =>
+            {
+                d.HasIndex(x => new { x.GodownId, x.Date }).IsUnique();
+                d.HasOne(x => x.Godown).WithMany(x => x.BlockedDates).HasForeignKey(x => x.GodownId).OnDelete(DeleteBehavior.Cascade);
             });
 
             builder.Entity<BookingExpense>(x =>

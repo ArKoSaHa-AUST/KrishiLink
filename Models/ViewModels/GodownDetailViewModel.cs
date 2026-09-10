@@ -27,6 +27,9 @@ namespace KrishiLink.Models.ViewModels
         public List<string> ImageUrls { get; set; } = new();
         public List<string> Facilities { get; set; } = new();
 
+        /// <summary>Days the farmer cannot book: owner-blocked dates plus days already at full capacity.</summary>
+        public List<DateTime> UnavailableDates { get; set; } = new();
+
         // Booking Form Inputs
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
