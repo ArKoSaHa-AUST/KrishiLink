@@ -1,4 +1,5 @@
 using KrishiLink.Models.Entities;
+using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,14 +31,14 @@ namespace KrishiLink.DAL
 
         private static async Task SeedDemoDataAsync(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
         {
-            var farmer = await CreateUserAsync(userManager, "farmer@krishilink.com", "01711000001", "Rahim Uddin", AppRoles.Farmer, "Shibganj, Bogra", "Uddin Agro Farm");
-            var karim = await CreateUserAsync(userManager, "karim.mia@krishilink.com", "01711000002", "Karim Mia", AppRoles.Farmer, "Sherpur, Bogra");
-            var fatema = await CreateUserAsync(userManager, "fatema@krishilink.com", "01711000003", "Fatema Begum", AppRoles.Farmer, "Gabtali, Bogra");
-            var salma = await CreateUserAsync(userManager, "salma@krishilink.com", "01711000004", "Salma Akter", AppRoles.Farmer, "Bochaganj, Dinajpur");
-            var motaleb = await CreateUserAsync(userManager, "motaleb@krishilink.com", "01711000005", "Motaleb Hossain", AppRoles.Farmer, "Birol, Dinajpur");
+            var farmer = await CreateUserAsync(userManager, "farmer@krishilink.com", "01711000001", "Rahim Uddin", AppRoles.Farmer, "Shibganj, Bogra", "Rice (Boro)", "Uddin Agro Farm");
+            var karim = await CreateUserAsync(userManager, "karim.mia@krishilink.com", "01711000002", "Karim Mia", AppRoles.Farmer, "Sherpur, Bogra", "Potato");
+            var fatema = await CreateUserAsync(userManager, "fatema@krishilink.com", "01711000003", "Fatema Begum", AppRoles.Farmer, "Gabtali, Bogra", "Vegetables");
+            var salma = await CreateUserAsync(userManager, "salma@krishilink.com", "01711000004", "Salma Akter", AppRoles.Farmer, "Bochaganj, Dinajpur", "Rice (Aman)");
+            var motaleb = await CreateUserAsync(userManager, "motaleb@krishilink.com", "01711000005", "Motaleb Hossain", AppRoles.Farmer, "Birol, Dinajpur", "Wheat");
 
-            var eqOwner = await CreateUserAsync(userManager, "equipment@krishilink.com", "01712000001", "Abdul Karim", AppRoles.EquipmentOwner, "Bogra Sadar, Bogra", "Karim Agro Machinery");
-            var gdOwner = await CreateUserAsync(userManager, "godown@krishilink.com", "01713000001", "Abdul Mannan", AppRoles.GodownOwner, "Dinajpur Sadar, Dinajpur", "Green Grain Storage Ltd.");
+            var eqOwner = await CreateUserAsync(userManager, "equipment@krishilink.com", "01712000001", "Abdul Karim", AppRoles.EquipmentOwner, "Bogra Sadar, Bogra", "Tractor", "Karim Agro Machinery");
+            var gdOwner = await CreateUserAsync(userManager, "godown@krishilink.com", "01713000001", "Abdul Mannan", AppRoles.GodownOwner, "Dinajpur Sadar, Dinajpur", "Cold Storage", "Green Grain Storage Ltd.");
 
             var yard = eqOwner.Location!;
             var equipment = new List<Equipment>
@@ -133,7 +134,7 @@ namespace KrishiLink.DAL
         }
 
         private static async Task<ApplicationUser> CreateUserAsync(UserManager<ApplicationUser> userManager, string email, string phone,
-            string fullName, string role, string location, string? business = null)
+            string fullName, string role, string location, string specialization, string? business = null)
         {
             var existing = await userManager.FindByEmailAsync(email);
             if (existing is not null) return existing;
@@ -148,6 +149,9 @@ namespace KrishiLink.DAL
                 UserRole = role,
                 Location = location,
                 BusinessOrFarmName = business,
+                District = OnboardingOptions.GuessDistrict(location),
+                Specialization = specialization,
+                OnboardingCompletedAt = DateTime.UtcNow.AddMonths(-8),
                 CreatedAt = DateTime.UtcNow.AddMonths(-8)
             };
 

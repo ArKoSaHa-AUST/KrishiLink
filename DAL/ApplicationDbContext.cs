@@ -27,6 +27,12 @@ namespace KrishiLink.DAL
         {
             base.OnModelCreating(builder);
 
+            builder.Entity<ApplicationUser>(u =>
+            {
+                u.Property(x => x.District).HasMaxLength(60);
+                u.Property(x => x.Specialization).HasMaxLength(60);
+            });
+
             builder.Entity<Equipment>(e =>
             {
                 e.Property(x => x.Name).HasMaxLength(100);
