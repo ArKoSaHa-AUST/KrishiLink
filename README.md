@@ -53,15 +53,16 @@ KrishiLink/
 │   ├── EquipmentOwner/            # Equipment Management Views
 │   └── GodownOwner/               # Godown Management Views
 ├── Models/                        # Data Transfer & Entity Models
-│   ├── Entities/                  # EF Core Domain Entities (User, Equipment, Godown, etc.)
+│   ├── Entities/                  # EF Core Domain Entities (User, Equipment, Godown, Bookings, Expenses, etc.)
 │   └── ViewModels/                # Strongly-typed Razor ViewModels
 ├── BLL/                           # Business Logic Layer Services
-│   └── Services/                  # Business Logic & Validation Services (incl. OwnerRevenueService)
+│   └── Services/                  # EquipmentService, GodownService, BookingService, OwnerRevenueService, FileStorageService
 ├── DAL/                           # Data Access Layer
 │   ├── ApplicationDbContext.cs    # EF Core DbContext with Identity Integration
-│   ├── Repositories/              # Repository Interfaces (+ in-memory sample implementations until DB wiring)
+│   ├── DbInitializer.cs           # Applies migrations, seeds roles (+ demo data in Development)
+│   ├── Repositories/              # Generic EF Repository<T> + revenue reporting repositories
 │   └── Migrations/                # EF Core Database Migrations
-├── wwwroot/                       # Static Assets (Bootstrap, CSS, JS, Images)
+├── wwwroot/                       # Static Assets (Bootstrap, CSS, JS, Images, uploaded listing photos)
 └── appsettings.json               # Database Connection, Revenue (Platform Commission) & Configuration Settings
 ```
 
@@ -94,28 +95,36 @@ KrishiLink/
    ```
 
 2. **Configure Database Connection**:
-   Update `appsettings.json` with your SQL Server connection string:
+   `appsettings.json` targets a local SQL Server Express instance by default. Adjust it for your server or LocalDB:
    ```json
    {
      "ConnectionStrings": {
-       "DefaultConnection": "Server=localhost;Database=KrishiLinkDb;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
+       "DefaultConnection": "Server=.\\SQLEXPRESS;Database=KrishiLinkDb;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
      }
    }
    ```
 
-3. **Apply EF Core Migrations**:
-   ```bash
-   dotnet ef database update
-   ```
-
-4. **Build and Run**:
+3. **Build and Run**:
    ```bash
    dotnet build
    dotnet run
    ```
+   On startup the app applies any pending EF Core migrations and creates the three Identity roles automatically.
+   (You can still apply migrations manually with `dotnet ef database update`.)
 
-5. **Access the Application**:
-   Open your browser and navigate to `http://localhost:5141` or `https://localhost:7141`.
+4. **Access the Application**:
+   Open your browser and navigate to `http://localhost:5141` or `https://localhost:7276`.
+
+### Demo Accounts (Development only)
+
+When running with `ASPNETCORE_ENVIRONMENT=Development` against an empty database, a small demo dataset is seeded
+(listings, bookings, payouts). Password for all demo accounts: `Krishi@123`
+
+| Role | Email | Phone |
+| :--- | :--- | :--- |
+| 🌾 Farmer | `farmer@krishilink.com` | `01711000001` |
+| 🚜 Equipment Owner | `equipment@krishilink.com` | `01712000001` |
+| 🏭 Godown Owner | `godown@krishilink.com` | `01713000001` |
 
 ---
 

@@ -14,6 +14,9 @@ namespace KrishiLink.Models.ViewModels
         public string ThumbnailUrl { get; set; } = string.Empty;
         public string MonthName { get; set; } = string.Empty;
 
+        /// <summary>First day of the month being edited (yyyy-MM-dd); posted back so the save only touches that month.</summary>
+        public DateTime Month { get; set; }
+
         // Dates color-coded states
         public List<DateTime> AvailableDates { get; set; } = new();
         public List<DateTime> OwnerBlockedDates { get; set; } = new();

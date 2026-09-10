@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using KrishiLink.Models.Entities;
@@ -9,16 +10,13 @@ namespace KrishiLink.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager,
-            RoleManager<IdentityRole> roleManager)
+            SignInManager<ApplicationUser> signInManager)
         {
             _userManager = userManager;
             _signInManager = signInManager;
-            _roleManager = roleManager;
         }
 
         [HttpGet]
@@ -30,7 +28,7 @@ namespace KrishiLink.Controllers
                 return RedirectBasedOnRole(role);
             }
 
-            var validRoles = new[] { "Farmer", "EquipmentOwner", "GodownOwner" };
+            var validRoles = AppRoles.All;
             var selectedRole = !string.IsNullOrEmpty(role) && validRoles.Contains(role, StringComparer.OrdinalIgnoreCase)
                 ? validRoles.First(r => r.Equals(role, StringComparison.OrdinalIgnoreCase))
                 : "Farmer";
@@ -53,10 +51,9 @@ namespace KrishiLink.Controllers
             }
 
             // Normalise role string
-            var validRoles = new[] { "Farmer", "EquipmentOwner", "GodownOwner" };
-            if (!validRoles.Contains(model.Role))
+            if (!AppRoles.All.Contains(model.Role))
             {
-                model.Role = "Farmer";
+                model.Role = AppRoles.Farmer;
             }
 
             // Check if phone already registered
@@ -79,15 +76,6 @@ namespace KrishiLink.Controllers
                 return View(model);
             }
 
-            // Ensure Identity Roles exist in the database
-            foreach (var roleName in validRoles)
-            {
-                if (!await _roleManager.RoleExistsAsync(roleName))
-                {
-                    await _roleManager.CreateAsync(new IdentityRole(roleName));
-                }
-            }
-
             // Create ApplicationUser
             var user = new ApplicationUser
             {
@@ -97,7 +85,7 @@ namespace KrishiLink.Controllers
                 FullName = model.FullName.Trim(),
                 UserRole = model.Role,
                 Location = model.Location.Trim(),
-                BusinessOrFarmName = (model.Role == "EquipmentOwner" || model.Role == "GodownOwner")
+                BusinessOrFarmName = (model.Role == AppRoles.EquipmentOwner || model.Role == AppRoles.GodownOwner)
                     ? model.BusinessOrFarmName?.Trim()
                     : null,
                 CreatedAt = DateTime.UtcNow
@@ -201,49 +189,35 @@ namespace KrishiLink.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> Profile()
         {
-            if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
-                var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser != null)
-                {
-                    var model = new UserProfileViewModel
-                    {
-                        FullName = currentUser.FullName ?? string.Empty,
-                        PhoneNumber = currentUser.PhoneNumber ?? string.Empty,
-                        Email = currentUser.Email,
-                        Location = currentUser.Location ?? string.Empty,
-                        BusinessOrFarmName = currentUser.BusinessOrFarmName,
-                        Role = currentUser.UserRole ?? "Farmer",
-                        MemberSince = currentUser.CreatedAt
-                    };
-                    return View(model);
-                }
-            }
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser is null) return Challenge();
 
-            // Fallback for preview / demo
-            var previewModel = new UserProfileViewModel
+            var model = new UserProfileViewModel
             {
-                FullName = "Rahim Uddin",
-                PhoneNumber = "01712345678",
-                Email = "rahim.uddin@krishilink.com",
-                Location = "Dinajpur Sadar, Dinajpur",
-                BusinessOrFarmName = "Uddin Agro Farm",
-                Role = "Farmer",
-                MemberSince = DateTime.UtcNow.AddMonths(-6)
+                FullName = currentUser.FullName,
+                PhoneNumber = currentUser.PhoneNumber ?? string.Empty,
+                Email = currentUser.Email,
+                Location = currentUser.Location ?? string.Empty,
+                BusinessOrFarmName = currentUser.BusinessOrFarmName,
+                Role = string.IsNullOrEmpty(currentUser.UserRole) ? AppRoles.Farmer : currentUser.UserRole,
+                MemberSince = currentUser.CreatedAt
             };
-
-            return View(previewModel);
+            return View(model);
         }
 
         [HttpPost]
+        [Authorize]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateProfile(UserProfileViewModel model)
         {
+            var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
             if (!ModelState.IsValid)
             {
-                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                if (isAjax)
                 {
                     var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
                     return Json(new { success = false, message = string.Join(" ", errors) });
@@ -251,48 +225,37 @@ namespace KrishiLink.Controllers
                 return View("Profile", model);
             }
 
-            if (User.Identity != null && User.Identity.IsAuthenticated)
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser is null) return Challenge();
+
+            currentUser.FullName = model.FullName.Trim();
+            currentUser.PhoneNumber = model.PhoneNumber.Trim();
+            currentUser.Email = !string.IsNullOrWhiteSpace(model.Email) ? model.Email.Trim() : currentUser.Email;
+            currentUser.Location = model.Location.Trim();
+            currentUser.BusinessOrFarmName = model.BusinessOrFarmName?.Trim();
+
+            var result = await _userManager.UpdateAsync(currentUser);
+            if (result.Succeeded)
             {
-                var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser != null)
+                if (isAjax)
                 {
-                    currentUser.FullName = model.FullName.Trim();
-                    currentUser.PhoneNumber = model.PhoneNumber.Trim();
-                    currentUser.Email = !string.IsNullOrWhiteSpace(model.Email) ? model.Email.Trim() : currentUser.Email;
-                    currentUser.Location = model.Location.Trim();
-                    currentUser.BusinessOrFarmName = model.BusinessOrFarmName?.Trim();
-
-                    var result = await _userManager.UpdateAsync(currentUser);
-                    if (result.Succeeded)
-                    {
-                        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-                        {
-                            return Json(new { success = true, message = "Profile updated successfully." });
-                        }
-                        TempData["SuccessMessage"] = "Profile updated successfully.";
-                        return RedirectToAction(nameof(Profile));
-                    }
-
-                    var errorDesc = string.Join(" ", result.Errors.Select(e => e.Description));
-                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-                    {
-                        return Json(new { success = false, message = errorDesc });
-                    }
-                    ModelState.AddModelError(string.Empty, errorDesc);
-                    return View("Profile", model);
+                    return Json(new { success = true, message = "Profile updated successfully." });
                 }
+                TempData["SuccessMessage"] = "Profile updated successfully.";
+                return RedirectToAction(nameof(Profile));
             }
 
-            // Preview mode response
-            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            var errorDesc = string.Join(" ", result.Errors.Select(e => e.Description));
+            if (isAjax)
             {
-                return Json(new { success = true, message = "Profile updated successfully (Preview Mode)." });
+                return Json(new { success = false, message = errorDesc });
             }
-            TempData["SuccessMessage"] = "Profile updated successfully.";
-            return RedirectToAction(nameof(Profile));
+            ModelState.AddModelError(string.Empty, errorDesc);
+            return View("Profile", model);
         }
 
         [HttpPost]
+        [Authorize]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
         {
@@ -302,34 +265,32 @@ namespace KrishiLink.Controllers
                 return Json(new { success = false, message = string.Join(" ", errors) });
             }
 
-            if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
-                var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser != null)
-                {
-                    var result = await _userManager.ChangePasswordAsync(currentUser, model.CurrentPassword, model.NewPassword);
-                    if (result.Succeeded)
-                    {
-                        await _signInManager.RefreshSignInAsync(currentUser);
-                        return Json(new { success = true, message = "Password updated successfully." });
-                    }
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser is null) return Challenge();
 
-                    var errorDesc = string.Join(" ", result.Errors.Select(e => e.Description));
-                    return Json(new { success = false, message = errorDesc });
-                }
+            var result = await _userManager.ChangePasswordAsync(currentUser, model.CurrentPassword, model.NewPassword);
+            if (result.Succeeded)
+            {
+                await _signInManager.RefreshSignInAsync(currentUser);
+                return Json(new { success = true, message = "Password updated successfully." });
             }
 
-            // Preview mode response
-            return Json(new { success = true, message = "Password changed successfully (Preview Mode)." });
+            return Json(new { success = false, message = string.Join(" ", result.Errors.Select(e => e.Description)) });
+        }
+
+        [HttpGet]
+        public IActionResult AccessDenied()
+        {
+            return View();
         }
 
         private IActionResult RedirectBasedOnRole(string? role)
         {
-            if (string.Equals(role, "EquipmentOwner", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(role, AppRoles.EquipmentOwner, StringComparison.OrdinalIgnoreCase))
             {
                 return RedirectToAction("Index", "EquipmentOwner");
             }
-            if (string.Equals(role, "GodownOwner", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(role, AppRoles.GodownOwner, StringComparison.OrdinalIgnoreCase))
             {
                 return RedirectToAction("Index", "GodownOwner");
             }

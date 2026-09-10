@@ -7,6 +7,9 @@ namespace KrishiLink.Models.Entities
     public class BookingExpense
     {
         public int Id { get; set; }
+
+        /// <summary>"Equipment" or "Godown" — booking ids are only unique within their own table.</summary>
+        public string BookingType { get; set; } = string.Empty;
         public int BookingId { get; set; }
         public string OwnerId { get; set; } = string.Empty;
         public decimal Amount { get; set; }

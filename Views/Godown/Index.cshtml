@@ -295,11 +295,14 @@
                             </div>
 
                             <!-- Distance Badge -->
-                            <div class="position-absolute bottom-0 start-0 m-2">
-                                <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2.5 py-1 small" style="font-size: 0.75rem;">
-                                    <i class="bi bi-compass me-1"></i>@L["{0} km away", item.DistanceKm.ToString("0.0")]
-                                </span>
-                            </div>
+                            @if (item.DistanceKm > 0)
+                            {
+                                <div class="position-absolute bottom-0 start-0 m-2">
+                                    <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2.5 py-1 small" style="font-size: 0.75rem;">
+                                        <i class="bi bi-compass me-1"></i>@L["{0} km away", item.DistanceKm.ToString("0.0")]
+                                    </span>
+                                </div>
+                            }
                         </div>
 
                         <!-- Card Body -->
@@ -318,7 +321,10 @@
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between">
                                     <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>@item.OwnerName</span>
-                                    <span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>@item.Rating.ToString("0.0") (@item.ReviewCount)</span>
+                                    @if (item.ReviewCount > 0)
+                                    {
+                                        <span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>@item.Rating.ToString("0.0") (@item.ReviewCount)</span>
+                                    }
                                 </div>
                             </div>
 
@@ -739,11 +745,11 @@
                                     }
                                 </div>
 
-                                <div class="position-absolute bottom-0 start-0 m-2">
+                                ${item.distanceKm > 0 ? `<div class="position-absolute bottom-0 start-0 m-2">
                                     <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2.5 py-1 small" style="font-size: 0.75rem;">
                                         <i class="bi bi-compass me-1"></i>@L["{0} km away", "${item.distanceKm.toFixed(1)}"]
                                     </span>
-                                </div>
+                                </div>` : ''}
                             </div>
 
                             <!-- Card Body -->
@@ -759,7 +765,7 @@
                                     </div>
                                     <div class="d-flex align-items-center justify-content-between">
                                         <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>${item.ownerName}</span>
-                                        <span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>${item.rating.toFixed(1)} (${item.reviewCount})</span>
+                                        ${item.reviewCount > 0 ? `<span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>${item.rating.toFixed(1)} (${item.reviewCount})</span>` : ''}
                                     </div>
                                 </div>
 

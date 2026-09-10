@@ -29,8 +29,7 @@ namespace KrishiLink.DAL.Repositories
         string RateText);
 
     /// <summary>
-    /// Data access for an owner's revenue reporting (godown or equipment).
-    /// Current implementations are in-memory sample data; swap for EF Core once bookings/payouts are persisted.
+    /// Data access for an owner's revenue reporting (godown or equipment), backed by EF Core.
     /// </summary>
     public interface IOwnerRevenueRepository
     {

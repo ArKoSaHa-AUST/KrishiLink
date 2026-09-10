@@ -27,6 +27,9 @@ appsettings.Local.json
 *.Development.json
 *.secret.json
 
+# User-uploaded listing images
+wwwroot/uploads/
+
 # Database & temp files
 *.mdf
 *.ldf

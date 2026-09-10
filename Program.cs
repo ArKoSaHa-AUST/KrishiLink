@@ -54,10 +54,17 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     };
 });
 
-// Revenue reporting: in-memory sample repositories until bookings/payouts are persisted
+// Data access: generic EF repositories + revenue reporting repositories
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+builder.Services.AddScoped<IGodownRevenueRepository, GodownRevenueRepository>();
+builder.Services.AddScoped<IEquipmentRevenueRepository, EquipmentRevenueRepository>();
+
+// Business logic
 builder.Services.Configure<RevenueOptions>(builder.Configuration.GetSection(RevenueOptions.SectionName));
-builder.Services.AddSingleton<IGodownRevenueRepository, InMemoryGodownRevenueRepository>();
-builder.Services.AddSingleton<IEquipmentRevenueRepository, InMemoryEquipmentRevenueRepository>();
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.AddScoped<IEquipmentService, EquipmentService>();
+builder.Services.AddScoped<IGodownService, GodownService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IGodownRevenueService, GodownRevenueService>();
 builder.Services.AddScoped<IEquipmentRevenueService, EquipmentRevenueService>();
 
@@ -65,6 +72,12 @@ builder.Services.AddScoped<IEquipmentRevenueService, EquipmentRevenueService>();
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
+
+// Apply migrations, ensure roles exist and (in Development) load demo data on first run
+using (var scope = app.Services.CreateScope())
+{
+    await DbInitializer.InitializeAsync(scope.ServiceProvider, seedDemoData: app.Environment.IsDevelopment());
+}
 
 app.UseRequestLocalization();
 

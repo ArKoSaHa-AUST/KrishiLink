@@ -141,7 +141,7 @@
                 <tbody>
                     @foreach (var b in Model.Bookings)
                     {
-                        var collapseId = $"collapseDetail_{b.Id}";
+                        var collapseId = $"collapseDetail_{b.BookingCode}";
                         <tr class="booking-row" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" aria-controls="@collapseId">
                             
                             <!-- Item Image & Info -->
@@ -314,7 +314,7 @@
         <div class="d-lg-none p-3 d-flex flex-column gap-3">
             @foreach (var b in Model.Bookings)
             {
-                var mobCollapseId = $"mobCollapseDetail_{b.Id}";
+                var mobCollapseId = $"mobCollapseDetail_{b.BookingCode}";
                 <div class="card krishi-card border shadow-sm rounded-3 overflow-hidden p-3">
                     
                     <div class="d-flex gap-3 mb-2.5">

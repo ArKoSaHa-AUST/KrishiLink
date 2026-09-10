@@ -27,6 +27,12 @@ namespace KrishiLink.Controllers
 
         protected decimal ThisMonthRevenue => _revenueService.GetReport(OwnerId, new RevenueFilter()).ThisMonthRevenue;
 
+        protected async Task<string> OwnerDisplayNameAsync()
+        {
+            var owner = await _userManager.GetUserAsync(User);
+            return string.IsNullOrWhiteSpace(owner?.FullName) ? User.Identity?.Name ?? "Owner" : owner.FullName;
+        }
+
         /// <summary>GET: /{Owner}/Revenue — KPIs, settlement, trend, per-listing breakdown, funnel and transactions.</summary>
         [HttpGet]
         public IActionResult Revenue(RevenueFilter filter)

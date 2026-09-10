@@ -11,16 +11,17 @@ namespace KrishiLink.Models.ViewModels
         public string Category { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string DailyRate { get; set; } = string.Empty;
+        public decimal DailyRateAmount { get; set; }
         public string HourlyRate { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
         public string Status { get; set; } = "Available";
 
         // Owner Information
         public string OwnerName { get; set; } = string.Empty;
-        public double OwnerRating { get; set; } = 4.8;
-        public int TotalReviews { get; set; } = 18;
+        public double OwnerRating { get; set; }
+        public int TotalReviews { get; set; }
         public string OwnerPhone { get; set; } = string.Empty;
-        public string OwnerMemberSince { get; set; } = "2024";
+        public string OwnerMemberSince { get; set; } = string.Empty;
 
         // Image Gallery URLs
         public List<string> ImageUrls { get; set; } = new();

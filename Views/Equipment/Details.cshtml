@@ -15,12 +15,18 @@
 </nav>
 
 <!-- Page Header & Action State Alert -->
-<div id="requestSuccessAlert" class="alert alert-success border-0 shadow-sm rounded-3 mb-4 d-none align-items-center gap-3">
+<div id="requestSuccessAlert" class="alert alert-success border-0 shadow-sm rounded-3 mb-4 @(Model.IsRequestSubmitted ? "d-flex" : "d-none") align-items-center gap-3">
     <div>
         <h6 class="fw-bold mb-1 text-success-emphasis">@L["Rental Request Submitted Successfully!"]</h6>
         <p class="mb-0 small text-success-emphasis">@L["Your request has been sent to"] <strong>@Model.OwnerName</strong>@L[". You will receive a notification as soon as the request is accepted."]</p>
     </div>
 </div>
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2">
+        <i class="bi bi-exclamation-triangle-fill"></i><span class="small">@TempData["ErrorMessage"]</span>
+    </div>
+}
 
 <div class="row g-4">
     <!-- LEFT COLUMN: Image Gallery, Equipment Details & Availability Calendar -->
@@ -73,7 +79,7 @@
                 </div>
                 <div class="col-6 col-sm-4">
                     <span class="text-muted small d-block">@L["Hourly Rate"]</span>
-                    <span class="fs-5 fw-semibold text-dark">@Model.HourlyRate</span>
+                    <span class="fs-5 fw-semibold text-dark">@(string.IsNullOrEmpty(Model.HourlyRate) ? "—" : Model.HourlyRate)</span>
                 </div>
                 <div class="col-12 col-sm-4 border-start-sm pt-2 pt-sm-0">
                     <span class="text-muted small d-block">@L["Min. Duration"]</span>
@@ -91,8 +97,11 @@
                     <div>
                         <h6 class="fw-bold mb-0 text-dark">@Model.OwnerName</h6>
                         <div class="d-flex align-items-center gap-2 small text-muted">
-                            <span class="text-success fw-semibold">@L["Rating:"] @Model.OwnerRating</span>
-                            <span>(@L["{0} reviews", Model.TotalReviews])</span>
+                            @if (Model.TotalReviews > 0)
+                            {
+                                <span class="text-success fw-semibold">@L["Rating:"] @Model.OwnerRating</span>
+                                <span>(@L["{0} reviews", Model.TotalReviews])</span>
+                            }
                             <span>@L["Member since {0}", Model.OwnerMemberSince]</span>
                         </div>
                     </div>
@@ -188,13 +197,14 @@
                     <span class="fs-5 fw-bold text-success">@Model.DailyRate</span>
                 </div>
 
-                <form id="rentalRequestForm" onsubmit="handleFormSubmit(event)">
+                <form id="rentalRequestForm" asp-controller="Equipment" asp-action="SubmitRequest" method="post" onsubmit="handleFormSubmit(event)">
+                    <input type="hidden" asp-for="Id" />
                     <!-- Start Date -->
                     <div class="mb-3">
                         <label for="startDateInput" class="form-label small fw-bold text-dark">
                             @L["Start Date"] <span class="text-danger">*</span>
                         </label>
-                        <input type="date" class="form-control form-control-lg rounded-3" id="startDateInput" required
+                        <input type="date" class="form-control form-control-lg rounded-3" id="startDateInput" name="StartDate" required
                                min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="validateDates()" />
                     </div>
 
@@ -203,7 +213,7 @@
                         <label for="endDateInput" class="form-label small fw-bold text-dark">
                             @L["End Date"] <span class="text-danger">*</span>
                         </label>
-                        <input type="date" class="form-control form-control-lg rounded-3" id="endDateInput" required
+                        <input type="date" class="form-control form-control-lg rounded-3" id="endDateInput" name="EndDate" required
                                min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="validateDates()" />
                         <div id="dateValidationError" class="form-text text-danger d-none mt-1">
                             @L["End Date must be after Start Date and not overlap booked dates."]
@@ -227,7 +237,7 @@
                         <label for="noteInput" class="form-label small fw-bold text-dark">
                             @L["Note to Owner"] <span class="text-muted">@L["(Optional)"]</span>
                         </label>
-                        <textarea class="form-control rounded-3" id="noteInput" rows="3" placeholder="@L["e.g. Need operator, location details, or specific crop field details..."]"></textarea>
+                        <textarea class="form-control rounded-3" id="noteInput" name="Note" rows="3" placeholder="@L["e.g. Need operator, location details, or specific crop field details..."]"></textarea>
                     </div>
 
                     <!-- Submit Button -->
@@ -260,6 +270,9 @@
 @section Scripts {
     <script>
         const bookedDates = @Html.Raw(bookedDatesJson);
+        const dailyRate = @Model.DailyRateAmount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        const isAuthenticated = @(User.Identity?.IsAuthenticated == true ? "true" : "false");
+        const loginUrl = '@Url.Action("Login", "Account", new { returnUrl = Url.Action("Details", "Equipment", new { id = Model.Id }) })';
 
         function switchMainImage(imgUrl, btnElement) {
             const mainImg = document.getElementById('mainGalleryImage');
@@ -350,7 +363,7 @@
                 summaryDaysCount.textContent = daysCount > 1
                     ? '@L["{0} Days", "__COUNT__"]'.replace('__COUNT__', daysCount)
                     : '@L["{0} Day", "__COUNT__"]'.replace('__COUNT__', daysCount);
-                summaryTotalFee.textContent = '@L["Tk {0}", "__AMOUNT__"]'.replace('__AMOUNT__', (daysCount * 1500).toLocaleString());
+                summaryTotalFee.textContent = '@L["Tk {0}", "__AMOUNT__"]'.replace('__AMOUNT__', (daysCount * dailyRate).toLocaleString());
                 costBox.classList.remove('d-none');
             }
 
@@ -367,6 +380,7 @@
         function handleFormSubmit(e) {
             e.preventDefault();
             if (!validateDates()) return;
+            if (!isAuthenticated) { window.location.href = loginUrl; return; }
 
             const startVal = document.getElementById('startDateInput').value;
             const endVal = document.getElementById('endDateInput').value;
@@ -380,27 +394,9 @@
                 onConfirm: function () {
                     const submitBtn = document.getElementById('submitRequestBtn');
                     const btnText = document.getElementById('btnText');
-                    const mobileBtn = document.getElementById('mobileRequestBtn');
-
-                    if (submitBtn) {
-                        submitBtn.disabled = true;
-                        submitBtn.classList.remove('btn-krishi-primary');
-                        submitBtn.classList.add('btn-secondary');
-                    }
-                    if (btnText) btnText.textContent = '@L["Request Submitted"]';
-                    if (mobileBtn) {
-                        mobileBtn.disabled = true;
-                        mobileBtn.textContent = '@L["Request Submitted"]';
-                        mobileBtn.classList.remove('btn-krishi-primary');
-                        mobileBtn.classList.add('btn-secondary');
-                    }
-
-                    const alertDiv = document.getElementById('requestSuccessAlert');
-                    if (alertDiv) {
-                        alertDiv.classList.remove('d-none');
-                        alertDiv.classList.add('d-flex');
-                        alertDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
+                    if (submitBtn) submitBtn.disabled = true;
+                    if (btnText) btnText.textContent = '@L["Sending..."]';
+                    document.getElementById('rentalRequestForm').submit();
                 }
             });
         }
