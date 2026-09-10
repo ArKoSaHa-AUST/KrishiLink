@@ -23,18 +23,28 @@
         </p>
     </div>
     <div class="d-flex flex-wrap gap-2 flex-shrink-0 d-print-none">
-        <form method="get" asp-action="Statement" class="input-group input-group-sm w-auto" title="@L["Download a PDF statement for the selected month"]">
-            <select name="month" class="form-select" aria-label="@L["Statement month"]" style="max-width: 150px;">
+        <!-- Native <details> dropdown: pill button reveals the last 12 months as PDF download links (no JavaScript) -->
+        <details class="statement-menu position-relative">
+            <summary class="btn btn-krishi-primary rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1 list-unstyled" title="@L["Download a PDF statement for a month"]">
+                <i class="bi bi-file-earmark-pdf"></i> @L["Download Statement"] <i class="bi bi-chevron-down small ms-1"></i>
+            </summary>
+            <div class="statement-menu-list shadow rounded-3 bg-white border py-1">
                 @for (var i = 0; i < 12; i++)
                 {
                     var m = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-i);
-                    <option value="@m.ToString("yyyy-MM")">@m.ToString("MMMM yyyy")</option>
+                    <a asp-action="Statement" asp-route-month="@m.ToString("yyyy-MM")" class="d-flex justify-content-between align-items-center gap-3 px-3 py-2 small text-decoration-none statement-menu-item">
+                        <span>@L[m.ToString("MMMM")] @m.ToString("yyyy")</span>
+                        @if (i == 0)
+                        {
+                            <span class="badge rounded-pill" style="background-color: var(--krishi-primary-light); color: var(--krishi-primary);">@L["Current"]</span>
+                        }
+                    </a>
                 }
-            </select>
-            <button type="submit" class="btn btn-krishi-primary fw-semibold">
-                <i class="bi bi-file-earmark-pdf me-1"></i>@L["Download Statement"]
-            </button>
-        </form>
+            </div>
+        </details>
+        <a asp-action="Payouts" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold">
+            <i class="bi bi-bank me-1"></i> @L["Payouts"]
+        </a>
         <a asp-action="Requests" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold">
             <i class="bi bi-inbox me-1"></i> @L["Booking Requests"]
         </a>
@@ -214,10 +224,13 @@
                 {
                     <div class="d-flex justify-content-between small mb-1"><span>@L["Processing"]</span><strong style="color: var(--krishi-status-pending-text);">@Money(s.Processing)</strong></div>
                 }
-                <div class="d-flex justify-content-between small"><span>@L["Owed to you"]</span><strong style="color: var(--krishi-primary);">@Money(s.Owed)</strong></div>
+                <div class="d-flex justify-content-between small"><span>@L["Pending payout"]</span><strong style="color: var(--krishi-primary);">@Money(s.Owed)</strong></div>
             </div>
 
-            <h6 class="small text-uppercase fw-bold mb-2" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L["Payout history"]</h6>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="small text-uppercase fw-bold mb-0" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L["Payout history"]</h6>
+                <a asp-action="Payouts" class="small fw-semibold text-decoration-none d-print-none" style="color: var(--krishi-primary);">@L["View all"] <i class="bi bi-arrow-right"></i></a>
+            </div>
             @if (!s.Payouts.Any())
             {
                 <p class="small mb-0" style="color: var(--krishi-text-muted);">@L["No payouts yet."]</p>
@@ -231,7 +244,7 @@
                             <i class="bi @(p.Status == "Completed" ? "bi-check-circle-fill text-success" : "bi-clock-history") flex-shrink-0" style="@(p.Status != "Completed" ? "color: var(--krishi-status-pending-text);" : "")"></i>
                             <span class="flex-grow-1">
                                 @(p.Status == "Completed" ? L["Paid on {0}", p.Date.ToString("dd MMM")] : L["Processing since {0}", p.Date.ToString("dd MMM")])
-                                <span style="color: var(--krishi-text-muted);">· @p.Method</span>
+                                <span class="d-block" style="color: var(--krishi-text-muted);">@p.Method · <code>@p.Reference</code></span>
                             </span>
                             <strong>@Money(p.Amount)</strong>
                         </li>
@@ -517,6 +530,16 @@
         </form>
     </div>
 </div>
+
+<style>
+    /* Statement month menu (native <details>): hide the default marker and float the list under the button */
+    .statement-menu > summary { list-style: none; cursor: pointer; }
+    .statement-menu > summary::-webkit-details-marker { display: none; }
+    .statement-menu[open] > summary .bi-chevron-down { transform: rotate(180deg); }
+    .statement-menu-list { position: absolute; right: 0; top: calc(100% + 6px); min-width: 230px; z-index: 1050; }
+    .statement-menu-item { color: var(--krishi-text-primary); }
+    .statement-menu-item:hover { background-color: var(--krishi-primary-light); color: var(--krishi-primary); }
+</style>
 
 @section Scripts {
     <script>

@@ -81,5 +81,26 @@ namespace KrishiLink.Controllers
 
             return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Revenue));
         }
+
+        /// <summary>GET: /{Owner}/Payouts — pending payout balance, commission breakdown and full settlement history.</summary>
+        [HttpGet]
+        public IActionResult Payouts()
+        {
+            return View("Payouts", _revenueService.GetPayoutHistory(OwnerId));
+        }
+
+        /// <summary>POST: /{Owner}/RequestPayout — asks the platform to settle the pending balance to the given wallet/account.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult RequestPayout(string method, string? account)
+        {
+            var error = _revenueService.RequestPayout(OwnerId, method ?? string.Empty, account);
+            if (error is null)
+                TempData["SuccessMessage"] = "Payout requested. It will show as Completed once the platform has transferred the funds.";
+            else
+                TempData["ErrorMessage"] = error;
+
+            return RedirectToAction(nameof(Payouts));
+        }
     }
 }

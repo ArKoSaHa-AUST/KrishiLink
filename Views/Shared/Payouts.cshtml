@@ -1,0 +1,188 @@
+@model KrishiLink.Models.ViewModels.PayoutHistoryViewModel
+@{
+    ViewData["Title"] = L["Payouts & Settlement"];
+    ViewData["BodyClass"] = "krishi-body-gradient";
+    var s = Model.Settlement;
+    var ratePercent = (s.CommissionRate * 100).ToString("0.#");
+    string Money(decimal v) => "৳" + v.ToString("N0");
+}
+
+<!-- Page Header -->
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4 pb-3 border-bottom" style="border-color: var(--krishi-border-color) !important;">
+    <div>
+        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">@L["Payouts & Settlement"]</h2>
+        <p class="mb-0" style="color: var(--krishi-text-muted);">@L["What you are owed, what has been paid to you, and exactly what the platform kept."]</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2 flex-shrink-0">
+        <a asp-action="Revenue" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold"><i class="bi bi-graph-up-arrow me-1"></i> @L["Revenue"]</a>
+        <a asp-action="Index" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold"><i class="bi bi-speedometer2 me-1"></i> @L["Dashboard"]</a>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success border-0 shadow-sm rounded-3 mb-3 d-flex align-items-center gap-2"><i class="bi bi-check-circle-fill text-success"></i><span class="small">@TempData["SuccessMessage"]</span></div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger border-0 shadow-sm rounded-3 mb-3 d-flex align-items-center gap-2"><i class="bi bi-exclamation-triangle-fill"></i><span class="small">@TempData["ErrorMessage"]</span></div>
+}
+
+<!-- Balance cards -->
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 p-3" style="border-radius: var(--krishi-radius-lg); border-left: 4px solid var(--krishi-primary) !important;">
+            <span class="small" style="color: var(--krishi-text-muted);">@L["Pending payout"]</span>
+            <span class="fs-3 fw-bold" style="color: var(--krishi-primary);">@Money(s.Owed)</span>
+            <span class="small" style="color: var(--krishi-text-muted);">@L["Net earnings not yet paid to you"]</span>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 p-3" style="border-radius: var(--krishi-radius-lg);">
+            <span class="small" style="color: var(--krishi-text-muted);">@L["Processing"]</span>
+            <span class="fs-3 fw-bold" style="color: var(--krishi-status-pending-text);">@Money(s.Processing)</span>
+            <span class="small" style="color: var(--krishi-text-muted);">@L["Requested, transfer in progress"]</span>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 p-3" style="border-radius: var(--krishi-radius-lg);">
+            <span class="small" style="color: var(--krishi-text-muted);">@L["Paid out to date"]</span>
+            <span class="fs-3 fw-bold text-dark">@Money(s.PaidOut)</span>
+            <span class="small" style="color: var(--krishi-text-muted);">@L["{0} completed payouts", s.Payouts.Count(p => p.Status == "Completed")]</span>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 p-3" style="border-radius: var(--krishi-radius-lg);">
+            <span class="small" style="color: var(--krishi-text-muted);">@L["Platform commission kept"]</span>
+            <span class="fs-3 fw-bold text-danger">@Money(s.Commission)</span>
+            <span class="small" style="color: var(--krishi-text-muted);">@L["{0}% of {1} gross revenue", ratePercent, Money(s.Gross)]</span>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Commission transparency -->
+    <div class="col-12 col-lg-7">
+        <div class="card border-0 shadow-sm h-100 p-3 p-md-4" style="border-radius: var(--krishi-radius-lg);">
+            <h5 class="fw-bold mb-3" style="color: var(--krishi-text-primary);"><i class="bi bi-percent me-2 text-success"></i>@L["How your earnings are calculated"]</h5>
+            <p class="small mb-3" style="color: var(--krishi-text-muted);">
+                @L["KrishiLink keeps {0}% of every completed booking. Everything else is yours and accumulates as your pending payout until it is paid out.", ratePercent]
+            </p>
+            <dl class="row small mb-0 gy-1">
+                <dt class="col-7 fw-normal" style="color: var(--krishi-text-muted);">@L["Gross revenue from {0} completed bookings", Model.CompletedBookings]</dt>
+                <dd class="col-5 text-end mb-0 fw-semibold">@Money(s.Gross)</dd>
+                <dt class="col-7 fw-normal" style="color: var(--krishi-text-muted);">@L["Platform commission ({0}%)", ratePercent]</dt>
+                <dd class="col-5 text-end mb-0 text-danger">− @Money(s.Commission)</dd>
+                <dt class="col-7 fw-semibold border-top pt-1">@L["Net earned (yours)"]</dt>
+                <dd class="col-5 text-end mb-0 fw-bold border-top pt-1">@Money(s.NetEarned)</dd>
+                <dt class="col-7 fw-normal" style="color: var(--krishi-text-muted);">@L["Already paid out"]</dt>
+                <dd class="col-5 text-end mb-0">− @Money(s.PaidOut)</dd>
+                @if (s.Processing > 0)
+                {
+                    <dt class="col-7 fw-normal" style="color: var(--krishi-text-muted);">@L["Processing"]</dt>
+                    <dd class="col-5 text-end mb-0">− @Money(s.Processing)</dd>
+                }
+                <dt class="col-7 fw-semibold border-top pt-1" style="color: var(--krishi-primary);">@L["Pending payout"]</dt>
+                <dd class="col-5 text-end mb-0 fw-bold border-top pt-1" style="color: var(--krishi-primary);">@Money(s.Owed)</dd>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Request payout -->
+    <div class="col-12 col-lg-5">
+        <div class="card border-0 shadow-sm h-100 p-3 p-md-4" style="border-radius: var(--krishi-radius-lg);">
+            <h5 class="fw-bold mb-3" style="color: var(--krishi-text-primary);"><i class="bi bi-cash-coin me-2 text-success"></i>@L["Request a payout"]</h5>
+            @if (s.Processing > 0)
+            {
+                <p class="small mb-0" style="color: var(--krishi-text-muted);">@L["A payout of {0} is being processed. You can request another once it completes.", Money(s.Processing)]</p>
+            }
+            else if (s.Owed <= 0)
+            {
+                <p class="small mb-0" style="color: var(--krishi-text-muted);">@L["Nothing to pay out yet. Your balance grows each time a booking is marked completed."]</p>
+            }
+            else
+            {
+                <form asp-action="RequestPayout" method="post">
+                    <p class="small mb-3">@L["Your full pending balance of"] <strong>@Money(s.Owed)</strong> @L["will be transferred."]</p>
+                    <div class="mb-3">
+                        <label for="payoutMethod" class="form-label small fw-semibold">@L["Payout method"]</label>
+                        <select id="payoutMethod" name="method" class="form-select" required>
+                            @foreach (var m in KrishiLink.Models.ViewModels.PayoutHistoryViewModel.PayoutMethods)
+                            {
+                                <option value="@m">@m</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payoutAccount" class="form-label small fw-semibold">@L["Wallet / account number"]</label>
+                        <input id="payoutAccount" name="account" class="form-control" required minlength="6" maxlength="40" placeholder="01XXXXXXXXX" autocomplete="off" />
+                    </div>
+                    <button type="submit" class="btn btn-krishi-primary w-100 rounded-pill fw-bold">@L["Request Payout of {0}", Money(s.Owed)]</button>
+                    <p class="small mt-2 mb-0" style="color: var(--krishi-text-muted);">@L["No payment gateway is connected yet — the platform team completes transfers manually."]</p>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Payout history -->
+<div class="card border-0 shadow-sm overflow-hidden" style="border-radius: var(--krishi-radius-lg);">
+    <div class="p-3 px-4 border-bottom d-flex align-items-center justify-content-between">
+        <h5 class="fw-bold mb-0" style="color: var(--krishi-text-primary);"><i class="bi bi-clock-history me-2 text-success"></i>@L["Payout history"]</h5>
+        <span class="small" style="color: var(--krishi-text-muted);">@L["{0} payouts", s.Payouts.Count]</span>
+    </div>
+    @if (!s.Payouts.Any())
+    {
+        <div class="p-5 text-center">
+            <i class="bi bi-wallet2 fs-2 text-success d-block mb-1"></i>
+            <span class="d-block" style="color: var(--krishi-text-muted);">@L["No payouts yet. Complete bookings to build up your balance, then request your first payout above."]</span>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+                <thead class="table-light">
+                    <tr>
+                        <th>@L["Date"]</th>
+                        <th>@L["Reference"]</th>
+                        <th class="text-end">@L["Gross settled"]</th>
+                        <th class="text-end">@L["Commission ({0}%)", ratePercent]</th>
+                        <th class="text-end">@L["Net paid"]</th>
+                        <th>@L["Method"]</th>
+                        <th>@L["Status"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in s.Payouts)
+                    {
+                        <tr>
+                            <td class="text-nowrap">@p.Date.ToString("dd MMM yyyy")</td>
+                            <td><code class="small">@p.Reference</code></td>
+                            <td class="text-end">@Money(p.Gross)</td>
+                            <td class="text-end text-danger">− @Money(p.Commission)</td>
+                            <td class="text-end fw-bold">@Money(p.Amount)</td>
+                            <td class="text-nowrap">
+                                @p.Method
+                                @if (!string.IsNullOrEmpty(p.Account))
+                                {
+                                    <span class="d-block" style="color: var(--krishi-text-muted);">•••• @(p.Account.Length > 4 ? p.Account[^4..] : p.Account)</span>
+                                }
+                            </td>
+                            <td><span class="krishi-badge @(p.Status == "Completed" ? "krishi-badge-available" : "krishi-badge-pending")">@L[p.Status]</span></td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="table-light fw-semibold">
+                    <tr>
+                        <td colspan="2">@L["Total"]</td>
+                        <td class="text-end">@Money(s.Payouts.Sum(p => p.Gross))</td>
+                        <td class="text-end text-danger">− @Money(s.Payouts.Sum(p => p.Commission))</td>
+                        <td class="text-end">@Money(s.Payouts.Sum(p => p.Amount))</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+</div>
