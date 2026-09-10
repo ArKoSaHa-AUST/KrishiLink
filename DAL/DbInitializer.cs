@@ -1,3 +1,4 @@
+using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Identity;
@@ -117,13 +118,20 @@ namespace KrishiLink.DAL
                 StorageBooking(godowns[0], farmer, 10, 3, 93, BookingStatus.Pending, 0, "10 tons of potato bags. Climate-controlled room needed for 3 months."),
                 StorageBooking(godowns[1], salma, 40, 5, 95, BookingStatus.Pending, 0),
                 StorageBooking(godowns[0], karim, 200, 10, 40, BookingStatus.Pending, -1, "Potato harvest, needs 2-8°C climate control."));
-
-            db.Transactions.AddRange(
-                Payout(eqOwner, 25000, "bKash", -95), Payout(eqOwner, 20000, "Nagad", -65), Payout(eqOwner, 15000, "bKash", -35),
-                Payout(eqOwner, 8000, "bKash", -3), Payout(eqOwner, 4000, "Bank Transfer", 0, "Processing"),
-                Payout(gdOwner, 120000, "Bank Transfer", -90), Payout(gdOwner, 80000, "bKash", -60), Payout(gdOwner, 60000, "Bank Transfer", -30),
-                Payout(gdOwner, 25000, "bKash", -2), Payout(gdOwner, 15000, "Nagad", 0, "Processing"));
             await db.SaveChangesAsync();
+
+            // Payouts settle specific completed bookings (oldest first); the newest completed booking is left unpaid
+            // so the demo owners have a visible pending balance.
+            var eqRepo = new EquipmentRevenueRepository(db);
+            var eqCompleted = eqRepo.GetBookings(eqOwner.Id).Where(b => b.Status == BookingStatus.Completed).OrderBy(b => b.EndDate).ToList();
+            Settle(eqRepo, eqOwner, eqCompleted.Take(2), "bKash", -95, "Completed");
+            Settle(eqRepo, eqOwner, eqCompleted.Skip(2).Take(1), "Nagad", -35, "Completed");
+            Settle(eqRepo, eqOwner, eqCompleted.Skip(3).Take(1), "bKash", -3, "Processing");
+
+            var gdRepo = new GodownRevenueRepository(db);
+            var gdCompleted = gdRepo.GetBookings(gdOwner.Id).Where(b => b.Status == BookingStatus.Completed).OrderBy(b => b.EndDate).ToList();
+            Settle(gdRepo, gdOwner, gdCompleted.Take(1), "Bank Transfer", -60, "Completed");
+            Settle(gdRepo, gdOwner, gdCompleted.Skip(1).Take(1), "bKash", -2, "Processing");
 
             var completedRental = await db.EquipmentBookings.FirstAsync(b => b.EquipmentId == equipment[1].Id && b.Status == BookingStatus.Completed);
             var completedStorage = await db.GodownBookings.FirstAsync(b => b.GodownId == godowns[1].Id && b.Status == BookingStatus.Completed);
@@ -219,23 +227,28 @@ namespace KrishiLink.DAL
                 UpdatedOn = status == BookingStatus.Pending ? null : DateTime.Now.AddDays(requestedOffset).AddHours(5)
             };
 
-        private static Transaction Payout(ApplicationUser owner, decimal net, string method, int daysAgo, string status = "Completed")
+        /// <summary>Creates one payout covering the given bookings (5% commission) and links them to it.</summary>
+        private static void Settle(IOwnerRevenueRepository repo, ApplicationUser owner, IEnumerable<RevenueBooking> bookings, string method, int daysAgo, string status)
         {
-            // Seed payouts settle net amounts; back out the 5% commission so the history shows what the platform kept
-            var gross = decimal.Round(net / 0.95m, 0);
+            var list = bookings.ToList();
+            if (list.Count == 0) return;
+
+            var gross = list.Sum(b => b.Gross);
+            var commission = list.Sum(b => decimal.Round(b.Gross * 0.05m, 0));
             var date = DateTime.Today.AddDays(daysAgo);
-            return new()
+            var payoutId = repo.AddPayout(new Transaction
             {
                 UserId = owner.Id,
                 Reference = $"KL-PO-{date:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
                 GrossAmount = gross,
-                Commission = gross - net,
-                Amount = net,
+                Commission = commission,
+                Amount = gross - commission,
                 PaymentMethod = method,
                 PayoutAccount = method == "Bank Transfer" ? "0123456789012" : owner.PhoneNumber,
                 Status = status,
                 TransactionDate = date
-            };
+            });
+            repo.MarkBookingsPaid(list.Select(b => b.Id), payoutId);
         }
     }
 }

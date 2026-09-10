@@ -44,6 +44,7 @@ namespace KrishiLink.Models.ViewModels
         public string? OwnerRemarks { get; set; }
 
         public string ListingDetailUrl { get; set; } = "#";
+        public bool CanCancel { get; set; }
         public List<BookingTimelineStep> Timeline { get; set; } = new();
     }
 
@@ -67,5 +68,6 @@ namespace KrishiLink.Models.ViewModels
         public int AcceptedCount { get; set; }
         public int CompletedCount { get; set; }
         public int RejectedCount { get; set; }
+        public int CancelledCount { get; set; }
     }
 }

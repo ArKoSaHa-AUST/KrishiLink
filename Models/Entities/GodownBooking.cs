@@ -17,5 +17,12 @@ namespace KrishiLink.Models.Entities
 
         /// <summary>When the owner last changed the status (accept/reject/complete).</summary>
         public DateTime? UpdatedOn { get; set; }
+
+        /// <summary>Set when the farmer cancels the request.</summary>
+        public DateTime? CancelledOn { get; set; }
+
+        /// <summary>The payout that settled this booking's revenue; null while still unpaid.</summary>
+        public int? PayoutId { get; set; }
+        public Transaction? Payout { get; set; }
     }
 }

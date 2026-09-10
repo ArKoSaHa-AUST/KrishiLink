@@ -16,6 +16,9 @@ namespace KrishiLink.Models.Entities
         public string? Specialization { get; set; }
         public DateTime? OnboardingCompletedAt { get; set; }
 
+        /// <summary>First day of the last month whose statement was emailed by the scheduler (owners only).</summary>
+        public DateTime? LastStatementSentMonth { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

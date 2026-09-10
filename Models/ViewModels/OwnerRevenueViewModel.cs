@@ -13,6 +13,12 @@ namespace KrishiLink.Models.ViewModels
         /// <summary>Trend chart granularity: month | week</summary>
         public string Period { get; set; } = "month";
 
+        /// <summary>Breakdown table sort: revenue | utilization | avg | bookings</summary>
+        public string Sort { get; set; } = "revenue";
+
+        /// <summary>Transactions page (1-based).</summary>
+        public int Page { get; set; } = 1;
+
         public bool IsWeekly => string.Equals(Period, "week", StringComparison.OrdinalIgnoreCase);
     }
 
@@ -36,14 +42,30 @@ namespace KrishiLink.Models.ViewModels
         // KPI cards
         public decimal TotalRevenue { get; set; }
         public decimal ThisMonthRevenue { get; set; }
+        public decimal LastMonthRevenue { get; set; }
+
+        /// <summary>This month vs. last month; null when last month had no revenue (no meaningful baseline).</summary>
+        public int? MonthChangePercent => LastMonthRevenue > 0
+            ? (int)Math.Round((ThisMonthRevenue - LastMonthRevenue) / LastMonthRevenue * 100)
+            : null;
         public decimal UpcomingRevenue { get; set; }
         public int CompletedBookings { get; set; }
 
         public RevenueSettlement Settlement { get; set; } = new();
         public List<RevenueTrendPoint> Trend { get; set; } = new();
+
+        /// <summary>Bucket size actually used by the trend chart (7 = weekly, 14 = fortnightly, 0 = monthly).</summary>
+        public int TrendBucketDays { get; set; }
+
+        /// <summary>Set when the trend had to drop older buckets to stay readable.</summary>
+        public string? TrendNote { get; set; }
         public List<ListingRevenueBreakdownItem> Breakdown { get; set; } = new();
         public BookingFunnel Funnel { get; set; } = new();
+
+        /// <summary>The current page of transactions; see <see cref="TransactionsTotal"/> and <see cref="PageCount"/>.</summary>
         public List<RevenueTransactionItem> Transactions { get; set; } = new();
+        public int TransactionsTotal { get; set; }
+        public int PageCount { get; set; } = 1;
         public RevenueInsights Insights { get; set; } = new();
 
         /// <summary>Payout processed within the last 7 days, surfaced as an alert.</summary>
@@ -68,13 +90,15 @@ namespace KrishiLink.Models.ViewModels
         public decimal PaidOut { get; set; }
         public decimal Processing { get; set; }
 
-        /// <summary>Running "pending payout": net earnings not yet paid or in transfer.</summary>
-        public decimal Owed => Math.Max(0, NetEarned - PaidOut - Processing);
+        /// <summary>Running "pending payout": net revenue of completed bookings not yet linked to any payout.</summary>
+        public decimal Owed { get; set; }
+        public int UnpaidBookings { get; set; }
         public List<PayoutItem> Payouts { get; set; } = new();
     }
 
     public class PayoutItem
     {
+        public int Id { get; set; }
         public DateTime Date { get; set; }
         public string Reference { get; set; } = string.Empty;
         public decimal Gross { get; set; }
@@ -85,6 +109,9 @@ namespace KrishiLink.Models.ViewModels
         public string Method { get; set; } = string.Empty;
         public string? Account { get; set; }
         public string Status { get; set; } = "Completed";
+
+        /// <summary>How many completed bookings this payout settled.</summary>
+        public int BookingCount { get; set; }
     }
 
     /// <summary>Dedicated payouts page: pending balance, commission explainer and the full settlement history.</summary>
@@ -157,10 +184,22 @@ namespace KrishiLink.Models.ViewModels
         public string QuantityText { get; set; } = string.Empty;
         public decimal Gross { get; set; }
         public decimal Commission { get; set; }
-        public decimal Expenses { get; set; }
+        public decimal Expenses => ExpenseLines.Sum(e => e.Amount);
         public decimal Net => Gross - Commission - Expenses;
         public string Status { get; set; } = "Pending";
         public bool IsRepeatCustomer { get; set; }
+
+        /// <summary>Reference of the payout that settled this booking; null while unpaid.</summary>
+        public string? PayoutReference { get; set; }
+        public bool IsPaid => PayoutReference is not null;
+        public List<ExpenseLine> ExpenseLines { get; set; } = new();
+    }
+
+    public class ExpenseLine
+    {
+        public int Id { get; set; }
+        public decimal Amount { get; set; }
+        public string Note { get; set; } = string.Empty;
     }
 
     public class RevenueInsights
@@ -172,6 +211,9 @@ namespace KrishiLink.Models.ViewModels
 
         /// <summary>Listings whose utilization fell below the low-utilization threshold in the range.</summary>
         public int UnderUtilizedListings { get; set; }
+
+        /// <summary>The configured threshold used for <see cref="UnderUtilizedListings"/>, for display.</summary>
+        public int LowUtilizationPercent { get; set; }
 
         /// <summary>Top listing vs. weakest listing, e.g. multiplier of 3.2 → "earned 3.2× more".</summary>
         public string? TopListing { get; set; }

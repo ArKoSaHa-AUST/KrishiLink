@@ -50,6 +50,7 @@ namespace KrishiLink.DAL
                 b.HasIndex(x => new { x.EquipmentId, x.Status });
                 b.HasOne(x => x.Equipment).WithMany(x => x.Bookings).HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Cascade);
                 b.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(x => x.Payout).WithMany().HasForeignKey(x => x.PayoutId).OnDelete(DeleteBehavior.NoAction);
             });
 
             builder.Entity<EquipmentBlockedDate>(d =>
@@ -74,6 +75,7 @@ namespace KrishiLink.DAL
                 b.HasIndex(x => new { x.GodownId, x.Status });
                 b.HasOne(x => x.Godown).WithMany(x => x.Bookings).HasForeignKey(x => x.GodownId).OnDelete(DeleteBehavior.Cascade);
                 b.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(x => x.Payout).WithMany().HasForeignKey(x => x.PayoutId).OnDelete(DeleteBehavior.NoAction);
             });
 
             builder.Entity<GodownBlockedDate>(d =>
