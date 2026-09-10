@@ -39,8 +39,9 @@ namespace KrishiLink.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RespondRequest(int id, string decision, string? reason = null)
         {
-            if (!await _equipment.RespondAsync(OwnerId, id, decision ?? string.Empty, reason))
-                return BadRequest(new { success = false, message = "This request could not be updated." });
+            var result = await _equipment.RespondAsync(OwnerId, id, decision ?? string.Empty, reason);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Error });
 
             var verb = decision!.ToLowerInvariant() switch
             {
@@ -50,7 +51,7 @@ namespace KrishiLink.Controllers
                 "undo" => "restored",
                 _ => "updated"
             };
-            return Json(new { success = true, message = $"Request #{id} {verb}." });
+            return Json(new { success = true, message = $"Request #{id} {verb}.", autoRejected = result.AutoRejectedIds });
         }
 
         /// <summary>GET: /EquipmentOwner/PendingCount — polled by the dashboard for new-request notifications.</summary>
@@ -97,18 +98,18 @@ namespace KrishiLink.Controllers
             if (model is null) return NotFound();
 
             model.IsSaved = saved;
-            return View(model);
+            return View("Availability", model);
         }
 
         /// <summary>POST: /EquipmentOwner/SaveAvailability — replaces the owner-blocked dates for the posted month.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveAvailability(int equipmentId, DateTime month, List<DateTime>? blockedDates)
+        public async Task<IActionResult> SaveAvailability(int listingId, DateTime month, List<DateTime>? blockedDates)
         {
-            if (!await _equipment.SaveAvailabilityAsync(OwnerId, equipmentId, month, blockedDates ?? new List<DateTime>()))
+            if (!await _equipment.SaveAvailabilityAsync(OwnerId, listingId, month, blockedDates ?? new List<DateTime>()))
                 return NotFound();
 
-            return RedirectToAction(nameof(Availability), new { id = equipmentId, month = month.ToString("yyyy-MM-dd"), saved = true });
+            return RedirectToAction(nameof(Availability), new { id = listingId, month = month.ToString("yyyy-MM-dd"), saved = true });
         }
     }
 }

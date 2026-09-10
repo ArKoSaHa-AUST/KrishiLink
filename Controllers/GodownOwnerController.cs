@@ -39,8 +39,9 @@ namespace KrishiLink.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RespondRequest(int id, string decision, string? reason = null)
         {
-            if (!await _godowns.RespondAsync(OwnerId, id, decision ?? string.Empty, reason))
-                return BadRequest(new { success = false, message = "This booking request could not be updated." });
+            var result = await _godowns.RespondAsync(OwnerId, id, decision ?? string.Empty, reason);
+            if (!result.Success)
+                return BadRequest(new { success = false, message = result.Error });
 
             var verb = decision!.ToLowerInvariant() switch
             {
@@ -50,7 +51,7 @@ namespace KrishiLink.Controllers
                 "undo" => "restored",
                 _ => "updated"
             };
-            return Json(new { success = true, message = $"Booking request #{id} {verb}." });
+            return Json(new { success = true, message = $"Booking request #{id} {verb}.", autoRejected = result.AutoRejectedIds });
         }
 
         /// <summary>GET: /GodownOwner/PendingCount — polled by the dashboard for new-request notifications.</summary>
@@ -88,6 +89,27 @@ namespace KrishiLink.Controllers
 
             TempData["SuccessMessage"] = $"Storage facility '{model.Name}' successfully {(isEdit ? "updated" : "listed")}!";
             return RedirectToAction(nameof(Index));
+        }
+
+        /// <summary>GET: /GodownOwner/Availability/3?month=2026-09-01 — closure/blackout calendar for a godown.</summary>
+        public async Task<IActionResult> Availability(int id, DateTime? month = null, bool saved = false)
+        {
+            var model = await _godowns.GetAvailabilityAsync(OwnerId, id, month);
+            if (model is null) return NotFound();
+
+            model.IsSaved = saved;
+            return View("Availability", model);
+        }
+
+        /// <summary>POST: /GodownOwner/SaveAvailability — replaces the owner-blocked dates for the posted month.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveAvailability(int listingId, DateTime month, List<DateTime>? blockedDates)
+        {
+            if (!await _godowns.SaveAvailabilityAsync(OwnerId, listingId, month, blockedDates ?? new List<DateTime>()))
+                return NotFound();
+
+            return RedirectToAction(nameof(Availability), new { id = listingId, month = month.ToString("yyyy-MM-dd"), saved = true });
         }
     }
 }

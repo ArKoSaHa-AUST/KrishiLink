@@ -1,26 +1,26 @@
 @model KrishiLink.Models.ViewModels.ManageAvailabilityViewModel
 @{
-    ViewData["Title"] = L["Manage Equipment Availability"];
+    ViewData["Title"] = L["Manage Availability"];
     var bookedDatesJson = System.Text.Json.JsonSerializer.Serialize(Model.FarmerBookedDates.Select(d => d.ToString("yyyy-MM-dd")).ToList());
     var blockedDatesJson = System.Text.Json.JsonSerializer.Serialize(Model.OwnerBlockedDates.Select(d => d.ToString("yyyy-MM-dd")).ToList());
     var monthNameParts = Model.MonthName.Split(' ');
     var localizedMonthName = monthNameParts.Length >= 2 ? $"{L[monthNameParts[0]]} {monthNameParts[1]}" : L[Model.MonthName].Value;
 }
 
-<!-- Breadcrumb Navigation -->
+<!-- Breadcrumb Navigation (asp-action without asp-controller resolves to the current owner controller) -->
 <nav aria-label="@L["breadcrumb"]" class="mb-3">
     <ol class="breadcrumb small">
         <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-success text-decoration-none">@L["Home"]</a></li>
-        <li class="breadcrumb-item"><a asp-controller="EquipmentOwner" asp-action="Index" class="text-success text-decoration-none">@L["Owner Dashboard"]</a></li>
+        <li class="breadcrumb-item"><a asp-action="Index" class="text-success text-decoration-none">@L["Owner Dashboard"]</a></li>
         <li class="breadcrumb-item active text-muted" aria-current="page">@L["Manage Availability"]</li>
     </ol>
 </nav>
 
-<!-- Page Header & Equipment Summary Banner -->
+<!-- Page Header & Listing Summary Banner -->
 <div class="card krishi-card border-0 shadow-sm p-4 mb-4" style="border-radius: var(--krishi-radius-lg);">
     <div class="row align-items-center g-3">
         <div class="col-auto">
-            <img src="@Model.ThumbnailUrl" class="rounded-3 object-fit-cover shadow-sm" style="width: 84px; height: 84px;" alt="@Model.EquipmentName" />
+            <img src="@Model.ThumbnailUrl" class="rounded-3 object-fit-cover shadow-sm" style="width: 84px; height: 84px;" alt="@Model.ListingName" />
         </div>
         <div class="col">
             <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
@@ -31,13 +31,13 @@
                     @L[Model.Location]
                 </span>
             </div>
-            <h3 class="fw-bold text-dark mb-1">@Model.EquipmentName</h3>
+            <h3 class="fw-bold text-dark mb-1">@Model.ListingName</h3>
             <p class="text-muted small mb-0">
-                @L["Daily Rate:"] <strong class="text-success">@Model.DailyRate</strong> @L["- Set maintenance & blackout dates for your equipment."]
+                @L["Rate:"] <strong class="text-success">@Model.RateText</strong> @L["- Set maintenance & blackout dates. Farmers cannot book blocked dates."]
             </p>
         </div>
         <div class="col-12 col-md-auto text-md-end">
-            <a asp-controller="EquipmentOwner" asp-action="Index" class="btn btn-krishi-outline rounded-pill px-4 py-2 text-nowrap fw-semibold">
+            <a asp-action="Index" class="btn btn-krishi-outline rounded-pill px-4 py-2 text-nowrap fw-semibold">
                 @L["Back to Dashboard"]
             </a>
         </div>
@@ -59,9 +59,9 @@
     <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
         <div>
             <h5 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
-                <a asp-action="Availability" asp-route-id="@Model.EquipmentId" asp-route-month="@Model.Month.AddMonths(-1).ToString("yyyy-MM-dd")" class="btn btn-sm btn-outline-secondary rounded-circle" title="@L["Previous month"]"><i class="bi bi-chevron-left"></i></a>
+                <a asp-action="Availability" asp-route-id="@Model.ListingId" asp-route-month="@Model.Month.AddMonths(-1).ToString("yyyy-MM-dd")" class="btn btn-sm btn-outline-secondary rounded-circle" title="@L["Previous month"]"><i class="bi bi-chevron-left"></i></a>
                 @L["Availability Calendar - {0}", localizedMonthName]
-                <a asp-action="Availability" asp-route-id="@Model.EquipmentId" asp-route-month="@Model.Month.AddMonths(1).ToString("yyyy-MM-dd")" class="btn btn-sm btn-outline-secondary rounded-circle" title="@L["Next month"]"><i class="bi bi-chevron-right"></i></a>
+                <a asp-action="Availability" asp-route-id="@Model.ListingId" asp-route-month="@Model.Month.AddMonths(1).ToString("yyyy-MM-dd")" class="btn btn-sm btn-outline-secondary rounded-circle" title="@L["Next month"]"><i class="bi bi-chevron-right"></i></a>
             </h5>
             <p class="text-muted small mb-0">@L["Click on available dates to select and mark them as unavailable (maintenance) or vice versa."]</p>
         </div>
@@ -188,8 +188,8 @@
     </div>
 </div>
 
-<form id="availabilityForm" asp-controller="EquipmentOwner" asp-action="SaveAvailability" method="post" class="d-none">
-    <input type="hidden" name="equipmentId" value="@Model.EquipmentId" />
+<form id="availabilityForm" asp-action="SaveAvailability" method="post" class="d-none">
+    <input type="hidden" name="listingId" value="@Model.ListingId" />
     <input type="hidden" name="month" value="@Model.Month.ToString("yyyy-MM-dd")" />
 </form>
 
@@ -278,7 +278,7 @@
         function confirmSaveAvailability() {
             window.KrishiModal.confirm({
                 title: '@L["Save Availability Changes?"]',
-                body: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Are you sure you want to save these availability calendar updates for <strong>{0}</strong>?", Model.EquipmentName].Value)),
+                body: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Are you sure you want to save these availability calendar updates for <strong>{0}</strong>?", Model.ListingName].Value)),
                 confirmText: '@L["Save Changes"]',
                 cancelText: '@L["Cancel"]',
                 confirmClass: 'btn-krishi-primary',

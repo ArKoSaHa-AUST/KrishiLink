@@ -147,6 +147,9 @@
 
         </div>
 
+        <!-- Availability Calendar: owner blackout dates and days already at full capacity -->
+        <partial name="_AvailabilityCalendar" model="Model.UnavailableDates" />
+
     </div>
 
     <!-- RIGHT COLUMN: Storage Booking Form -->
@@ -269,8 +272,27 @@
 
 @section Scripts {
     <script>
+        const unavailableDates = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.UnavailableDates.Select(d => d.ToString("yyyy-MM-dd"))));
+
         function scrollToBookingForm() {
             document.getElementById('bookingFormContainer')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Calendar click: fill start date first, then end date
+        function selectCalendarDate(dateStr) {
+            const startInput = document.getElementById('startDateInput');
+            const endInput = document.getElementById('endDateInput');
+            if (!startInput.value || dateStr <= startInput.value) {
+                startInput.value = dateStr;
+                endInput.value = '';
+            } else {
+                endInput.value = dateStr;
+            }
+            scrollToBookingForm();
+        }
+
+        function rangeHitsUnavailableDate(start, end) {
+            return unavailableDates.some(d => d >= start && d <= end);
         }
 
         function switchGodownImage(src, btn) {
@@ -325,7 +347,7 @@
             const start = document.getElementById('startDateInput').value;
             const end = document.getElementById('endDateInput').value;
 
-            if (end <= start) {
+            if (end <= start || rangeHitsUnavailableDate(start, end)) {
                 KrishiModal.confirm({
                     title: '@L["Invalid Dates"]',
                     body: '@L["End Date must be after Start Date and not overlap booked dates."]',
