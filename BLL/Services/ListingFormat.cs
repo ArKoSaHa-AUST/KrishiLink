@@ -31,9 +31,19 @@ namespace KrishiLink.BLL.Services
         public static double Months(DateTime start, DateTime end) => Math.Max(1, (end.Date - start.Date).TotalDays) / 30.0;
     }
 
+    /// <summary>Outcome of an owner decision. <see cref="AutoRejectedIds"/> lists pending requests that were declined as a side effect.</summary>
+    public record DecisionResult(bool Success, string? Error = null, IReadOnlyList<int>? AutoRejectedIds = null)
+    {
+        public static DecisionResult Ok(IReadOnlyList<int>? autoRejected = null) => new(true, null, autoRejected ?? Array.Empty<int>());
+        public static DecisionResult Fail(string error) => new(false, error, Array.Empty<int>());
+    }
+
     /// <summary>Owner decision state machine shared by equipment rentals and godown storage bookings.</summary>
     internal static class BookingWorkflow
     {
+        /// <summary>Reason stored on pending requests that lose out when the owner accepts an overlapping one.</summary>
+        public const string AutoRejectReason = "Automatically declined: the owner accepted another booking for overlapping dates.";
+
         /// <summary>Returns the new status for <paramref name="decision"/>, or null when the transition is not allowed.</summary>
         public static string? Next(string current, string decision) => (current, decision.ToLowerInvariant()) switch
         {

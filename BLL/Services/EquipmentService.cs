@@ -18,7 +18,12 @@ namespace KrishiLink.BLL.Services
         Task<EquipmentOwnerDashboardViewModel> GetOwnerDashboardAsync(string ownerId);
         Task<RentalRequestsViewModel> GetOwnerRequestsAsync(string ownerId);
         Task<int> CountPendingAsync(string ownerId);
-        Task<bool> RespondAsync(string ownerId, int bookingId, string decision, string? reason);
+
+        /// <summary>
+        /// Applies an owner decision. Accepting is refused when the dates clash with an already accepted rental or a
+        /// blocked date; on success every other pending request that overlaps the accepted one is auto-rejected.
+        /// </summary>
+        Task<DecisionResult> RespondAsync(string ownerId, int bookingId, string decision, string? reason);
         Task<EquipmentListingViewModel?> GetListingAsync(string ownerId, int id);
         Task<bool> SaveListingAsync(string ownerId, EquipmentListingViewModel model);
         Task<ManageAvailabilityViewModel?> GetAvailabilityAsync(string ownerId, int equipmentId, DateTime? month);
@@ -158,10 +163,8 @@ namespace KrishiLink.BLL.Services
             if (!e.IsAvailable) return "This equipment is currently unavailable for rent.";
             if (e.OwnerId == farmerId) return "You cannot rent your own equipment.";
 
-            var clash = await _bookings.Query().AnyAsync(b => b.EquipmentId == equipmentId
-                    && b.Status == BookingStatus.Accepted && b.StartDate <= t && s <= b.EndDate)
-                || await _blockedDates.Query().AnyAsync(d => d.EquipmentId == equipmentId && d.Date >= s && d.Date <= t);
-            if (clash) return "The selected dates overlap with an existing booking. Please pick different dates.";
+            var clash = await FindConflictAsync(equipmentId, s, t);
+            if (clash is not null) return clash;
 
             await _bookings.AddAsync(new EquipmentBooking
             {
@@ -238,20 +241,40 @@ namespace KrishiLink.BLL.Services
         public Task<int> CountPendingAsync(string ownerId) =>
             _bookings.Query().CountAsync(b => b.Equipment!.OwnerId == ownerId && b.Status == BookingStatus.Pending);
 
-        public async Task<bool> RespondAsync(string ownerId, int bookingId, string decision, string? reason)
+        public async Task<DecisionResult> RespondAsync(string ownerId, int bookingId, string decision, string? reason)
         {
             var booking = await _bookings.QueryTracked().Include(b => b.Equipment)
                 .FirstOrDefaultAsync(b => b.Id == bookingId && b.Equipment!.OwnerId == ownerId);
-            if (booking is null) return false;
+            if (booking is null) return DecisionResult.Fail("This request could not be found.");
 
             var next = BookingWorkflow.Next(booking.Status, decision);
-            if (next is null) return false;
+            if (next is null) return DecisionResult.Fail($"A {booking.Status.ToLowerInvariant()} request cannot be {decision.ToLowerInvariant()}ed.");
+
+            var autoRejected = new List<int>();
+            if (next == BookingStatus.Accepted)
+            {
+                var clash = await FindConflictAsync(booking.EquipmentId, booking.StartDate, booking.EndDate, excludeBookingId: booking.Id);
+                if (clash is not null) return DecisionResult.Fail(clash);
+
+                // First accepted wins: every other pending request that overlaps these dates is declined with a reason.
+                var losers = await _bookings.QueryTracked()
+                    .Where(b => b.EquipmentId == booking.EquipmentId && b.Id != booking.Id && b.Status == BookingStatus.Pending
+                        && b.StartDate <= booking.EndDate && booking.StartDate <= b.EndDate)
+                    .ToListAsync();
+                foreach (var loser in losers)
+                {
+                    loser.Status = BookingStatus.Rejected;
+                    loser.RejectReason = BookingWorkflow.AutoRejectReason;
+                    loser.UpdatedOn = DateTime.Now;
+                    autoRejected.Add(loser.Id);
+                }
+            }
 
             booking.Status = next;
             booking.RejectReason = next == BookingStatus.Rejected && !string.IsNullOrWhiteSpace(reason) ? reason.Trim() : null;
             booking.UpdatedOn = DateTime.Now;
             await _bookings.SaveChangesAsync();
-            return true;
+            return DecisionResult.Ok(autoRejected);
         }
 
         public async Task<EquipmentListingViewModel?> GetListingAsync(string ownerId, int id)
@@ -323,10 +346,10 @@ namespace KrishiLink.BLL.Services
 
             return new ManageAvailabilityViewModel
             {
-                EquipmentId = e.Id,
-                EquipmentName = e.Name,
+                ListingId = e.Id,
+                ListingName = e.Name,
                 Category = e.Category,
-                DailyRate = $"{ListingFormat.Taka(e.DailyRate)} / Day",
+                RateText = $"{ListingFormat.Taka(e.DailyRate)} / Day",
                 Location = e.Location,
                 ThumbnailUrl = ListingFormat.Split(e.ImageUrls).FirstOrDefault() ?? string.Empty,
                 Month = first,
@@ -363,6 +386,29 @@ namespace KrishiLink.BLL.Services
         }
 
         // ---------------------------------------------------------------- Helpers
+
+        /// <summary>
+        /// The single source of truth for equipment double-booking: an accepted (or ongoing) rental or an owner-blocked
+        /// date inside [start, end] makes the range unavailable. Returns a user-facing message, or null when free.
+        /// </summary>
+        private async Task<string?> FindConflictAsync(int equipmentId, DateTime start, DateTime end, int? excludeBookingId = null)
+        {
+            var accepted = await _bookings.Query()
+                .Where(b => b.EquipmentId == equipmentId && b.Id != excludeBookingId && b.Status == BookingStatus.Accepted
+                    && b.StartDate <= end && start <= b.EndDate)
+                .OrderBy(b => b.StartDate)
+                .Select(b => new { b.StartDate, b.EndDate })
+                .FirstOrDefaultAsync();
+            if (accepted is not null)
+                return $"These dates overlap an accepted rental ({ListingFormat.DateRange(accepted.StartDate, accepted.EndDate)}). Please choose different dates.";
+
+            var blocked = await _blockedDates.Query()
+                .Where(d => d.EquipmentId == equipmentId && d.Date >= start && d.Date <= end)
+                .OrderBy(d => d.Date)
+                .Select(d => (DateTime?)d.Date)
+                .FirstOrDefaultAsync();
+            return blocked is null ? null : $"The owner has marked {blocked:dd MMM yyyy} as unavailable. Please choose different dates.";
+        }
 
         private IQueryable<EquipmentBooking> OwnerBookingsQuery(string ownerId) =>
             _bookings.Query()
