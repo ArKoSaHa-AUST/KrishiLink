@@ -25,11 +25,14 @@ namespace KrishiLink.DAL.Repositories
                 .OrderByDescending(t => t.TransactionDate)
                 .ToList();
 
-        public void AddPayout(Transaction payout)
+        public int AddPayout(Transaction payout)
         {
             Db.Transactions.Add(payout);
             Db.SaveChanges();
+            return payout.Id;
         }
+
+        public abstract void MarkBookingsPaid(IEnumerable<int> bookingIds, int payoutId);
 
         public IReadOnlyList<BookingExpense> GetExpenses(string ownerId) =>
             Db.BookingExpenses.AsNoTracking()
@@ -37,10 +40,25 @@ namespace KrishiLink.DAL.Repositories
                 .OrderByDescending(e => e.RecordedOn)
                 .ToList();
 
+        public BookingExpense? GetExpense(string ownerId, int expenseId) =>
+            Db.BookingExpenses.FirstOrDefault(e => e.Id == expenseId && e.OwnerId == ownerId && e.BookingType == _bookingType);
+
         public void AddExpense(BookingExpense expense)
         {
             expense.BookingType = _bookingType;
             Db.BookingExpenses.Add(expense);
+            Db.SaveChanges();
+        }
+
+        public void UpdateExpense(BookingExpense expense)
+        {
+            Db.BookingExpenses.Update(expense);
+            Db.SaveChanges();
+        }
+
+        public void RemoveExpense(BookingExpense expense)
+        {
+            Db.BookingExpenses.Remove(expense);
             Db.SaveChanges();
         }
     }
@@ -72,7 +90,9 @@ namespace KrishiLink.DAL.Repositories
                     b.StorageTons,
                     b.StartDate,
                     b.EndDate,
-                    b.Status
+                    b.Status,
+                    b.PayoutId,
+                    PayoutReference = b.Payout != null ? b.Payout.Reference : null
                 })
                 .AsEnumerable()
                 .Select(b =>
@@ -83,9 +103,18 @@ namespace KrishiLink.DAL.Repositories
                         Gross: decimal.Round((decimal)b.StorageTons * b.PricePerTonPerMonth * (decimal)months, 0),
                         CapacityUsed: b.StorageTons,
                         QuantityText: $"{b.StorageTons:N0} t × {months:0.##} mo",
-                        RateText: $"৳{b.PricePerTonPerMonth:N0} / t / mo");
+                        RateText: $"৳{b.PricePerTonPerMonth:N0} / t / mo",
+                        PayoutId: b.PayoutId,
+                        PayoutReference: b.PayoutReference);
                 })
                 .ToList();
+
+        public override void MarkBookingsPaid(IEnumerable<int> bookingIds, int payoutId)
+        {
+            var ids = bookingIds.ToList();
+            foreach (var b in Db.GodownBookings.Where(b => ids.Contains(b.Id))) b.PayoutId = payoutId;
+            Db.SaveChanges();
+        }
     }
 
     /// <summary>Pricing: inclusive rental days × daily rate; each machine is one unit of capacity.</summary>
@@ -114,7 +143,9 @@ namespace KrishiLink.DAL.Repositories
                     FarmerLocation = b.Farmer.Location,
                     b.StartDate,
                     b.EndDate,
-                    b.Status
+                    b.Status,
+                    b.PayoutId,
+                    PayoutReference = b.Payout != null ? b.Payout.Reference : null
                 })
                 .AsEnumerable()
                 .Select(b =>
@@ -125,8 +156,17 @@ namespace KrishiLink.DAL.Repositories
                         Gross: days * b.DailyRate,
                         CapacityUsed: 1,
                         QuantityText: days == 1 ? "1 day" : $"{days} days",
-                        RateText: $"৳{b.DailyRate:N0} / day");
+                        RateText: $"৳{b.DailyRate:N0} / day",
+                        PayoutId: b.PayoutId,
+                        PayoutReference: b.PayoutReference);
                 })
                 .ToList();
+
+        public override void MarkBookingsPaid(IEnumerable<int> bookingIds, int payoutId)
+        {
+            var ids = bookingIds.ToList();
+            foreach (var b in Db.EquipmentBookings.Where(b => ids.Contains(b.Id))) b.PayoutId = payoutId;
+            Db.SaveChanges();
+        }
     }
 }

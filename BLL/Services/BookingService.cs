@@ -10,6 +10,9 @@ namespace KrishiLink.BLL.Services
     {
         Task<BookingHistoryViewModel> GetHistoryAsync(string farmerId, string tab, string status, DateTime? from, DateTime? to, string? search);
         Task<FarmerDashboardViewModel> GetDashboardAsync(string farmerId);
+
+        /// <summary>Farmer cancels their own pending or not-yet-started accepted booking. Returns an error message, or null on success.</summary>
+        Task<string?> CancelAsync(string farmerId, string bookingType, int bookingId);
     }
 
     public class BookingService : IBookingService
@@ -59,7 +62,8 @@ namespace KrishiLink.BLL.Services
                 PendingCount = all.Count(b => b.Status == BookingStatus.Pending),
                 AcceptedCount = all.Count(b => b.Status == BookingStatus.Accepted),
                 CompletedCount = all.Count(b => b.Status == BookingStatus.Completed),
-                RejectedCount = all.Count(b => b.Status == BookingStatus.Rejected)
+                RejectedCount = all.Count(b => b.Status == BookingStatus.Rejected),
+                CancelledCount = all.Count(b => b.Status == BookingStatus.Cancelled)
             };
         }
 
@@ -103,6 +107,38 @@ namespace KrishiLink.BLL.Services
                 RecentActivity = activity.OrderByDescending(a => a.At).Take(6).Select(a => a.Item).ToList()
             };
         }
+
+        public async Task<string?> CancelAsync(string farmerId, string bookingType, int bookingId)
+        {
+            if (bookingType.Equals("Equipment", StringComparison.OrdinalIgnoreCase))
+            {
+                var b = await _rentals.QueryTracked().FirstOrDefaultAsync(x => x.Id == bookingId && x.FarmerId == farmerId);
+                var error = ValidateCancel(b?.Status, b?.StartDate);
+                if (error is not null) return error;
+                b!.Status = BookingStatus.Cancelled;
+                b.CancelledOn = b.UpdatedOn = DateTime.Now;
+                await _rentals.SaveChangesAsync();
+                return null;
+            }
+
+            var g = await _storage.QueryTracked().FirstOrDefaultAsync(x => x.Id == bookingId && x.FarmerId == farmerId);
+            var err = ValidateCancel(g?.Status, g?.StartDate);
+            if (err is not null) return err;
+            g!.Status = BookingStatus.Cancelled;
+            g.CancelledOn = g.UpdatedOn = DateTime.Now;
+            await _storage.SaveChangesAsync();
+            return null;
+        }
+
+        /// <summary>Only requests still awaiting a decision, or accepted bookings that have not started, can be cancelled.</summary>
+        private static string? ValidateCancel(string? status, DateTime? start) => status switch
+        {
+            null => "This booking could not be found.",
+            BookingStatus.Pending => null,
+            BookingStatus.Accepted when start > DateTime.Today => null,
+            BookingStatus.Accepted => "This booking has already started and can no longer be cancelled. Please contact the owner.",
+            _ => $"A {status.ToLowerInvariant()} booking cannot be cancelled."
+        };
 
         // ---------------------------------------------------------------- Mapping
 
@@ -176,6 +212,7 @@ namespace KrishiLink.BLL.Services
             item.OwnerPhone = owner?.PhoneNumber ?? string.Empty;
             item.FarmerNotes = note ?? string.Empty;
             item.OwnerRemarks = rejectReason;
+            item.CanCancel = status == BookingStatus.Pending || (status == BookingStatus.Accepted && item.StartDate > DateTime.Today);
             item.PaymentStatus = status switch
             {
                 BookingStatus.Completed => "Paid on Service",
@@ -201,7 +238,7 @@ namespace KrishiLink.BLL.Services
                     break;
                 case BookingStatus.Rejected:
                 case BookingStatus.Cancelled:
-                    item.Timeline.Add(new() { Title = status, Description = rejectReason ?? $"Request {status.ToLowerInvariant()}", DateDisplay = decided, IsCompleted = true, IsCurrent = true, State = "rejected" });
+                    item.Timeline.Add(new() { Title = status, Description = status == BookingStatus.Cancelled ? "Cancelled by you" : rejectReason ?? "Request rejected", DateDisplay = decided, IsCompleted = true, IsCurrent = true, State = "rejected" });
                     break;
                 default:
                     var inField = status == BookingStatus.Accepted && item.StartDate <= today;

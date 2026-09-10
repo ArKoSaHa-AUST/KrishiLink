@@ -69,15 +69,29 @@ namespace KrishiLink.Controllers
             return View(model);
         }
 
-        /// <summary>POST: /{Owner}/AddExpense — records a cost against a booking so the revenue page can show net profit.</summary>
+        /// <summary>POST: /{Owner}/SaveExpense — adds (no expenseId) or edits a cost against a booking so the revenue page can show net profit.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult AddExpense(int bookingId, decimal amount, string? note, string? returnUrl)
+        public IActionResult SaveExpense(int? expenseId, int bookingId, decimal amount, string? note, string? returnUrl)
         {
-            if (_revenueService.AddExpense(OwnerId, bookingId, amount, note))
-                TempData["SuccessMessage"] = $"Expense of ৳{amount:N0} recorded against booking #{bookingId}.";
+            var error = _revenueService.SaveExpense(OwnerId, expenseId, bookingId, amount, note);
+            if (error is null)
+                TempData["SuccessMessage"] = $"Expense of ৳{amount:N0} {(expenseId is null ? "recorded against" : "updated on")} booking #{bookingId}.";
             else
-                TempData["ErrorMessage"] = "Expense must be a positive amount on an accepted or completed booking.";
+                TempData["ErrorMessage"] = error;
+
+            return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Revenue));
+        }
+
+        /// <summary>POST: /{Owner}/DeleteExpense</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult DeleteExpense(int expenseId, string? returnUrl)
+        {
+            if (_revenueService.DeleteExpense(OwnerId, expenseId))
+                TempData["SuccessMessage"] = "Expense removed.";
+            else
+                TempData["ErrorMessage"] = "That expense no longer exists.";
 
             return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Revenue));
         }

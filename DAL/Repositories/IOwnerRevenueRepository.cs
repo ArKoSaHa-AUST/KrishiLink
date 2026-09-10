@@ -26,7 +26,10 @@ namespace KrishiLink.DAL.Repositories
         // Human-readable quantity, e.g. "80 t × 3.07 mo" or "5 days"
         string QuantityText,
         // Human-readable rate, e.g. "৳300 / t / mo" or "৳1,500 / day"
-        string RateText);
+        string RateText,
+        // Payout that settled this booking (null = still unpaid)
+        int? PayoutId = null,
+        string? PayoutReference = null);
 
     /// <summary>
     /// Data access for an owner's revenue reporting (godown or equipment), backed by EF Core.
@@ -38,10 +41,18 @@ namespace KrishiLink.DAL.Repositories
 
         /// <summary>Platform payouts made to the owner.</summary>
         IReadOnlyList<Transaction> GetPayouts(string ownerId);
-        void AddPayout(Transaction payout);
+
+        /// <summary>Persists the payout and returns its id.</summary>
+        int AddPayout(Transaction payout);
+
+        /// <summary>Links the given bookings to a payout so each can be shown as Paid.</summary>
+        void MarkBookingsPaid(IEnumerable<int> bookingIds, int payoutId);
 
         IReadOnlyList<BookingExpense> GetExpenses(string ownerId);
+        BookingExpense? GetExpense(string ownerId, int expenseId);
         void AddExpense(BookingExpense expense);
+        void UpdateExpense(BookingExpense expense);
+        void RemoveExpense(BookingExpense expense);
     }
 
     public interface IGodownRevenueRepository : IOwnerRevenueRepository { }
