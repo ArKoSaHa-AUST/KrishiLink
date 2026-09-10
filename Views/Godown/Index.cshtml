@@ -374,22 +374,51 @@
             }
         </div>
 
-        <!-- Empty State -->
+        <!-- Empty State (no listings on the platform vs. nothing matching the filters) -->
+        @{
+            var hasFilters = !string.IsNullOrWhiteSpace(Model.SearchTerm) || Model.SelectedStorageTypes.Any()
+                || !string.IsNullOrWhiteSpace(Model.Location) || Model.SelectedMinCapacity is > 0
+                || Model.AvailableStartDate.HasValue || Model.AvailableEndDate.HasValue
+                || (Model.SelectedMaxPrice.HasValue && Model.SelectedMaxPrice < Model.MaxPrice);
+            // Live filtering can reveal this container later, so only claim "nothing listed" when the platform really is empty
+            var platformEmpty = !hasFilters && !Model.GodownList.Any();
+        }
         <div class="card krishi-card border-0 shadow-sm rounded-4 p-5 text-center my-4 @(Model.GodownList.Any() ? "d-none" : "")" id="emptyStateContainer">
             <div class="mb-3">
                 <div class="d-inline-flex p-3.5 rounded-circle bg-light text-muted mb-2">
-                    <i class="bi bi-building-slash text-success" style="font-size: 3rem;"></i>
+                    <i class="bi @(platformEmpty ? "bi-building" : "bi-building-slash") text-success" style="font-size: 3rem;"></i>
                 </div>
             </div>
-            <h4 class="fw-bold text-dark mb-2">@L["No storage facilities match your filters"]</h4>
-            <p class="text-secondary mb-4 mx-auto" style="max-width: 460px;">
-                @L["Try adjusting the capacity required, clearing storage type filters, or expanding your search district."]
-            </p>
-            <div>
-                <button type="button" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm" onclick="resetAllFilters()">
-                    <i class="bi bi-arrow-counterclockwise me-1.5"></i> @L["Clear Filters"]
-                </button>
-            </div>
+            @if (!platformEmpty)
+            {
+                <h4 class="fw-bold text-dark mb-2">@L["No storage facilities match your filters"]</h4>
+                <p class="text-secondary mb-4 mx-auto" style="max-width: 460px;">
+                    @L["Try adjusting the capacity required, clearing storage type filters, or expanding your search district."]
+                </p>
+                <div>
+                    <a asp-controller="Godown" asp-action="Index" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm">
+                        <i class="bi bi-arrow-counterclockwise me-1.5"></i> @L["Clear Filters"]
+                    </a>
+                </div>
+            }
+            else
+            {
+                <h4 class="fw-bold text-dark mb-2">@L["No storage facilities listed yet"]</h4>
+                <p class="text-secondary mb-4 mx-auto" style="max-width: 460px;">
+                    @L["Godown owners haven't added any facilities yet. Own a warehouse or cold storage? Be the first to list it."]
+                </p>
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    @if (User.IsInRole("GodownOwner"))
+                    {
+                        <a asp-controller="GodownOwner" asp-action="Create" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm"><i class="bi bi-plus-lg me-1.5"></i> @L["List Your First Storage Facility"]</a>
+                    }
+                    else if (!(User.Identity?.IsAuthenticated ?? false))
+                    {
+                        <a asp-controller="Account" asp-action="Register" asp-route-role="GodownOwner" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm"><i class="bi bi-building me-1.5"></i> @L["Register as Godown Owner"]</a>
+                    }
+                    <a asp-controller="Equipment" asp-action="Index" class="btn btn-krishi-outline rounded-pill px-4 py-2.5 fw-semibold"><i class="bi bi-tools me-1.5"></i> @L["Browse Equipment Instead"]</a>
+                </div>
+            }
         </div>
 
     </div>

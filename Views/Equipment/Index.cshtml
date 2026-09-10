@@ -336,23 +336,51 @@
         </div>
 
         <!-- ==========================================
-             EMPTY STATE
+             EMPTY STATE (no listings on the platform vs. nothing matching the filters)
              ========================================== -->
+        @{
+            var hasFilters = !string.IsNullOrWhiteSpace(Model.SearchTerm) || Model.SelectedCategories.Any()
+                || !string.IsNullOrWhiteSpace(Model.Location) || Model.AvailabilityDate.HasValue
+                || (Model.SelectedMaxPrice.HasValue && Model.SelectedMaxPrice < Model.MaxPrice);
+            // Live filtering can reveal this container later, so only claim "nothing listed" when the platform really is empty
+            var platformEmpty = !hasFilters && !Model.EquipmentList.Any();
+        }
         <div class="card krishi-card border-0 shadow-sm rounded-4 p-5 text-center my-4 @(Model.EquipmentList.Any() ? "d-none" : "")" id="emptyStateContainer">
             <div class="mb-3">
                 <div class="d-inline-flex p-3.5 rounded-circle bg-light text-muted mb-2">
-                    <i class="bi bi-search text-success" style="font-size: 3rem;"></i>
+                    <i class="bi @(platformEmpty ? "bi-tools" : "bi-search") text-success" style="font-size: 3rem;"></i>
                 </div>
             </div>
-            <h4 class="fw-bold text-dark mb-2">@L["No equipment matches your filters"]</h4>
-            <p class="text-secondary mb-4 mx-auto" style="max-width: 460px;">
-                @L["No equipment matches your filters — try widening your search criteria, adjusting the price slider, or selecting a different location."]
-            </p>
-            <div>
-                <button type="button" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm" onclick="resetAllFilters()">
-                    <i class="bi bi-arrow-counterclockwise me-1.5"></i> @L["Clear Filters"]
-                </button>
-            </div>
+            @if (!platformEmpty)
+            {
+                <h4 class="fw-bold text-dark mb-2">@L["No equipment matches your filters"]</h4>
+                <p class="text-secondary mb-4 mx-auto" style="max-width: 460px;">
+                    @L["No equipment matches your filters — try widening your search criteria, adjusting the price slider, or selecting a different location."]
+                </p>
+                <div>
+                    <a asp-controller="Equipment" asp-action="Index" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm">
+                        <i class="bi bi-arrow-counterclockwise me-1.5"></i> @L["Clear Filters"]
+                    </a>
+                </div>
+            }
+            else
+            {
+                <h4 class="fw-bold text-dark mb-2">@L["No equipment listed yet"]</h4>
+                <p class="text-secondary mb-4 mx-auto" style="max-width: 460px;">
+                    @L["Equipment owners haven't added any machinery yet. Own a tractor, tiller or harvester? Be the first to list it and start earning."]
+                </p>
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    @if (User.IsInRole("EquipmentOwner"))
+                    {
+                        <a asp-controller="EquipmentOwner" asp-action="Create" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm"><i class="bi bi-plus-lg me-1.5"></i> @L["List Your First Equipment"]</a>
+                    }
+                    else if (!(User.Identity?.IsAuthenticated ?? false))
+                    {
+                        <a asp-controller="Account" asp-action="Register" asp-route-role="EquipmentOwner" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm"><i class="bi bi-truck me-1.5"></i> @L["Register as Equipment Owner"]</a>
+                    }
+                    <a asp-controller="Godown" asp-action="Index" class="btn btn-krishi-outline rounded-pill px-4 py-2.5 fw-semibold"><i class="bi bi-building me-1.5"></i> @L["Browse Storage Instead"]</a>
+                </div>
+            }
         </div>
 
     </div>
