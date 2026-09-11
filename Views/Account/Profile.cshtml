@@ -153,6 +153,17 @@
                                     <label class="form-label text-muted small mb-1 fw-medium">@L["Location"]</label>
                                     <div class="p-2.5 bg-light rounded-3 text-dark fw-semibold" id="viewLocation">@Model.Location</div>
                                 </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label text-muted small mb-1 fw-medium">@L["District"]</label>
+                                    <div class="p-2.5 bg-light rounded-3 text-dark fw-semibold">@(string.IsNullOrEmpty(Model.District) ? L["Not set"] : Model.District)</div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label text-muted small mb-1 fw-medium">
+                                        @(roleName == "Farmer" ? L["Main Crop"] : roleName == "GodownOwner" ? L["Storage Type"] : L["Equipment Type"])
+                                        <a asp-action="Onboarding" asp-route-edit="true" class="ms-1 text-decoration-none">@L["Change"]</a>
+                                    </label>
+                                    <div class="p-2.5 bg-light rounded-3 text-dark fw-semibold">@(string.IsNullOrEmpty(Model.Specialization) ? L["Not set"] : L[Model.Specialization])</div>
+                                </div>
                                 @if (roleName == "EquipmentOwner" || roleName == "GodownOwner" || !string.IsNullOrEmpty(Model.BusinessOrFarmName))
                                 {
                                     <div class="col-12">

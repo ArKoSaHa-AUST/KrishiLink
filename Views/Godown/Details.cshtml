@@ -30,6 +30,12 @@
         </div>
     </div>
 }
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2">
+        <i class="bi bi-exclamation-triangle-fill"></i><span class="small">@TempData["ErrorMessage"]</span>
+    </div>
+}
 
 <div class="row g-4">
     <!-- LEFT COLUMN: Image Gallery & Storage Details -->
@@ -125,8 +131,11 @@
                     <div>
                         <h6 class="fw-bold mb-0 text-dark">@Model.OwnerName</h6>
                         <div class="d-flex align-items-center gap-2 small text-muted">
-                            <span class="text-success fw-semibold">@L["Rating:"] @Model.OwnerRating.ToString("0.0")</span>
-                            <span>(@L["{0} reviews", Model.TotalReviews])</span>
+                            @if (Model.TotalReviews > 0)
+                            {
+                                <span class="text-success fw-semibold">@L["Rating:"] @Model.OwnerRating.ToString("0.0")</span>
+                                <span>(@L["{0} reviews", Model.TotalReviews])</span>
+                            }
                             <span>@L["Member since"] @(ownerMemberSinceParts.Length == 2 ? $"{L[ownerMemberSinceParts[0]]} {ownerMemberSinceParts[1]}" : Model.OwnerMemberSince)</span>
                         </div>
                     </div>
@@ -137,6 +146,9 @@
             </div>
 
         </div>
+
+        <!-- Availability Calendar: owner blackout dates and days already at full capacity -->
+        <partial name="_AvailabilityCalendar" model="Model.UnavailableDates" />
 
     </div>
 
@@ -260,8 +272,27 @@
 
 @section Scripts {
     <script>
+        const unavailableDates = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.UnavailableDates.Select(d => d.ToString("yyyy-MM-dd"))));
+
         function scrollToBookingForm() {
             document.getElementById('bookingFormContainer')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Calendar click: fill start date first, then end date
+        function selectCalendarDate(dateStr) {
+            const startInput = document.getElementById('startDateInput');
+            const endInput = document.getElementById('endDateInput');
+            if (!startInput.value || dateStr <= startInput.value) {
+                startInput.value = dateStr;
+                endInput.value = '';
+            } else {
+                endInput.value = dateStr;
+            }
+            scrollToBookingForm();
+        }
+
+        function rangeHitsUnavailableDate(start, end) {
+            return unavailableDates.some(d => d >= start && d <= end);
         }
 
         function switchGodownImage(src, btn) {
@@ -307,12 +338,16 @@
             e.preventDefault();
             const form = this;
             if (!form.reportValidity()) return;
+            if (!@(User.Identity?.IsAuthenticated == true ? "true" : "false")) {
+                window.location.href = '@Url.Action("Login", "Account", new { returnUrl = Url.Action("Details", "Godown", new { id = Model.Id }) })';
+                return;
+            }
 
             const capacity = document.getElementById('requestedCapacityInput').value;
             const start = document.getElementById('startDateInput').value;
             const end = document.getElementById('endDateInput').value;
 
-            if (end <= start) {
+            if (end <= start || rangeHitsUnavailableDate(start, end)) {
                 KrishiModal.confirm({
                     title: '@L["Invalid Dates"]',
                     body: '@L["End Date must be after Start Date and not overlap booked dates."]',

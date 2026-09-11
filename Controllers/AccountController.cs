@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using KrishiLink.Models.Entities;
@@ -9,16 +10,13 @@ namespace KrishiLink.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager,
-            RoleManager<IdentityRole> roleManager)
+            SignInManager<ApplicationUser> signInManager)
         {
             _userManager = userManager;
             _signInManager = signInManager;
-            _roleManager = roleManager;
         }
 
         [HttpGet]
@@ -30,7 +28,7 @@ namespace KrishiLink.Controllers
                 return RedirectBasedOnRole(role);
             }
 
-            var validRoles = new[] { "Farmer", "EquipmentOwner", "GodownOwner" };
+            var validRoles = AppRoles.All;
             var selectedRole = !string.IsNullOrEmpty(role) && validRoles.Contains(role, StringComparer.OrdinalIgnoreCase)
                 ? validRoles.First(r => r.Equals(role, StringComparison.OrdinalIgnoreCase))
                 : "Farmer";
@@ -53,10 +51,9 @@ namespace KrishiLink.Controllers
             }
 
             // Normalise role string
-            var validRoles = new[] { "Farmer", "EquipmentOwner", "GodownOwner" };
-            if (!validRoles.Contains(model.Role))
+            if (!AppRoles.All.Contains(model.Role))
             {
-                model.Role = "Farmer";
+                model.Role = AppRoles.Farmer;
             }
 
             // Check if phone already registered
@@ -79,15 +76,6 @@ namespace KrishiLink.Controllers
                 return View(model);
             }
 
-            // Ensure Identity Roles exist in the database
-            foreach (var roleName in validRoles)
-            {
-                if (!await _roleManager.RoleExistsAsync(roleName))
-                {
-                    await _roleManager.CreateAsync(new IdentityRole(roleName));
-                }
-            }
-
             // Create ApplicationUser
             var user = new ApplicationUser
             {
@@ -97,7 +85,7 @@ namespace KrishiLink.Controllers
                 FullName = model.FullName.Trim(),
                 UserRole = model.Role,
                 Location = model.Location.Trim(),
-                BusinessOrFarmName = (model.Role == "EquipmentOwner" || model.Role == "GodownOwner")
+                BusinessOrFarmName = (model.Role == AppRoles.EquipmentOwner || model.Role == AppRoles.GodownOwner)
                     ? model.BusinessOrFarmName?.Trim()
                     : null,
                 CreatedAt = DateTime.UtcNow
@@ -112,8 +100,8 @@ namespace KrishiLink.Controllers
                 // Sign in user
                 await _signInManager.SignInAsync(user, isPersistent: true);
 
-                // Redirect to role-specific dashboard
-                return RedirectBasedOnRole(model.Role);
+                // Walk the new user through the short setup before their dashboard
+                return RedirectToAction(nameof(Onboarding));
             }
 
             // Append Identity errors to ModelState
@@ -185,7 +173,9 @@ namespace KrishiLink.Controllers
                     return Redirect(model.ReturnUrl);
                 }
 
-                return RedirectBasedOnRole(user.UserRole);
+                return user.OnboardingCompletedAt is null
+                    ? RedirectToAction(nameof(Onboarding))
+                    : RedirectBasedOnRole(user.UserRole);
             }
 
             ModelState.AddModelError(nameof(model.Password), "Incorrect phone number or password.");
@@ -201,49 +191,104 @@ namespace KrishiLink.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> Profile()
         {
-            if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
-                var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser != null)
-                {
-                    var model = new UserProfileViewModel
-                    {
-                        FullName = currentUser.FullName ?? string.Empty,
-                        PhoneNumber = currentUser.PhoneNumber ?? string.Empty,
-                        Email = currentUser.Email,
-                        Location = currentUser.Location ?? string.Empty,
-                        BusinessOrFarmName = currentUser.BusinessOrFarmName,
-                        Role = currentUser.UserRole ?? "Farmer",
-                        MemberSince = currentUser.CreatedAt
-                    };
-                    return View(model);
-                }
-            }
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser is null) return Challenge();
 
-            // Fallback for preview / demo
-            var previewModel = new UserProfileViewModel
+            var model = new UserProfileViewModel
             {
-                FullName = "Rahim Uddin",
-                PhoneNumber = "01712345678",
-                Email = "rahim.uddin@krishilink.com",
-                Location = "Dinajpur Sadar, Dinajpur",
-                BusinessOrFarmName = "Uddin Agro Farm",
-                Role = "Farmer",
-                MemberSince = DateTime.UtcNow.AddMonths(-6)
+                FullName = currentUser.FullName,
+                PhoneNumber = currentUser.PhoneNumber ?? string.Empty,
+                Email = currentUser.Email,
+                Location = currentUser.Location ?? string.Empty,
+                BusinessOrFarmName = currentUser.BusinessOrFarmName,
+                Role = string.IsNullOrEmpty(currentUser.UserRole) ? AppRoles.Farmer : currentUser.UserRole,
+                District = currentUser.District,
+                Specialization = currentUser.Specialization,
+                OnboardingComplete = currentUser.OnboardingCompletedAt is not null,
+                MemberSince = currentUser.CreatedAt
             };
-
-            return View(previewModel);
+            return View(model);
         }
 
+        /// <summary>
+        /// GET: /Account/Onboarding — asks only for the profile details still missing (district, main crop / listing type).
+        /// The role was chosen at registration and is not re-asked. <paramref name="edit"/> shows every field for later changes.
+        /// </summary>
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> Onboarding(bool edit = false)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null) return Challenge();
+
+            var model = BuildOnboarding(user, edit);
+            if (!model.AskDistrict && !model.AskSpecialization)
+            {
+                // Nothing left to ask — mark the setup done and move on
+                user.OnboardingCompletedAt ??= DateTime.UtcNow;
+                await _userManager.UpdateAsync(user);
+                return RedirectBasedOnRole(user.UserRole);
+            }
+            return View(model);
+        }
+
+        /// <summary>POST: /Account/Onboarding — saves whichever fields were asked for and marks the setup complete.</summary>
         [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Onboarding(OnboardingViewModel model)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null) return Challenge();
+
+            // Fields shown on the form (posted back as hidden flags) plus anything still missing on the profile
+            var view = BuildOnboarding(user, edit: false);
+            view.AskDistrict |= model.AskDistrict;
+            view.AskSpecialization |= model.AskSpecialization;
+            view.District = model.District;
+            view.Specialization = model.Specialization;
+
+            if (view.AskDistrict && !OnboardingOptions.Districts.Contains(model.District ?? string.Empty))
+                ModelState.AddModelError(nameof(model.District), "Please select your district from the list.");
+            if (view.AskSpecialization && !view.SpecializationOptions.Contains(model.Specialization ?? string.Empty))
+                ModelState.AddModelError(nameof(model.Specialization), "Please pick one of the listed options.");
+            if (!ModelState.IsValid) return View(view);
+
+            if (view.AskDistrict) user.District = model.District;
+            if (view.AskSpecialization) user.Specialization = model.Specialization;
+            var firstTime = user.OnboardingCompletedAt is null;
+            user.OnboardingCompletedAt ??= DateTime.UtcNow;
+            await _userManager.UpdateAsync(user);
+
+            TempData["SuccessMessage"] = firstTime
+                ? $"Welcome to KrishiLink, {user.FullName}! Your profile is set up."
+                : "Profile details updated.";
+            return firstTime ? RedirectBasedOnRole(user.UserRole) : RedirectToAction(nameof(Profile));
+        }
+
+        private static OnboardingViewModel BuildOnboarding(ApplicationUser user, bool edit) => new()
+        {
+            FullName = user.FullName,
+            Role = string.IsNullOrEmpty(user.UserRole) ? AppRoles.Farmer : user.UserRole,
+            AskDistrict = edit || string.IsNullOrEmpty(user.District),
+            AskSpecialization = edit || string.IsNullOrEmpty(user.Specialization),
+            District = user.District ?? OnboardingOptions.GuessDistrict(user.Location),
+            Specialization = user.Specialization
+        };
+
+        [HttpPost]
+        [Authorize]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateProfile(UserProfileViewModel model)
         {
+            var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
             if (!ModelState.IsValid)
             {
-                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                if (isAjax)
                 {
                     var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
                     return Json(new { success = false, message = string.Join(" ", errors) });
@@ -251,48 +296,37 @@ namespace KrishiLink.Controllers
                 return View("Profile", model);
             }
 
-            if (User.Identity != null && User.Identity.IsAuthenticated)
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser is null) return Challenge();
+
+            currentUser.FullName = model.FullName.Trim();
+            currentUser.PhoneNumber = model.PhoneNumber.Trim();
+            currentUser.Email = !string.IsNullOrWhiteSpace(model.Email) ? model.Email.Trim() : currentUser.Email;
+            currentUser.Location = model.Location.Trim();
+            currentUser.BusinessOrFarmName = model.BusinessOrFarmName?.Trim();
+
+            var result = await _userManager.UpdateAsync(currentUser);
+            if (result.Succeeded)
             {
-                var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser != null)
+                if (isAjax)
                 {
-                    currentUser.FullName = model.FullName.Trim();
-                    currentUser.PhoneNumber = model.PhoneNumber.Trim();
-                    currentUser.Email = !string.IsNullOrWhiteSpace(model.Email) ? model.Email.Trim() : currentUser.Email;
-                    currentUser.Location = model.Location.Trim();
-                    currentUser.BusinessOrFarmName = model.BusinessOrFarmName?.Trim();
-
-                    var result = await _userManager.UpdateAsync(currentUser);
-                    if (result.Succeeded)
-                    {
-                        if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-                        {
-                            return Json(new { success = true, message = "Profile updated successfully." });
-                        }
-                        TempData["SuccessMessage"] = "Profile updated successfully.";
-                        return RedirectToAction(nameof(Profile));
-                    }
-
-                    var errorDesc = string.Join(" ", result.Errors.Select(e => e.Description));
-                    if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-                    {
-                        return Json(new { success = false, message = errorDesc });
-                    }
-                    ModelState.AddModelError(string.Empty, errorDesc);
-                    return View("Profile", model);
+                    return Json(new { success = true, message = "Profile updated successfully." });
                 }
+                TempData["SuccessMessage"] = "Profile updated successfully.";
+                return RedirectToAction(nameof(Profile));
             }
 
-            // Preview mode response
-            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            var errorDesc = string.Join(" ", result.Errors.Select(e => e.Description));
+            if (isAjax)
             {
-                return Json(new { success = true, message = "Profile updated successfully (Preview Mode)." });
+                return Json(new { success = false, message = errorDesc });
             }
-            TempData["SuccessMessage"] = "Profile updated successfully.";
-            return RedirectToAction(nameof(Profile));
+            ModelState.AddModelError(string.Empty, errorDesc);
+            return View("Profile", model);
         }
 
         [HttpPost]
+        [Authorize]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
         {
@@ -302,34 +336,32 @@ namespace KrishiLink.Controllers
                 return Json(new { success = false, message = string.Join(" ", errors) });
             }
 
-            if (User.Identity != null && User.Identity.IsAuthenticated)
-            {
-                var currentUser = await _userManager.GetUserAsync(User);
-                if (currentUser != null)
-                {
-                    var result = await _userManager.ChangePasswordAsync(currentUser, model.CurrentPassword, model.NewPassword);
-                    if (result.Succeeded)
-                    {
-                        await _signInManager.RefreshSignInAsync(currentUser);
-                        return Json(new { success = true, message = "Password updated successfully." });
-                    }
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser is null) return Challenge();
 
-                    var errorDesc = string.Join(" ", result.Errors.Select(e => e.Description));
-                    return Json(new { success = false, message = errorDesc });
-                }
+            var result = await _userManager.ChangePasswordAsync(currentUser, model.CurrentPassword, model.NewPassword);
+            if (result.Succeeded)
+            {
+                await _signInManager.RefreshSignInAsync(currentUser);
+                return Json(new { success = true, message = "Password updated successfully." });
             }
 
-            // Preview mode response
-            return Json(new { success = true, message = "Password changed successfully (Preview Mode)." });
+            return Json(new { success = false, message = string.Join(" ", result.Errors.Select(e => e.Description)) });
+        }
+
+        [HttpGet]
+        public IActionResult AccessDenied()
+        {
+            return View();
         }
 
         private IActionResult RedirectBasedOnRole(string? role)
         {
-            if (string.Equals(role, "EquipmentOwner", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(role, AppRoles.EquipmentOwner, StringComparison.OrdinalIgnoreCase))
             {
                 return RedirectToAction("Index", "EquipmentOwner");
             }
-            if (string.Equals(role, "GodownOwner", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(role, AppRoles.GodownOwner, StringComparison.OrdinalIgnoreCase))
             {
                 return RedirectToAction("Index", "GodownOwner");
             }

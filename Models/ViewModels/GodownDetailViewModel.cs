@@ -18,14 +18,17 @@ namespace KrishiLink.Models.ViewModels
 
         // Owner Details
         public string OwnerName { get; set; } = string.Empty;
-        public double OwnerRating { get; set; } = 4.8;
-        public int TotalReviews { get; set; } = 18;
-        public string OwnerPhone { get; set; } = "+880 1712-889900";
-        public string OwnerMemberSince { get; set; } = "January 2024";
+        public double OwnerRating { get; set; }
+        public int TotalReviews { get; set; }
+        public string OwnerPhone { get; set; } = string.Empty;
+        public string OwnerMemberSince { get; set; } = string.Empty;
 
         // Media & Highlights
         public List<string> ImageUrls { get; set; } = new();
         public List<string> Facilities { get; set; } = new();
+
+        /// <summary>Days the farmer cannot book: owner-blocked dates plus days already at full capacity.</summary>
+        public List<DateTime> UnavailableDates { get; set; } = new();
 
         // Booking Form Inputs
         public DateTime? StartDate { get; set; }

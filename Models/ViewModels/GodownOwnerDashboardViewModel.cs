@@ -12,6 +12,7 @@ namespace KrishiLink.Models.ViewModels
         public double OccupiedCapacityTons { get; set; }
         public double TotalCapacityTons { get; set; }
         public int PendingRequests => PendingRequestItems.Count;
+        public decimal ThisMonthRevenue { get; set; }
 
         public List<OwnerGodownItem> Godowns { get; set; } = new();
         public List<GodownBookingRequestItem> PendingRequestItems { get; set; } = new();

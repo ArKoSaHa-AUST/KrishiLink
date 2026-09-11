@@ -1,4 +1,6 @@
+using KrishiLink.BLL.Services;
 using KrishiLink.DAL;
+using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -6,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// QuestPDF community licence (free for organisations under USD 1M annual revenue)
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
 // Add DbContext with MsSQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -49,10 +54,38 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     };
 });
 
+// Data access: generic EF repositories + revenue reporting repositories
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+builder.Services.AddScoped<IGodownRevenueRepository, GodownRevenueRepository>();
+builder.Services.AddScoped<IEquipmentRevenueRepository, EquipmentRevenueRepository>();
+
+// Business logic
+builder.Services.Configure<RevenueOptions>(builder.Configuration.GetSection(RevenueOptions.SectionName));
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.AddScoped<IEquipmentService, EquipmentService>();
+builder.Services.AddScoped<IGodownService, GodownService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IGodownRevenueService, GodownRevenueService>();
+builder.Services.AddScoped<IEquipmentRevenueService, EquipmentRevenueService>();
+
+// Email + scheduled monthly statements (falls back to a logging sender until SMTP is configured)
+builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
+if (builder.Configuration.GetSection(EmailOptions.SectionName).Get<EmailOptions>()?.IsConfigured == true)
+    builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+else
+    builder.Services.AddScoped<IEmailSender, LoggingEmailSender>();
+builder.Services.AddHostedService<MonthlyStatementScheduler>();
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
+
+// Apply migrations, ensure roles exist and (in Development) load demo data on first run
+using (var scope = app.Services.CreateScope())
+{
+    await DbInitializer.InitializeAsync(scope.ServiceProvider, seedDemoData: app.Environment.IsDevelopment());
+}
 
 app.UseRequestLocalization();
 

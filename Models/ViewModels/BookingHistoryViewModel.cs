@@ -37,12 +37,14 @@ namespace KrishiLink.Models.ViewModels
         public string PaymentStatus { get; set; } = "Pending on Service"; // Paid, Pending on Service, Refunded
 
         public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
         public string OwnerName { get; set; } = string.Empty;
-        public string OwnerPhone { get; set; } = "+880 1712-345678";
+        public string OwnerPhone { get; set; } = string.Empty;
         public string FarmerNotes { get; set; } = string.Empty;
         public string? OwnerRemarks { get; set; }
 
         public string ListingDetailUrl { get; set; } = "#";
+        public bool CanCancel { get; set; }
         public List<BookingTimelineStep> Timeline { get; set; } = new();
     }
 
@@ -66,5 +68,6 @@ namespace KrishiLink.Models.ViewModels
         public int AcceptedCount { get; set; }
         public int CompletedCount { get; set; }
         public int RejectedCount { get; set; }
+        public int CancelledCount { get; set; }
     }
 }

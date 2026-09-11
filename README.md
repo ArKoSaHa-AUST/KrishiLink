@@ -19,6 +19,7 @@
 | **Equipment Marketplace** | Browse & Rent Machinery | List Equipment & Set Rates | View Catalog |
 | **Godown Storage Directory** | Book Storage Space | View Storage Directory | List Godowns & Manage Space |
 | **Booking Management** | Track Active & Past Requests | Accept/Reject Rental Requests | Accept/Reject Storage Requests |
+| **Revenue & Earnings** | — | KPIs, Trend Chart, Settlement/Payouts, Utilization, Monthly PDF Statement, Invoices | KPIs, Trend Chart, Settlement/Payouts, Utilization, Monthly PDF Statement, Invoices |
 | **Advisory Services** | Real-Time Weather & Crop Tips | — | — |
 
 ---
@@ -37,10 +38,11 @@ KrishiLink/
 │   ├── GodownController.cs        # Storage Facilities Directory & Booking
 │   ├── AdvisoryController.cs      # Weather Forecasts & Crop Recommendations
 │   ├── BookingsController.cs      # User Booking History & Status Updates
-│   ├── EquipmentOwnerController.cs# Owner Listings & Rental Request Management
-│   └── GodownOwnerController.cs   # Facility Listings & Storage Booking Requests
+│   ├── EquipmentOwnerController.cs# Owner Listings, Rental Request Management & Revenue Reports
+│   ├── GodownOwnerController.cs   # Facility Listings, Storage Booking Requests & Revenue Reports
+│   └── OwnerRevenueControllerBase.cs # Shared Revenue / Invoice / Expense actions for both owner roles
 ├── Views/                         # Razor Views & Component Partials
-│   ├── Shared/                    # Base Layouts (_Layout.cshtml, _LoginPartial, Partials)
+│   ├── Shared/                    # Base Layouts, Partials, shared Revenue & Invoice pages, SVG Revenue Chart
 │   ├── Home/                      # Landing Page
 │   ├── Account/                   # Login, Register, Profile UI
 │   ├── Farmer/                    # Farmer Dashboard
@@ -51,15 +53,17 @@ KrishiLink/
 │   ├── EquipmentOwner/            # Equipment Management Views
 │   └── GodownOwner/               # Godown Management Views
 ├── Models/                        # Data Transfer & Entity Models
-│   ├── Entities/                  # EF Core Domain Entities (User, Equipment, Godown, etc.)
+│   ├── Entities/                  # EF Core Domain Entities (User, Equipment, Godown, Bookings, Expenses, etc.)
 │   └── ViewModels/                # Strongly-typed Razor ViewModels
 ├── BLL/                           # Business Logic Layer Services
-│   └── Services/                  # Business Logic & Validation Services
+│   └── Services/                  # EquipmentService, GodownService, BookingService, OwnerRevenueService, FileStorageService
 ├── DAL/                           # Data Access Layer
 │   ├── ApplicationDbContext.cs    # EF Core DbContext with Identity Integration
+│   ├── DbInitializer.cs           # Applies migrations, seeds roles (+ demo data in Development)
+│   ├── Repositories/              # Generic EF Repository<T> + revenue reporting repositories
 │   └── Migrations/                # EF Core Database Migrations
-├── wwwroot/                       # Static Assets (Bootstrap, CSS, JS, Images)
-└── appsettings.json               # Database Connection & Configuration Settings
+├── wwwroot/                       # Static Assets (Bootstrap, CSS, JS, Images, uploaded listing photos)
+└── appsettings.json               # Database Connection, Revenue (Platform Commission) & Configuration Settings
 ```
 
 ---
@@ -69,6 +73,7 @@ KrishiLink/
 - **Backend**: C# / ASP.NET Core MVC (.NET 9 / .NET 8 LTS)
 - **Data Access & ORM**: Entity Framework Core, MsSQL (Microsoft SQL Server / LocalDB)
 - **Security & Authentication**: ASP.NET Core Identity (Role-Based Authorization)
+- **Reporting**: QuestPDF (Community licence) for server-generated monthly owner statements
 - **Frontend**: Razor Views (HTML5), Bootstrap 5, Bootstrap Icons, Google Fonts (Inter)
 
 ---
@@ -90,28 +95,42 @@ KrishiLink/
    ```
 
 2. **Configure Database Connection**:
-   Update `appsettings.json` with your SQL Server connection string:
+   `appsettings.json` targets a local SQL Server Express instance by default. Adjust it for your server or LocalDB:
    ```json
    {
      "ConnectionStrings": {
-       "DefaultConnection": "Server=localhost;Database=KrishiLinkDb;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
+       "DefaultConnection": "Server=.\\SQLEXPRESS;Database=KrishiLinkDb;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
      }
    }
    ```
 
-3. **Apply EF Core Migrations**:
-   ```bash
-   dotnet ef database update
-   ```
-
-4. **Build and Run**:
+3. **Build and Run**:
    ```bash
    dotnet build
    dotnet run
    ```
+   On startup the app applies any pending EF Core migrations and creates the three Identity roles automatically.
+   (You can still apply migrations manually with `dotnet ef database update`.)
 
-5. **Access the Application**:
-   Open your browser and navigate to `http://localhost:5141` or `https://localhost:7141`.
+   **Optional — emailed monthly statements:** a background service emails every owner their previous month's PDF
+   statement once the month rolls over. Enable it by setting the `Email` section in `appsettings.json`
+   (`Enabled`, `Host`, `Port`, `Username`, `FromAddress`) and supplying the SMTP password out-of-band, e.g.
+   `dotnet user-secrets set "Email:Password" "..."` or the `Email__Password` environment variable. When disabled,
+   the sender logs what it would have sent.
+
+4. **Access the Application**:
+   Open your browser and navigate to `http://localhost:5141` or `https://localhost:7276`.
+
+### Demo Accounts (Development only)
+
+When running with `ASPNETCORE_ENVIRONMENT=Development` against an empty database, a small demo dataset is seeded
+(listings, bookings, payouts). Password for all demo accounts: `Krishi@123`
+
+| Role | Email | Phone |
+| :--- | :--- | :--- |
+| 🌾 Farmer | `farmer@krishilink.com` | `01711000001` |
+| 🚜 Equipment Owner | `equipment@krishilink.com` | `01712000001` |
+| 🏭 Godown Owner | `godown@krishilink.com` | `01713000001` |
 
 ---
 

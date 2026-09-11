@@ -1,0 +1,633 @@
+@model KrishiLink.Models.ViewModels.OwnerRevenueViewModel
+@{
+    ViewData["Title"] = "Revenue";
+    ViewData["BodyClass"] = "krishi-body-gradient";
+    var f = Model.Filter;
+    var s = Model.Settlement;
+    var statuses = new[] { "Completed", "Accepted", "Pending", "Cancelled", "Rejected" };
+    var currentUrl = Context.Request.Path + Context.Request.QueryString;
+    var rangeText = $"{Model.RangeStart:dd MMM yyyy} – {Model.RangeEnd:dd MMM yyyy}";
+    var isEquipment = Model.ListingLabel == "Equipment";
+    var listingLabel = L[Model.ListingLabel].Value;
+    string Money(decimal v) => "৳" + v.ToString("N0");
+    string PeriodUrl(string period) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, Period = period, f.Sort })!;
+    string RangeUrl(DateTime from, DateTime to) => Url.Action("Revenue", new { From = from.ToString("yyyy-MM-dd"), To = to.ToString("yyyy-MM-dd"), f.ListingId, f.Status, f.Period, f.Sort })!;
+    string SortUrl(string sort) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, f.Period, Sort = sort, f.Page })! + "#breakdown";
+    string PageUrl(int page) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, f.Period, f.Sort, Page = page })! + "#transactions";
+    var sortKey = (f.Sort ?? "revenue").ToLowerInvariant();
+}
+
+<!-- Page Header -->
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4 pb-3 border-bottom" style="border-color: var(--krishi-border-color) !important;">
+    <div>
+        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">@L["Revenue & Earnings"]</h2>
+        <p class="mb-0" style="color: var(--krishi-text-muted);">
+            @L["Track what your listings earn, what has been paid out, and which ones perform best."]
+        </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2 flex-shrink-0 d-print-none">
+        <!-- Native <details> dropdown: pill button reveals the last 12 months as PDF download links (no JavaScript) -->
+        <details class="statement-menu position-relative">
+            <summary class="btn btn-krishi-primary rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-1 list-unstyled" title="@L["Download a PDF statement for a month"]">
+                <i class="bi bi-file-earmark-pdf"></i> @L["Download Statement"] <i class="bi bi-chevron-down small ms-1"></i>
+            </summary>
+            <div class="statement-menu-list shadow rounded-3 bg-white border py-1">
+                @for (var i = 0; i < 12; i++)
+                {
+                    var m = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-i);
+                    <a asp-action="Statement" asp-route-month="@m.ToString("yyyy-MM")" class="d-flex justify-content-between align-items-center gap-3 px-3 py-2 small text-decoration-none statement-menu-item">
+                        <span>@L[m.ToString("MMMM")] @m.ToString("yyyy")</span>
+                        @if (i == 0)
+                        {
+                            <span class="badge rounded-pill" style="background-color: var(--krishi-primary-light); color: var(--krishi-primary);">@L["Current"]</span>
+                        }
+                    </a>
+                }
+            </div>
+        </details>
+        <a asp-action="Payouts" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold">
+            <i class="bi bi-bank me-1"></i> @L["Payouts"]
+        </a>
+        <a asp-action="Requests" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold">
+            <i class="bi bi-inbox me-1"></i> @L["Booking Requests"]
+        </a>
+        <a asp-action="Index" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold">
+            <i class="bi bi-speedometer2 me-1"></i> @L["Dashboard"]
+        </a>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success border-0 shadow-sm rounded-3 mb-3 d-flex align-items-center gap-2 d-print-none">
+        <i class="bi bi-check-circle-fill text-success"></i><span class="small">@TempData["SuccessMessage"]</span>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger border-0 shadow-sm rounded-3 mb-3 d-flex align-items-center gap-2 d-print-none">
+        <i class="bi bi-exclamation-triangle-fill"></i><span class="small">@TempData["ErrorMessage"]</span>
+    </div>
+}
+@if (Model.RecentPayout is { } payout)
+{
+    <div class="alert border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2 d-print-none" role="status"
+         style="background-color: var(--krishi-primary-subtle); color: var(--krishi-primary-hover);">
+        <i class="bi bi-cash-coin fs-5"></i>
+        <span class="small fw-semibold">
+            @L["Your payout of {0} was processed on {1} via {2}.", Money(payout.Amount), payout.Date.ToString("dd MMM"), payout.Method]
+        </span>
+        <a href="#settlement" class="small fw-semibold ms-auto text-decoration-none" style="color: var(--krishi-primary);">@L["View payouts"] <i class="bi bi-arrow-right"></i></a>
+    </div>
+}
+
+<!-- KPI Cards (lifetime figures) -->
+<div class="d-flex flex-nowrap overflow-x-auto flex-md-wrap gap-3 pb-2 mb-4">
+    <div class="flex-shrink-0 flex-md-grow-1 krishi-summary-card">
+        <div class="card krishi-card border-0 shadow-sm p-3 d-flex flex-row align-items-center gap-3 h-100">
+            <div class="rounded-3 d-flex align-items-center justify-content-center krishi-summary-icon" style="background-color: var(--krishi-primary-light);">
+                <i class="bi bi-wallet2 fs-4" style="color: var(--krishi-primary);"></i>
+            </div>
+            <div>
+                <span class="fs-3 fw-bold d-block lh-1 krishi-summary-value">@Money(Model.TotalRevenue)</span>
+                <span class="small krishi-summary-label">@L["Total Revenue (lifetime)"]</span>
+            </div>
+        </div>
+    </div>
+    <div class="flex-shrink-0 flex-md-grow-1 krishi-summary-card">
+        <div class="card krishi-card border-0 shadow-sm p-3 d-flex flex-row align-items-center gap-3 h-100">
+            <div class="rounded-3 d-flex align-items-center justify-content-center krishi-summary-icon" style="background-color: var(--krishi-primary-subtle);">
+                <i class="bi bi-calendar-month fs-4" style="color: var(--krishi-primary);"></i>
+            </div>
+            <div>
+                <span class="fs-3 fw-bold d-block lh-1 krishi-summary-value">@Money(Model.ThisMonthRevenue)</span>
+                <span class="small krishi-summary-label">@L["This Month's Revenue"]</span>
+                @if (Model.MonthChangePercent is int delta)
+                {
+                    <span class="small fw-semibold d-block @(delta >= 0 ? "text-success" : "text-danger")" title="@L["vs. last month ({0})", Money(Model.LastMonthRevenue)]">
+                        @(delta >= 0 ? "▲" : "▼") @Math.Abs(delta)% @L["vs last month"]
+                    </span>
+                }
+                else if (Model.LastMonthRevenue == 0 && Model.ThisMonthRevenue > 0)
+                {
+                    <span class="small d-block" style="color: var(--krishi-text-muted);">@L["No revenue last month"]</span>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="flex-shrink-0 flex-md-grow-1 krishi-summary-card">
+        <div class="card krishi-card border-0 shadow-sm p-3 d-flex flex-row align-items-center gap-3 h-100">
+            <div class="rounded-3 d-flex align-items-center justify-content-center krishi-summary-icon" style="background-color: var(--krishi-status-pending-bg);">
+                <i class="bi bi-hourglass-split fs-4" style="color: var(--krishi-status-pending-text);"></i>
+            </div>
+            <div>
+                <span class="fs-3 fw-bold d-block lh-1 krishi-summary-value">@Money(Model.UpcomingRevenue)</span>
+                <span class="small krishi-summary-label">@L["Upcoming Revenue (accepted)"]</span>
+            </div>
+        </div>
+    </div>
+    <div class="flex-shrink-0 flex-md-grow-1 krishi-summary-card">
+        <div class="card krishi-card border-0 shadow-sm p-3 d-flex flex-row align-items-center gap-3 h-100">
+            <div class="rounded-3 d-flex align-items-center justify-content-center krishi-summary-icon" style="background-color: var(--krishi-status-completed-bg);">
+                <i class="bi bi-check2-all fs-4" style="color: var(--krishi-status-completed-text);"></i>
+            </div>
+            <div>
+                <span class="fs-3 fw-bold d-block lh-1 krishi-summary-value">@Model.CompletedBookings</span>
+                <span class="small krishi-summary-label">@L["Bookings Completed"]</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters (GET form: bookmarkable) -->
+<form method="get" asp-action="Revenue" class="card border-0 shadow-sm p-3 mb-4 d-print-none" style="border-radius: var(--krishi-radius-lg);">
+    <input type="hidden" name="Period" value="@f.Period" />
+    <input type="hidden" name="Sort" value="@f.Sort" />
+    <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-3 col-lg-2">
+            <label for="From" class="form-label small fw-semibold mb-1">@L["From"]</label>
+            <input type="date" class="form-control form-control-sm" id="From" name="From" value="@f.From?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <label for="To" class="form-label small fw-semibold mb-1">@L["To"]</label>
+            <input type="date" class="form-control form-control-sm" id="To" name="To" value="@f.To?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="col-6 col-md-3 col-lg-3">
+            <label for="ListingId" class="form-label small fw-semibold mb-1">@listingLabel</label>
+            <select class="form-select form-select-sm" id="ListingId" name="ListingId">
+                <option value="">@L["All"]</option>
+                @foreach (var g in Model.Listings)
+                {
+                    <option value="@g.Id" selected="@(f.ListingId == g.Id)">@g.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <label for="Status" class="form-label small fw-semibold mb-1">@L["Status"] <span class="fw-normal" style="color: var(--krishi-text-muted);">(@L["transactions"])</span></label>
+            <select class="form-select form-select-sm" id="Status" name="Status">
+                <option value="">@L["All statuses"]</option>
+                @foreach (var st in statuses)
+                {
+                    <option value="@st" selected="@(string.Equals(f.Status, st, StringComparison.OrdinalIgnoreCase))">@L[st]</option>
+                }
+            </select>
+        </div>
+        <div class="col-12 col-lg-3 d-flex flex-wrap gap-2 justify-content-lg-end">
+            <button type="submit" class="btn btn-krishi-primary btn-sm rounded-pill px-3 fw-semibold"><i class="bi bi-funnel me-1"></i>@L["Apply"]</button>
+            <a asp-action="Revenue" class="btn btn-outline-secondary btn-sm rounded-pill px-3">@L["Reset"]</a>
+            <button type="button" class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold" onclick="window.print()" title="@L["Print or save this report as PDF"]">
+                <i class="bi bi-filetype-pdf me-1"></i>PDF
+            </button>
+        </div>
+    </div>
+    <div class="small mt-2 d-flex flex-wrap align-items-center gap-2" style="color: var(--krishi-text-muted);">
+        <span><i class="bi bi-calendar-range me-1"></i>@L["Showing"] <strong>@rangeText</strong></span>
+        @if (f.ListingId is not null)
+        {
+            <span>· @Model.Listings.FirstOrDefault(g => g.Id == f.ListingId)?.Name</span>
+        }
+        <span class="ms-auto d-flex gap-1">
+            <a href="@RangeUrl(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1), DateTime.Today)" class="badge rounded-pill text-decoration-none border bg-white" style="color: var(--krishi-primary);">@L["This month"]</a>
+            <a href="@RangeUrl(DateTime.Today.AddDays(-89), DateTime.Today)" class="badge rounded-pill text-decoration-none border bg-white" style="color: var(--krishi-primary);">@L["Last 90 days"]</a>
+            <a href="@RangeUrl(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-11), DateTime.Today)" class="badge rounded-pill text-decoration-none border bg-white" style="color: var(--krishi-primary);">@L["Last 12 months"]</a>
+        </span>
+    </div>
+</form>
+
+<!-- Trend + Settlement -->
+<div class="row g-3 g-lg-4 mb-4">
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm h-100 p-3 p-md-4" style="border-radius: var(--krishi-radius-lg);">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <h5 class="fw-bold mb-0" style="color: var(--krishi-text-primary);"><i class="bi bi-bar-chart-line me-2 text-success"></i>@L["Revenue Trend"]</h5>
+                <div class="btn-group btn-group-sm d-print-none" role="group" aria-label="@L["Chart granularity"]">
+                    <a href="@PeriodUrl("month")" class="btn @(f.IsWeekly ? "btn-outline-secondary" : "btn-krishi-primary") rounded-start-pill px-3">@L["Monthly"]</a>
+                    <a href="@PeriodUrl("week")" class="btn @(f.IsWeekly ? "btn-krishi-primary" : "btn-outline-secondary") rounded-end-pill px-3">@(Model.TrendBucketDays == 14 ? L["Fortnightly"] : L["Weekly"])</a>
+                </div>
+            </div>
+            <partial name="_RevenueTrendChart" model="Model.Trend" />
+            <p class="small mb-0 mt-2" style="color: var(--krishi-text-muted);">
+                @L["Revenue is recognised when a booking completes (its end date)."]
+                @if (Model.TrendNote is not null)
+                {
+                    <span class="ms-1"><i class="bi bi-info-circle me-1"></i>@L[Model.TrendNote]</span>
+                }
+                @if (Model.Insights.PeakSeason is not null)
+                {
+                    <span class="ms-1"><i class="bi bi-sun text-warning me-1"></i>@L["Peak season: {0}", Model.Insights.PeakSeason]</span>
+                }
+            </p>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4" id="settlement">
+        <div class="card border-0 shadow-sm h-100 p-3 p-md-4" style="border-radius: var(--krishi-radius-lg);">
+            <h5 class="fw-bold mb-3" style="color: var(--krishi-text-primary);"><i class="bi bi-bank me-2 text-success"></i>@L["Settlement"]</h5>
+            <dl class="row small mb-2 gy-1">
+                <dt class="col-7 fw-normal" style="color: var(--krishi-text-muted);">@L["Gross revenue"]</dt>
+                <dd class="col-5 text-end mb-0 fw-semibold">@Money(s.Gross)</dd>
+                <dt class="col-7 fw-normal" style="color: var(--krishi-text-muted);">@L["Platform commission ({0}%)", (s.CommissionRate * 100).ToString("0.#")]</dt>
+                <dd class="col-5 text-end mb-0 text-danger">− @Money(s.Commission)</dd>
+                <dt class="col-7 fw-semibold border-top pt-1">@L["Net earned"]</dt>
+                <dd class="col-5 text-end mb-0 fw-bold border-top pt-1">@Money(s.NetEarned)</dd>
+                <dt class="col-7 fw-normal" style="color: var(--krishi-text-muted);">@L["Recorded expenses"]</dt>
+                <dd class="col-5 text-end mb-0 text-danger">− @Money(s.Expenses)</dd>
+                <dt class="col-7 fw-semibold border-top pt-1" style="color: var(--krishi-primary);">@L["Net profit"]</dt>
+                <dd class="col-5 text-end mb-0 fw-bold border-top pt-1" style="color: var(--krishi-primary);">@Money(s.NetProfit)</dd>
+            </dl>
+
+            <div class="rounded-3 p-3 mb-3" style="background-color: var(--krishi-primary-light);">
+                <div class="d-flex justify-content-between small mb-1"><span>@L["Paid out"]</span><strong>@Money(s.PaidOut)</strong></div>
+                @if (s.Processing > 0)
+                {
+                    <div class="d-flex justify-content-between small mb-1"><span>@L["Processing"]</span><strong style="color: var(--krishi-status-pending-text);">@Money(s.Processing)</strong></div>
+                }
+                <div class="d-flex justify-content-between small"><span>@L["Pending payout"]</span><strong style="color: var(--krishi-primary);">@Money(s.Owed)</strong></div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="small text-uppercase fw-bold mb-0" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L["Payout history"]</h6>
+                <a asp-action="Payouts" class="small fw-semibold text-decoration-none d-print-none" style="color: var(--krishi-primary);">@L["View all"] <i class="bi bi-arrow-right"></i></a>
+            </div>
+            @if (!s.Payouts.Any())
+            {
+                <p class="small mb-0" style="color: var(--krishi-text-muted);">@L["No payouts yet."]</p>
+            }
+            else
+            {
+                <ul class="list-unstyled small mb-0 d-flex flex-column gap-2">
+                    @foreach (var p in s.Payouts.Take(5))
+                    {
+                        <li class="d-flex align-items-center gap-2">
+                            <i class="bi @(p.Status == "Completed" ? "bi-check-circle-fill text-success" : "bi-clock-history") flex-shrink-0" style="@(p.Status != "Completed" ? "color: var(--krishi-status-pending-text);" : "")"></i>
+                            <span class="flex-grow-1">
+                                @(p.Status == "Completed" ? L["Paid on {0}", p.Date.ToString("dd MMM")] : L["Processing since {0}", p.Date.ToString("dd MMM")])
+                                <span class="d-block" style="color: var(--krishi-text-muted);">@p.Method · <code>@p.Reference</code></span>
+                            </span>
+                            <strong>@Money(p.Amount)</strong>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Funnel + Insights -->
+<div class="row g-3 g-lg-4 mb-4">
+    <div class="col-12 col-lg-7">
+        <div class="card border-0 shadow-sm h-100 p-3 p-md-4" style="border-radius: var(--krishi-radius-lg);">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0" style="color: var(--krishi-text-primary);"><i class="bi bi-funnel me-2 text-success"></i>@L["Booking Status Breakdown"]</h5>
+                <span class="small" style="color: var(--krishi-text-muted);">@L["{0} requested", Model.Funnel.Requested]</span>
+            </div>
+            @{
+                var fn = Model.Funnel;
+                var pending = fn.Requested - fn.Accepted - fn.Completed - fn.Cancelled - fn.Rejected;
+                var stages = new (string Label, int Count, string Bg, string Fg)[]
+                {
+                    ("Pending", pending, "var(--krishi-status-pending-bg)", "var(--krishi-status-pending-text)"),
+                    ("Accepted", fn.Accepted, "var(--krishi-status-accepted-bg)", "var(--krishi-status-accepted-text)"),
+                    ("Ongoing", fn.Ongoing, "var(--krishi-primary-subtle)", "var(--krishi-primary-hover)"),
+                    ("Completed", fn.Completed, "var(--krishi-status-completed-bg)", "var(--krishi-status-completed-text)"),
+                    ("Cancelled", fn.Cancelled, "var(--krishi-status-rejected-bg)", "var(--krishi-status-rejected-text)"),
+                    ("Rejected", fn.Rejected, "var(--krishi-status-rejected-bg)", "var(--krishi-status-rejected-text)")
+                };
+            }
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                @foreach (var st in stages)
+                {
+                    <div class="rounded-3 px-3 py-2 text-center flex-grow-1" style="background-color: @st.Bg; color: @st.Fg; min-width: 90px;">
+                        <div class="fs-4 fw-bold lh-1">@st.Count</div>
+                        <div class="small fw-semibold">@L[st.Label]</div>
+                    </div>
+                }
+            </div>
+            <div class="d-flex align-items-center gap-2 small">
+                <i class="bi @(fn.CancellationRatePercent >= 20 ? "bi-exclamation-triangle-fill text-danger" : "bi-shield-check text-success")"></i>
+                <span>@L["Cancellation rate: {0}% of confirmed bookings", fn.CancellationRatePercent]</span>
+                @if (fn.CancellationRatePercent >= 20)
+                {
+                    <span style="color: var(--krishi-text-muted);">— @L["consider requesting a deposit to reduce no-shows"]</span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-5">
+        <div class="card border-0 shadow-sm h-100 p-3 p-md-4" style="border-radius: var(--krishi-radius-lg);">
+            <h5 class="fw-bold mb-3" style="color: var(--krishi-text-primary);"><i class="bi bi-lightbulb me-2 text-success"></i>@L["Insights"]</h5>
+            <ul class="list-unstyled d-flex flex-column gap-3 mb-0 small">
+                @if (Model.Insights.UnderUtilizedListings > 0)
+                {
+                    <li class="d-flex gap-3">
+                        <i class="bi bi-speedometer fs-5" style="color: var(--krishi-status-pending-text);"></i>
+                        <div>
+                            <strong>@L["{0} of {1} listings were booked less than {2}% of the time", Model.Insights.UnderUtilizedListings, Model.Breakdown.Count, Model.Insights.LowUtilizationPercent]</strong>
+                            <div style="color: var(--krishi-text-muted);">@L["Idle assets are lost income. Lower the rate for off-peak weeks, add clear photos, and describe what the listing is best suited for."]</div>
+                        </div>
+                    </li>
+                }
+                <li class="d-flex gap-3">
+                    <i class="bi bi-people-fill fs-5 text-success"></i>
+                    <div>
+                        <strong>@L["{0} of {1} renters in this period are repeat customers", Model.Insights.RepeatCustomers, Model.Insights.DistinctCustomers]</strong>
+                        <div style="color: var(--krishi-text-muted);">@L["Repeat renters signal trust — reward them with priority on peak-season capacity."]</div>
+                    </div>
+                </li>
+                @if (Model.Insights.TopListing is not null)
+                {
+                    <li class="d-flex gap-3">
+                        <i class="bi bi-trophy-fill fs-5 text-warning"></i>
+                        <div>
+                            <strong>
+                                @if (Model.Insights.TopVsWeakestMultiplier is { } mult)
+                                {
+                                    @L["{0} earned {1}× more than {2}", Model.Insights.TopListing, mult.ToString("0.#"), Model.Insights.WeakestListing!]
+                                }
+                                else
+                                {
+                                    @L["{0} is your top earner; {1} earned nothing in this period", Model.Insights.TopListing, Model.Insights.WeakestListing!]
+                                }
+                            </strong>
+                            <div style="color: var(--krishi-text-muted);">@L["Consider re-pricing or promoting under-performing listings before the next harvest."]</div>
+                        </div>
+                    </li>
+                }
+                @if (Model.Insights.PeakSeason is not null)
+                {
+                    <li class="d-flex gap-3">
+                        <i class="bi bi-sun-fill fs-5 text-warning"></i>
+                        <div>
+                            <strong>@L["Peak season: {0}", Model.Insights.PeakSeason]</strong>
+                            <div style="color: var(--krishi-text-muted);">@L["Based on when your confirmed bookings start. Free up capacity and confirm pricing before it begins."]</div>
+                        </div>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue by Listing -->
+<div class="card border-0 shadow-sm mb-4 overflow-hidden" id="breakdown" style="border-radius: var(--krishi-radius-lg);">
+    <div class="p-3 px-4 d-flex align-items-center justify-content-between" style="background-color: var(--krishi-primary-light);">
+        <h5 class="fw-bold mb-0" style="color: var(--krishi-primary);"><i class="bi @(isEquipment ? "bi-tools" : "bi-building") me-2"></i>@L["Revenue by {0}", listingLabel]</h5>
+        <span class="small" style="color: var(--krishi-text-muted);">@rangeText</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4 py-3 text-uppercase small fw-bold text-muted">@listingLabel</th>
+                    @{
+                        // Clickable headers re-sort server-side; the active one is highlighted with a down arrow
+                        var sortColumns = new (string Key, string Label, string Align)[]
+                        {
+                            ("bookings", L["Bookings"].Value, "text-end"),
+                            ("revenue", L["Revenue Earned"].Value, "text-end"),
+                            ("avg", L["Avg. / Booking"].Value, "text-end"),
+                            ("utilization", L["Utilization"].Value, "")
+                        };
+                    }
+                    @foreach (var col in sortColumns)
+                    {
+                        <th class="py-3 text-uppercase small fw-bold @col.Align" style="@(col.Key == "utilization" ? "min-width: 180px;" : "")">
+                            <a href="@SortUrl(col.Key)" class="text-decoration-none @(sortKey == col.Key ? "text-success" : "text-muted")" title="@L["Sort by {0}", col.Label]">
+                                @col.Label @if (sortKey == col.Key) { <i class="bi bi-arrow-down-short"></i> }
+                            </a>
+                        </th>
+                    }
+                    <th class="pe-4 py-3"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var b in Model.Breakdown)
+                {
+                    var barClass = b.UtilizationPercent >= 70 ? "bg-success" : b.UtilizationPercent >= 35 ? "bg-warning" : "bg-danger";
+                    <tr>
+                        <td class="ps-4 fw-semibold">@b.Name</td>
+                        <td class="text-end">@b.Bookings</td>
+                        <td class="text-end fw-bold text-success">@Money(b.Revenue)</td>
+                        <td class="text-end">@Money(b.AveragePerBooking)</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" role="progressbar" aria-label="@L["Utilization"]" aria-valuenow="@b.UtilizationPercent" aria-valuemin="0" aria-valuemax="100" style="height: 6px;">
+                                    <div class="progress-bar @barClass" style="width: @b.UtilizationPercent%;"></div>
+                                </div>
+                                <span class="small fw-semibold" style="min-width: 36px;">@b.UtilizationPercent%</span>
+                            </div>
+                            <div class="small" style="color: var(--krishi-text-muted);">
+                                @L["{0} / {1} days", b.BookedDays.ToString("0"), b.PeriodDays] · @L[Model.UtilizationHint]
+                            </div>
+                            @if (b.IsUnderUtilized)
+                            {
+                                <div class="small mt-1" style="color: var(--krishi-status-pending-text);">
+                                    <i class="bi bi-lightbulb-fill me-1"></i>@L["Idle most of the time — try a lower rate, better photos or a clearer description."]
+                                </div>
+                            }
+                        </td>
+                        <td class="pe-4 text-end">
+                            @if (b.PerformanceFlag == "Top")
+                            {
+                                <span class="krishi-badge krishi-badge-available"><i class="bi bi-trophy-fill"></i>@L["Top performer"]</span>
+                            }
+                            else if (b.PerformanceFlag == "Under")
+                            {
+                                <span class="krishi-badge krishi-badge-unavailable"><i class="bi bi-arrow-down-right"></i>@L["Under-performing"]</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Transactions -->
+<div class="card border-0 shadow-sm mb-4 overflow-hidden" id="transactions" style="border-radius: var(--krishi-radius-lg);">
+    <div class="p-3 px-4 d-flex align-items-center justify-content-between" style="background-color: var(--krishi-primary-light);">
+        <h5 class="fw-bold mb-0" style="color: var(--krishi-primary);"><i class="bi bi-receipt me-2"></i>@L["Transactions"]
+            <span class="badge rounded-pill bg-white shadow-sm ms-1" style="color: var(--krishi-primary);">@Model.TransactionsTotal</span>
+        </h5>
+        @if (!string.IsNullOrEmpty(f.Status))
+        {
+            <span class="krishi-badge krishi-badge-completed">@L[f.Status]</span>
+        }
+    </div>
+    @if (!Model.Transactions.Any())
+    {
+        <div class="p-5 text-center">
+            <i class="bi bi-inbox fs-2 text-success d-block mb-1"></i>
+            <span style="color: var(--krishi-text-muted);">@L["No bookings match the current filters."]</span>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4 py-3 text-uppercase small fw-bold text-muted">@L["Date"]</th>
+                        <th class="py-3 text-uppercase small fw-bold text-muted">@L["Farmer"]</th>
+                        <th class="py-3 text-uppercase small fw-bold text-muted">@listingLabel</th>
+                        <th class="py-3 text-uppercase small fw-bold text-muted">@L["Duration"]</th>
+                        <th class="py-3 text-uppercase small fw-bold text-muted text-end">@L["Amount"]</th>
+                        <th class="py-3 text-uppercase small fw-bold text-muted text-end">@L["Net"]</th>
+                        <th class="py-3 text-uppercase small fw-bold text-muted">@L["Status"]</th>
+                        <th class="py-3 text-uppercase small fw-bold text-muted">@L["Payout"]</th>
+                        <th class="pe-4 py-3 text-end d-print-none"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in Model.Transactions)
+                    {
+                        var canExpense = t.Status is "Completed" or "Accepted";
+                        <tr>
+                            <td class="ps-4 text-nowrap">
+                                @t.StartDate.ToString("dd MMM yyyy")
+                                <div class="small" style="color: var(--krishi-text-muted);">#@t.BookingId</div>
+                            </td>
+                            <td>
+                                @t.CustomerName
+                                @if (t.IsRepeatCustomer)
+                                {
+                                    <i class="bi bi-arrow-repeat text-success ms-1" title="@L["Repeat customer"]"></i>
+                                }
+                            </td>
+                            <td>@t.ListingName</td>
+                            <td class="text-nowrap">
+                                @t.StartDate.ToString("dd MMM") – @t.EndDate.ToString("dd MMM")
+                                <div class="small" style="color: var(--krishi-text-muted);">@t.QuantityText</div>
+                            </td>
+                            <td class="text-end fw-semibold">@Money(t.Gross)</td>
+                            <td class="text-end text-nowrap">
+                                @Money(t.Net)
+                                @foreach (var e in t.ExpenseLines)
+                                {
+                                    <div class="small text-danger d-flex justify-content-end align-items-center gap-1">
+                                        <span title="@e.Note">− @Money(e.Amount) <span style="color: var(--krishi-text-muted);">@(string.IsNullOrEmpty(e.Note) ? L["exp."].Value : e.Note)</span></span>
+                                        @if (canExpense)
+                                        {
+                                            <button type="button" class="btn btn-link btn-sm p-0 text-secondary d-print-none add-expense-btn" title="@L["Edit expense"]"
+                                                    data-booking-id="@t.BookingId" data-booking-label="#@t.BookingId · @t.ListingName" data-expense-id="@e.Id" data-amount="@e.Amount" data-note="@e.Note"
+                                                    data-bs-toggle="modal" data-bs-target="#expenseModal"><i class="bi bi-pencil-square"></i></button>
+                                            <form asp-action="DeleteExpense" method="post" class="d-inline d-print-none" onsubmit="return confirm('@L["Remove this expense?"]');">
+                                                <input type="hidden" name="expenseId" value="@e.Id" />
+                                                <input type="hidden" name="returnUrl" value="@currentUrl" />
+                                                <button type="submit" class="btn btn-link btn-sm p-0 text-secondary" title="@L["Remove expense"]"><i class="bi bi-trash3"></i></button>
+                                            </form>
+                                        }
+                                    </div>
+                                }
+                            </td>
+                            <td><partial name="_StatusBadge" model="t.Status" /></td>
+                            <td class="text-nowrap">
+                                @if (t.Status == "Completed")
+                                {
+                                    if (t.IsPaid)
+                                    {
+                                        <span class="krishi-badge krishi-badge-available" title="@t.PayoutReference"><i class="bi bi-check2-circle"></i>@L["Paid"]</span>
+                                        <div class="small" style="color: var(--krishi-text-muted);"><code>@t.PayoutReference</code></div>
+                                    }
+                                    else
+                                    {
+                                        <span class="krishi-badge krishi-badge-pending"><i class="bi bi-hourglass"></i>@L["Unpaid"]</span>
+                                    }
+                                }
+                            </td>
+                            <td class="pe-4 text-end text-nowrap d-print-none">
+                                @if (t.Status == "Completed")
+                                {
+                                    <a asp-action="Invoice" asp-route-id="@t.BookingId" class="btn btn-sm btn-krishi-outline rounded-pill px-2" title="@L["Invoice / receipt"]" target="_blank" rel="noopener">
+                                        <i class="bi bi-file-earmark-text"></i>
+                                    </a>
+                                }
+                                @if (canExpense)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 add-expense-btn"
+                                            data-booking-id="@t.BookingId" data-booking-label="#@t.BookingId · @t.ListingName" data-bs-toggle="modal" data-bs-target="#expenseModal" title="@L["Add expense"]">
+                                        <i class="bi bi-plus-circle"></i>
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (Model.PageCount > 1)
+        {
+            <nav class="d-flex justify-content-between align-items-center px-4 py-3 border-top d-print-none" aria-label="@L["Transactions pages"]">
+                <span class="small" style="color: var(--krishi-text-muted);">@L["Page {0} of {1} · {2} bookings", f.Page, Model.PageCount, Model.TransactionsTotal]</span>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(f.Page <= 1 ? "disabled" : "")"><a class="page-link" href="@PageUrl(f.Page - 1)" aria-label="@L["Previous"]">&laquo;</a></li>
+                    @for (var p = Math.Max(1, f.Page - 2); p <= Math.Min(Model.PageCount, f.Page + 2); p++)
+                    {
+                        <li class="page-item @(p == f.Page ? "active" : "")"><a class="page-link" href="@PageUrl(p)">@p</a></li>
+                    }
+                    <li class="page-item @(f.Page >= Model.PageCount ? "disabled" : "")"><a class="page-link" href="@PageUrl(f.Page + 1)" aria-label="@L["Next"]">&raquo;</a></li>
+                </ul>
+            </nav>
+        }
+    }
+</div>
+
+<!-- Add / Edit Expense Modal -->
+<div class="modal fade d-print-none" id="expenseModal" tabindex="-1" aria-labelledby="expenseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form asp-action="SaveExpense" method="post" class="modal-content border-0 shadow-lg rounded-3">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="bookingId" id="expenseBookingId" />
+            <input type="hidden" name="expenseId" id="expenseId" />
+            <input type="hidden" name="returnUrl" value="@currentUrl" />
+            <div class="modal-header border-bottom-0 pb-2">
+                <h5 class="modal-title fw-bold" id="expenseModalLabel"><span id="expenseModalTitle">@L["Add Expense"]</span> <span class="small fw-normal" id="expenseBookingLabel" style="color: var(--krishi-text-muted);"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-2">
+                <div class="mb-3">
+                    <label for="expenseAmount" class="form-label small fw-semibold">@L["Amount (BDT ৳)"]</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-success fw-bold">৳</span>
+                        <input type="number" class="form-control" id="expenseAmount" name="amount" min="1" step="1" required />
+                    </div>
+                </div>
+                <div>
+                    <label for="expenseNote" class="form-label small fw-semibold">@L["Note"]</label>
+                    <input type="text" class="form-control" id="expenseNote" name="note" maxlength="120" placeholder="@L["e.g. Fumigation, loading labour, generator fuel"]" />
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-2 pb-3 px-3">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">@L["Cancel"]</button>
+                <button type="submit" class="btn btn-krishi-primary rounded-pill px-4 fw-semibold">@L["Save Expense"]</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Statement month menu (native <details>): hide the default marker and float the list under the button */
+    .statement-menu > summary { list-style: none; cursor: pointer; }
+    .statement-menu > summary::-webkit-details-marker { display: none; }
+    .statement-menu[open] > summary .bi-chevron-down { transform: rotate(180deg); }
+    .statement-menu-list { position: absolute; right: 0; top: calc(100% + 6px); min-width: 230px; z-index: 1050; }
+    .statement-menu-item { color: var(--krishi-text-primary); }
+    .statement-menu-item:hover { background-color: var(--krishi-primary-light); color: var(--krishi-primary); }
+</style>
+
+@section Scripts {
+    <script>
+        // Point the shared expense modal at the clicked booking (and prefill when editing an existing expense)
+        document.getElementById('expenseModal').addEventListener('show.bs.modal', e => {
+            const btn = e.relatedTarget;
+            const editing = !!btn.dataset.expenseId;
+            document.getElementById('expenseBookingId').value = btn.dataset.bookingId;
+            document.getElementById('expenseId').value = btn.dataset.expenseId || '';
+            document.getElementById('expenseBookingLabel').textContent = btn.dataset.bookingLabel;
+            document.getElementById('expenseModalTitle').textContent = editing ? '@L["Edit Expense"]' : '@L["Add Expense"]';
+            document.getElementById('expenseAmount').value = editing ? btn.dataset.amount : '';
+            document.getElementById('expenseNote').value = editing ? btn.dataset.note : '';
+        });
+    </script>
+}

@@ -19,9 +19,20 @@ namespace KrishiLink.Models.ViewModels
         public string Status => IsAvailable ? "Available" : "Unavailable";
         public string ImageUrl { get; set; } = string.Empty;
         public string OwnerName { get; set; } = string.Empty;
-        public double Rating { get; set; } = 4.8;
-        public int ReviewCount { get; set; } = 12;
+        public double Rating { get; set; }
+        public int ReviewCount { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    /// <summary>Query-string bound search/filter/sort parameters for the equipment browse page.</summary>
+    public class EquipmentSearchCriteria
+    {
+        public string? SearchTerm { get; set; }
+        public List<string>? SelectedCategories { get; set; }
+        public string? Location { get; set; }
+        public decimal? SelectedMaxPrice { get; set; }
+        public DateTime? AvailabilityDate { get; set; }
+        public string SortBy { get; set; } = "newest";
     }
 
     /// <summary>

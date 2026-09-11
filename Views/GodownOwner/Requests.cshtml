@@ -4,7 +4,7 @@
     ViewData["Title"] = "Godown Booking Requests";
     ViewData["BodyClass"] = "krishi-body-gradient";
     ViewData["Expandable"] = true;
-    var tabs = new[] { "Pending", "Accepted", "Rejected", "Completed" };
+    var tabs = new[] { "Pending", "Accepted", "Rejected", "Completed", "Cancelled" };
     var godownsJson = JsonSerializer.Serialize(Model.Godowns.ToDictionary(
         g => g.Id,
         g => new { name = g.Name, total = g.TotalCapacityTons, available = g.AvailableCapacityTons }));
@@ -158,25 +158,21 @@
                 rejectedMsg: '@L["Booking rejected — the farmer has been notified"]',
                 completedMsg: '@L["Booking marked as completed — capacity freed ✓"]',
                 completeTitle: '@L["Mark Booking Completed"]',
-                newRequestMsg: '@L["new booking request"]'
+                newRequestMsg: '@L["new booking request"]',
+                autoRejectReason: '@L["Automatically declined: the owner accepted another booking for overlapping dates."]'
             },
-            // Over-capacity accepts need explicit confirmation — or a one-click reject
+            // Over-capacity requests are refused by the server — offer a one-click reject instead
             acceptGuard: function (row, api) {
                 const g = GODOWNS[row.dataset.godownId];
                 const cap = Number(row.dataset.capacity);
                 if (!g || cap <= g.available) return api.confirm();
                 KrishiModal.confirm({
                     title: '@L["Exceeds Available Capacity"]',
-                    body: '@L["This booking needs <strong>{0} Tons</strong>, but only <strong>{1} Tons</strong> are free in this godown. Accept anyway?"]'.replace('{0}', fmt(cap)).replace('{1}', fmt(g.available)),
-                    confirmText: '@L["Accept Anyway"]',
+                    body: '@L["This booking needs <strong>{0} Tons</strong>, but only <strong>{1} Tons</strong> are free in this godown, so it cannot be accepted. Reject it and let the farmer know?"]'.replace('{0}', fmt(cap)).replace('{1}', fmt(g.available)),
+                    confirmText: '@L["Reject Request"]',
                     confirmClass: 'btn-danger',
                     iconClass: 'bi-exclamation-triangle-fill text-danger',
-                    onConfirm: api.direct,
-                    secondary: {
-                        text: '@L["Reject Instead"]',
-                        className: 'btn-outline-danger',
-                        onConfirm: () => api.reject('@L["Requested capacity is not available for those dates."]')
-                    }
+                    onConfirm: () => api.reject('@L["Requested capacity is not available for those dates."]')
                 });
             },
             // Accepted bookings occupy capacity; completed bookings free it again

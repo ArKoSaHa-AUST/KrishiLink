@@ -280,11 +280,14 @@ window.KrishiRequests = {
             onAction: function () { undone = true; revert(); },
             onClosed: async function () {
                 try {
-                    await KrishiRequests.post(opts.url, { id: opts.id, decision: opts.decision, reason: opts.reason || '' });
+                    const data = await KrishiRequests.post(opts.url, { id: opts.id, decision: opts.decision, reason: opts.reason || '' });
                     row.remove();
-                } catch {
+                    // Pending rows the server auto-rejected because they overlap the accepted one
+                    (data.autoRejected || []).forEach(id => document.querySelector(`.request-row[data-request-id="${id}"]`)?.remove());
+                    if (typeof opts.onRowHidden === 'function' && (data.autoRejected || []).length) opts.onRowHidden();
+                } catch (err) {
                     revert();
-                    KrishiToast.show('Could not save the decision. Please try again.', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
+                    KrishiToast.show(err.message || 'Could not save the decision. Please try again.', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
                 }
             }
         });
@@ -328,12 +331,13 @@ window.KrishiRequests = {
  */
 window.KrishiRequestsPage = {
     init: function (cfg) {
-        const TABS = ['Pending', 'Accepted', 'Rejected', 'Completed'];
+        const TABS = ['Pending', 'Accepted', 'Rejected', 'Completed', 'Cancelled'];
         const BADGE = {
             Pending: 'krishi-badge-pending d-none d-md-inline-flex',
             Accepted: 'krishi-badge-available',
             Rejected: 'krishi-badge-unavailable',
-            Completed: 'krishi-badge-completed'
+            Completed: 'krishi-badge-completed',
+            Cancelled: 'krishi-badge-unavailable'
         };
         const MOVES = {
             accept: { from: 'Pending', to: 'Accepted' },
@@ -399,6 +403,29 @@ window.KrishiRequestsPage = {
                 .forEach(r => list.appendChild(r));
         }
 
+        /** Server-side cascade: pending rows that lost to the accepted request move straight to Rejected. */
+        function applyAutoRejects(ids, reason) {
+            ids.forEach(id => {
+                const row = document.querySelector(`#list-Pending .request-row[data-request-id="${id}"]`);
+                if (!row) return;
+                row.querySelector('.request-actions')?.classList.add('d-none');
+                row.querySelector('.fit-indicator')?.classList.add('d-none');
+                const block = row.querySelector('.reject-reason-block');
+                if (block) {
+                    block.querySelector('.reject-reason-text').textContent = reason;
+                    block.classList.remove('d-none');
+                }
+                setStatus(row, 'Rejected');
+                document.getElementById('list-Rejected').prepend(row);
+                tabCount('Pending', -1);
+                tabCount('Rejected', +1);
+            });
+            if (ids.length) {
+                refreshEmptyStates();
+                if (cfg.afterListChange) cfg.afterListChange();
+            }
+        }
+
         async function submit(id, decision, btn, reason) {
             const row = btn.closest('.request-row');
             if (!row) return;
@@ -411,10 +438,12 @@ window.KrishiRequestsPage = {
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving…';
 
             try {
-                await KrishiRequests.post(cfg.respondUrl, { id, decision, reason: reason || '' });
+                const data = await KrishiRequests.post(cfg.respondUrl, { id, decision, reason: reason || '' });
+                const autoRejected = data.autoRejected || [];
                 btn.innerHTML = originalBtnHtml;
                 actions.querySelectorAll('button').forEach(b => b.disabled = false);
                 if (cfg.onApplied) cfg.onApplied(row, decision);
+                applyAutoRejects(autoRejected, msgs.autoRejectReason || 'Automatically declined: another overlapping booking was accepted.');
 
                 const state = { undone: false, moved: false };
                 row.classList.add('row-leaving');
@@ -448,9 +477,13 @@ window.KrishiRequestsPage = {
                 }, 350);
 
                 const msg = decision === 'accept' ? msgs.acceptedMsg : decision === 'reject' ? msgs.rejectedMsg : msgs.completedMsg;
-                KrishiToast.show(msg || 'Saved ✓', {
+                const cascadeNote = autoRejected.length
+                    ? ` ${autoRejected.length} ${autoRejected.length === 1 ? 'overlapping request was' : 'overlapping requests were'} declined automatically.`
+                    : '';
+                // Undo is only offered when nothing else changed; a cascade cannot be reverted safely
+                KrishiToast.show((msg || 'Saved ✓') + cascadeNote, {
                     iconClass: decision === 'reject' ? 'bi-x-circle-fill text-danger' : 'bi-check-circle-fill text-success',
-                    actionText: 'Undo',
+                    actionText: autoRejected.length ? undefined : 'Undo',
                     delay: cfg.undoDelay || 5000,
                     onAction: () => {
                         state.undone = true;
@@ -472,10 +505,10 @@ window.KrishiRequestsPage = {
                         KrishiRequests.post(cfg.respondUrl, { id, decision: 'undo' }).catch(() => {});
                     }
                 });
-            } catch {
+            } catch (err) {
                 btn.innerHTML = originalBtnHtml;
                 actions.querySelectorAll('button').forEach(b => b.disabled = false);
-                KrishiToast.show('Could not save the decision. Please try again.', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
+                KrishiToast.show(err.message || 'Could not save the decision. Please try again.', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
             }
         }
 
@@ -510,7 +543,7 @@ window.KrishiRequestsPage = {
         };
 
         // Deep-linking: #accepted etc. selects the tab; tab changes update the hash (keeping ?q=)
-        const hashMap = { pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected', completed: 'Completed' };
+        const hashMap = { pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected', completed: 'Completed', cancelled: 'Cancelled' };
         const hash = location.hash.replace('#', '').toLowerCase();
         if (hashMap[hash]) bootstrap.Tab.getOrCreateInstance(document.getElementById('tab-' + hashMap[hash])).show();
         document.querySelectorAll('#requestTabs [data-bs-toggle="pill"]').forEach(t =>

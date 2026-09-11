@@ -41,6 +41,8 @@ namespace KrishiLink.Models.ViewModels
 
         public List<string> ExistingImageUrls { get; set; } = new();
 
+        public List<IFormFile>? ImageFiles { get; set; }
+
         public string FormTitle => IsEditMode ? "Edit Equipment Listing" : "Add New Equipment";
         public string SubmitButtonText => IsEditMode ? "Update Listing" : "Save Listing";
     }

@@ -1,0 +1,74 @@
+@model List<DateTime>
+@*
+    Read-only month calendar for listing detail pages. Model = dates the farmer cannot book
+    (accepted bookings, owner blackout dates, or — for godowns — days already at full capacity).
+    Clicking an available day calls selectCalendarDate(yyyy-MM-dd), defined by the host page.
+*@
+<div class="card krishi-card p-4 mb-4 border-0 shadow-sm">
+    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+            @L["Current Availability Calendar"]
+        </h5>
+        <div class="d-flex gap-3 small">
+            <span class="d-flex align-items-center gap-1">
+                <span class="d-inline-block rounded-circle bg-success" style="width: 10px; height: 10px;"></span>
+                @L["Available"]
+            </span>
+            <span class="d-flex align-items-center gap-1">
+                <span class="d-inline-block rounded-circle bg-secondary" style="width: 10px; height: 10px;"></span>
+                @L["Booked / Blocked"]
+            </span>
+        </div>
+    </div>
+
+    <p class="text-muted small mb-3">@L["Dates marked in gray are already booked or reserved by other farmers."]</p>
+
+    <div class="bg-light p-3 rounded-3 border">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="fw-bold text-dark">@L[DateTime.Today.ToString("MMMM")] @DateTime.Today.ToString("yyyy")</span>
+            <span class="badge bg-white text-secondary border small">@L["Current Month"]</span>
+        </div>
+
+        <div class="row row-cols-7 g-1 text-center small fw-semibold text-muted mb-2">
+            <div class="col">@L["Sun"]</div>
+            <div class="col">@L["Mon"]</div>
+            <div class="col">@L["Tue"]</div>
+            <div class="col">@L["Wed"]</div>
+            <div class="col">@L["Thu"]</div>
+            <div class="col">@L["Fri"]</div>
+            <div class="col">@L["Sat"]</div>
+        </div>
+
+        <div class="row row-cols-7 g-1 text-center small" id="calendarDaysGrid">
+            @{
+                var firstDayOfMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+                var daysInMonth = DateTime.DaysInMonth(DateTime.Today.Year, DateTime.Today.Month);
+                var unavailable = Model.Select(d => d.Date).ToHashSet();
+
+                for (int b = 0; b < (int)firstDayOfMonth.DayOfWeek; b++)
+                {
+                    <div class="col p-2 text-muted opacity-25"></div>
+                }
+
+                for (int day = 1; day <= daysInMonth; day++)
+                {
+                    var currentDate = firstDayOfMonth.AddDays(day - 1);
+                    bool isPast = currentDate < DateTime.Today;
+
+                    if (isPast || unavailable.Contains(currentDate))
+                    {
+                        <div class="col p-2 rounded bg-secondary-subtle text-secondary text-decoration-line-through fw-medium" title="@(isPast ? L["Past Date"] : L["Already Booked"])">
+                            @day
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col p-2 rounded bg-white border border-success-subtle text-success fw-bold calendar-day-available" onclick="selectCalendarDate('@currentDate.ToString("yyyy-MM-dd")')" title="@L["Available for booking"]">
+                            @day
+                        </div>
+                    }
+                }
+            }
+        </div>
+    </div>
+</div>

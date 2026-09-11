@@ -1,0 +1,69 @@
+@model List<KrishiLink.Models.ViewModels.RevenueTrendPoint>
+@using Microsoft.AspNetCore.Html
+@*
+    Shared Partial: Revenue trend bar chart rendered as inline SVG (no charting library).
+    Model: ordered list of (Label, Amount) buckets. Scales to its container via viewBox.
+    SVG <text> clashes with Razor's reserved <text> tag, so labels are emitted via SvgText().
+*@
+@{
+    const int W = 720, H = 260, PadL = 56, PadR = 12, PadT = 20, PadB = 40, Steps = 4;
+    var plotW = W - PadL - PadR;
+    var plotH = H - PadT - PadB;
+
+    var max = Model.Count > 0 ? Model.Max(p => p.Amount) : 0;
+    // Round the axis top up to a "nice" number so gridlines land on readable values
+    decimal step = 1000;
+    if (max > 0)
+    {
+        var magnitude = (decimal)Math.Pow(10, Math.Floor(Math.Log10((double)max / Steps)));
+        step = new[] { 1m, 2m, 2.5m, 5m, 10m }.Select(m => m * magnitude).First(s => s * Steps >= max);
+    }
+    var yMax = step * Steps;
+
+    string Compact(decimal v) => v >= 1000 ? $"{v / 1000:0.#}k" : v.ToString("0");
+    IHtmlContent SvgText(double x, double y, string anchor, string cls, string content) =>
+        new HtmlString($"<text x=\"{x:0.#}\" y=\"{y:0.#}\" text-anchor=\"{anchor}\" class=\"{cls}\">{System.Net.WebUtility.HtmlEncode(content)}</text>");
+
+    var slot = Model.Count > 0 ? (double)plotW / Model.Count : plotW;
+    var barW = Math.Max(6, slot * 0.58);
+    var labelEvery = Model.Count > 12 ? 2 : 1;
+}
+
+<svg viewBox="0 0 @W @H" class="w-100 krishi-revenue-chart" role="img" aria-label="@L["Revenue trend"]" style="height: auto;">
+    @for (var i = 0; i <= Steps; i++)
+    {
+        var y = PadT + plotH - plotH * i / Steps;
+        <line x1="@PadL" x2="@(W - PadR)" y1="@y" y2="@y" class="chart-grid" />
+        @SvgText(PadL - 8, y + 4, "end", "chart-axis", "৳" + Compact(step * i))
+    }
+
+    @for (var i = 0; i < Model.Count; i++)
+    {
+        var p = Model[i];
+        var x = PadL + slot * i + (slot - barW) / 2;
+        var h = yMax > 0 ? (double)(p.Amount / yMax) * plotH : 0;
+        var y = PadT + plotH - h;
+        var cx = PadL + slot * i + slot / 2;
+        var isLast = i == Model.Count - 1;
+
+        <g class="chart-bar-group">
+            <rect x="@x.ToString("0.#")" y="@y.ToString("0.#")" width="@barW.ToString("0.#")" height="@h.ToString("0.#")" rx="3"
+                  class="chart-bar @(isLast ? "chart-bar-current" : "")">
+                <title>@p.Label: ৳@p.Amount.ToString("N0")</title>
+            </rect>
+            @if (p.Amount > 0 && slot >= 28)
+            {
+                @SvgText(cx, y - 5, "middle", "chart-value", Compact(p.Amount))
+            }
+            @if (i % labelEvery == 0 || isLast)
+            {
+                @SvgText(cx, H - PadB + 18, "middle", "chart-axis", p.Label)
+            }
+        </g>
+    }
+
+    @if (max == 0)
+    {
+        @SvgText(PadL + plotW / 2.0, PadT + plotH / 2.0, "middle", "chart-empty", L["No completed bookings in this period"].Value)
+    }
+</svg>

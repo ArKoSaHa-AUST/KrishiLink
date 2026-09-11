@@ -21,10 +21,23 @@ namespace KrishiLink.Models.ViewModels
         public string Status => IsAvailable ? "Available" : "Fully Booked";
         public string ImageUrl { get; set; } = string.Empty;
         public string OwnerName { get; set; } = string.Empty;
-        public double Rating { get; set; } = 4.8;
-        public int ReviewCount { get; set; } = 15;
+        public double Rating { get; set; }
+        public int ReviewCount { get; set; }
         public List<string> Facilities { get; set; } = new();
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    /// <summary>Query-string bound search/filter/sort parameters for the godown browse page.</summary>
+    public class GodownSearchCriteria
+    {
+        public string? SearchTerm { get; set; }
+        public List<string>? SelectedStorageTypes { get; set; }
+        public string? Location { get; set; }
+        public double? SelectedMinCapacity { get; set; }
+        public decimal? SelectedMaxPrice { get; set; }
+        public DateTime? AvailableStartDate { get; set; }
+        public DateTime? AvailableEndDate { get; set; }
+        public string SortBy { get; set; } = "newest";
     }
 
     /// <summary>

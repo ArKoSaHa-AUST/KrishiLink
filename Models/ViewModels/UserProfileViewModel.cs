@@ -28,6 +28,10 @@ namespace KrishiLink.Models.ViewModels
 
         public string Role { get; set; } = "Farmer";
 
+        public string? District { get; set; }
+        public string? Specialization { get; set; }
+        public bool OnboardingComplete { get; set; }
+
         public DateTime MemberSince { get; set; } = DateTime.UtcNow;
 
         public string Initials

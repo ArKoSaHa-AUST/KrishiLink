@@ -10,13 +10,13 @@
     var badgeClass = Model.Status switch
     {
         "Accepted" => "krishi-badge-available",
-        "Rejected" => "krishi-badge-unavailable",
+        "Rejected" or "Cancelled" => "krishi-badge-unavailable",
         "Completed" => "krishi-badge-completed",
         _ => "krishi-badge-pending"
     };
 }
 <div class="request-row border-bottom pending-request-row" data-request-id="@Model.Id"
-     data-farmer-name="@Model.FarmerName" data-search="@(($"{Model.FarmerName} {Model.EquipmentName}").ToLowerInvariant())">
+     data-farmer-name="@Model.FarmerName" data-conflict="@(Model.HasConflict ? "true" : "false")" data-search="@(($"{Model.FarmerName} {Model.EquipmentName}").ToLowerInvariant())">
     <div class="p-3 px-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 request-row-header"
          role="@(expandable ? "button" : null)" tabindex="@(expandable ? "0" : null)"
          data-bs-toggle="@(expandable ? "collapse" : null)" data-bs-target="@(expandable ? $"#detail-{Model.Id}" : null)"

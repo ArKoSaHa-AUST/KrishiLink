@@ -13,7 +13,7 @@
     var badgeClass = Model.Status switch
     {
         "Accepted" => "krishi-badge-available",
-        "Rejected" => "krishi-badge-unavailable",
+        "Rejected" or "Cancelled" => "krishi-badge-unavailable",
         "Completed" => "krishi-badge-completed",
         _ => "krishi-badge-pending"
     };

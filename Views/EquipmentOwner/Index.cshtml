@@ -13,9 +13,14 @@
             @L["Manage your listings and respond to incoming rental requests."]
         </p>
     </div>
-    <a asp-controller="EquipmentOwner" asp-action="Requests" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold flex-shrink-0">
-        <i class="bi bi-inbox me-1"></i> @L["All Requests"]
-    </a>
+    <div class="d-flex gap-2 flex-shrink-0">
+        <a asp-controller="EquipmentOwner" asp-action="Revenue" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold">
+            <i class="bi bi-graph-up-arrow me-1"></i> @L["Revenue"]
+        </a>
+        <a asp-controller="EquipmentOwner" asp-action="Requests" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold">
+            <i class="bi bi-inbox me-1"></i> @L["All Requests"]
+        </a>
+    </div>
 </div>
 
 @if (TempData["SuccessMessage"] != null)
@@ -25,6 +30,7 @@
         <span class="small">@TempData["SuccessMessage"]</span>
     </div>
 }
+<partial name="_OnboardingBanner" />
 
 <!-- Summary Cards Row (horizontal scroll strip on mobile) -->
 <div class="d-flex flex-nowrap overflow-x-auto flex-md-wrap gap-3 pb-2 mb-4">
@@ -61,6 +67,17 @@
             </div>
         </div>
     </a>
+    <a asp-controller="EquipmentOwner" asp-action="Revenue" class="text-decoration-none flex-shrink-0 flex-md-grow-1 krishi-summary-card">
+        <div class="card krishi-card border-0 shadow-sm p-3 d-flex flex-row align-items-center gap-3 h-100">
+            <div class="rounded-3 d-flex align-items-center justify-content-center krishi-summary-icon" style="background-color: var(--krishi-primary-light);">
+                <i class="bi bi-wallet2 fs-4" style="color: var(--krishi-primary);"></i>
+            </div>
+            <div>
+                <span class="fs-3 fw-bold d-block lh-1 krishi-summary-value">৳@Model.ThisMonthRevenue.ToString("N0")</span>
+                <span class="small krishi-summary-label">@L["This Month's Revenue"] <i class="bi bi-arrow-right"></i></span>
+            </div>
+        </div>
+    </a>
 </div>
 
 <!-- Pending Requests Widget (visually prioritized — the owner's main actionable task) -->
@@ -84,8 +101,17 @@
         </div>
 
         <div class="p-4 text-center @(Model.PendingRequestItems.Any() ? "d-none" : "")" id="noPendingState">
-            <i class="bi bi-check2-circle fs-2 text-success d-block mb-1"></i>
-            <span style="color: var(--krishi-text-muted);">@L["All caught up — no pending requests right now."]</span>
+            @if (Model.TotalListings == 0)
+            {
+                <i class="bi bi-inbox fs-2 text-success d-block mb-1"></i>
+                <span class="d-block" style="color: var(--krishi-text-muted);">@L["Rental requests will appear here once farmers can find your equipment."]</span>
+                <a asp-controller="EquipmentOwner" asp-action="Create" class="small fw-semibold text-success">@L["Add your first equipment"] <i class="bi bi-arrow-right"></i></a>
+            }
+            else
+            {
+                <i class="bi bi-check2-circle fs-2 text-success d-block mb-1"></i>
+                <span style="color: var(--krishi-text-muted);">@L["All caught up — no pending requests right now."]</span>
+            }
         </div>
     </div>
 </div>

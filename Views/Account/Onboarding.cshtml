@@ -1,0 +1,70 @@
+@model KrishiLink.Models.ViewModels.OnboardingViewModel
+@using KrishiLink.Models.ViewModels
+@{
+    ViewData["Title"] = L["Finish Setting Up Your Account"];
+    var firstName = Model.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? Model.FullName;
+}
+
+<div class="row justify-content-center py-3 py-md-4">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+        <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+            <div class="px-4 pt-4 pb-3 text-center border-bottom" style="background: linear-gradient(180deg, #eef7f2 0%, #ffffff 100%);">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-2 shadow-sm" style="background-color: var(--krishi-primary-subtle); color: var(--krishi-primary); width: 54px; height: 54px;">
+                    <i class="bi bi-stars fs-4"></i>
+                </div>
+                <h3 class="fw-bold mb-1" style="color: var(--krishi-primary);">@L["Welcome, {0}!", firstName]</h3>
+                <p class="text-muted small mb-0">
+                    @L["You're registered as a"] <strong>@L[Model.RoleLabel]</strong>. @L["Just a little more so we can personalise your dashboard."]
+                </p>
+            </div>
+
+            <div class="card-body p-4">
+                <form asp-action="Onboarding" method="post">
+                    <input type="hidden" asp-for="AskDistrict" />
+                    <input type="hidden" asp-for="AskSpecialization" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger small py-2 rounded-3"></div>
+
+                    @if (Model.AskDistrict)
+                    {
+                        <div class="mb-4">
+                            <label asp-for="District" class="form-label fw-semibold text-dark">@L["Which district are you in?"]</label>
+                            <select asp-for="District" class="form-select py-2.5 rounded-3" required>
+                                <option value="">@L["-- Select district --"]</option>
+                                @foreach (var d in OnboardingOptions.Districts)
+                                {
+                                    <option value="@d">@d</option>
+                                }
+                            </select>
+                            <span asp-validation-for="District" class="text-danger small"></span>
+                            <div class="form-text">@L["Used to show you nearby equipment, storage and weather advisories."]</div>
+                        </div>
+                    }
+
+                    @if (Model.AskSpecialization)
+                    {
+                        <div class="mb-4">
+                            <label asp-for="Specialization" class="form-label fw-semibold text-dark">@L[Model.SpecializationLabel]</label>
+                            <select asp-for="Specialization" class="form-select py-2.5 rounded-3" required>
+                                <option value="">@L["-- Select one --"]</option>
+                                @foreach (var s in Model.SpecializationOptions)
+                                {
+                                    <option value="@s">@L[s]</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Specialization" class="text-danger small"></span>
+                        </div>
+                    }
+
+                    <button type="submit" class="btn btn-krishi-primary w-100 rounded-pill py-2.5 fw-bold">@L["Save & Continue"] <i class="bi bi-check-lg ms-1"></i></button>
+                </form>
+            </div>
+
+            <div class="px-4 pb-3 text-center">
+                <a asp-controller="@(Model.Role == "EquipmentOwner" ? "EquipmentOwner" : Model.Role == "GodownOwner" ? "GodownOwner" : "Farmer")"
+                   asp-action="@(Model.Role == "Farmer" ? "Dashboard" : "Index")" class="small text-muted text-decoration-none">
+                    @L["Skip for now"]
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
