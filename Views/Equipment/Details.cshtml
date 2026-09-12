@@ -98,7 +98,13 @@
                         @(Model.OwnerName.Length > 0 ? Model.OwnerName[0].ToString().ToUpperInvariant() : "O")
                     </div>
                     <div>
-                        <h6 class="fw-bold mb-0 text-dark">@Model.OwnerName</h6>
+                        <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-1.5">
+                            @Model.OwnerName
+                            @if (Model.OwnerIsVerified)
+                            {
+                                <i class="bi bi-patch-check-fill text-success" title="@L["Verified Owner"]"></i>
+                            }
+                        </h6>
                         <div class="d-flex align-items-center gap-2 small text-muted">
                             @if (Model.ReviewCount > 0)
                             {
@@ -115,9 +121,18 @@
                         </div>
                     </div>
                 </div>
-                <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill small">
-                    <i class="bi bi-shield-check text-success me-1"></i> @L["Verified Owner"]
-                </span>
+                @if (Model.OwnerIsVerified)
+                {
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill small fw-semibold shadow-xs">
+                        <i class="bi bi-patch-check-fill text-success me-1"></i> @L["Verified Owner"]
+                    </span>
+                }
+                else
+                {
+                    <span class="badge bg-light text-muted border px-3 py-2 rounded-pill small">
+                        <i class="bi bi-shield text-muted me-1"></i> @L["Unverified"]
+                    </span>
+                }
             </div>
         </div>
 

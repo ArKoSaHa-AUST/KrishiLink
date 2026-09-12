@@ -1,0 +1,465 @@
+@model KrishiLink.Models.ViewModels.OwnerVerificationViewModel
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer L
+@{
+    ViewData["Title"] = L["Owner Identity Verification"].Value;
+    var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+}
+
+<div class="container py-4">
+    <!-- Breadcrumb & Header -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb small mb-1">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-decoration-none text-muted">@L["Home"]</a></li>
+                    @if (User.IsInRole("EquipmentOwner"))
+                    {
+                        <li class="breadcrumb-item"><a asp-controller="EquipmentOwner" asp-action="Index" class="text-decoration-none text-muted">@L["Dashboard"]</a></li>
+                    }
+                    else if (User.IsInRole("GodownOwner"))
+                    {
+                        <li class="breadcrumb-item"><a asp-controller="GodownOwner" asp-action="Index" class="text-decoration-none text-muted">@L["Dashboard"]</a></li>
+                    }
+                    <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">@L["Owner Verification"]</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-shield-check text-success"></i> @L["Owner Identity Verification"]
+            </h2>
+        </div>
+
+        <!-- Current Status Badge Header -->
+        <div>
+            @if (Model.IsVerified)
+            {
+                <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle rounded-pill px-3 py-2 fs-6 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
+                    <i class="bi bi-patch-check-fill text-success fs-5"></i>
+                    @L["Account Verified"]
+                </span>
+            }
+            else if (Model.IsPending)
+            {
+                <span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-2 fs-6 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
+                    <i class="bi bi-clock-history text-warning fs-5"></i>
+                    @L["Verification In Review"]
+                </span>
+            }
+            else if (Model.IsRejected)
+            {
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-pill px-3 py-2 fs-6 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
+                    <i class="bi bi-exclamation-octagon-fill text-danger fs-5"></i>
+                    @L["Verification Rejected"]
+                </span>
+            }
+            else
+            {
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border rounded-pill px-3 py-2 fs-6 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
+                    <i class="bi bi-shield-slash text-muted fs-5"></i>
+                    @L["Unverified Owner"]
+                </span>
+            }
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4 d-flex align-items-center gap-2" role="alert">
+            <i class="bi bi-check-circle-fill fs-5 text-success"></i>
+            <div>@TempData["SuccessMessage"]</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4 d-flex align-items-center gap-2" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+            <div>@TempData["ErrorMessage"]</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- 3-Step Verification Timeline -->
+    <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+        <div class="row g-3 text-center position-relative">
+            <!-- Step 1 -->
+            <div class="col-12 col-md-4">
+                <div class="p-3 rounded-4 h-100 @(Model.IsUnverified ? "bg-primary bg-opacity-10 border border-primary-subtle" : "bg-light border")">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-2 @(Model.IsPending || Model.IsVerified ? "bg-success text-white" : "bg-primary text-white")" style="width: 44px; height: 44px;">
+                        @if (Model.IsPending || Model.IsVerified)
+                        {
+                            <i class="bi bi-check-lg fs-5"></i>
+                        }
+                        else
+                        {
+                            <span class="fw-bold">1</span>
+                        }
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">@L["1. Submit National ID"]</h6>
+                    <p class="small text-secondary mb-0">@L["Upload clear photos of your 10 or 13/17-digit NID card."]</p>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="col-12 col-md-4">
+                <div class="p-3 rounded-4 h-100 @(Model.IsPending ? "bg-warning bg-opacity-10 border border-warning-subtle" : (Model.IsVerified ? "bg-light border" : "bg-light border opacity-75"))">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-2 @(Model.IsVerified ? "bg-success text-white" : (Model.IsPending ? "bg-warning text-dark" : "bg-secondary text-white"))" style="width: 44px; height: 44px;">
+                        @if (Model.IsVerified)
+                        {
+                            <i class="bi bi-check-lg fs-5"></i>
+                        }
+                        else if (Model.IsPending)
+                        {
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                        }
+                        else
+                        {
+                            <span class="fw-bold">2</span>
+                        }
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">@L["2. Under Review"]</h6>
+                    <p class="small text-secondary mb-0">@L["KrishiLink Trust & Safety team inspects your identity documents."]</p>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="col-12 col-md-4">
+                <div class="p-3 rounded-4 h-100 @(Model.IsVerified ? "bg-success bg-opacity-10 border border-success-subtle" : "bg-light border opacity-75")">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-2 @(Model.IsVerified ? "bg-success text-white" : "bg-secondary text-white")" style="width: 44px; height: 44px;">
+                        <i class="bi bi-patch-check-fill fs-5"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">@L["3. Verified Owner Badge"]</h6>
+                    <p class="small text-secondary mb-0">@L["Trust badge appears next to your name across all listings & searches."]</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN BODY -->
+    <div class="row g-4">
+        
+        <!-- LEFT COLUMN: Status / Form -->
+        <div class="col-12 col-lg-8">
+            
+            @if (Model.IsVerified)
+            {
+                <!-- VERIFIED SUCCESS CARD -->
+                <div class="card krishi-card border-0 shadow-sm rounded-4 overflow-hidden mb-4 border border-success-subtle">
+                    <div class="card-body p-4 bg-success bg-opacity-10 border-bottom border-success-subtle">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="p-3 bg-white rounded-circle shadow-sm text-success">
+                                <i class="bi bi-shield-fill-check" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <div>
+                                <h4 class="fw-bold text-success mb-1">@L["You are a Verified KrishiLink Owner!"]</h4>
+                                <p class="text-secondary small mb-0">
+                                    @L["Your identity has been authenticated. The 'Verified Owner' trust badge is active on all your machinery and godown listings, helping you attract 3x more bookings from farmers."]
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-4 bg-white">
+                        <h6 class="fw-bold text-dark mb-3">@L["Verified Identity Record"]</h6>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-sm-6">
+                                <div class="p-3 bg-light rounded-3 border">
+                                    <span class="text-muted small d-block">@L["Full Name"]</span>
+                                    <strong class="text-dark">@Model.FullName</strong>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <div class="p-3 bg-light rounded-3 border">
+                                    <span class="text-muted small d-block">@L["Verified NID Number"]</span>
+                                    <strong class="text-dark">
+                                        @if (!string.IsNullOrWhiteSpace(Model.NidNumber) && Model.NidNumber.Length >= 6)
+                                        {
+                                            @($"{Model.NidNumber.Substring(0, 4)}••••{Model.NidNumber.Substring(Model.NidNumber.Length - 2)}")
+                                        }
+                                        else
+                                        {
+                                            @Model.NidNumber
+                                        }
+                                    </strong>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <div class="p-3 bg-light rounded-3 border">
+                                    <span class="text-muted small d-block">@L["Verification Date"]</span>
+                                    <strong class="text-dark">@(Model.ReviewedAt?.ToString("dd MMMM yyyy") ?? DateTime.Today.ToString("dd MMMM yyyy"))</strong>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-6">
+                                <div class="p-3 bg-light rounded-3 border">
+                                    <span class="text-muted small d-block">@L["Status"]</span>
+                                    <span class="badge bg-success rounded-pill px-2.5 py-1">@L["Verified & Active"]</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Document Thumbnails -->
+                        @if (!string.IsNullOrWhiteSpace(Model.ExistingNidFrontUrl) || !string.IsNullOrWhiteSpace(Model.ExistingNidBackUrl))
+                        {
+                            <h6 class="fw-bold text-dark mb-2">@L["Submitted ID Documents"]</h6>
+                            <div class="row g-3">
+                                @if (!string.IsNullOrWhiteSpace(Model.ExistingNidFrontUrl))
+                                {
+                                    <div class="col-6 col-md-4">
+                                        <div class="border rounded-3 p-2 text-center bg-light">
+                                            <img src="@Model.ExistingNidFrontUrl" class="img-fluid rounded mb-1" style="max-height: 120px; object-fit: cover;" alt="NID Front" />
+                                            <span class="small text-muted d-block">@L["NID Front"]</span>
+                                        </div>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(Model.ExistingNidBackUrl))
+                                {
+                                    <div class="col-6 col-md-4">
+                                        <div class="border rounded-3 p-2 text-center bg-light">
+                                            <img src="@Model.ExistingNidBackUrl" class="img-fluid rounded mb-1" style="max-height: 120px; object-fit: cover;" alt="NID Back" />
+                                            <span class="small text-muted d-block">@L["NID Back"]</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else if (Model.IsPending)
+            {
+                <!-- PENDING REVIEW CARD -->
+                <div class="card krishi-card border-0 shadow-sm rounded-4 overflow-hidden mb-4 border border-warning-subtle">
+                    <div class="card-body p-4 bg-warning bg-opacity-10 border-bottom border-warning-subtle">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="p-3 bg-white rounded-circle shadow-sm text-warning">
+                                <i class="bi bi-hourglass-split" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <div>
+                                <h4 class="fw-bold text-warning-emphasis mb-1">@L["Verification Request is Under Review"]</h4>
+                                <p class="text-secondary small mb-0">
+                                    @L["We have received your National ID submission ({0}) submitted on {1}. Our admin team is validating your documents.", Model.NidNumber, Model.SubmittedAt?.ToString("dd MMM yyyy, hh:mm tt") ?? DateTime.Now.ToString("dd MMM yyyy")]
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-4 bg-white">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                            <span class="text-muted small">@L["Need to make corrections? You can upload a new photo anytime."]</span>
+                        </div>
+
+                        <!-- Document Thumbnails -->
+                        @if (!string.IsNullOrWhiteSpace(Model.ExistingNidFrontUrl) || !string.IsNullOrWhiteSpace(Model.ExistingNidBackUrl))
+                        {
+                            <div class="row g-3 mb-4">
+                                @if (!string.IsNullOrWhiteSpace(Model.ExistingNidFrontUrl))
+                                {
+                                    <div class="col-6 col-md-4">
+                                        <div class="border rounded-3 p-2 text-center bg-light">
+                                            <img src="@Model.ExistingNidFrontUrl" class="img-fluid rounded mb-1" style="max-height: 120px; object-fit: cover;" alt="NID Front" />
+                                            <span class="small text-muted d-block">@L["Submitted NID Front"]</span>
+                                        </div>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(Model.ExistingNidBackUrl))
+                                {
+                                    <div class="col-6 col-md-4">
+                                        <div class="border rounded-3 p-2 text-center bg-light">
+                                            <img src="@Model.ExistingNidBackUrl" class="img-fluid rounded mb-1" style="max-height: 120px; object-fit: cover;" alt="NID Back" />
+                                            <span class="small text-muted d-block">@L["Submitted NID Back"]</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        <hr class="my-4" />
+                        <h6 class="fw-bold text-dark mb-3">@L["Update or Re-upload Documents"]</h6>
+                        @await Html.PartialAsync("_VerificationFormPartial", Model)
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- UNVERIFIED / REJECTED SUBMISSION FORM CARD -->
+                <div class="card krishi-card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                    @if (Model.IsRejected)
+                    {
+                        <div class="card-body p-4 bg-danger bg-opacity-10 border-bottom border-danger-subtle">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="p-3 bg-white rounded-circle shadow-sm text-danger">
+                                    <i class="bi bi-x-circle-fill" style="font-size: 2rem;"></i>
+                                </div>
+                                <div>
+                                    <h5 class="fw-bold text-danger mb-1">@L["Verification Request Rejected"]</h5>
+                                    <p class="text-dark small mb-1">
+                                        @L["Reason:"] <strong>@(Model.RejectionReason ?? L["Uploaded document was not legible. Please upload a clear photo."].Value)</strong>
+                                    </p>
+                                    <span class="text-secondary small">@L["Please review the guidelines below and re-submit clear photos of your valid NID card."]</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="card-body p-4 bg-light border-bottom">
+                            <h5 class="fw-bold text-dark mb-1">@L["Submit National ID for Verification"]</h5>
+                            <p class="text-muted small mb-0">@L["Upload a clear, high-resolution photo of your Bangladeshi National ID card (Smart NID or laminated NID)."]</p>
+                        </div>
+                    }
+
+                    <div class="card-body p-4 bg-white">
+                        @await Html.PartialAsync("_VerificationFormPartial", Model)
+                    </div>
+                </div>
+            }
+
+            <!-- SIMULATOR / DEMO ACTION PANEL FOR EVALUATION -->
+            <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 mb-4 bg-light border border-secondary-subtle">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-2 border-bottom">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-tools text-primary fs-5"></i>
+                        <h6 class="fw-bold text-dark mb-0">@L["Developer & Testing Simulator"]</h6>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1 small">@L["Simulate Admin Review"]</span>
+                </div>
+                <p class="small text-muted mb-3">
+                    @L["Use these quick buttons to instantly test how your owner badge and status appear when approved or rejected by an administrator."]
+                </p>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <form asp-controller="Account" asp-action="SimulateVerificationApproval" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="UserId" value="@Model.UserId" />
+                        <input type="hidden" name="Decision" value="Approve" />
+                        <button type="submit" class="btn btn-success btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-xs">
+                            <i class="bi bi-check-circle-fill me-1"></i> @L["Instant Approve (Mark Verified)"]
+                        </button>
+                    </form>
+
+                    <form asp-controller="Account" asp-action="SimulateVerificationApproval" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="UserId" value="@Model.UserId" />
+                        <input type="hidden" name="Decision" value="Reject" />
+                        <input type="hidden" name="Reason" value="Photo is blurry; NID number is not legible." />
+                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-xs">
+                            <i class="bi bi-x-circle me-1"></i> @L["Instant Reject (With Reason)"]
+                        </button>
+                    </form>
+
+                    <form asp-controller="Account" asp-action="SimulateVerificationApproval" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="UserId" value="@Model.UserId" />
+                        <input type="hidden" name="Decision" value="Reset" />
+                        <button type="submit" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-xs">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> @L["Reset Status"]
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: Guidelines & Trust Benefits -->
+        <div class="col-12 col-lg-4">
+            
+            <!-- Why Verification Matters -->
+            <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+                <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-lock-fill text-success"></i> @L["Why Get Verified?"]
+                </h5>
+
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex align-items-start gap-2.5">
+                        <span class="badge bg-success bg-opacity-10 text-success rounded-circle p-2 fs-6">
+                            <i class="bi bi-patch-check-fill"></i>
+                        </span>
+                        <div>
+                            <strong class="text-dark d-block small">@L["Verified Owner Trust Badge"]</strong>
+                            <span class="text-muted small">@L["A green verified badge is displayed beside your name on all search cards and details pages."]</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-start gap-2.5">
+                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-circle p-2 fs-6">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </span>
+                        <div>
+                            <strong class="text-dark d-block small">@L["Higher Farmer Booking Rate"]</strong>
+                            <span class="text-muted small">@L["Farmers prefer renting machinery and booking storage from verified owners."]</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-start gap-2.5">
+                        <span class="badge bg-warning bg-opacity-10 text-warning rounded-circle p-2 fs-6">
+                            <i class="bi bi-award-fill"></i>
+                        </span>
+                        <div>
+                            <strong class="text-dark d-block small">@L["Featured Search Placement"]</strong>
+                            <span class="text-muted small">@L["Verified listings receive higher visibility in nearby farmer search queries."]</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Guidelines for Upload -->
+            <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+                <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle-fill text-primary"></i> @L["NID Upload Requirements"]
+                </h6>
+
+                <ul class="list-unstyled small text-secondary mb-0 d-flex flex-column gap-2">
+                    <li class="d-flex align-items-start gap-2">
+                        <i class="bi bi-check2 text-success mt-0.5"></i>
+                        <span>@L["10-digit Smart NID or 13/17-digit laminated National ID card."]</span>
+                    </li>
+                    <li class="d-flex align-items-start gap-2">
+                        <i class="bi bi-check2 text-success mt-0.5"></i>
+                        <span>@L["All 4 corners of the ID card must be clearly visible."]</span>
+                    </li>
+                    <li class="d-flex align-items-start gap-2">
+                        <i class="bi bi-check2 text-success mt-0.5"></i>
+                        <span>@L["Ensure full name, photo, and NID number are sharp and readable."]</span>
+                    </li>
+                    <li class="d-flex align-items-start gap-2">
+                        <i class="bi bi-check2 text-success mt-0.5"></i>
+                        <span>@L["File formats: JPG, PNG, or WebP up to 5 MB."]</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Privacy & Security Guarantee -->
+            <div class="p-3 rounded-4 bg-light border text-center">
+                <i class="bi bi-lock-fill text-muted fs-4 d-block mb-1"></i>
+                <h6 class="fw-bold text-dark mb-1 small">@L["100% Secure & Confidential"]</h6>
+                <p class="text-muted small mb-0" style="font-size: 0.8rem;">
+                    @L["Your National ID document is stored securely and strictly used for identity verification per the Bangladesh Data Protection Act."]
+                </p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- PARTIAL VIEW FOR VERIFICATION FORM -->
+@* Using a local section or inline partial logic for seamless re-render *@
+@section Scripts {
+    <script>
+        function previewImage(input, previewId, containerId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById(previewId);
+                    const container = document.getElementById(containerId);
+                    if (preview && container) {
+                        preview.src = e.target.result;
+                        container.classList.remove('d-none');
+                    }
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+}

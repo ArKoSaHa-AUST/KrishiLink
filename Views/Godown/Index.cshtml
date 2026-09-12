@@ -321,7 +321,13 @@
                                     <span class="text-truncate">@L[item.Location]</span>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between">
-                                    <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>@item.OwnerName</span>
+                                    <span class="text-truncate">
+                                        <i class="bi bi-person text-muted me-1"></i>@item.OwnerName
+                                        @if (item.OwnerIsVerified)
+                                        {
+                                            <span class="text-success ms-1" title="@L["Verified Owner"]"><i class="bi bi-patch-check-fill"></i></span>
+                                        }
+                                    </span>
                                     @if (item.ReviewCount > 0)
                                     {
                                         <span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>@item.Rating.ToString("0.0") (@item.ReviewCount)</span>
@@ -794,7 +800,7 @@
                                         <span class="text-truncate">${locationTranslations[item.location] || item.location}</span>
                                     </div>
                                     <div class="d-flex align-items-center justify-content-between">
-                                        <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>${item.ownerName}</span>
+                                        <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>${item.ownerName}${item.ownerIsVerified ? ` <span class="text-success ms-1" title="@L["Verified Owner"]"><i class="bi bi-patch-check-fill"></i></span>` : ''}</span>
                                         ${item.reviewCount > 0 ? `<span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>${item.rating.toFixed(1)} (${item.reviewCount})</span>` : ''}
                                     </div>
                                 </div>
