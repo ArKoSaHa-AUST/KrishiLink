@@ -2200,4 +2200,151 @@
   <data name="Get Custom Advisory for this Crop" xml:space="preserve">
     <value>এই ফসলের জন্য পরামর্শ নিন</value>
   </data>
+  <data name="Pest &amp; Disease Alerts" xml:space="preserve">
+    <value>বালাই ও রোগবালাই সতর্কতা</value>
+  </data>
+  <data name="Agrometeorological Pest &amp; Disease Alerts" xml:space="preserve">
+    <value>আবহাওয়াভিত্তিক বালাই ও রোগবালাই সতর্কতা</value>
+  </data>
+  <data name="Real-time crop disease warning rules based on temperature, relative humidity, and regional weather forecasts." xml:space="preserve">
+    <value>তাপমাত্রা, আপেক্ষিক আর্দ্রতা ও আঞ্চলিক আবহাওয়ার ওপর ভিত্তি করে রিয়েল-টাইম ফসলের রোগ পূর্বাভাস।</value>
+  </data>
+  <data name="Pest Alerts" xml:space="preserve">
+    <value>বালাই সতর্কতা</value>
+  </data>
+  <data name="Live Weather Telemetry" xml:space="preserve">
+    <value>লাইভ আবহাওয়া তথ্য</value>
+  </data>
+  <data name="Division" xml:space="preserve">
+    <value>বিভাগ</value>
+  </data>
+  <data name="Simulation Mode Active" xml:space="preserve">
+    <value>সিমুলেশন মোড সক্রিয়</value>
+  </data>
+  <data name="Humidity:" xml:space="preserve">
+    <value>আর্দ্রতা:</value>
+  </data>
+  <data name="Rain Chance:" xml:space="preserve">
+    <value>বৃষ্টির সম্ভাবনা:</value>
+  </data>
+  <data name="Wind:" xml:space="preserve">
+    <value>বাতাস:</value>
+  </data>
+  <data name="Active Disease Risk Assessment" xml:space="preserve">
+    <value>সক্রিয় রোগ ঝুঁকি মূল্যায়ন</value>
+  </data>
+  <data name="{0} Active Warnings" xml:space="preserve">
+    <value>{0}টি সক্রিয় সতর্কতা</value>
+  </data>
+  <data name="Critical Risk" xml:space="preserve">
+    <value>চরম ঝুঁকি</value>
+  </data>
+  <data name="High Risk" xml:space="preserve">
+    <value>উচ্চ ঝুঁকি</value>
+  </data>
+  <data name="Moderate" xml:space="preserve">
+    <value>মাঝারি</value>
+  </data>
+  <data name="Rules match DAE guidelines. Humidity ≥85% drastically elevates fungal blast and blight spore propagation." xml:space="preserve">
+    <value>এই নিয়মগুলো ডিএই নির্দেশিকা ভিত্তিক। ৮৫% এর বেশি আর্দ্রতা ব্লাস্ট ও ধসা রোগের জীবাণু দ্রুত ছড়িয়ে দেয়।</value>
+  </data>
+  <data name="5-Day Forecast:" xml:space="preserve">
+    <value>৫ দিনের পূর্বাভাস:</value>
+  </data>
+  <data name="Select Bangladesh District / Zone:" xml:space="preserve">
+    <value>বাংলাদেশের জেলা / অঞ্চল নির্বাচন করুন:</value>
+  </data>
+  <data name="Filter by Target Crop:" xml:space="preserve">
+    <value>নির্দিষ্ট ফসল অনুযায়ী ফিল্টার করুন:</value>
+  </data>
+  <data name="Weather Scenario Simulator" xml:space="preserve">
+    <value>আবহাওয়া পরিস্থিতি সিমুলেটর</value>
+  </data>
+  <data name="Agrometeorological Scenario Simulator" xml:space="preserve">
+    <value>কৃষি-আবহাওয়া সিমুলেটর</value>
+  </data>
+  <data name="Test how different temperatures, humidities, and fog conditions trigger disease warnings." xml:space="preserve">
+    <value>ভিন্ন তাপমাত্রা, আর্দ্রতা ও কুয়াশার পরিস্থিতিতে কীভাবে রোগের সতর্কতা কার্যকর হয় তা পরীক্ষা করুন।</value>
+  </data>
+  <data name="Reset to Live Weather" xml:space="preserve">
+    <value>লাইভ আবহাওয়ায় ফেরত যান</value>
+  </data>
+  <data name="Quick Presets:" xml:space="preserve">
+    <value>দ্রুত প্রিসেটসমূহ:</value>
+  </data>
+  <data name="Temperature (°C):" xml:space="preserve">
+    <value>তাপমাত্রা (°সে.):</value>
+  </data>
+  <data name="Relative Humidity (%):" xml:space="preserve">
+    <value>আপেক্ষিক আর্দ্রতা (%):</value>
+  </data>
+  <data name="Weather Condition:" xml:space="preserve">
+    <value>আবহাওয়ার অবস্থা:</value>
+  </data>
+  <data name="Run Simulation" xml:space="preserve">
+    <value>সিমুলেশন চালান</value>
+  </data>
+  <data name="Active Outbreak Warnings for Your Area" xml:space="preserve">
+    <value>আপনার অঞ্চলের জন্য সক্রিয় প্রাদুর্ভাব সতর্কতা</value>
+  </data>
+  <data name="Triggered" xml:space="preserve">
+    <value>কার্যকর হয়েছে</value>
+  </data>
+  <data name="Evaluated for {0} at {1}°C and {2}% Humidity" xml:space="preserve">
+    <value>{0} জেলার জন্য {1}° সে. তাপমাত্রা ও {2}% আর্দ্রতায় মূল্যায়ন করা হয়েছে</value>
+  </data>
+  <data name="No Critical Disease Outbreaks Detected" xml:space="preserve">
+    <value>কোনো মারাত্মক রোগবালাইয়ের প্রাদুর্ভাব শনাক্ত হয়নি</value>
+  </data>
+  <data name="Current meteorological parameters ({0}°C, {1}% Humidity) in {2} do not currently satisfy high-risk thresholds for major fungal or bacterial crop epidemics. Continue standard agronomic scouting." xml:space="preserve">
+    <value>{2} জেলায় বর্তমান আবহাওয়া প্যারামিটার ({0}° সে., {1}% আর্দ্রতা) কোনো মারাত্মক ছত্রাক বা ব্যাকটেরিয়া মহামারীর ঝুঁকিপূর্ণ সীমায় পৌঁছায়নি। নিয়মিত মাঠ পরিদর্শন চালিয়ে যান।</value>
+  </data>
+  <data name="Risk" xml:space="preserve">
+    <value>ঝুঁকি</value>
+  </data>
+  <data name="{0}% Outbreak Likelihood" xml:space="preserve">
+    <value>{0}% প্রাদুর্ভাবের সম্ভাবনা</value>
+  </data>
+  <data name="Pathogen / Pest:" xml:space="preserve">
+    <value>রোগজীবাণু / বালাই:</value>
+  </data>
+  <data name="Susceptible Crops:" xml:space="preserve">
+    <value>সংবেদনশীল ফসলসমূহ:</value>
+  </data>
+  <data name="Field Identification &amp; Symptoms" xml:space="preserve">
+    <value>মাঠ পর্যায়ে শনাক্তকরণ ও লক্ষণ</value>
+  </data>
+  <data name="Immediate Actionable Control Measures" xml:space="preserve">
+    <value>তাৎক্ষণিক করণীয় দমন ও প্রতিকার</value>
+  </data>
+  <data name="Recommended Spray:" xml:space="preserve">
+    <value>প্রস্তাবিত কীটনাশক/ছত্রাকনাশক:</value>
+  </data>
+  <data name="Eco/Organic Control:" xml:space="preserve">
+    <value>পরিবেশবান্ধব/জৈব দমন:</value>
+  </data>
+  <data name="Bangladesh Crop Disease &amp; Weather Knowledge Base" xml:space="preserve">
+    <value>বাংলাদেশ ফসল রোগবালাই ও আবহাওয়া জ্ঞানভাণ্ডার</value>
+  </data>
+  <data name="Full reference catalog of agrometeorological rules established by DAE, BARI, and BRRI." xml:space="preserve">
+    <value>ডিএই, বারি ও ব্রি কর্তৃক প্রতিষ্ঠিত কৃষি-আবহাওয়া বিধিমালার সম্পূর্ণ তথ্যভাণ্ডার।</value>
+  </data>
+  <data name="{0} Verified Rules" xml:space="preserve">
+    <value>{0}টি পরীক্ষিত বিধিমালা</value>
+  </data>
+  <data name="Pathogen &amp; Biology" xml:space="preserve">
+    <value>জীবাণু ও জীবতত্ত্ব</value>
+  </data>
+  <data name="Weather Trigger Mechanism" xml:space="preserve">
+    <value>আবহাওয়াগত সংক্রামণ প্রক্রিয়া</value>
+  </data>
+  <data name="Symptoms" xml:space="preserve">
+    <value>লক্ষণসমূহ</value>
+  </data>
+  <data name="Preventive Spray &amp; Dose" xml:space="preserve">
+    <value>প্রতিরোধক স্প্রে ও মাত্রা</value>
+  </data>
+  <data name="View Full Outbreak Alerts" xml:space="preserve">
+    <value>সকল বালাই সতর্কতা দেখুন</value>
+  </data>
 </root>
