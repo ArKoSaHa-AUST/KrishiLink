@@ -1,0 +1,270 @@
+@model KrishiLink.Models.ViewModels.EquipmentPricingViewModel
+@{
+    ViewData["Title"] = L["Manage Pricing & Rate Rules"];
+}
+
+<!-- Breadcrumb Navigation -->
+<nav aria-label="@L["breadcrumb"]" class="mb-3">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-success text-decoration-none">@L["Home"]</a></li>
+        <li class="breadcrumb-item"><a asp-action="Index" class="text-success text-decoration-none">@L["Owner Dashboard"]</a></li>
+        <li class="breadcrumb-item active text-muted" aria-current="page">@L["Pricing Rules"]</li>
+    </ol>
+</nav>
+
+<!-- Listing Summary Banner -->
+<div class="card krishi-card border-0 shadow-sm p-4 mb-4" style="border-radius: var(--krishi-radius-lg);">
+    <div class="row align-items-center g-3">
+        <div class="col-auto">
+            <img src="@Model.ThumbnailUrl" class="rounded-3 object-fit-cover shadow-sm" style="width: 84px; height: 84px;" alt="@Model.ListingName" />
+        </div>
+        <div class="col">
+            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                    @L[Model.Category]
+                </span>
+                <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small">
+                    @L[Model.Location]
+                </span>
+            </div>
+            <h3 class="fw-bold text-dark mb-1">@Model.ListingName</h3>
+            <p class="text-muted small mb-0">
+                @L["Standard Rate:"] <strong class="text-success">@Model.RateText</strong>
+                <span class="mx-2">•</span>
+                @L["Minimum Rental:"] <strong>@L["{0} days", Model.MinRentalDays]</strong>
+            </p>
+        </div>
+        <div class="col-12 col-md-auto text-md-end">
+            <a asp-action="Index" class="btn btn-krishi-outline rounded-pill px-4 py-2 text-nowrap fw-semibold">
+                @L["Back to Dashboard"]
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Rate Rules Table (Left Column) -->
+    <div class="col-12 col-lg-8">
+        <div class="card krishi-card border-0 shadow-sm p-4" style="border-radius: var(--krishi-radius-lg);">
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
+                <div>
+                    <h5 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                        <i class="bi bi-tags-fill text-success"></i>
+                        <span>@L["Dynamic & Seasonal Rate Rules"]</span>
+                    </h5>
+                    <p class="text-muted small mb-0">
+                        @L["Season rates override weekend rates; weekend = Friday & Saturday."]
+                    </p>
+                </div>
+                <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small">
+                    @L["{0} configured rules", Model.Rules.Count]
+                </span>
+            </div>
+
+            @if (Model.Rules.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <div class="p-3 bg-light rounded-circle d-inline-flex text-muted mb-3">
+                        <i class="bi bi-calendar-range fs-1 text-success"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark">@L["No Custom Rate Rules Configured"]</h6>
+                    <p class="text-muted small mx-auto mb-0" style="max-width: 420px;">
+                        @L["This machinery is currently rented at the standard daily rate ({0}) every day of the year. Add seasonal peak rules or weekend adjustments below.", Model.RateText]
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>@L["Rule Name"]</th>
+                                <th>@L["Type"]</th>
+                                <th>@L["Applicable Window"]</th>
+                                <th>@L["Daily Rate"]</th>
+                                <th class="text-center">@L["Status"]</th>
+                                <th class="text-end">@L["Actions"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var rule in Model.Rules)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="fw-semibold text-dark d-block">@rule.Name</span>
+                                    </td>
+                                    <td>
+                                        @if (rule.Kind == "Season")
+                                        {
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                                                <i class="bi bi-sun me-1"></i>@L["Season"]
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                                                <i class="bi bi-calendar2-week me-1"></i>@L["Weekend"]
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="small text-secondary">
+                                        <i class="bi bi-clock-history me-1 text-muted"></i>@rule.DateRangeText
+                                    </td>
+                                    <td>
+                                        <strong class="text-success">@rule.RateText</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <form asp-action="ToggleRateRule" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="ruleId" value="@rule.Id" />
+                                            <input type="hidden" name="equipmentId" value="@Model.EquipmentId" />
+                                            <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent" title="@(rule.IsActive ? L["Click to Deactivate"] : L["Click to Activate"])">
+                                                @if (rule.IsActive)
+                                                {
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1">
+                                                        <i class="bi bi-check-circle-fill me-1"></i>@L["Active"]
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-1">
+                                                        <i class="bi bi-dash-circle me-1"></i>@L["Inactive"]
+                                                    </span>
+                                                }
+                                            </button>
+                                        </form>
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-2.5"
+                                                onclick="confirmDeleteRule(@rule.Id, '@rule.Name.Replace("'", "\\'")')">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Add Rule Card (Right Column) -->
+    <div class="col-12 col-lg-4">
+        <div class="card krishi-card border-0 shadow-sm p-4 sticky-top" style="top: 85px; border-radius: var(--krishi-radius-lg);">
+            <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                <span class="badge bg-success-subtle text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="bi bi-plus-lg"></i>
+                </span>
+                <h5 class="fw-bold text-dark mb-0">@L["Add Rate Rule"]</h5>
+            </div>
+
+            <form asp-action="SaveRateRule" method="post" id="addRateRuleForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="EquipmentId" value="@Model.EquipmentId" />
+
+                <!-- Rule Kind -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark">@L["Rule Kind"] <span class="text-danger">*</span></label>
+                    <select name="Kind" id="ruleKindSelect" class="form-select" onchange="onKindChanged(this.value)" required>
+                        <option value="Season">@L["Seasonal Window (e.g. Harvest / Planting)"]</option>
+                        <option value="Weekend">@L["Weekend Surge (Friday & Saturday)"]</option>
+                    </select>
+                </div>
+
+                <!-- Rule Name -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark">@L["Rule Name / Description"] <span class="text-danger">*</span></label>
+                    <input type="text" name="Name" class="form-control" placeholder="@L["e.g. Boro harvest peak"]" maxlength="60" required />
+                    <div class="form-text small text-muted">@L["Appears on farmer quote breakdown."]</div>
+                </div>
+
+                <!-- Date Inputs (For Season) -->
+                <div id="seasonDateGroup">
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">@L["Start Date"] <span class="text-danger">*</span></label>
+                            <input type="date" name="StartDate" id="ruleStartDate" class="form-control" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-dark">@L["End Date"] <span class="text-danger">*</span></label>
+                            <input type="date" name="EndDate" id="ruleEndDate" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daily Rate -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark">@L["Daily Rate (৳)"] <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-success fw-bold">৳</span>
+                        <input type="number" name="DailyRate" class="form-control" min="1" max="500000" step="50" value="@((int)Model.BaseDailyRate)" required />
+                        <span class="input-group-text bg-light text-muted">@L["/ Day"]</span>
+                    </div>
+                    <div class="form-text small text-muted">@L["Base listing rate is {0}.", Model.RateText]</div>
+                </div>
+
+                <!-- Active status checkbox -->
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" name="IsActive" value="true" id="ruleIsActive" checked />
+                    <label class="form-check-label small text-dark fw-medium" for="ruleIsActive">
+                        @L["Enable this rule immediately"]
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-krishi-primary w-100 py-2.5 rounded-pill fw-bold shadow-sm">
+                    <i class="bi bi-check2-circle me-1"></i> @L["Save Rate Rule"]
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden Delete Form -->
+<form id="deleteRuleForm" asp-action="DeleteRateRule" method="post" class="d-none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="ruleId" id="deleteRuleId" />
+    <input type="hidden" name="equipmentId" value="@Model.EquipmentId" />
+</form>
+
+@section Scripts {
+    <script>
+        function onKindChanged(kind) {
+            const dateGroup = document.getElementById('seasonDateGroup');
+            const startInput = document.getElementById('ruleStartDate');
+            const endInput = document.getElementById('ruleEndDate');
+
+            if (kind === 'Weekend') {
+                if (dateGroup) dateGroup.classList.add('d-none');
+                if (startInput) { startInput.required = false; startInput.value = ''; }
+                if (endInput) { endInput.required = false; endInput.value = ''; }
+            } else {
+                if (dateGroup) dateGroup.classList.remove('d-none');
+                if (startInput) startInput.required = true;
+                if (endInput) endInput.required = true;
+            }
+        }
+
+        function confirmDeleteRule(ruleId, ruleName) {
+            document.getElementById('deleteRuleId').value = ruleId;
+
+            window.KrishiModal.confirm({
+                title: '@L["Delete Rate Rule?"]',
+                body: `@L["Are you sure you want to delete the rate rule"] <strong>${ruleName}</strong>? @L["This action cannot be undone."]`,
+                confirmText: '@L["Delete Rule"]',
+                cancelText: '@L["Cancel"]',
+                confirmClass: 'btn-danger',
+                onConfirm: function () {
+                    document.getElementById('deleteRuleForm').submit();
+                }
+            });
+        }
+
+        // Initialize state on load
+        document.addEventListener('DOMContentLoaded', function () {
+            const sel = document.getElementById('ruleKindSelect');
+            if (sel) onKindChanged(sel.value);
+        });
+    </script>
+}

@@ -14,6 +14,7 @@ namespace KrishiLink.DAL
         public DbSet<Equipment> Equipment { get; set; } = null!;
         public DbSet<EquipmentBooking> EquipmentBookings { get; set; } = null!;
         public DbSet<EquipmentBlockedDate> EquipmentBlockedDates { get; set; } = null!;
+        public DbSet<EquipmentRateRule> EquipmentRateRules { get; set; } = null!;
         public DbSet<Godown> Godowns { get; set; } = null!;
         public DbSet<GodownBooking> GodownBookings { get; set; } = null!;
         public DbSet<GodownBlockedDate> GodownBlockedDates { get; set; } = null!;
@@ -60,6 +61,7 @@ namespace KrishiLink.DAL
                 e.Property(x => x.District).HasMaxLength(60);
                 e.Property(x => x.DailyRate).HasPrecision(18, 2);
                 e.Property(x => x.HourlyRate).HasPrecision(18, 2);
+                e.Property(x => x.MinRentalDays).HasDefaultValue(1);
                 e.Property(x => x.AverageRating).HasDefaultValue(0.0);
                 e.Property(x => x.ReviewCount).HasDefaultValue(0);
                 e.HasIndex(x => x.OwnerId);
@@ -73,6 +75,8 @@ namespace KrishiLink.DAL
                 b.Property(x => x.Status).HasMaxLength(20);
                 b.Property(x => x.DiscountAmount).HasPrecision(18, 2);
                 b.Property(x => x.AppliedPromoCode).HasMaxLength(50);
+                b.Property(x => x.QuotedGross).HasPrecision(18, 2).HasDefaultValue(0m);
+                b.Property(x => x.PricingNote).HasMaxLength(200);
                 b.Property(x => x.AgreedRate).HasPrecision(18, 2);
                 b.Property(x => x.AgreedGross).HasPrecision(18, 2);
                 b.Property(x => x.CommissionRate).HasPrecision(5, 4);
@@ -87,6 +91,15 @@ namespace KrishiLink.DAL
             {
                 d.HasIndex(x => new { x.EquipmentId, x.Date }).IsUnique();
                 d.HasOne(x => x.Equipment).WithMany(x => x.BlockedDates).HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<EquipmentRateRule>(r =>
+            {
+                r.Property(x => x.Kind).HasMaxLength(10).IsRequired();
+                r.Property(x => x.Name).HasMaxLength(60).IsRequired();
+                r.Property(x => x.DailyRate).HasPrecision(18, 2);
+                r.HasIndex(x => new { x.EquipmentId, x.IsActive });
+                r.HasOne(x => x.Equipment).WithMany(e => e.RateRules).HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Cascade);
             });
 
             builder.Entity<Godown>(g =>

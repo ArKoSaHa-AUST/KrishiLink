@@ -36,6 +36,9 @@ namespace KrishiLink.Models.ViewModels
         /// <summary>Total the farmer pays (snapshot at acceptance).</summary>
         public decimal AgreedGross { get; set; }
 
+        /// <summary>Quote breakdown and notes (e.g. '৳1,500 × 3 days + ৳2,200 × 4 days (Boro harvest peak)').</summary>
+        public string? PricingNote { get; set; }
+
         /// <summary>Set once the farmer's payment has succeeded; drives the "Paid ৳X" chip and the Mark Completed gate.</summary>
         public string? PaymentReference { get; set; }
         public bool IsPaid => PaymentReference is not null;

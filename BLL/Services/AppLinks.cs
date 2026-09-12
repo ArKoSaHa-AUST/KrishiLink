@@ -39,6 +39,7 @@ namespace KrishiLink.BLL.Services
         }
 
         public static string EquipmentDetails(int id) => $"/Equipment/Details/{id}";
+        public static string EquipmentPricing(int id) => $"/EquipmentOwner/Pricing/{id}";
         public static string GodownDetails(int id) => $"/Godown/Details/{id}";
         public static string BrowseEquipment => "/Equipment";
         public static string BrowseGodowns => "/Godown";

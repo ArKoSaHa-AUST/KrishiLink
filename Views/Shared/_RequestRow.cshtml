@@ -115,6 +115,10 @@
                         <ul class="list-unstyled small mb-0 d-flex flex-column gap-1" style="color: var(--krishi-text-primary);">
                             <li><i class="bi bi-tag text-success me-1"></i> @L[Model.EquipmentCategory]</li>
                             <li><i class="bi bi-cash-coin text-success me-1"></i> @Model.DailyRate <span style="color: var(--krishi-text-muted);">· @L["Total"] @gross</span></li>
+                            @if (!string.IsNullOrEmpty(Model.PricingNote))
+                            {
+                                <li><i class="bi bi-info-circle text-success me-1"></i> <span class="fst-italic">@Model.PricingNote</span></li>
+                            }
                             <li><i class="bi bi-geo-alt text-success me-1"></i> @Model.Location</li>
                         </ul>
                     </div>

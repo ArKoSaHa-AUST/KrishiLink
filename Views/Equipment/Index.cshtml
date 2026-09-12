@@ -359,7 +359,7 @@
                                 <div class="d-flex justify-content-between align-items-baseline mb-3">
                                     <div>
                                         <span class="text-muted small d-block">@L["Daily Rate"]</span>
-                                        <span class="fw-bold text-success fs-5">৳@item.DailyRate.ToString("N0")</span>
+                                        <span class="fw-bold text-success fs-5">@(item.HasRateRules ? L["from "] : "")৳@item.DailyRate.ToString("N0")</span>
                                         <span class="text-muted small">@L["/ Day"]</span>
                                     </div>
                                     @if (item.HourlyRate.HasValue)
@@ -907,7 +907,7 @@
                                     <div class="d-flex justify-content-between align-items-baseline mb-3">
                                         <div>
                                             <span class="text-muted small d-block">@L["Daily Rate"]</span>
-                                            <span class="fw-bold text-success fs-5">${item.dailyRateFormatted}</span>
+                                            <span class="fw-bold text-success fs-5">${item.hasRateRules ? '@L["from "]' : ''}${item.dailyRateFormatted}</span>
                                             <span class="text-muted small">@L["/ Day"]</span>
                                         </div>
                                         ${item.hourlyRateFormatted ? `

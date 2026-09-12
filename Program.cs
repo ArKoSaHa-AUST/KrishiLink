@@ -67,6 +67,7 @@ builder.Services.AddScoped<ILedgerRepository, LedgerRepository>();
 
 // Business logic
 builder.Services.Configure<RevenueOptions>(builder.Configuration.GetSection(RevenueOptions.SectionName));
+builder.Services.Configure<PricingOptions>(builder.Configuration.GetSection(PricingOptions.SectionName));
 builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection(UploadOptions.SectionName));
 builder.Services.Configure<PaymentsOptions>(builder.Configuration.GetSection(PaymentsOptions.SectionName));
 builder.Services.PostConfigure<PaymentsOptions>(o =>

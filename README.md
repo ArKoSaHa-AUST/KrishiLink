@@ -93,6 +93,13 @@ Pending ──reject──▶ Rejected ──undo──▶ Pending              
 - **Monthly PDF Statements**: Automated QuestPDF statements sent via email on month rollover.
 - **Development Settlement Trigger**: Instant manual settlement trigger available in Development environments.
 
+### 8. 🏷️ Dynamic & Seasonal Pricing + Minimum Rental Days (Equipment)
+- **Rate Rule Hierarchy**: Supports custom `Season` (date-ranged) and `Weekend` (Friday & Saturday by default) rate rules. Season rules take precedence over Weekend rules, which take precedence over the base daily rate.
+- **Strict Invariants**: Enforces at most one active Weekend rule per equipment and guarantees no overlapping active Season rules.
+- **Minimum Rental Duration**: Configurable `MinRentalDays` (1–90 days) per machine, validated on the client and enforced server-side upon rental request submission.
+- **Real-Time Live Quote API**: `GET /Equipment/Quote` provides debounced instant quoting with per-rule segment breakdown and pricing descriptions during checkout.
+- **Snapshot Persistence**: `QuotedGross` and `PricingNote` are captured at request time; accepting re-evaluates active rules and records updated totals with audit notes.
+
 ---
 
 ## 🏗️ Architecture & Project Structure

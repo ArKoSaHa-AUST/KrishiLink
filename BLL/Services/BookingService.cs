@@ -331,11 +331,11 @@ namespace KrishiLink.BLL.Services
                     StartDate = b.StartDate,
                     EndDate = b.EndDate,
                     DurationDisplay = days == 1 ? "1 Day" : $"{days} Days",
-                    TotalCost = b.AgreedGross ?? BookingPricing.EquipmentGross(b.StartDate, b.EndDate, b.Equipment.DailyRate),
+                    TotalCost = BookingPricing.EquipmentGrossOf(b, b.Equipment.DailyRate),
                     DiscountAmount = b.DiscountAmount,
                     AppliedPromoCode = b.AppliedPromoCode,
                     PointsUsed = b.PointsUsed,
-                    RateDescription = $"{ListingFormat.Taka(b.Equipment.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
+                    RateDescription = b.PricingNote ?? $"{ListingFormat.Taka(b.Equipment.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
                     QuantityDisplay = $"1 {b.Equipment.Category}",
                     Status = b.Status,
                     PaymentStatus = GetPaymentStatus(b),
@@ -516,7 +516,7 @@ namespace KrishiLink.BLL.Services
             var days = ListingFormat.InclusiveDays(b.StartDate, b.EndDate);
             var code = $"KL-EQ-{b.RequestedOn.Year}-{b.Id:D3}";
             var verUrl = $"{requestHost.TrimEnd('/')}/Verify/{code}";
-            var grossCost = b.AgreedGross ?? BookingPricing.EquipmentGross(b.StartDate, b.EndDate, e.DailyRate);
+            var grossCost = BookingPricing.EquipmentGrossOf(b, e.DailyRate);
             var netCost = Math.Max(0m, grossCost - b.DiscountAmount);
 
             var vm = new BookingConfirmationViewModel
@@ -538,7 +538,7 @@ namespace KrishiLink.BLL.Services
                 AppliedPromoCode = b.AppliedPromoCode,
                 PointsUsed = b.PointsUsed,
                 PointsEarned = _loyalty.CalculatePointsEarned(netCost),
-                RateDescription = $"{ListingFormat.Taka(e.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
+                RateDescription = b.PricingNote ?? $"{ListingFormat.Taka(e.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
                 QuantityDisplay = $"1 {e.Category}",
                 PaymentStatus = GetPaymentStatus(b),
                 Status = b.Status,
@@ -706,8 +706,8 @@ namespace KrishiLink.BLL.Services
                 Location = e.Location,
                 StartDate = b.StartDate,
                 EndDate = b.EndDate,
-                TotalCost = b.AgreedGross ?? BookingPricing.EquipmentGross(b.StartDate, b.EndDate, e.DailyRate),
-                RateDescription = $"{ListingFormat.Taka(b.AgreedRate ?? e.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
+                TotalCost = BookingPricing.EquipmentGrossOf(b, e.DailyRate),
+                RateDescription = b.PricingNote ?? $"{ListingFormat.Taka(b.AgreedRate ?? e.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
                 QuantityDisplay = $"1 {e.Category}",
                 ListingDetailUrl = $"/Equipment/Details/{e.Id}",
                 ListingId = e.Id,

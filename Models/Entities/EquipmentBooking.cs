@@ -24,6 +24,10 @@ namespace KrishiLink.Models.Entities
         public int? PayoutId { get; set; }
         public Transaction? Payout { get; set; }
 
+        // Quoted price shown to farmer at request time
+        public decimal QuotedGross { get; set; } = 0m;
+        public string? PricingNote { get; set; }
+
         // Price snapshot taken when the owner accepts, so later rate edits never change what was agreed.
         public decimal? AgreedRate { get; set; }
         public decimal? AgreedGross { get; set; }

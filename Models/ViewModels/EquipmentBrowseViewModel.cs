@@ -19,6 +19,7 @@ namespace KrishiLink.Models.ViewModels
         public double? Longitude { get; set; }
         public double DistanceKm { get; set; }
         public bool IsAvailable { get; set; } = true;
+        public bool HasRateRules { get; set; } = false;
         public string Status => IsAvailable ? "Available" : "Unavailable";
         public string ImageUrl { get; set; } = string.Empty;
         public string OwnerName { get; set; } = string.Empty;

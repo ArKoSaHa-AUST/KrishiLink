@@ -204,7 +204,7 @@
                     </div>
 
                     <!-- Daily Rate -->
-                    <div class="col-12 col-md-6">
+                    <div class="col-12 col-md-4">
                         <label asp-for="DailyRate" class="form-label fw-semibold text-dark small">
                             @L["Daily Rental Rate (in BDT ৳)"] <span class="text-danger">*</span>
                         </label>
@@ -214,11 +214,11 @@
                             <span class="input-group-text bg-light text-muted">@L["/ Day"]</span>
                         </div>
                         <span asp-validation-for="DailyRate" class="text-danger small"></span>
-                        <div class="form-text small text-muted">@L["Standard 8-hour daily operational rental rate. Must be greater than 0."]</div>
+                        <div class="form-text small text-muted">@L["Standard 8-hour daily operational rental rate."]</div>
                     </div>
 
                     <!-- Hourly Rate -->
-                    <div class="col-12 col-md-6">
+                    <div class="col-12 col-md-4">
                         <label asp-for="HourlyRate" class="form-label fw-semibold text-dark small">
                             @L["Hourly Rental Rate (in BDT ৳, Optional)"]
                         </label>
@@ -228,7 +228,23 @@
                             <span class="input-group-text bg-light text-muted">@L["/ Hour"]</span>
                         </div>
                         <span asp-validation-for="HourlyRate" class="text-danger small"></span>
-                        <div class="form-text small text-muted">@L["Leave blank if only daily rentals are supported."]</div>
+                        <div class="form-text small text-muted">@L["Leave blank if daily only."]</div>
+                    </div>
+
+                    <!-- Minimum Rental Days -->
+                    <div class="col-12 col-md-4">
+                        <label asp-for="MinRentalDays" class="form-label fw-semibold text-dark small">
+                            @L["Minimum Rental Days"] <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-success">
+                                <i class="bi bi-calendar-check"></i>
+                            </span>
+                            <input type="number" asp-for="MinRentalDays" class="form-control py-2.5" id="minRentalDaysInput" min="1" max="90" step="1" required />
+                            <span class="input-group-text bg-light text-muted">@L["Days"]</span>
+                        </div>
+                        <span asp-validation-for="MinRentalDays" class="text-danger small"></span>
+                        <div class="form-text small text-muted">@L["Minimum booking duration required (1–90 days)."]</div>
                     </div>
 
                     <!-- Section 3: Interactive Drag-and-Drop Image Uploader -->

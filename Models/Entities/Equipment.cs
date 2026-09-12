@@ -32,9 +32,13 @@ namespace KrishiLink.Models.Entities
         /// <summary>Total number of reviews received.</summary>
         public int ReviewCount { get; set; } = 0;
 
+        /// <summary>Minimum consecutive rental days required by the owner (1 to 90).</summary>
+        public int MinRentalDays { get; set; } = 1;
+
         public ICollection<EquipmentBooking> Bookings { get; set; } = new List<EquipmentBooking>();
         public ICollection<EquipmentBlockedDate> BlockedDates { get; set; } = new List<EquipmentBlockedDate>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
         public ICollection<EquipmentMaintenanceRecord> MaintenanceRecords { get; set; } = new List<EquipmentMaintenanceRecord>();
+        public ICollection<EquipmentRateRule> RateRules { get; set; } = new List<EquipmentRateRule>();
     }
 }

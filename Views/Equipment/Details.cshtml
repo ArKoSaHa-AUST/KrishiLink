@@ -137,7 +137,7 @@
             <div class="row g-3 p-3 rounded-3 mb-4 bg-light text-dark border">
                 <div class="col-6 col-sm-4">
                     <span class="text-muted small d-block">@L["Daily Rental Rate"]</span>
-                    <span class="fs-4 fw-bold text-success">@Model.DailyRate</span>
+                    <span class="fs-4 fw-bold text-success">@(!string.IsNullOrEmpty(Model.FromRateText) ? Model.FromRateText : Model.DailyRate)</span>
                 </div>
                 <div class="col-6 col-sm-4">
                     <span class="text-muted small d-block">@L["Hourly Rate"]</span>
@@ -145,9 +145,52 @@
                 </div>
                 <div class="col-12 col-sm-4 border-start-sm pt-2 pt-sm-0">
                     <span class="text-muted small d-block">@L["Min. Duration"]</span>
-                    <span class="fw-semibold text-dark">@L["1 Day / 2 Hours"]</span>
+                    <span class="fw-semibold text-dark">
+                        @if (Model.MinRentalDays > 1)
+                        {
+                            @L["{0} Days", Model.MinRentalDays]
+                        }
+                        else
+                        {
+                            @L["1 Day / 2 Hours"]
+                        }
+                    </span>
                 </div>
             </div>
+
+            @if (Model.RateRules != null && Model.RateRules.Any(r => r.IsActive))
+            {
+                <div class="card p-3 mb-4 rounded-3 border bg-white shadow-xs">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="small fw-bold text-dark d-flex align-items-center gap-1.5">
+                            <i class="bi bi-tags-fill text-success"></i> @L["Special & Seasonal Pricing"]
+                        </span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-0.5" style="font-size: 0.72rem;">
+                            @L["Auto-applied at booking"]
+                        </span>
+                    </div>
+                    <div class="d-flex flex-column gap-1.5 small">
+                        @foreach (var rule in Model.RateRules.Where(r => r.IsActive))
+                        {
+                            <div class="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                                <span class="text-secondary">
+                                    <i class="bi @(rule.Kind == "Season" ? "bi-calendar-range" : "bi-calendar2-week") text-success me-1"></i>
+                                    <strong>@rule.Name</strong>
+                                    @if (rule.Kind == "Season" && rule.StartDate.HasValue && rule.EndDate.HasValue)
+                                    {
+                                        <span class="text-muted" style="font-size: 0.8rem;">(@rule.StartDate.Value.ToString("dd MMM") – @rule.EndDate.Value.ToString("dd MMM"))</span>
+                                    }
+                                    else if (rule.Kind == "Weekend")
+                                    {
+                                        <span class="text-muted" style="font-size: 0.8rem;">(@L["Fri & Sat"])</span>
+                                    }
+                                </span>
+                                <span class="fw-bold text-dark">৳@rule.DailyRate.ToString("N0") / @L["Day"]</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
 
             <!-- Description -->
             <h5 class="fw-bold text-dark mb-2">@L["Equipment Description"]</h5>
@@ -481,7 +524,7 @@
                     <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
                         @L["Rental Request Form"]
                     </h5>
-                    <span class="fs-5 fw-bold text-success">@Model.DailyRate</span>
+                    <span class="fs-5 fw-bold text-success">@(!string.IsNullOrEmpty(Model.FromRateText) ? Model.FromRateText : Model.DailyRate)</span>
                 </div>
 
                 <form id="rentalRequestForm" asp-controller="Equipment" asp-action="SubmitRequest" method="post" onsubmit="handleFormSubmit(event)">
@@ -492,7 +535,7 @@
                             @L["Start Date"] <span class="text-danger">*</span>
                         </label>
                         <input type="date" class="form-control form-control-lg rounded-3" id="startDateInput" name="StartDate" required
-                               min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="validateDates()" />
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="onStartDateChanged()" />
                     </div>
 
                     <!-- End Date -->
@@ -505,6 +548,12 @@
                         <div id="dateValidationError" class="form-text text-danger d-none mt-1">
                             @L["End Date must be after Start Date and not overlap booked dates."]
                         </div>
+                        @if (Model.MinRentalDays > 1)
+                        {
+                            <div class="small text-muted mt-1">
+                                <i class="bi bi-info-circle text-success me-1"></i>@L["Minimum rental period: {0} days", Model.MinRentalDays]
+                            </div>
+                        }
                     </div>
 
                     <!-- Estimated Cost Summary -->
@@ -516,6 +565,11 @@
                         <div class="d-flex justify-content-between small fw-medium mt-1">
                             <span>@L["Gross Rental Fee:"]</span>
                             <span id="summaryGrossFee">৳0</span>
+                        </div>
+                        <div id="summaryPricingNote" class="small text-muted mt-1 fst-italic d-none" style="font-size: 0.76rem;"></div>
+                        <div id="summaryBreakdownContainer" class="mt-2 pt-2 border-top border-success-subtle d-none">
+                            <span class="small fw-semibold d-block mb-1 text-dark">@L["Rate Breakdown:"]</span>
+                            <div id="summaryBreakdownRows" class="d-flex flex-column gap-1 small text-secondary"></div>
                         </div>
                         <div id="summaryDiscountRow" class="d-flex justify-content-between small fw-bold text-success mt-1 d-none">
                             <span id="summaryDiscountLabel">@L["Loyalty Discount:"]</span>
@@ -606,7 +660,7 @@
     <div class="container d-flex align-items-center justify-content-between gap-2">
         <div>
             <span class="text-muted small d-block">@L["Daily Rate"]</span>
-            <span class="fw-bold text-success fs-5">@Model.DailyRate</span>
+            <span class="fw-bold text-success fs-5">@(!string.IsNullOrEmpty(Model.FromRateText) ? Model.FromRateText : Model.DailyRate)</span>
         </div>
         <button type="button" id="mobileRequestBtn" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-bold" onclick="scrollToRequestForm()">
             @L["Request Equipment"]
@@ -618,6 +672,8 @@
     <script>
         const bookedDates = @Html.Raw(bookedDatesJson);
         const dailyRate = @Model.DailyRateAmount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        const minRentalDays = @Model.MinRentalDays;
+        const equipmentId = @Model.Id;
         const isAuthenticated = @(User.Identity?.IsAuthenticated == true ? "true" : "false");
         const loginUrl = '@Url.Action("Login", "Account", new { returnUrl = Url.Action("Details", "Equipment", new { id = Model.Id }) })';
 
@@ -640,15 +696,35 @@
             }
         }
 
+        function onStartDateChanged() {
+            const startInput = document.getElementById('startDateInput');
+            const endInput = document.getElementById('endDateInput');
+            if (startInput && startInput.value && endInput) {
+                const parts = startInput.value.split('-');
+                const sDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                if (minRentalDays > 1) {
+                    sDate.setDate(sDate.getDate() + (minRentalDays - 1));
+                }
+                const minEndStr = sDate.getFullYear() + '-' + String(sDate.getMonth() + 1).padStart(2, '0') + '-' + String(sDate.getDate()).padStart(2, '0');
+                endInput.min = minEndStr;
+                if (endInput.value && endInput.value < minEndStr) {
+                    endInput.value = minEndStr;
+                }
+            }
+            validateDates();
+        }
+
         function selectCalendarDate(dateStr) {
             const startInput = document.getElementById('startDateInput');
             const endInput = document.getElementById('endDateInput');
             if (startInput && !startInput.value) {
                 startInput.value = dateStr;
+                onStartDateChanged();
             } else if (endInput && !endInput.value) {
                 endInput.value = dateStr;
             } else {
                 startInput.value = dateStr;
+                onStartDateChanged();
                 endInput.value = '';
             }
             validateDates();
@@ -839,6 +915,9 @@
             if (costBox) costBox.classList.remove('d-none');
         }
 
+        let quoteAbortController = null;
+        let quoteDebounceTimer = null;
+
         function validateDates() {
             const startInput = document.getElementById('startDateInput');
             const endInput = document.getElementById('endDateInput');
@@ -854,8 +933,10 @@
                 return true;
             }
 
-            const startDate = new Date(startInput.value);
-            const endDate = new Date(endInput.value);
+            const sParts = startInput.value.split('-');
+            const eParts = endInput.value.split('-');
+            const startDate = new Date(parseInt(sParts[0]), parseInt(sParts[1]) - 1, parseInt(sParts[2]));
+            const endDate = new Date(parseInt(eParts[0]), parseInt(eParts[1]) - 1, parseInt(eParts[2]));
 
             if (endDate < startDate) {
                 errorDiv.textContent = '@L["End Date must be on or after Start Date."]';
@@ -867,17 +948,29 @@
                 return false;
             }
 
+            const diffDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            if (diffDays < minRentalDays) {
+                errorDiv.textContent = '@L["Minimum rental duration is {0} days.", Model.MinRentalDays]';
+                errorDiv.classList.remove('d-none');
+                costBox.classList.add('d-none');
+                submitBtn.disabled = true;
+                currentDaysCount = 0;
+                currentGrossFee = 0;
+                return false;
+            }
+
             let curr = new Date(startDate);
             let hasOverlap = false;
-            let daysCount = 0;
 
             while (curr <= endDate) {
-                const dateStr = curr.toISOString().split('T')[0];
+                const y = curr.getFullYear();
+                const m = String(curr.getMonth() + 1).padStart(2, '0');
+                const d = String(curr.getDate()).padStart(2, '0');
+                const dateStr = `${y}-${m}-${d}`;
                 if (bookedDates.includes(dateStr)) {
                     hasOverlap = true;
                     break;
                 }
-                daysCount++;
                 curr.setDate(curr.getDate() + 1);
             }
 
@@ -894,12 +987,81 @@
             errorDiv.classList.add('d-none');
             submitBtn.disabled = false;
 
-            currentDaysCount = daysCount;
-            currentGrossFee = daysCount * dailyRate;
-
-            recalculateSummary();
+            // Trigger debounced quote calculation from server
+            if (quoteDebounceTimer) clearTimeout(quoteDebounceTimer);
+            quoteDebounceTimer = setTimeout(() => {
+                fetchQuote(startInput.value, endInput.value);
+            }, 250);
 
             return true;
+        }
+
+        async function fetchQuote(startDateStr, endDateStr) {
+            if (quoteAbortController) {
+                quoteAbortController.abort();
+            }
+            quoteAbortController = new AbortController();
+
+            const errorDiv = document.getElementById('dateValidationError');
+            const submitBtn = document.getElementById('submitRequestBtn');
+            const breakdownContainer = document.getElementById('summaryBreakdownContainer');
+            const breakdownRows = document.getElementById('summaryBreakdownRows');
+            const noteEl = document.getElementById('summaryPricingNote');
+
+            try {
+                const url = `/Equipment/Quote?id=${equipmentId}&start=${encodeURIComponent(startDateStr)}&end=${encodeURIComponent(endDateStr)}`;
+                const res = await fetch(url, { signal: quoteAbortController.signal });
+                if (!res.ok) {
+                    throw new Error('Failed to fetch quote');
+                }
+                const data = await res.json();
+                if (data.ok) {
+                    currentGrossFee = data.gross;
+                    currentDaysCount = data.days;
+
+                    if (breakdownRows) {
+                        if (data.breakdown && data.breakdown.length > 0) {
+                            breakdownRows.innerHTML = data.breakdown.map(b => `
+                                <div class="d-flex justify-content-between">
+                                    <span>${b.label}: ${b.days} ${b.days > 1 ? '@L["Days"]' : '@L["Day"]'} × ৳${b.rate.toLocaleString()}</span>
+                                    <span class="fw-semibold">৳${b.subtotal.toLocaleString()}</span>
+                                </div>
+                            `).join('');
+                            if (breakdownContainer) breakdownContainer.classList.remove('d-none');
+                        } else {
+                            if (breakdownContainer) breakdownContainer.classList.add('d-none');
+                        }
+                    }
+
+                    if (noteEl) {
+                        if (data.description) {
+                            noteEl.textContent = data.description;
+                            noteEl.classList.remove('d-none');
+                        } else {
+                            noteEl.classList.add('d-none');
+                        }
+                    }
+
+                    errorDiv.classList.add('d-none');
+                    submitBtn.disabled = false;
+                    recalculateSummary();
+                } else {
+                    errorDiv.textContent = data.error || '@L["Invalid dates for rental quote."]';
+                    errorDiv.classList.remove('d-none');
+                    document.getElementById('costSummaryBox')?.classList.add('d-none');
+                    submitBtn.disabled = true;
+                    currentGrossFee = 0;
+                    currentDaysCount = 0;
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    currentDaysCount = Math.round((new Date(endDateStr) - new Date(startDateStr)) / (1000 * 60 * 60 * 24)) + 1;
+                    currentGrossFee = currentDaysCount * dailyRate;
+                    if (breakdownContainer) breakdownContainer.classList.add('d-none');
+                    if (noteEl) noteEl.classList.add('d-none');
+                    recalculateSummary();
+                }
+            }
         }
 
         function scrollToRequestForm() {

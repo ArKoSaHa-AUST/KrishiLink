@@ -34,6 +34,7 @@ namespace KrishiLink.Controllers
                 category = e.Category,
                 dailyRate = e.DailyRate,
                 dailyRateFormatted = $"৳{e.DailyRate:N0}",
+                hasRateRules = e.HasRateRules,
                 hourlyRate = e.HourlyRate,
                 hourlyRateFormatted = e.HourlyRate.HasValue ? $"৳{e.HourlyRate.Value:N0}" : null,
                 location = e.Location,
@@ -63,6 +64,31 @@ namespace KrishiLink.Controllers
                 hasPreviousPage = model.HasPreviousPage,
                 hasNextPage = model.HasNextPage,
                 items
+            });
+        }
+
+        /// <summary>GET: /Equipment/Quote?id=&start=&end= — Live rule-aware rental price quote.</summary>
+        [HttpGet]
+        public async Task<IActionResult> Quote(int id, DateTime? start, DateTime? end)
+        {
+            var quote = await _equipment.QuoteAsync(id, start, end);
+            if (quote is null) return NotFound();
+
+            return Json(new
+            {
+                ok = quote.Ok,
+                error = quote.Error,
+                days = quote.Days,
+                gross = quote.Gross,
+                minDays = quote.MinDays,
+                breakdown = quote.Breakdown.Select(b => new
+                {
+                    rate = b.Rate,
+                    days = b.Days,
+                    label = b.Label,
+                    subtotal = b.Subtotal
+                }),
+                description = quote.Description
             });
         }
 

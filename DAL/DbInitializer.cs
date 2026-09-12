@@ -170,6 +170,43 @@ namespace KrishiLink.DAL
 
                 // Seed DAE crop calendar entries
                 await SeedCropCalendarAsync(db);
+
+                // Seed demo equipment rate rules and min rental days
+                await SeedDemoRateRulesAsync(db);
+            }
+        }
+
+        private static async Task SeedDemoRateRulesAsync(ApplicationDbContext db)
+        {
+            if (!await db.EquipmentRateRules.AnyAsync())
+            {
+                var tractor = await db.Equipment.FirstOrDefaultAsync(e => e.Name.Contains("Mahindra 575 DI"));
+                if (tractor != null)
+                {
+                    tractor.MinRentalDays = 2;
+                    var currentYear = DateTime.Today.Year;
+                    db.EquipmentRateRules.AddRange(
+                        new EquipmentRateRule
+                        {
+                            EquipmentId = tractor.Id,
+                            Kind = "Season",
+                            Name = "Boro Harvest Peak",
+                            StartDate = new DateTime(currentYear, 4, 15),
+                            EndDate = new DateTime(currentYear, 5, 31),
+                            DailyRate = 2000m,
+                            IsActive = true
+                        },
+                        new EquipmentRateRule
+                        {
+                            EquipmentId = tractor.Id,
+                            Kind = "Weekend",
+                            Name = "Weekend Rate",
+                            DailyRate = 1800m,
+                            IsActive = true
+                        }
+                    );
+                    await db.SaveChangesAsync();
+                }
             }
         }
 

@@ -12,6 +12,8 @@ namespace KrishiLink.BLL.Services
         // Farmer / public
         Task<EquipmentBrowseViewModel> BrowseAsync(EquipmentSearchCriteria criteria);
         Task<EquipmentDetailViewModel?> GetDetailsAsync(int id, string? currentUserId = null);
+        Task<EquipmentQuote?> QuoteAsync(int equipmentId, DateTime? start, DateTime? end);
+        Task<string?> CheckAvailabilityAsync(int equipmentId, DateTime start, DateTime end, int units = 1, int? excludeBookingId = null);
 
         /// <summary>Creates a pending rental request with optional loyalty promo or points. Returns a user-facing error message, or null on success.</summary>
         Task<string?> RequestRentalAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note, string? promoCode = null, int? pointsToRedeem = null);
@@ -32,6 +34,12 @@ namespace KrishiLink.BLL.Services
         Task<ManageAvailabilityViewModel?> GetAvailabilityAsync(string ownerId, int equipmentId, DateTime? month);
         Task<bool> SaveAvailabilityAsync(string ownerId, int equipmentId, DateTime month, IEnumerable<DateTime> blockedDates);
 
+        // Dynamic Pricing & Seasonal Rules
+        Task<EquipmentPricingViewModel?> GetPricingAsync(string ownerId, int equipmentId);
+        Task<string?> SaveRateRuleAsync(string ownerId, int equipmentId, RateRuleInputModel m);
+        Task<bool> ToggleRateRuleAsync(string ownerId, int ruleId);
+        Task<bool> DeleteRateRuleAsync(string ownerId, int ruleId);
+
         // Maintenance & Health Tracker
         Task<EquipmentMaintenanceDashboardViewModel?> GetMaintenanceDashboardAsync(string ownerId, int equipmentId);
         Task<(bool Success, string? Error)> AddMaintenanceRecordAsync(string ownerId, int equipmentId, EquipmentMaintenanceRecordInputModel model);
@@ -44,6 +52,7 @@ namespace KrishiLink.BLL.Services
         private readonly IRepository<Equipment> _equipment;
         private readonly IRepository<EquipmentBooking> _bookings;
         private readonly IRepository<EquipmentBlockedDate> _blockedDates;
+        private readonly IRepository<EquipmentRateRule> _rateRules;
         private readonly IRepository<ApplicationUser> _users;
         private readonly IRepository<EquipmentMaintenanceRecord> _maintenanceRecords;
         private readonly IFileStorageService _files;
@@ -54,11 +63,13 @@ namespace KrishiLink.BLL.Services
         private readonly ILoyaltyService _loyalty;
         private readonly ILedgerRepository _ledger;
         private readonly RevenueOptions _revenue;
+        private readonly PricingOptions _pricingOptions;
 
         public EquipmentService(
             IRepository<Equipment> equipment,
             IRepository<EquipmentBooking> bookings,
             IRepository<EquipmentBlockedDate> blockedDates,
+            IRepository<EquipmentRateRule> rateRules,
             IRepository<ApplicationUser> users,
             IRepository<EquipmentMaintenanceRecord> maintenanceRecords,
             IFileStorageService files,
@@ -68,11 +79,13 @@ namespace KrishiLink.BLL.Services
             ILeaderboardService leaderboard,
             ILoyaltyService loyalty,
             ILedgerRepository ledger,
-            IOptions<RevenueOptions> revenue)
+            IOptions<RevenueOptions> revenue,
+            IOptions<PricingOptions> pricingOptions)
         {
             _equipment = equipment;
             _bookings = bookings;
             _blockedDates = blockedDates;
+            _rateRules = rateRules;
             _users = users;
             _maintenanceRecords = maintenanceRecords;
             _files = files;
@@ -83,6 +96,7 @@ namespace KrishiLink.BLL.Services
             _loyalty = loyalty;
             _ledger = ledger;
             _revenue = revenue.Value;
+            _pricingOptions = pricingOptions.Value;
         }
 
         // ---------------------------------------------------------------- Browse & details
@@ -173,6 +187,7 @@ namespace KrishiLink.BLL.Services
                     Rating = e.AverageRating,
                     ReviewCount = e.ReviewCount,
                     CreatedAt = e.CreatedAt,
+                    HasRateRules = e.RateRules.Any(r => r.IsActive),
                     LatestServiceDate = e.MaintenanceRecords.OrderByDescending(m => m.ServiceDate).Select(m => (DateTime?)m.ServiceDate).FirstOrDefault()
                 }).ToListAsync();
 
@@ -202,6 +217,7 @@ namespace KrishiLink.BLL.Services
                     Latitude = e.Latitude,
                     Longitude = e.Longitude,
                     IsAvailable = e.IsAvailable,
+                    HasRateRules = e.HasRateRules,
                     ImageUrl = ListingFormat.Split(e.ImageUrl).FirstOrDefault() ?? string.Empty,
                     OwnerName = e.OwnerName,
                     OwnerIsVerified = e.OwnerIsVerified,
@@ -320,6 +336,29 @@ namespace KrishiLink.BLL.Services
                 lng = fallbackLng;
             }
 
+            var activeRules = await ActiveRulesAsync(id);
+            var hasRateRules = activeRules.Any();
+            var lowestRate = hasRateRules ? Math.Min(e.DailyRate, activeRules.Min(r => r.DailyRate)) : e.DailyRate;
+            var fromRateText = hasRateRules ? $"from {ListingFormat.Taka(lowestRate)} / day" : $"{ListingFormat.Taka(e.DailyRate)} / Day";
+            var ruleViewModels = activeRules
+                .OrderBy(r => r.Kind)
+                .ThenBy(r => r.StartDate)
+                .Select(r => new EquipmentRateRuleViewModel
+                {
+                    Id = r.Id,
+                    Kind = r.Kind,
+                    Name = r.Name,
+                    StartDate = r.StartDate,
+                    EndDate = r.EndDate,
+                    DateRangeText = r.Kind == RateRuleKind.Season && r.StartDate.HasValue && r.EndDate.HasValue
+                        ? ListingFormat.DateRange(r.StartDate.Value, r.EndDate.Value)
+                        : "Fridays & Saturdays",
+                    DailyRate = r.DailyRate,
+                    RateText = $"{ListingFormat.Taka(r.DailyRate)} / Day",
+                    IsActive = r.IsActive,
+                    CreatedAt = r.CreatedAt
+                }).ToList();
+
             var model = new EquipmentDetailViewModel
             {
                 Id = e.Id,
@@ -329,6 +368,10 @@ namespace KrishiLink.BLL.Services
                 DailyRate = $"{ListingFormat.Taka(e.DailyRate)} / Day",
                 DailyRateAmount = e.DailyRate,
                 HourlyRate = e.HourlyRate.HasValue ? $"{ListingFormat.Taka(e.HourlyRate.Value)} / Hour" : string.Empty,
+                MinRentalDays = e.MinRentalDays,
+                HasRateRules = hasRateRules,
+                FromRateText = fromRateText,
+                RateRules = ruleViewModels,
                 Location = e.Location,
                 District = e.District ?? OnboardingOptions.GuessDistrict(e.Location),
                 Latitude = lat,
@@ -404,11 +447,18 @@ namespace KrishiLink.BLL.Services
             if (!e.IsAvailable) return ("This equipment is currently unavailable for rent.", null);
             if (e.OwnerId == farmerId) return ("You cannot rent your own equipment.", null);
 
+            int days = (t - s).Days + 1;
+            if (days < e.MinRentalDays)
+            {
+                return ($"This equipment must be rented for at least {e.MinRentalDays} days.", null);
+            }
+
             var clash = await FindConflictAsync(equipmentId, s, t);
             if (clash is not null) return (clash, null);
 
-            int days = (t - s).Days + 1;
-            decimal gross = days * e.DailyRate;
+            var activeRules = await ActiveRulesAsync(equipmentId);
+            var (gross, segments) = BookingPricing.EquipmentGross(s, t, e.DailyRate, activeRules, _pricingOptions.WeekendDaySet());
+            var pricingNote = BookingPricing.Describe(segments);
 
             decimal discountAmount = 0m;
             string? appliedPromo = null;
@@ -436,6 +486,8 @@ namespace KrishiLink.BLL.Services
                 Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim(),
                 Status = BookingStatus.Pending,
                 RequestedOn = DateTime.Now,
+                QuotedGross = gross,
+                PricingNote = pricingNote,
                 DiscountAmount = discountAmount,
                 AppliedPromoCode = appliedPromo,
                 PointsUsed = pointsUsed
@@ -617,8 +669,17 @@ namespace KrishiLink.BLL.Services
             }
 
             var equipment = booking.Equipment!;
+            var activeRules = await ActiveRulesAsync(booking.EquipmentId);
+            var (currentGross, currentSegments) = BookingPricing.EquipmentGross(booking.StartDate, booking.EndDate, equipment.DailyRate, activeRules, _pricingOptions.WeekendDaySet());
+            var currentPricingNote = BookingPricing.Describe(currentSegments);
+            if (booking.QuotedGross > 0 && Math.Abs(currentGross - booking.QuotedGross) > 0)
+            {
+                currentPricingNote += " (updated price)";
+            }
+            booking.PricingNote = currentPricingNote;
+
             BookingWorkflow.ApplyMoney(booking, next!, "Equipment", ownerId, _ledger,
-                equipment.DailyRate, BookingPricing.EquipmentGross(booking.StartDate, booking.EndDate, equipment.DailyRate), _revenue.PlatformCommissionRate);
+                equipment.DailyRate, currentGross, _revenue.PlatformCommissionRate);
             booking.Status = next!;
             booking.RejectReason = next == BookingStatus.Rejected && !string.IsNullOrWhiteSpace(reason) ? reason.Trim() : null;
             booking.UpdatedOn = DateTime.Now;
@@ -712,6 +773,7 @@ namespace KrishiLink.BLL.Services
                 Longitude = e.Longitude,
                 DailyRate = e.DailyRate,
                 HourlyRate = e.HourlyRate,
+                MinRentalDays = e.MinRentalDays,
                 IsAvailable = e.IsAvailable,
                 ExistingImageUrls = ListingFormat.Split(e.ImageUrls)
             };
@@ -767,6 +829,7 @@ namespace KrishiLink.BLL.Services
 
                 entity.DailyRate = model.DailyRate;
                 entity.HourlyRate = model.HourlyRate is > 0 ? model.HourlyRate : null;
+                entity.MinRentalDays = Math.Clamp(model.MinRentalDays, 1, 90);
                 entity.IsAvailable = model.IsAvailable;
                 entity.ImageUrls = ListingFormat.Join(orderedImages);
 
@@ -980,6 +1043,268 @@ namespace KrishiLink.BLL.Services
             return true;
         }
 
+        // ---------------------------------------------------------------- Dynamic Pricing & Availability
+
+        public Task<string?> CheckAvailabilityAsync(int equipmentId, DateTime start, DateTime end, int units = 1, int? excludeBookingId = null) =>
+            FindConflictAsync(equipmentId, start.Date, end.Date, excludeBookingId);
+
+        public async Task<EquipmentQuote?> QuoteAsync(int equipmentId, DateTime? start, DateTime? end)
+        {
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == equipmentId);
+            if (e == null) return null;
+
+            if (!start.HasValue || !end.HasValue)
+            {
+                return new EquipmentQuote
+                {
+                    Ok = false,
+                    Error = "Please choose a start and end date.",
+                    MinDays = e.MinRentalDays
+                };
+            }
+
+            var s = start.Value.Date;
+            var t = end.Value.Date;
+            if (s < DateTime.Today)
+            {
+                return new EquipmentQuote
+                {
+                    Ok = false,
+                    Error = "Start date cannot be in the past.",
+                    MinDays = e.MinRentalDays
+                };
+            }
+
+            if (t < s)
+            {
+                return new EquipmentQuote
+                {
+                    Ok = false,
+                    Error = "End date must be on or after the start date.",
+                    MinDays = e.MinRentalDays
+                };
+            }
+
+            int days = (t - s).Days + 1;
+            if (days < e.MinRentalDays)
+            {
+                return new EquipmentQuote
+                {
+                    Ok = false,
+                    Error = $"This equipment must be rented for at least {e.MinRentalDays} days.",
+                    Days = days,
+                    MinDays = e.MinRentalDays
+                };
+            }
+
+            var conflict = await FindConflictAsync(equipmentId, s, t);
+            if (conflict != null)
+            {
+                return new EquipmentQuote
+                {
+                    Ok = false,
+                    Error = conflict,
+                    Days = days,
+                    MinDays = e.MinRentalDays
+                };
+            }
+
+            var activeRules = await ActiveRulesAsync(equipmentId);
+            var (gross, segments) = BookingPricing.EquipmentGross(s, t, e.DailyRate, activeRules, _pricingOptions.WeekendDaySet());
+            var desc = BookingPricing.Describe(segments);
+
+            return new EquipmentQuote
+            {
+                Ok = true,
+                Days = days,
+                Gross = gross,
+                MinDays = e.MinRentalDays,
+                Breakdown = segments.Select(seg => new RateSegmentBreakdown
+                {
+                    Rate = seg.Rate,
+                    Days = seg.Days,
+                    Label = seg.Label
+                }).ToList(),
+                Description = desc
+            };
+        }
+
+        public async Task<EquipmentPricingViewModel?> GetPricingAsync(string ownerId, int equipmentId)
+        {
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == equipmentId && x.OwnerId == ownerId);
+            if (e == null) return null;
+
+            var rules = await _rateRules.Query()
+                .Where(r => r.EquipmentId == equipmentId)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToListAsync();
+
+            return new EquipmentPricingViewModel
+            {
+                EquipmentId = e.Id,
+                ListingName = e.Name,
+                Category = e.Category,
+                Location = e.Location,
+                ThumbnailUrl = ListingFormat.Split(e.ImageUrls).FirstOrDefault() ?? string.Empty,
+                BaseDailyRate = e.DailyRate,
+                RateText = $"{ListingFormat.Taka(e.DailyRate)} / Day",
+                MinRentalDays = e.MinRentalDays,
+                Rules = rules.Select(r => new EquipmentRateRuleViewModel
+                {
+                    Id = r.Id,
+                    Kind = r.Kind,
+                    Name = r.Name,
+                    StartDate = r.StartDate,
+                    EndDate = r.EndDate,
+                    DateRangeText = r.Kind == RateRuleKind.Season && r.StartDate.HasValue && r.EndDate.HasValue
+                        ? ListingFormat.DateRange(r.StartDate.Value, r.EndDate.Value)
+                        : "Fridays & Saturdays",
+                    DailyRate = r.DailyRate,
+                    RateText = $"{ListingFormat.Taka(r.DailyRate)} / Day",
+                    IsActive = r.IsActive,
+                    CreatedAt = r.CreatedAt
+                }).ToList(),
+                NewRule = new RateRuleInputModel
+                {
+                    EquipmentId = e.Id,
+                    DailyRate = e.DailyRate
+                }
+            };
+        }
+
+        public async Task<string?> SaveRateRuleAsync(string ownerId, int equipmentId, RateRuleInputModel m)
+        {
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == equipmentId && x.OwnerId == ownerId);
+            if (e == null) return "Equipment listing not found or access denied.";
+
+            if (m.DailyRate < 1 || m.DailyRate > 500000)
+                return "Daily rate must be between ৳1 and ৳500,000.";
+
+            var name = m.Name?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(name))
+                return "Rule name is required.";
+
+            var kind = m.Kind == RateRuleKind.Weekend ? RateRuleKind.Weekend : RateRuleKind.Season;
+
+            DateTime? startDate = null;
+            DateTime? endDate = null;
+
+            if (kind == RateRuleKind.Weekend)
+            {
+                if (m.IsActive)
+                {
+                    var existingActiveWeekend = await _rateRules.Query()
+                        .AnyAsync(r => r.EquipmentId == equipmentId && r.Kind == RateRuleKind.Weekend && r.IsActive && r.Id != (m.Id ?? 0));
+                    if (existingActiveWeekend)
+                        return "An active weekend rate rule already exists for this equipment.";
+                }
+            }
+            else
+            {
+                if (!m.StartDate.HasValue || !m.EndDate.HasValue)
+                    return "Start date and end date are required for season rate rules.";
+
+                startDate = m.StartDate.Value.Date;
+                endDate = m.EndDate.Value.Date;
+
+                if (endDate < startDate)
+                    return "End date must be on or after start date.";
+
+                if (m.IsActive)
+                {
+                    var existingSeasons = await _rateRules.Query()
+                        .Where(r => r.EquipmentId == equipmentId && r.Kind == RateRuleKind.Season && r.IsActive && r.Id != (m.Id ?? 0))
+                        .ToListAsync();
+
+                    if (existingSeasons.Any(r => r.StartDate.HasValue && r.EndDate.HasValue && BookingWorkflow.Overlaps(r.StartDate.Value.Date, r.EndDate.Value.Date, startDate.Value, endDate.Value)))
+                    {
+                        return "Season rate rules cannot overlap with existing active season rules.";
+                    }
+                }
+            }
+
+            if (m.Id.HasValue && m.Id.Value > 0)
+            {
+                var rule = await _rateRules.QueryTracked()
+                    .Include(r => r.Equipment)
+                    .FirstOrDefaultAsync(r => r.Id == m.Id.Value && r.EquipmentId == equipmentId && r.Equipment!.OwnerId == ownerId);
+                if (rule == null) return "Rate rule not found or access denied.";
+
+                rule.Kind = kind;
+                rule.Name = name;
+                rule.DailyRate = m.DailyRate;
+                rule.StartDate = startDate;
+                rule.EndDate = endDate;
+                rule.IsActive = m.IsActive;
+            }
+            else
+            {
+                var newRule = new EquipmentRateRule
+                {
+                    EquipmentId = equipmentId,
+                    Kind = kind,
+                    Name = name,
+                    DailyRate = m.DailyRate,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    IsActive = m.IsActive,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _rateRules.AddAsync(newRule);
+            }
+
+            await _rateRules.SaveChangesAsync();
+            return null;
+        }
+
+        public async Task<bool> ToggleRateRuleAsync(string ownerId, int ruleId)
+        {
+            var rule = await _rateRules.QueryTracked()
+                .Include(r => r.Equipment)
+                .FirstOrDefaultAsync(r => r.Id == ruleId && r.Equipment!.OwnerId == ownerId);
+            if (rule == null) return false;
+
+            if (!rule.IsActive)
+            {
+                if (rule.Kind == RateRuleKind.Weekend)
+                {
+                    var existingWeekend = await _rateRules.Query()
+                        .AnyAsync(r => r.EquipmentId == rule.EquipmentId && r.Kind == RateRuleKind.Weekend && r.IsActive && r.Id != rule.Id);
+                    if (existingWeekend) return false;
+                }
+                else if (rule.Kind == RateRuleKind.Season && rule.StartDate.HasValue && rule.EndDate.HasValue)
+                {
+                    var existingSeasons = await _rateRules.Query()
+                        .Where(r => r.EquipmentId == rule.EquipmentId && r.Kind == RateRuleKind.Season && r.IsActive && r.Id != rule.Id)
+                        .ToListAsync();
+
+                    if (existingSeasons.Any(r => r.StartDate.HasValue && r.EndDate.HasValue && BookingWorkflow.Overlaps(r.StartDate.Value.Date, r.EndDate.Value.Date, rule.StartDate.Value.Date, rule.EndDate.Value.Date)))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            rule.IsActive = !rule.IsActive;
+            await _rateRules.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeleteRateRuleAsync(string ownerId, int ruleId)
+        {
+            var rule = await _rateRules.QueryTracked()
+                .Include(r => r.Equipment)
+                .FirstOrDefaultAsync(r => r.Id == ruleId && r.Equipment!.OwnerId == ownerId);
+            if (rule == null) return false;
+
+            _rateRules.Remove(rule);
+            await _rateRules.SaveChangesAsync();
+            return true;
+        }
+
+        private Task<List<EquipmentRateRule>> ActiveRulesAsync(int equipmentId) =>
+            _rateRules.Query().Where(r => r.EquipmentId == equipmentId && r.IsActive).ToListAsync();
+
         // ---------------------------------------------------------------- Helpers
 
         /// <summary>
@@ -1027,7 +1352,8 @@ namespace KrishiLink.BLL.Services
             Status = b.Status,
             RejectReason = b.RejectReason,
             RequestedOn = b.RequestedOn,
-            AgreedGross = b.AgreedGross ?? (b.Equipment is null ? 0 : BookingPricing.EquipmentGross(b.StartDate, b.EndDate, b.Equipment.DailyRate)),
+            AgreedGross = BookingPricing.EquipmentGrossOf(b, b.Equipment?.DailyRate ?? 0),
+            PricingNote = b.PricingNote,
             PaymentReference = b.Payment?.Status == PaymentStatus.Succeeded ? b.Payment.Reference : null
         };
 

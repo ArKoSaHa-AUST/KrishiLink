@@ -3602,4 +3602,124 @@
   <data name="Your storage request for {0} tons in {1} ({2} - {3}) was accepted. Please pay ৳{4} to confirm." xml:space="preserve">
     <value>{1}-এ {0} টন সংরক্ষণের অনুরোধ ({2} - {3}) গৃহীত হয়েছে। নিশ্চিত করতে অনুগ্রহ করে ৳{4} পরিশোধ করুন।</value>
   </data>
+  <data name="Pricing" xml:space="preserve">
+    <value>মূল্য নির্ধারণ</value>
+  </data>
+  <data name="Pricing Rules" xml:space="preserve">
+    <value>মূল্য নির্ধারণ বিধি</value>
+  </data>
+  <data name="Rate Rules" xml:space="preserve">
+    <value>ভাড়ার নিয়মাবলী</value>
+  </data>
+  <data name="Dynamic &amp; Seasonal Pricing" xml:space="preserve">
+    <value>ডাইনামিক ও মৌসুমী মূল্য</value>
+  </data>
+  <data name="Manage dynamic rate rules for seasonal peaks, harvest periods, and weekends." xml:space="preserve">
+    <value>মৌসুমী শীর্ষ সময়, ফসল তোলার সময় এবং সাপ্তাহিক ছুটির জন্য পরিবর্তনশীল ভাড়ার নিয়ম পরিচালনা করুন।</value>
+  </data>
+  <data name="Add Rate Rule" xml:space="preserve">
+    <value>নতুন ভাড়ার নিয়ম যোগ করুন</value>
+  </data>
+  <data name="Rule Name" xml:space="preserve">
+    <value>নিয়মের নাম</value>
+  </data>
+  <data name="e.g. Boro Harvest Peak, Monsoon Discount" xml:space="preserve">
+    <value>যেমন: বোরো ফসল তোলার মৌসুম, বর্ষা ছাড়</value>
+  </data>
+  <data name="Rule Type" xml:space="preserve">
+    <value>নিয়মের ধরণ</value>
+  </data>
+  <data name="Season (Date Range)" xml:space="preserve">
+    <value>মৌসুম (নির্দিষ্ট সময়কাল)</value>
+  </data>
+  <data name="Weekend (Fri &amp; Sat)" xml:space="preserve">
+    <value>সাপ্তাহিক ছুটি (শুক্র ও শনি)</value>
+  </data>
+  <data name="Daily Rate (৳)" xml:space="preserve">
+    <value>দৈনিক ভাড়া (৳)</value>
+  </data>
+  <data name="Active / Enabled" xml:space="preserve">
+    <value>সক্রিয় / চালু</value>
+  </data>
+  <data name="Rule Priority" xml:space="preserve">
+    <value>নিয়মের অগ্রাধিকার</value>
+  </data>
+  <data name="Season rules take precedence over Weekend rules, which take precedence over the base daily rate." xml:space="preserve">
+    <value>মৌসুমী নিয়ম সাপ্তাহিক নিয়মের চেয়ে অগ্রাধিকার পাবে, এবং সাপ্তাহিক নিয়ম সাধারণ দৈনিক ভাড়ার চেয়ে অগ্রাধিকার পাবে।</value>
+  </data>
+  <data name="No rate rules configured yet." xml:space="preserve">
+    <value>এখনও কোনো ভাড়ার নিয়ম যুক্ত করা হয়নি।</value>
+  </data>
+  <data name="Minimum Rental Days" xml:space="preserve">
+    <value>সর্বনিম্ন ভাড়ার দিন</value>
+  </data>
+  <data name="Minimum rental period: {0} days" xml:space="preserve">
+    <value>সর্বনিম্ন ভাড়ার মেয়াদ: {0} দিন</value>
+  </data>
+  <data name="Minimum rental duration is {0} days." xml:space="preserve">
+    <value>সর্বনিম্ন ভাড়ার সময়কাল {0} দিন।</value>
+  </data>
+  <data name="Special &amp; Seasonal Pricing" xml:space="preserve">
+    <value>বিশেষ ও মৌসুমী মূল্য</value>
+  </data>
+  <data name="Auto-applied at booking" xml:space="preserve">
+    <value>বুকিংয়ের সময় স্বয়ংক্রিয়ভাবে প্রযোজ্য</value>
+  </data>
+  <data name="Fri &amp; Sat" xml:space="preserve">
+    <value>শুক্র ও শনি</value>
+  </data>
+  <data name="Rate Breakdown:" xml:space="preserve">
+    <value>ভাড়ার বিস্তারিত হিসাব:</value>
+  </data>
+  <data name="from " xml:space="preserve">
+    <value>শুরু </value>
+  </data>
+  <data name="updated price" xml:space="preserve">
+    <value>হালনাগাদ মূল্য</value>
+  </data>
+  <data name="Base" xml:space="preserve">
+    <value>সাধারণ</value>
+  </data>
+  <data name="Weekend" xml:space="preserve">
+    <value>সাপ্তাহিক</value>
+  </data>
+  <data name="Season" xml:space="preserve">
+    <value>মৌসুম</value>
+  </data>
+  <data name="Rate rule saved successfully." xml:space="preserve">
+    <value>ভাড়ার নিয়ম সফলভাবে সংরক্ষিত হয়েছে।</value>
+  </data>
+  <data name="Rate rule deleted successfully." xml:space="preserve">
+    <value>ভাড়ার নিয়ম সফলভাবে মুছে ফেলা হয়েছে।</value>
+  </data>
+  <data name="Rate rule status updated." xml:space="preserve">
+    <value>ভাড়ার নিয়মের স্থিতি হালনাগাদ করা হয়েছে।</value>
+  </data>
+  <data name="Invalid rate rule." xml:space="preserve">
+    <value>ভাড়ার নিয়মটি সঠিক নয়।</value>
+  </data>
+  <data name="Season rules must have a valid Start Date and End Date." xml:space="preserve">
+    <value>মৌসুমী নিয়মের জন্য অবশ্যই সঠিক শুরুর ও শেষের তারিখ দিতে হবে।</value>
+  </data>
+  <data name="Daily rate must be greater than zero." xml:space="preserve">
+    <value>দৈনিক ভাড়া অবশ্যই শূন্যের বেশি হতে হবে।</value>
+  </data>
+  <data name="Active season rules cannot overlap with another active season rule." xml:space="preserve">
+    <value>একটি সক্রিয় মৌসুমী নিয়ম অন্য কোনো সক্রিয় মৌসুমী নিয়মের সময়ের সাথে মিলে যেতে পারবে না।</value>
+  </data>
+  <data name="Only one active weekend rule is allowed per equipment." xml:space="preserve">
+    <value>প্রতিটি যন্ত্রপাতির জন্য কেবল একটি সক্রিয় সাপ্তাহিক নিয়ম রাখা যাবে।</value>
+  </data>
+  <data name="Invalid dates for rental quote." xml:space="preserve">
+    <value>ভাড়ার হিসাবের জন্য নির্বাচিত তারিখগুলো সঠিক নয়।</value>
+  </data>
+  <data name="Selected date range is shorter than the minimum rental duration of {0} days." xml:space="preserve">
+    <value>নির্বাচিত সময়কাল সর্বনিম্ন ভাড়ার মেয়াদ {0} দিনের চেয়ে কম।</value>
+  </data>
+  <data name="Selected date range conflicts with existing bookings or blackout periods." xml:space="preserve">
+    <value>নির্বাচিত তারিখগুলো পূর্ববর্তী বুকিং বা অনুপলব্ধ সময়ের সাথে মিলে গেছে।</value>
+  </data>
+  <data name="Gross Rental Fee:" xml:space="preserve">
+    <value>মোট ভাড়ার ফি:</value>
+  </data>
 </root>

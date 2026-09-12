@@ -162,6 +162,7 @@ namespace KrishiLink.DAL.Repositories
                     PayoutReference = b.Payout != null ? b.Payout.Reference : null,
                     b.AgreedRate,
                     b.AgreedGross,
+                    b.QuotedGross,
                     b.CommissionRate,
                     b.PaidOn,
                     PaymentStatus = b.Payment != null ? b.Payment.Status : null,
@@ -175,7 +176,7 @@ namespace KrishiLink.DAL.Repositories
                     var days = ListingFormat.InclusiveDays(b.StartDate, b.EndDate);
                     return new RevenueBooking(b.Id, b.EquipmentId, b.Name, b.Location, b.FarmerId, b.FarmerName, b.FarmerLocation,
                         b.StartDate, b.EndDate, b.Status,
-                        Gross: b.AgreedGross ?? BookingPricing.EquipmentGross(b.StartDate, b.EndDate, rate),
+                        Gross: BookingPricing.EquipmentGrossOf(b.AgreedGross, b.QuotedGross, b.StartDate, b.EndDate, rate),
                         CapacityUsed: 1,
                         QuantityText: days == 1 ? "1 day" : $"{days} days",
                         RateText: $"৳{rate:N0} / day",

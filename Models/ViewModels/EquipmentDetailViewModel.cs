@@ -13,6 +13,10 @@ namespace KrishiLink.Models.ViewModels
         public string DailyRate { get; set; } = string.Empty;
         public decimal DailyRateAmount { get; set; }
         public string HourlyRate { get; set; } = string.Empty;
+        public int MinRentalDays { get; set; } = 1;
+        public bool HasRateRules { get; set; }
+        public string FromRateText { get; set; } = string.Empty;
+        public List<EquipmentRateRuleViewModel> RateRules { get; set; } = new();
         public string Location { get; set; } = string.Empty;
         public string? District { get; set; }
         public string Status { get; set; } = "Available";

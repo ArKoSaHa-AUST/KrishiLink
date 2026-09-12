@@ -199,5 +199,76 @@ namespace KrishiLink.Controllers
 
             return RedirectToAction(nameof(Maintenance), new { id = equipmentId });
         }
+
+        /// <summary>GET: /EquipmentOwner/Pricing/5 — Manage seasonal and weekend rate rules.</summary>
+        [HttpGet]
+        public async Task<IActionResult> Pricing(int id)
+        {
+            var model = await _equipment.GetPricingAsync(OwnerId, id);
+            if (model is null) return NotFound();
+
+            return View("Pricing", model);
+        }
+
+        /// <summary>POST: /EquipmentOwner/SaveRateRule — Create or update a dynamic rate rule.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveRateRule(int equipmentId, RateRuleInputModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                TempData["ErrorMessage"] = errors;
+                return RedirectToAction(nameof(Pricing), new { id = equipmentId });
+            }
+
+            var error = await _equipment.SaveRateRuleAsync(OwnerId, equipmentId, model);
+            if (error != null)
+            {
+                TempData["ErrorMessage"] = error;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = "Rate rule saved successfully!";
+            }
+
+            return RedirectToAction(nameof(Pricing), new { id = equipmentId });
+        }
+
+        /// <summary>POST: /EquipmentOwner/ToggleRateRule — Activate or deactivate a rate rule.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleRateRule(int ruleId, int equipmentId)
+        {
+            var success = await _equipment.ToggleRateRuleAsync(OwnerId, ruleId);
+            if (!success)
+            {
+                TempData["ErrorMessage"] = "Could not activate rule (ensure no overlapping active season rules or duplicate active weekend rules).";
+            }
+            else
+            {
+                TempData["SuccessMessage"] = "Rate rule status updated.";
+            }
+
+            return RedirectToAction(nameof(Pricing), new { id = equipmentId });
+        }
+
+        /// <summary>POST: /EquipmentOwner/DeleteRateRule — Delete an equipment rate rule.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteRateRule(int ruleId, int equipmentId)
+        {
+            var success = await _equipment.DeleteRateRuleAsync(OwnerId, ruleId);
+            if (!success)
+            {
+                TempData["ErrorMessage"] = "Could not delete the rate rule.";
+            }
+            else
+            {
+                TempData["SuccessMessage"] = "Rate rule removed successfully.";
+            }
+
+            return RedirectToAction(nameof(Pricing), new { id = equipmentId });
+        }
     }
 }
