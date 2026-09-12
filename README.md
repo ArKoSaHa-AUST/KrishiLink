@@ -65,6 +65,7 @@
 - **Notification Deduplication**: Database unique filtered index (`(UserId, DedupeKey) WHERE DedupeKey IS NOT NULL`) preventing duplicate alert spam.
 - **Background Email Dispatch Queue**: Non-blocking channel queue (`EmailDispatchService : BackgroundService`) using `System.Threading.Channels.Channel<EmailJob>`.
 - **Real-Email Hygiene**: Filters out simulated development emails (`@krishilink.local`) to ensure clean delivery in production.
+- **Idempotent Reminder Scheduler (`ReminderScheduler`)**: Time-based background service sending proactive notifications (rental/storage starts tomorrow, equipment return due, storage ending soon, unpaid booking nudges, owner completion reminders, and stale pending request alerts). Fully idempotent via unique `(UserId, DedupeKey)` constraints with downtime-tolerant date windows; configurable in the `Reminders` appsettings section.
 
 ### 7. 💳 Money Flow (Simulated Escrow, Commission & Payouts)
 Farmers pay into **platform escrow** through a simulated gateway; owners are paid out of escrow net of commission. Every movement is written to an append-only, double-entry ledger, and no step needs a human on the platform side.

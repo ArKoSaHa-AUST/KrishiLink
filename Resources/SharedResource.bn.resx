@@ -4271,4 +4271,52 @@
   <data name="View Farmer Profile" xml:space="preserve">
     <value>কৃষকের প্রোফাইল দেখুন</value>
   </data>
+  <data name="Your booking starts tomorrow" xml:space="preserve">
+    <value>আপনার বুকিং আগামীকাল শুরু হবে</value>
+  </data>
+  <data name="Handover tomorrow" xml:space="preserve">
+    <value>আগামীকাল হস্তান্তর</value>
+  </data>
+  <data name="Equipment return due tomorrow" xml:space="preserve">
+    <value>আগামীকাল যন্ত্রপাতি ফেরত দেওয়ার তারিখ</value>
+  </data>
+  <data name="Storage period ending soon" xml:space="preserve">
+    <value>সংরক্ষণ মেয়াদ শীঘ্রই শেষ হচ্ছে</value>
+  </data>
+  <data name="Payment pending for your booking" xml:space="preserve">
+    <value>আপনার বুকিংয়ের পেমেন্ট বাকি রয়েছে</value>
+  </data>
+  <data name="A farmer is waiting for your reply" xml:space="preserve">
+    <value>একজন কৃষক আপনার উত্তরের অপেক্ষায় আছেন</value>
+  </data>
+  <data name="{0} starts tomorrow ({1}). Owner: {2}, {3}." xml:space="preserve">
+    <value>{0} আগামীকাল শুরু হচ্ছে ({1})। মালিক: {2}, {3}।</value>
+  </data>
+  <data name="{0} for {1} starts tomorrow ({2}). Please prepare the handover." xml:space="preserve">
+    <value>{1}-এর জন্য {0} আগামীকাল ({2}) শুরু হচ্ছে। অনুগ্রহ করে হস্তান্তরের প্রস্তুতি নিন।</value>
+  </data>
+  <data name="Your rental of {0} ends tomorrow ({1}). Please return it on time." xml:space="preserve">
+    <value>{0}-এর আপনার ভাড়া আগামীকাল ({1}) শেষ হচ্ছে। অনুগ্রহ করে সময়মতো ফেরত দিন।</value>
+  </data>
+  <data name="Your storage of {0} t at {1} ends on {2}. Extend the booking or arrange collection." xml:space="preserve">
+    <value>{1}-এ আপনার {0} টন সংরক্ষণ {2} তারিখে শেষ হচ্ছে। বুকিং বাড়ান অথবা সংগ্রহ করার ব্যবস্থা করুন।</value>
+  </data>
+  <data name="Your booking for {0} ({1}) was accepted but is not paid yet. Pay ৳{2} to confirm it." xml:space="preserve">
+    <value>{0} ({1})-এর জন্য আপনার বুকিং গৃহীত হয়েছে কিন্তু এখনও পরিশোধ করা হয়নি। নিশ্চিত করতে ৳{2} পরিশোধ করুন।</value>
+  </data>
+  <data name="{0}'s booking of {1} ended on {2}. Mark it completed to release your payout." xml:space="preserve">
+    <value>{1}-এ {0}-এর বুকিং {2} তারিখে শেষ হয়েছে। আপনার পেআউট ছাড় করতে এটি সম্পন্ন চিহ্নিত করুন।</value>
+  </data>
+  <data name="{0} requested {1} ({2}) {3} hours ago. Accept or decline so they can plan." xml:space="preserve">
+    <value>{0} {3} ঘণ্টা আগে {1} ({2})-এর অনুরোধ করেছেন। গ্রহণ বা প্রত্যাখ্যান করুন যাতে তারা পরিকল্পনা করতে পারেন।</value>
+  </data>
+  <data name="[Dev] Run reminders now" xml:space="preserve">
+    <value>[ডেভ] রিমাইন্ডার এখনই চালান</value>
+  </data>
+  <data name="[Dev] Reminders: {0} sent, {1} already delivered." xml:space="preserve">
+    <value>[ডেভ] রিমাইন্ডার: {0}টি পাঠানো হয়েছে, {1}টি আগেই বিতরণ করা হয়েছে।</value>
+  </data>
+  <data name="Reminder" xml:space="preserve">
+    <value>রিমাইন্ডার</value>
+  </data>
 </root>

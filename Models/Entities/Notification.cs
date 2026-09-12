@@ -19,6 +19,7 @@ namespace KrishiLink.Models.Entities
         public const string WeatherSuggestion = "WeatherSuggestion";
         public const string Verification = "Verification";
         public const string Loyalty = "Loyalty";
+        public const string Reminder = "Reminder";
         public const string System = "System";
     }
 

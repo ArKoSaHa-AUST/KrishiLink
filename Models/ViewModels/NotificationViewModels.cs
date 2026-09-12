@@ -31,6 +31,7 @@ namespace KrishiLink.Models.ViewModels
             NotificationTypes.BookingModified => "warning",
             NotificationTypes.ReviewReceived => "warning",
             NotificationTypes.WeatherSuggestion => "warning",
+            NotificationTypes.Reminder => "info",
             _ => "secondary"
         };
 
@@ -46,6 +47,7 @@ namespace KrishiLink.Models.ViewModels
             NotificationTypes.BookingModified => "bi bi-pencil-square",
             NotificationTypes.ReviewReceived => "bi bi-star-fill",
             NotificationTypes.WeatherSuggestion => "bi bi-cloud-sun-fill",
+            NotificationTypes.Reminder => "bi bi-alarm-fill",
             _ => "bi bi-bell-fill"
         };
 
@@ -61,6 +63,7 @@ namespace KrishiLink.Models.ViewModels
             NotificationTypes.BookingModified => "bg-warning-subtle",
             NotificationTypes.ReviewReceived => "bg-warning-subtle",
             NotificationTypes.WeatherSuggestion => "bg-warning-subtle",
+            NotificationTypes.Reminder => "bg-info-subtle",
             _ => "bg-light"
         };
 

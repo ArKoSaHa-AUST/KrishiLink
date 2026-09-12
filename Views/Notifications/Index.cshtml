@@ -1,4 +1,5 @@
 @model KrishiLink.Models.ViewModels.PaginatedNotificationsViewModel
+@inject Microsoft.Extensions.Hosting.IHostEnvironment Env
 @{
     ViewData["Title"] = "Notifications";
     var currentUrl = Context.Request.Path + Context.Request.QueryString;
@@ -14,7 +15,16 @@
             Stay updated with your rental requests, booking decisions, reviews, and platform activity.
         </p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
+        @if (Env.IsDevelopment())
+        {
+            <form asp-controller="Notifications" asp-action="RunReminders" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-warning btn-sm rounded-pill px-3 py-2 fw-semibold">
+                    <i class="bi bi-play-circle me-1"></i> @L["[Dev] Run reminders now"]
+                </button>
+            </form>
+        }
         @if (Model.UnreadCount > 0)
         {
             <form asp-controller="Notifications" asp-action="MarkAllAsRead" method="post" class="d-inline">
@@ -103,7 +113,7 @@ else
                                     @item.Title
                                 </h6>
                                 <span class="badge bg-@item.BadgeColor bg-opacity-10 text-@item.BadgeColor border border-@item.BadgeColor border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.7rem;">
-                                    @item.Type
+                                    @L[item.Type]
                                 </span>
                                 @if (!item.IsRead)
                                 {

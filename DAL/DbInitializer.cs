@@ -458,7 +458,10 @@ namespace KrishiLink.DAL
                 Rental(equipment[4], salma, -20, -19, BookingStatus.Cancelled, -24),
                 Rental(equipment[1], salma, -12, -7, BookingStatus.Rejected, -15, "Harvest window for early Aman.", "Harvester is under scheduled maintenance that week."),
                 // Live
-                Rental(equipment[0], farmer, -1, 4, BookingStatus.Accepted, -5, "Need standard disc plough attachment for deep tilling."),
+                Rental(equipment[0], farmer, 1, 4, BookingStatus.Accepted, -2, "Need standard disc plough attachment for deep tilling."),
+                Rental(equipment[2], farmer, -2, 1, BookingStatus.Accepted, -4, units: 1),
+                Rental(equipment[3], farmer, 4, 7, BookingStatus.Accepted, -3, "Irrigation pump for seedbed."),
+                Rental(equipment[4], salma, -7, -3, BookingStatus.Accepted, -9),
                 Rental(equipment[4], motaleb, 3, 4, BookingStatus.Accepted, -2),
                 Rental(equipment[2], motaleb, 5, 8, BookingStatus.Accepted, -3, units: 1),
                 Rental(equipment[2], salma, 6, 9, BookingStatus.Accepted, -2, units: 1),
@@ -476,6 +479,7 @@ namespace KrishiLink.DAL
                 new GodownBlockedDate { GodownId = godowns[2].Id, Date = today.AddDays(13) });
 
             db.GodownBookings.AddRange(
+                StorageBooking(godowns[0], farmer, 25, -28, 2, BookingStatus.Accepted, -30, "Seed potato storage."),
                 StorageBooking(godowns[1], motaleb, 100, -150, -90, BookingStatus.Completed, -158, "Boro season paddy."),
                 StorageBooking(godowns[0], farmer, 45, -140, -50, BookingStatus.Completed, -145),
                 StorageBooking(godowns[1], karim, 150, -100, -10, BookingStatus.Completed, -105, "Wheat storage before milling."),
@@ -858,13 +862,29 @@ namespace KrishiLink.DAL
             foreach (var b in storage.Where(b => b.Status == BookingStatus.Completed))
                 payments.Add((Pay(b, "Godown", PaymentStatus.Succeeded, b.StartDate.AddDays(-1).AddHours(11)), b));
 
-            // One paid + one unpaid Accepted booking per type so the demo shows both "Payment required" and "Paid".
-            var paidRental = rentals.Where(b => b.Status == BookingStatus.Accepted).OrderBy(b => b.StartDate).First();
-            var paidStorage = storage.Where(b => b.Status == BookingStatus.Accepted).OrderBy(b => b.StartDate).First();
-            payments.Add((Pay(paidRental, "Equipment", PaymentStatus.Succeeded, paidRental.UpdatedOn!.Value.AddHours(3)), paidRental));
-            payments.Add((Pay(paidStorage, "Godown", PaymentStatus.Succeeded, paidStorage.UpdatedOn!.Value.AddHours(2)), paidStorage));
+            // Configure demo payments for reminder scheduler rules (R1-R6):
+            var startTomorrowRental = rentals.FirstOrDefault(b => b.Status == BookingStatus.Accepted && b.StartDate.Date == DateTime.Today.AddDays(1));
+            if (startTomorrowRental != null)
+                payments.Add((Pay(startTomorrowRental, "Equipment", PaymentStatus.Succeeded, startTomorrowRental.UpdatedOn!.Value.AddHours(2)), startTomorrowRental));
 
-            var failedOn = rentals.Where(b => b.Status == BookingStatus.Accepted && b.Id != paidRental.Id).First();
+            var returnDueRental = rentals.FirstOrDefault(b => b.Status == BookingStatus.Accepted && b.EndDate.Date == DateTime.Today.AddDays(1));
+            if (returnDueRental != null)
+                payments.Add((Pay(returnDueRental, "Equipment", PaymentStatus.Succeeded, returnDueRental.UpdatedOn!.Value.AddHours(2)), returnDueRental));
+
+            var endingStorage = storage.FirstOrDefault(b => b.Status == BookingStatus.Accepted && b.EndDate.Date == DateTime.Today.AddDays(2));
+            if (endingStorage != null)
+                payments.Add((Pay(endingStorage, "Godown", PaymentStatus.Succeeded, endingStorage.UpdatedOn!.Value.AddHours(2)), endingStorage));
+
+            var overdueRental = rentals.FirstOrDefault(b => b.Status == BookingStatus.Accepted && b.EndDate.Date <= DateTime.Today.AddDays(-2));
+            if (overdueRental != null)
+                payments.Add((Pay(overdueRental, "Equipment", PaymentStatus.Succeeded, overdueRental.UpdatedOn!.Value.AddHours(2)), overdueRental));
+
+            var unpaidRental = rentals.FirstOrDefault(b => b.Status == BookingStatus.Accepted
+                && b.StartDate.Date >= DateTime.Today
+                && b.UpdatedOn <= DateTime.Now.AddHours(-48)
+                && !payments.Any(p => p.Booking.Id == b.Id));
+
+            var failedOn = unpaidRental ?? rentals.First(b => b.Status == BookingStatus.Accepted && !payments.Any(p => p.Booking.Id == b.Id));
             db.Payments.Add(Pay(failedOn, "Equipment", PaymentStatus.Failed, failedOn.UpdatedOn!.Value.AddHours(1), "Insufficient balance (simulated)"));
 
             foreach (var (p, b) in payments)

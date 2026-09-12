@@ -123,9 +123,13 @@ else
 builder.Services.AddSingleton<EmailDispatchService>();
 builder.Services.AddSingleton<IEmailQueue>(sp => sp.GetRequiredService<EmailDispatchService>());
 builder.Services.AddHostedService(sp => sp.GetRequiredService<EmailDispatchService>());
+builder.Services.Configure<ReminderOptions>(builder.Configuration.GetSection(ReminderOptions.SectionName));
+builder.Services.AddScoped<IReminderService, ReminderService>();
+
 builder.Services.AddHostedService<MonthlyStatementScheduler>();
 builder.Services.AddHostedService<PayoutSettlementScheduler>();
 builder.Services.AddHostedService<WeatherSuggestionScheduler>();
+builder.Services.AddHostedService<ReminderScheduler>();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
