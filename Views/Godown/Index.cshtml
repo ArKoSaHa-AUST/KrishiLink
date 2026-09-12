@@ -1,4 +1,4 @@
-﻿@model KrishiLink.Models.ViewModels.GodownBrowseViewModel
+@model KrishiLink.Models.ViewModels.GodownBrowseViewModel
 @{
     ViewData["Title"] = L["Browse Godowns"];
     var activeFiltersCount = 0;
@@ -217,6 +217,7 @@
                         </label>
                         <select class="form-select form-select-sm py-2" id="mainSortSelect" onchange="onFilterChanged()">
                             <option value="newest" selected="@(Model.SortBy == "newest" ? "selected" : null)">@L["Newest First"]</option>
+                            <option value="rating_desc" selected="@(Model.SortBy == "rating_desc" ? "selected" : null)">@L["Highest Rated"]</option>
                             <option value="price_asc" selected="@(Model.SortBy == "price_asc" ? "selected" : null)">@L["Price: Low to High"]</option>
                             <option value="price_desc" selected="@(Model.SortBy == "price_desc" ? "selected" : null)">@L["Price: High to Low"]</option>
                             <option value="distance" selected="@(Model.SortBy == "distance" ? "selected" : null)">@L["Distance: Nearest"]</option>
