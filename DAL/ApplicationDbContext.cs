@@ -25,6 +25,7 @@ namespace KrishiLink.DAL
         public DbSet<Review> Reviews { get; set; } = null!;
         public DbSet<Notification> Notifications { get; set; } = null!;
         public DbSet<OwnerVerificationRequest> VerificationRequests { get; set; } = null!;
+        public DbSet<EquipmentMaintenanceRecord> EquipmentMaintenanceRecords { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -165,6 +166,21 @@ namespace KrishiLink.DAL
                 v.HasIndex(x => new { x.UserId, x.Status });
                 v.HasIndex(x => x.SubmittedAt);
                 v.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<EquipmentMaintenanceRecord>(m =>
+            {
+                m.Property(x => x.ServiceType).HasMaxLength(80);
+                m.Property(x => x.Description).HasMaxLength(1000);
+                m.Property(x => x.ServicedBy).HasMaxLength(150);
+                m.Property(x => x.Cost).HasPrecision(18, 2);
+
+                m.HasIndex(x => x.EquipmentId);
+                m.HasIndex(x => new { x.EquipmentId, x.ServiceDate });
+                m.HasOne(x => x.Equipment)
+                    .WithMany(e => e.MaintenanceRecords)
+                    .HasForeignKey(x => x.EquipmentId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }
