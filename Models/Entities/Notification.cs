@@ -10,9 +10,12 @@ namespace KrishiLink.Models.Entities
         public const string BookingAccepted = "BookingAccepted";
         public const string BookingRejected = "BookingRejected";
         public const string BookingCompleted = "BookingCompleted";
+        public const string BookingCancelled = "BookingCancelled";
         public const string PayoutProcessed = "PayoutProcessed";
+        public const string PayoutCompleted = "PayoutCompleted";
         public const string ReviewReceived = "ReviewReceived";
         public const string WeatherSuggestion = "WeatherSuggestion";
+        public const string Verification = "Verification";
         public const string Loyalty = "Loyalty";
         public const string System = "System";
     }
@@ -28,11 +31,21 @@ namespace KrishiLink.Models.Entities
         [ForeignKey(nameof(UserId))]
         public virtual ApplicationUser? User { get; set; }
 
-        [Required]
+        [StringLength(120)]
+        public string? DedupeKey { get; set; }
+
+        [StringLength(100)]
+        public string? TitleKey { get; set; }
+
+        [StringLength(100)]
+        public string? MessageKey { get; set; }
+
+        [StringLength(500)]
+        public string? ArgsJson { get; set; }
+
         [StringLength(150)]
         public string Title { get; set; } = string.Empty;
 
-        [Required]
         [StringLength(1000)]
         public string Message { get; set; } = string.Empty;
 
