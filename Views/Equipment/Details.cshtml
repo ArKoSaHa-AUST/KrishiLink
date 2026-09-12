@@ -85,9 +85,35 @@
         <!-- Details Panel -->
         <div class="card krishi-card p-4 mb-4 border-0 shadow-sm">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold">
-                    @L[Model.Category]
-                </span>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold">
+                        @L[Model.Category]
+                    </span>
+                    @if (Model.LastServicedDaysAgo.HasValue)
+                    {
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs" title="@L["Verified Maintenance Log Available"]">
+                            <i class="bi bi-wrench-adjustable text-success"></i>
+                            @if (Model.LastServicedDaysAgo.Value == 0)
+                            {
+                                @L["Last serviced: Today"]
+                            }
+                            else if (Model.LastServicedDaysAgo.Value == 1)
+                            {
+                                @L["Last serviced: Yesterday"]
+                            }
+                            else
+                            {
+                                @L["Last serviced: {0} days ago", Model.LastServicedDaysAgo.Value]
+                            }
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-light text-muted border rounded-pill px-2.5 py-1.5 small">
+                            <i class="bi bi-info-circle me-1"></i>@L["No recent service logged"]
+                        </span>
+                    }
+                </div>
                 <span class="text-muted small d-flex align-items-center gap-1">
                     @L[Model.Location]
                 </span>
@@ -194,6 +220,93 @@
 
         <!-- Availability Calendar Component -->
         <partial name="_AvailabilityCalendar" model="Model.BookedDates" />
+
+        <!-- =========================================================================
+             EQUIPMENT HEALTH & MAINTENANCE HISTORY SECTION
+             ========================================================================= -->
+        <div class="card krishi-card p-4 mt-4 border-0 shadow-sm" id="healthSection">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-3 border-bottom">
+                <h4 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-wrench-adjustable text-success"></i>
+                    <span>@L["Machinery Health & Maintenance History"]</span>
+                </h4>
+                @if (Model.LastServicedDaysAgo.HasValue)
+                {
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold shadow-xs">
+                        <i class="bi bi-patch-check-fill me-1"></i>
+                        @if (Model.LastServicedDaysAgo.Value == 0)
+                        {
+                            @L["Serviced Today (Prime Condition)"]
+                        }
+                        else if (Model.LastServicedDaysAgo.Value == 1)
+                        {
+                            @L["Serviced Yesterday (Prime Condition)"]
+                        }
+                        else
+                        {
+                            @L["Last Serviced {0} Days Ago", Model.LastServicedDaysAgo.Value]
+                        }
+                    </span>
+                }
+            </div>
+
+            @if (Model.MaintenanceHistory.Any())
+            {
+                <!-- Trust summary alert -->
+                <div class="bg-light p-3.5 rounded-4 border mb-3 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="bi bi-shield-check fs-5"></i>
+                        </div>
+                        <div>
+                            <span class="fw-bold text-dark d-block">@L["Verified Owner Maintenance Log"]</span>
+                            <span class="small text-muted">@L["Owner records routine maintenance and inspections on KrishiLink to ensure optimal fieldwork reliability."]</span>
+                        </div>
+                    </div>
+                    <span class="badge bg-white text-dark border font-monospace px-3 py-2 rounded-pill small">
+                        @L["{0} Service Events Logged", Model.MaintenanceHistory.Count]
+                    </span>
+                </div>
+
+                <!-- Timeline / Service List -->
+                <div class="d-flex flex-column gap-2.5">
+                    @foreach (var log in Model.MaintenanceHistory)
+                    {
+                        <div class="p-3.5 rounded-3 border bg-white shadow-xs">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-1.5">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">
+                                        @L[log.ServiceType]
+                                    </span>
+                                    @if (!string.IsNullOrWhiteSpace(log.ServicedBy))
+                                    {
+                                        <span class="text-muted small"><i class="bi bi-tools text-muted me-1"></i>@log.ServicedBy</span>
+                                    }
+                                </div>
+                                <div class="text-end text-nowrap">
+                                    <span class="fw-bold text-dark small">@log.ServiceDateFormatted</span>
+                                    <span class="badge bg-light text-muted border ms-1" style="font-size: 0.72rem;">@L[log.DaysAgoText]</span>
+                                </div>
+                            </div>
+                            <p class="text-secondary small mb-0 mt-2 ps-1 border-start border-2 border-success-subtle ps-2.5">
+                                @log.Description
+                            </p>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <!-- Empty State -->
+                <div class="text-center py-4 px-3 bg-light rounded-4 border">
+                    <i class="bi bi-journal-x text-muted fs-3 d-block mb-1"></i>
+                    <h6 class="fw-bold text-dark mb-1">@L["No Maintenance Logs Available"]</h6>
+                    <p class="text-muted small mb-0 mx-auto" style="max-width: 420px;">
+                        @L["The owner has not logged specific servicing history for this equipment yet. You may contact the owner for machinery condition details."]
+                    </p>
+                </div>
+            }
+        </div>
 
         <!-- =========================================================================
              RATINGS & REVIEWS SECTION
