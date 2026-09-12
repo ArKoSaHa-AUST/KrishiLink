@@ -46,6 +46,8 @@ namespace KrishiLink.Controllers
                 ownerVerificationStatus = e.OwnerVerificationStatus,
                 rating = e.Rating,
                 reviewCount = e.ReviewCount,
+                lastServicedDaysAgo = e.LastServicedDaysAgo,
+                lastServicedText = e.LastServicedText,
                 detailsUrl = Url.Action(nameof(Details), "Equipment", new { id = e.Id })
             });
 
