@@ -25,7 +25,12 @@ namespace KrishiLink.Models.ViewModels
     public class RentalRequestItem
     {
         public int Id { get; set; }
+        public string FarmerId { get; set; } = string.Empty;
         public string FarmerName { get; set; } = string.Empty;
+        public int FarmerCompleted { get; set; }
+        public double FarmerCancellationRate { get; set; }
+        public string FarmerMemberSince { get; set; } = string.Empty;
+        public string FarmerTrustLevel { get; set; } = string.Empty;
         public string EquipmentName { get; set; } = string.Empty;
         public string DateRange { get; set; } = string.Empty;
         public string? Note { get; set; }

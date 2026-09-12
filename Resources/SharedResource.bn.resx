@@ -4172,4 +4172,103 @@
   <data name="{0}: {1} requests sent to owners." xml:space="preserve">
     <value>{0}: মালিকদের কাছে {1}টি অনুরোধ পাঠানো হয়েছে।</value>
   </data>
+  <data name="Farmer Trust Profile" xml:space="preserve">
+    <value>কৃষকের আস্থা প্রোফাইল</value>
+  </data>
+  <data name="Back to Requests" xml:space="preserve">
+    <value>অনুরোধের তালিকায় ফিরে যান</value>
+  </data>
+  <data name="Owner Decision View" xml:space="preserve">
+    <value>মালিকের সিদ্ধান্ত দৃশ্য</value>
+  </data>
+  <data name="New to KrishiLink" xml:space="preserve">
+    <value>কৃষিলিঙ্কে নতুন</value>
+  </data>
+  <data name="Reliable" xml:space="preserve">
+    <value>নির্ভরযোগ্য</value>
+  </data>
+  <data name="Frequent cancellations" xml:space="preserve">
+    <value>ঘন ঘন বাতিলকারী</value>
+  </data>
+  <data name="Tier" xml:space="preserve">
+    <value>স্তর</value>
+  </data>
+  <data name="Phone hidden until booking confirmed" xml:space="preserve">
+    <value>বুকিং নিশ্চিত না হওয়া পর্যন্ত ফোন নম্বর লুকানো</value>
+  </data>
+  <data name="Phone number is available once a booking with this farmer is accepted/confirmed." xml:space="preserve">
+    <value>এই কৃষকের সাথে বুকিং গৃহীত/নিশ্চিত হওয়ার পর ফোন নম্বর পাওয়া যাবে।</value>
+  </data>
+  <data name="Finished rentals &amp; storage" xml:space="preserve">
+    <value>সম্পন্ন ভাড়া ও সংরক্ষণ</value>
+  </data>
+  <data name="Accepted &amp; paid in progress" xml:space="preserve">
+    <value>গৃহীত ও পরিশোধিত চলমান</value>
+  </data>
+  <data name="Cancellation Rate" xml:space="preserve">
+    <value>বাতিলের হার</value>
+  </data>
+  <data name="Cancelled after escrow payment" xml:space="preserve">
+    <value>এসক্রো পেমেন্টের পর বাতিল</value>
+  </data>
+  <data name="{0} refunded" xml:space="preserve">
+    <value>{0}টি রিফান্ড</value>
+  </data>
+  <data name="{0} cancelled of {1} decided" xml:space="preserve">
+    <value>{1}টির মধ্যে {0}টি বাতিল</value>
+  </data>
+  <data name="Avg. Time to Pay" xml:space="preserve">
+    <value>গড় পরিশোধের সময়</value>
+  </data>
+  <data name="From acceptance to escrow" xml:space="preserve">
+    <value>অনুমোদন থেকে এসক্রো জমা</value>
+  </data>
+  <data name="History With You" xml:space="preserve">
+    <value>আপনার সাথে কাজের ইতিহাস</value>
+  </data>
+  <data name="Completed: {0}" xml:space="preserve">
+    <value>সম্পন্ন: {0}</value>
+  </data>
+  <data name="Active: {0}" xml:space="preserve">
+    <value>চলমান: {0}</value>
+  </data>
+  <data name="Cancelled: {0}" xml:space="preserve">
+    <value>বাতিল: {0}</value>
+  </data>
+  <data name="First booked: {0}" xml:space="preserve">
+    <value>প্রথম বুকিং: {0}</value>
+  </data>
+  <data name="Never" xml:space="preserve">
+    <value>কখনও নয়</value>
+  </data>
+  <data name="Listing" xml:space="preserve">
+    <value>তালিকা</value>
+  </data>
+  <data name="Date Range" xml:space="preserve">
+    <value>তারিখ পরিসীমা</value>
+  </data>
+  <data name="This farmer has not yet completed any prior bookings with you. This is their first interaction." xml:space="preserve">
+    <value>এই কৃষক আপনার সাথে পূর্বে কোনো বুকিং সম্পন্ন করেননি। এটি তার প্রথম যোগাযোগ।</value>
+  </data>
+  <data name="Platform Feedback Given" xml:space="preserve">
+    <value>প্ল্যাটফর্মে প্রদত্ত মতামত</value>
+  </data>
+  <data name="{0} reviews given by this farmer · average rating: {1} ★" xml:space="preserve">
+    <value>এই কৃষকের প্রদত্ত {0}টি রিভিউ · গড় রেটিং: {1} ★</value>
+  </data>
+  <data name="No reviews submitted by this farmer yet." xml:space="preserve">
+    <value>এই কৃষক এখনও কোনো রিভিউ প্রদান করেননি।</value>
+  </data>
+  <data name="Privacy &amp; Verification Policy" xml:space="preserve">
+    <value>গোপনীয়তা ও যাচাইকরণ নীতি</value>
+  </data>
+  <data name="Shown to you because this farmer has requested one of your listings. Contact details are visible only for confirmed bookings." xml:space="preserve">
+    <value>এই কৃষক আপনার একটি তালিকায় অনুরোধ করার কারণে এটি আপনাকে দেখানো হচ্ছে। যোগাযোগের বিবরণ শুধুমাত্র নিশ্চিত বুকিংয়ের ক্ষেত্রে দৃশ্যমান হয়।</value>
+  </data>
+  <data name="✔ {0} completed · {1}% cancellations · since {2}" xml:space="preserve">
+    <value>✔ {0}টি সম্পন্ন · {1}% বাতিল · সদস্য {2} থেকে</value>
+  </data>
+  <data name="View Farmer Profile" xml:space="preserve">
+    <value>কৃষকের প্রোফাইল দেখুন</value>
+  </data>
 </root>

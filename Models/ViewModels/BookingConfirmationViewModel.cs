@@ -76,6 +76,7 @@ namespace KrishiLink.Models.ViewModels
         public bool CanModify { get; set; }
         public int ModificationCount { get; set; } = 0;
         public string? PreviousDetails { get; set; }
+        public string? FarmerProfileUrl { get; set; }
         public List<BookingTimelineStep> Timeline { get; set; } = new();
     }
 
@@ -137,5 +138,6 @@ namespace KrishiLink.Models.ViewModels
         public string QrCodeSvg { get; set; } = string.Empty;
         public string QrCodeBase64 { get; set; } = string.Empty;
         public string VerificationUrl { get; set; } = string.Empty;
+        public string? FarmerProfileUrl { get; set; }
     }
 }

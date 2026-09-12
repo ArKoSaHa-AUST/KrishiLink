@@ -66,6 +66,7 @@ namespace KrishiLink.BLL.Services
         private readonly IBadgeService _badges;
         private readonly ILeaderboardService _leaderboard;
         private readonly ILoyaltyService _loyalty;
+        private readonly IFarmerProfileService _farmerProfile;
         private readonly ILedgerRepository _ledger;
         private readonly RevenueOptions _revenue;
         private readonly PricingOptions _pricingOptions;
@@ -83,6 +84,7 @@ namespace KrishiLink.BLL.Services
             IBadgeService badges,
             ILeaderboardService leaderboard,
             ILoyaltyService loyalty,
+            IFarmerProfileService farmerProfile,
             ILedgerRepository ledger,
             IOptions<RevenueOptions> revenue,
             IOptions<PricingOptions> pricingOptions)
@@ -99,6 +101,7 @@ namespace KrishiLink.BLL.Services
             _badges = badges;
             _leaderboard = leaderboard;
             _loyalty = loyalty;
+            _farmerProfile = farmerProfile;
             _ledger = ledger;
             _revenue = revenue.Value;
             _pricingOptions = pricingOptions.Value;
@@ -678,6 +681,22 @@ namespace KrishiLink.BLL.Services
                                 ? $"Only {free} of {pending.Quantity} units free for these dates."
                                 : "Dates are not available.";
                         }
+                    }
+                }
+            }
+
+            var farmerIds = items.Select(i => i.FarmerId).Where(id => !string.IsNullOrEmpty(id)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (farmerIds.Count > 0)
+            {
+                var summaries = await _farmerProfile.GetSummariesAsync(farmerIds);
+                foreach (var item in items)
+                {
+                    if (!string.IsNullOrEmpty(item.FarmerId) && summaries.TryGetValue(item.FarmerId, out var s))
+                    {
+                        item.FarmerCompleted = s.Completed;
+                        item.FarmerCancellationRate = s.CancellationRate;
+                        item.FarmerMemberSince = s.MemberSince;
+                        item.FarmerTrustLevel = s.TrustLevel;
                     }
                 }
             }
@@ -1750,6 +1769,7 @@ namespace KrishiLink.BLL.Services
             return new RentalRequestItem
             {
                 Id = b.Id,
+                FarmerId = b.FarmerId,
                 FarmerName = string.IsNullOrWhiteSpace(b.Farmer?.FullName) ? "Farmer" : b.Farmer!.FullName,
                 EquipmentName = b.Equipment?.Name ?? string.Empty,
                 EquipmentCategory = b.Equipment?.Category ?? string.Empty,

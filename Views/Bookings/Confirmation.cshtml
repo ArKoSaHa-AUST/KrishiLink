@@ -183,6 +183,14 @@
                                 <span class="text-muted d-block" style="font-size: 0.72rem;">@L["Farmer / Customer"]</span>
                                 <span class="fw-bold text-dark d-block">@Model.FarmerName</span>
                                 <span class="text-muted small"><i class="bi bi-telephone me-1"></i>@Model.FarmerPhone</span>
+                                @if (!string.IsNullOrEmpty(Model.FarmerProfileUrl))
+                                {
+                                    <div class="mt-1">
+                                        <a href="@Model.FarmerProfileUrl" class="text-primary text-decoration-none small fw-semibold">
+                                            <i class="bi bi-person-lines-fill me-1"></i>@L["View Farmer Profile"]
+                                        </a>
+                                    </div>
+                                }
                             </div>
                         </div>
                     </div>

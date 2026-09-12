@@ -1,0 +1,279 @@
+@model KrishiLink.Models.ViewModels.FarmerProfileViewModel
+@using KrishiLink.Models.Entities
+@using KrishiLink.BLL.Services
+@{
+    ViewData["Title"] = $"{Model.FullName} - {L["Farmer Trust Profile"]}";
+    var backUrl = User.IsInRole(AppRoles.GodownOwner)
+        ? AppLinks.OwnerRequests(AppRoles.GodownOwner)
+        : (User.IsInRole(AppRoles.EquipmentOwner) ? AppLinks.OwnerRequests(AppRoles.EquipmentOwner) : "/Admin/Verifications");
+
+    var trustBadgeClass = Model.TrustLevel switch
+    {
+        "Reliable" => "krishi-badge-available",
+        "Caution" => "krishi-badge-unavailable",
+        _ => "krishi-badge-pending"
+    };
+
+    var trustIcon = Model.TrustLevel switch
+    {
+        "Reliable" => "bi-shield-check",
+        "Caution" => "bi-shield-exclamation",
+        _ => "bi-shield-shaded"
+    };
+
+    var trustLabel = Model.TrustLevel switch
+    {
+        "Reliable" => L["Reliable"],
+        "Caution" => L["Frequent cancellations"],
+        _ => L["New to KrishiLink"]
+    };
+}
+
+<div class="container py-4" style="max-width: 960px;">
+
+    <!-- Navigation Breadcrumb & Back Button -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <a href="@backUrl" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-2">
+            <i class="bi bi-arrow-left"></i>
+            <span>@L["Back to Requests"]</span>
+        </a>
+        <span class="badge bg-light text-muted border px-2.5 py-1 small">
+            <i class="bi bi-shield-lock me-1 text-success"></i>@L["Owner Decision View"]
+        </span>
+    </div>
+
+    <!-- Farmer Identity Header Card -->
+    <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 mb-4">
+        <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold fs-3 shadow-sm flex-shrink-0"
+                     style="width: 72px; height: 72px; background: linear-gradient(135deg, #198754 0%, #0d6838 100%);">
+                    @Model.AvatarLetter
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                        <h3 class="fw-bold mb-0" style="color: var(--krishi-text-primary);">@Model.FullName</h3>
+                        <span class="krishi-badge @trustBadgeClass px-2.5 py-1 d-inline-flex align-items-center gap-1.5" style="font-size: 0.82rem;">
+                            <i class="bi @trustIcon"></i>
+                            <span>@trustLabel</span>
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap text-muted small">
+                        <span><i class="bi bi-calendar-check text-success me-1"></i>@L["Member since {0}", Model.MemberSince]</span>
+                        @if (!string.IsNullOrWhiteSpace(Model.MainCrop))
+                        {
+                            <span>·</span>
+                            <span><i class="bi bi-flower1 text-success me-1"></i>@Model.MainCrop</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.Location) || !string.IsNullOrWhiteSpace(Model.District))
+                        {
+                            <span>·</span>
+                            <span><i class="bi bi-geo-alt text-success me-1"></i>@(!string.IsNullOrWhiteSpace(Model.Location) ? Model.Location : Model.District)</span>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.LoyaltyTier))
+                        {
+                            <span>·</span>
+                            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill px-2 py-0.5 fw-semibold">
+                                <i class="bi bi-award me-1"></i>@Model.LoyaltyTier @L["Tier"]
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Privacy-Scoped Contact Actions -->
+            <div class="text-md-end">
+                @if (Model.PhoneVisible && !string.IsNullOrWhiteSpace(Model.Phone))
+                {
+                    <a href="tel:@Model.Phone" class="btn btn-outline-success rounded-pill px-3 py-2 fw-semibold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-telephone-fill"></i>
+                        <span>@Model.Phone</span>
+                    </a>
+                }
+                else
+                {
+                    <span class="badge bg-light text-muted border px-3 py-2 rounded-pill d-inline-flex align-items-center gap-1.5" title="@L["Phone number is available once a booking with this farmer is accepted/confirmed."]">
+                        <i class="bi bi-lock-fill text-secondary"></i>
+                        <span>@L["Phone hidden until booking confirmed"]</span>
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- 4 Key Performance Indicator (KPI) Tiles -->
+    <div class="row g-3 mb-4">
+        <!-- Completed Bookings -->
+        <div class="col-6 col-md-3">
+            <div class="card krishi-card border-0 shadow-sm rounded-4 p-3.5 h-100 bg-white">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold">@L["Completed"]</span>
+                    <div class="rounded-circle p-2 bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="bi bi-check2-all fs-5"></i>
+                    </div>
+                </div>
+                <h2 class="fw-bold mb-1 text-dark">@Model.Completed</h2>
+                <span class="text-muted small" style="font-size: 0.76rem;">@L["Finished rentals & storage"]</span>
+            </div>
+        </div>
+
+        <!-- Active Bookings -->
+        <div class="col-6 col-md-3">
+            <div class="card krishi-card border-0 shadow-sm rounded-4 p-3.5 h-100 bg-white">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold">@L["Active"]</span>
+                    <div class="rounded-circle p-2 bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="bi bi-hourglass-split fs-5"></i>
+                    </div>
+                </div>
+                <h2 class="fw-bold mb-1 text-dark">@Model.Active</h2>
+                <span class="text-muted small" style="font-size: 0.76rem;">@L["Accepted & paid in progress"]</span>
+            </div>
+        </div>
+
+        <!-- Cancellation Rate -->
+        <div class="col-6 col-md-3">
+            <div class="card krishi-card border-0 shadow-sm rounded-4 p-3.5 h-100 bg-white">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold">@L["Cancellation Rate"]</span>
+                    <div class="rounded-circle p-2 bg-danger-subtle text-danger d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="bi bi-x-circle fs-5"></i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-baseline gap-1 mb-1">
+                    <h2 class="fw-bold mb-0 text-dark">@((int)Math.Round(Model.CancellationRate * 100))%</h2>
+                    @if (Model.CancelledAfterPayment > 0)
+                    {
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle font-monospace" style="font-size: 0.7rem;" title="@L["Cancelled after escrow payment"]">
+                            @L["{0} refunded", Model.CancelledAfterPayment]
+                        </span>
+                    }
+                </div>
+                <span class="text-muted small" style="font-size: 0.76rem;">@L["{0} cancelled of {1} decided", Model.Cancelled, Model.Decided]</span>
+            </div>
+        </div>
+
+        <!-- Average Time to Pay -->
+        <div class="col-6 col-md-3">
+            <div class="card krishi-card border-0 shadow-sm rounded-4 p-3.5 h-100 bg-white">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted small fw-semibold">@L["Avg. Time to Pay"]</span>
+                    <div class="rounded-circle p-2 bg-info-subtle text-info-emphasis d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="bi bi-clock-history fs-5"></i>
+                    </div>
+                </div>
+                <h2 class="fw-bold mb-1 text-dark">@(Model.AvgHoursToPay.HasValue ? $"{Model.AvgHoursToPay.Value:F1}h" : "—")</h2>
+                <span class="text-muted small" style="font-size: 0.76rem;">@L["From acceptance to escrow"]</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Repeat History With You Card -->
+    <div class="card krishi-card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-bottom p-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-arrow-repeat text-success fs-5"></i>
+                <h5 class="fw-bold mb-0" style="color: var(--krishi-text-primary);">@L["History With You"]</h5>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small">
+                    @L["Completed: {0}", Model.WithYou.Completed]
+                </span>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1 small">
+                    @L["Active: {0}", Model.WithYou.Active]
+                </span>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 small">
+                    @L["Cancelled: {0}", Model.WithYou.Cancelled]
+                </span>
+                <span class="badge bg-light text-muted border rounded-pill px-2.5 py-1 small">
+                    @L["First booked: {0}", Model.WithYou.FirstBookingOn.HasValue ? Model.WithYou.FirstBookingOn.Value.ToString("dd MMM yyyy") : L["Never"]]
+                </span>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            @if (Model.RecentWithYou.Count > 0)
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted small">
+                            <tr>
+                                <th>@L["Type"]</th>
+                                <th>@L["Listing"]</th>
+                                <th>@L["Date Range"]</th>
+                                <th class="text-end">@L["Status"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var booking in Model.RecentWithYou)
+                            {
+                                var badgeStyle = booking.Status switch
+                                {
+                                    "Accepted" => "krishi-badge-available",
+                                    "Paid" => "krishi-badge-paid",
+                                    "Completed" => "krishi-badge-completed",
+                                    "Cancelled" or "Rejected" => "krishi-badge-unavailable",
+                                    _ => "krishi-badge-pending"
+                                };
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark border font-monospace" style="font-size: 0.75rem;">
+                                            <i class="bi @(booking.BookingType == "Equipment" ? "bi-tools" : "bi-building") me-1 text-success"></i>
+                                            @L[booking.BookingType]
+                                        </span>
+                                    </td>
+                                    <td class="fw-semibold">@booking.ListingName</td>
+                                    <td class="small text-muted">@booking.DateRange</td>
+                                    <td class="text-end">
+                                        <span class="krishi-badge @badgeStyle" style="font-size: 0.75rem; padding: 0.2rem 0.6rem;">
+                                            @L[booking.Status]
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-info-circle fs-3 text-secondary mb-2 d-block"></i>
+                    <p class="mb-0 small">@L["This farmer has not yet completed any prior bookings with you. This is their first interaction."]</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Reviews Given Overview Card -->
+    <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-star-fill text-warning fs-5"></i>
+                <span class="fw-semibold" style="color: var(--krishi-text-primary);">
+                    @L["Platform Feedback Given"]
+                </span>
+            </div>
+            <div class="small text-muted">
+                @if (Model.ReviewsGiven > 0)
+                {
+                    <span>@L["{0} reviews given by this farmer · average rating: {1} ★", Model.ReviewsGiven, Model.AvgRatingGiven.HasValue ? Model.AvgRatingGiven.Value.ToString("F1") : "—"]</span>
+                }
+                else
+                {
+                    <span>@L["No reviews submitted by this farmer yet."]</span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Muted Privacy Footer Notice -->
+    <div class="alert alert-light border rounded-4 shadow-2xs p-3.5 d-flex align-items-center gap-3 mb-0" style="background-color: #f8fafc;">
+        <i class="bi bi-shield-lock-fill text-secondary fs-4 flex-shrink-0"></i>
+        <div class="small text-muted">
+            <strong class="text-dark d-block">@L["Privacy & Verification Policy"]</strong>
+            <span>@L["Shown to you because this farmer has requested one of your listings. Contact details are visible only for confirmed bookings."]</span>
+        </div>
+    </div>
+
+</div>

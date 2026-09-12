@@ -24,6 +24,7 @@
 | **Revenue & Financial Reports** | — | KPIs, Trends, PDF Statements | KPIs, Trends, PDF Statements | Platform Commission & Payouts |
 | **Agronomic Crop Calendar** | DAE 23 Crop Advisories by District | — | — | Database Calendar Management |
 | **Harvest Plan Cart** | Linked Multi-Item Plan, Seasonal Clone & Single-Click Submit | Context Badges on Requests | Context Badges on Requests | — |
+| **Farmer Trust Profile** | Read-Only Profile & Verified Reputation | Completed, Cancellation % & Punctuality | Completed, Cancellation % & Punctuality | Full Audit & Profile Inspection |
 | **Weather & Pest Early Warning** | Live 7-Day Open-Meteo Forecast & Alerts | — | — | Regional Alert Triggers |
 | **Multi-Channel Notifications** | In-App Real-Time & Emailed Updates | In-App Real-Time & Emailed Updates | In-App Real-Time & Emailed Updates | System Audit Notifications |
 
@@ -133,6 +134,12 @@ Pending ──reject──▶ Rejected ──undo──▶ Pending              
 - **Seasonal Plan Cloning**: One-click duplication of previous harvest plans shifted by a customizable number of days (1–730 days, default 365 days) with all booking references cleared, streamlining recurring seasonal operations.
 - **Automated Lifecycle Closure**: Harvest plans automatically transition from `Submitted` to `Completed` once all associated bookings reach terminal states (`Completed`, `Rejected`, or `Cancelled`).
 
+### 13. 🛡️ Farmer Trust Profile for Owners
+- **Trust Signals on Request Lists**: Equipment and godown owner request dashboards display inline mini-stats (`✔ {0} completed · {1}% cancellations · since {2}`) and a color-coded trust chip (`Reliable`, `New to KrishiLink`, or `Frequent cancellations`) for each requesting farmer.
+- **Dedicated Read-Only Profile (`/FarmerProfile/{id}`)**: Owners can inspect a deep trust profile displaying total completed bookings, active rentals/storage, cancellation rate (excluding owner rejections and pending requests), average hours from acceptance to payment into platform escrow, reviews given, and repeat booking history with this specific owner.
+- **Strict Privacy Scoping**: Access is strictly limited to Administrators and Owners who have received at least one booking request from that farmer. Unrelated owners or unknown IDs receive a generic `404 NotFound` response to prevent ID enumeration. Phone numbers are revealed only after a booking is confirmed; email addresses are never exposed.
+- **High-Performance In-Memory Caching**: Summary lookups for request grids are cached per farmer ID for 5 minutes (`IMemoryCache`), preventing redundant database queries while keeping fresh trust metrics available.
+
 ---
 
 ## 🏗️ Architecture & Project Structure
@@ -149,6 +156,7 @@ KrishiLink/
 │   ├── EquipmentController.cs     # Machinery Catalog, Search, Filtering & Details
 │   ├── GodownController.cs        # Storage Facilities Directory & Booking
 │   ├── HarvestPlanController.cs   # Multi-Item Harvest Plan Cart, Submission & Seasonal Cloning
+│   ├── FarmerProfileController.cs # Privacy-Scoped Read-Only Farmer Trust Profiles
 │   ├── AdvisoryController.cs      # Weather Forecasts & Crop Calendars
 │   ├── BookingsController.cs      # User Booking History & Status Updates
 │   ├── ReviewsController.cs       # Verified Review Submission, AJAX Pagination & Owner Replies
@@ -164,13 +172,14 @@ KrishiLink/
 │   ├── Equipment/                 # Equipment Catalog & Details UI
 │   ├── Godown/                    # Storage Directory UI
 │   ├── HarvestPlan/               # Harvest Plan Management & Multi-Item Details UI
+│   ├── FarmerProfile/             # Farmer Trust Profile Views
 │   ├── Advisory/                  # Advisory Dashboard & Pest Warnings
 │   ├── Bookings/                  # History & Review Modal Views
 │   ├── EquipmentOwner/            # Equipment Management Views
 │   └── GodownOwner/               # Godown Management Views
 ├── Models/                        # Data Transfer & Entity Models
 │   ├── Entities/                  # EF Core Domain Entities (User, Equipment, Godown, Bookings, HarvestPlan, CropCalendar, WeatherData, etc.)
-│   └── ViewModels/                # Strongly-typed Razor ViewModels (HarvestPlanViewModels, etc.)
+│   └── ViewModels/                # Strongly-typed Razor ViewModels (FarmerProfileViewModels, etc.)
 ├── BLL/                           # Business Logic Layer Services
 │   ├── Services/                  # Core Business Services:
 │   │   ├── AppLinks.cs            # Centralized Type-Safe URL Registry
@@ -179,6 +188,7 @@ KrishiLink/
 │   │   ├── CropCalendarService.cs # DAE Crop Recommendations & Caching
 │   │   ├── EmailDispatchService.cs# Asynchronous Background Email Dispatcher
 │   │   ├── EquipmentService.cs    # Equipment Management & Search
+│   │   ├── FarmerProfileService.cs# Farmer Trust Metrics & Privacy Verification
 │   │   ├── GodownService.cs       # Godown Space Management & Search
 │   │   ├── HarvestPlanService.cs  # Harvest Plan Cart, Multi-Item Submission & Validation
 │   │   ├── NotificationService.cs # Localized Multi-Channel Alerts

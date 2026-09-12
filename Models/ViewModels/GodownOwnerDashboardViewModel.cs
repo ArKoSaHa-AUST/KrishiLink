@@ -43,7 +43,12 @@ namespace KrishiLink.Models.ViewModels
     public class GodownBookingRequestItem
     {
         public int Id { get; set; }
+        public string FarmerId { get; set; } = string.Empty;
         public string FarmerName { get; set; } = string.Empty;
+        public int FarmerCompleted { get; set; }
+        public double FarmerCancellationRate { get; set; }
+        public string FarmerMemberSince { get; set; } = string.Empty;
+        public string FarmerTrustLevel { get; set; } = string.Empty;
         public int GodownId { get; set; }
         public string GodownName { get; set; } = string.Empty;
         public double RequestedCapacityTons { get; set; }

@@ -513,7 +513,12 @@ namespace KrishiLink.BLL.Services
                     .FirstOrDefaultAsync(x => x.Id == bookingId);
 
                 if (b == null || b.Equipment == null) return null;
-                return BuildEquipmentConfirmation(b, requestHost, justCreated);
+                var vm = BuildEquipmentConfirmation(b, requestHost, justCreated);
+                if (!string.IsNullOrEmpty(userId) && userId == vm.OwnerId)
+                {
+                    vm.FarmerProfileUrl = AppLinks.FarmerProfile(vm.FarmerId);
+                }
+                return vm;
             }
             else
             {
@@ -524,7 +529,12 @@ namespace KrishiLink.BLL.Services
                     .FirstOrDefaultAsync(x => x.Id == bookingId);
 
                 if (g == null || g.Godown == null) return null;
-                return BuildGodownConfirmation(g, requestHost, justCreated);
+                var vm = BuildGodownConfirmation(g, requestHost, justCreated);
+                if (!string.IsNullOrEmpty(userId) && userId == vm.OwnerId)
+                {
+                    vm.FarmerProfileUrl = AppLinks.FarmerProfile(vm.FarmerId);
+                }
+                return vm;
             }
         }
 
@@ -607,6 +617,7 @@ namespace KrishiLink.BLL.Services
                     OwnerPhone = b.Equipment.Owner?.PhoneNumber ?? "—",
                     OwnerBusiness = b.Equipment.Owner?.BusinessOrFarmName ?? string.Empty,
                     IsCurrentOwner = isOwner,
+                    FarmerProfileUrl = isOwner ? AppLinks.FarmerProfile(b.FarmerId) : null,
                     CanAccept = isOwner && b.Status == BookingStatus.Pending,
                     CanReject = isOwner && b.Status == BookingStatus.Pending,
                     CanConfirmPickup = isOwner && b.Status == BookingStatus.Paid,
@@ -693,6 +704,7 @@ namespace KrishiLink.BLL.Services
                     OwnerPhone = g.Godown.Owner?.PhoneNumber ?? "—",
                     OwnerBusiness = g.Godown.Owner?.BusinessOrFarmName ?? string.Empty,
                     IsCurrentOwner = isOwner,
+                    FarmerProfileUrl = isOwner ? AppLinks.FarmerProfile(g.FarmerId) : null,
                     CanAccept = isOwner && g.Status == BookingStatus.Pending,
                     CanReject = isOwner && g.Status == BookingStatus.Pending,
                     CanConfirmPickup = isOwner && g.Status == BookingStatus.Paid,

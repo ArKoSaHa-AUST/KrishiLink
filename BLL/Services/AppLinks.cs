@@ -47,5 +47,6 @@ namespace KrishiLink.BLL.Services
         public static string Notifications => "/Notifications";
         public static string HarvestPlans => "/HarvestPlan";
         public static string HarvestPlan(int id) => $"/HarvestPlan/Details/{id}";
+        public static string FarmerProfile(string farmerId) => $"/FarmerProfile/{farmerId}";
     }
 }

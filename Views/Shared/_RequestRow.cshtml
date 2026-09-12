@@ -17,6 +17,7 @@
     };
     var gross = "৳" + Model.AgreedGross.ToString("N0");
 }
+@using KrishiLink.BLL.Services
 <div class="request-row border-bottom pending-request-row" data-request-id="@Model.Id"
      data-farmer-name="@Model.FarmerName" data-conflict="@(Model.HasConflict ? "true" : "false")" data-search="@(($"{Model.FarmerName} {Model.EquipmentName}").ToLowerInvariant())">
     <div class="p-3 px-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 request-row-header"
@@ -28,7 +29,38 @@
                 @Model.FarmerName[0]
             </div>
             <div>
-                <span class="fw-semibold d-block" style="color: var(--krishi-text-primary);">@Model.FarmerName</span>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    @if (!string.IsNullOrEmpty(Model.FarmerId))
+                    {
+                        <a href="@AppLinks.FarmerProfile(Model.FarmerId)" class="fw-semibold text-decoration-none text-dark hover-underline" onclick="event.stopPropagation();">@Model.FarmerName</a>
+                    }
+                    else
+                    {
+                        <span class="fw-semibold" style="color: var(--krishi-text-primary);">@Model.FarmerName</span>
+                    }
+                    @if (expandable && !string.IsNullOrEmpty(Model.FarmerTrustLevel))
+                    {
+                        var trustChipClass = Model.FarmerTrustLevel switch
+                        {
+                            "Reliable" => "krishi-badge-available",
+                            "Caution" => "krishi-badge-unavailable",
+                            _ => "krishi-badge-pending"
+                        };
+                        var trustChipText = Model.FarmerTrustLevel switch
+                        {
+                            "Reliable" => L["Reliable"],
+                            "Caution" => L["Frequent cancellations"],
+                            _ => L["New to KrishiLink"]
+                        };
+                        <span class="krishi-badge @trustChipClass" style="font-size: 0.68rem; padding: 0.12rem 0.45rem;">@trustChipText</span>
+                    }
+                </div>
+                @if (expandable && !string.IsNullOrEmpty(Model.FarmerMemberSince))
+                {
+                    <span class="small d-block text-muted" style="font-size: 0.76rem;">
+                        @L["✔ {0} completed · {1}% cancellations · since {2}", Model.FarmerCompleted, (int)Math.Round(Model.FarmerCancellationRate * 100), Model.FarmerMemberSince]
+                    </span>
+                }
                 <span class="small d-block" style="color: var(--krishi-text-muted);">
                     <i class="bi bi-tools me-1 text-success"></i>@Model.EquipmentName
                     @if (Model.Units > 1)
