@@ -61,12 +61,24 @@ namespace KrishiLink.BLL.Services
             {
                 var term = c.SearchTerm.Trim();
                 query = query.Where(g => g.Name.Contains(term) || g.StorageType.Contains(term)
-                    || g.Location.Contains(term) || g.Owner!.FullName.Contains(term));
+                    || g.Location.Contains(term) || g.Description.Contains(term) || g.Facilities.Contains(term)
+                    || g.Owner!.FullName.Contains(term));
             }
             if (c.SelectedStorageTypes is { Count: > 0 })
                 query = query.Where(g => c.SelectedStorageTypes.Contains(g.StorageType));
             if (!string.IsNullOrWhiteSpace(c.Location))
-                query = query.Where(g => g.Location.Contains(c.Location.Trim()));
+            {
+                var loc = c.Location.Trim();
+                var alt = GetDistrictAlias(loc);
+                if (!string.IsNullOrEmpty(alt) && !alt.Equals(loc, StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(g => g.Location.Contains(loc) || g.Location.Contains(alt));
+                }
+                else
+                {
+                    query = query.Where(g => g.Location.Contains(loc));
+                }
+            }
             if (c.SelectedMaxPrice.HasValue)
                 query = query.Where(g => g.PricePerTonPerMonth <= c.SelectedMaxPrice.Value);
 
@@ -125,6 +137,7 @@ namespace KrishiLink.BLL.Services
                 "price_desc" => items.OrderByDescending(g => g.PricePerTonPerMonth),
                 "capacity_desc" => items.OrderByDescending(g => g.AvailableCapacityTons),
                 "distance" => items.OrderBy(g => g.Location).ThenByDescending(g => g.CreatedAt),
+                "rating_desc" => items.OrderByDescending(g => g.Rating).ThenByDescending(g => g.ReviewCount),
                 _ => items.OrderByDescending(g => g.CreatedAt)
             };
 
@@ -138,14 +151,35 @@ namespace KrishiLink.BLL.Services
                 AvailableStartDate = c.AvailableStartDate,
                 AvailableEndDate = c.AvailableEndDate,
                 SortBy = sort,
-                GodownList = items.ToList()
+                GodownList = items.ToList(),
+                AvailableStorageTypes = new List<string>(OnboardingOptions.StorageTypes),
+                AvailableLocations = new List<string>(OnboardingOptions.Districts)
             };
 
-            var types = await _godowns.Query().Where(g => g.IsActive).Select(g => g.StorageType).Distinct().OrderBy(t => t).ToListAsync();
-            if (types.Count > 0) model.AvailableStorageTypes = types;
-            var locations = await _godowns.Query().Where(g => g.IsActive).Select(g => g.Location).Distinct().OrderBy(l => l).ToListAsync();
-            if (locations.Count > 0) model.AvailableLocations = locations;
             return model;
+        }
+
+        private static string? GetDistrictAlias(string district)
+        {
+            var aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Bogra"] = "Bogura",
+                ["Bogura"] = "Bogra",
+                ["Comilla"] = "Cumilla",
+                ["Cumilla"] = "Comilla",
+                ["Jessore"] = "Jashore",
+                ["Jashore"] = "Jessore",
+                ["Chittagong"] = "Chattogram",
+                ["Chattogram"] = "Chittagong",
+                ["Barisal"] = "Barishal",
+                ["Barishal"] = "Barisal",
+                ["Nawabganj"] = "Chapainawabganj",
+                ["Chapainawabganj"] = "Nawabganj",
+                ["Maulvibazar"] = "Moulvibazar",
+                ["Moulvibazar"] = "Maulvibazar"
+            };
+
+            return aliases.TryGetValue(district, out var alt) ? alt : null;
         }
 
         public async Task<GodownDetailViewModel?> GetDetailsAsync(int id)

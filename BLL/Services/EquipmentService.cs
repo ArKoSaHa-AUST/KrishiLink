@@ -59,20 +59,36 @@ namespace KrishiLink.BLL.Services
             {
                 var term = c.SearchTerm.Trim();
                 query = query.Where(e => e.Name.Contains(term) || e.Category.Contains(term)
-                    || e.Location.Contains(term) || e.Owner!.FullName.Contains(term));
+                    || e.Location.Contains(term) || e.Description.Contains(term) || e.Owner!.FullName.Contains(term));
             }
             if (c.SelectedCategories is { Count: > 0 })
                 query = query.Where(e => c.SelectedCategories.Contains(e.Category));
             if (!string.IsNullOrWhiteSpace(c.Location))
-                query = query.Where(e => e.Location.Contains(c.Location.Trim()));
+            {
+                var loc = c.Location.Trim();
+                var alt = GetDistrictAlias(loc);
+                if (!string.IsNullOrEmpty(alt) && !alt.Equals(loc, StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(e => e.Location.Contains(loc) || e.Location.Contains(alt));
+                }
+                else
+                {
+                    query = query.Where(e => e.Location.Contains(loc));
+                }
+            }
             if (c.SelectedMaxPrice.HasValue)
                 query = query.Where(e => e.DailyRate <= c.SelectedMaxPrice.Value);
-            if (c.AvailabilityDate.HasValue)
+
+            var hasStartDate = c.StartDate.HasValue || c.AvailabilityDate.HasValue;
+            if (hasStartDate)
             {
-                var day = c.AvailabilityDate.Value.Date;
+                var start = (c.StartDate ?? c.AvailabilityDate)!.Value.Date;
+                var end = (c.EndDate ?? start).Date;
+                if (end < start) end = start;
+
                 query = query.Where(e => e.IsAvailable
-                    && !e.BlockedDates.Any(d => d.Date == day)
-                    && !e.Bookings.Any(b => b.Status == BookingStatus.Accepted && b.StartDate <= day && day <= b.EndDate));
+                    && !e.BlockedDates.Any(d => d.Date >= start && d.Date <= end)
+                    && !e.Bookings.Any(b => b.Status == BookingStatus.Accepted && b.StartDate <= end && start <= b.EndDate));
             }
 
             var sort = (c.SortBy ?? "newest").ToLowerInvariant();
@@ -81,6 +97,7 @@ namespace KrishiLink.BLL.Services
                 "price_asc" => query.OrderBy(e => e.DailyRate),
                 "price_desc" => query.OrderByDescending(e => e.DailyRate),
                 "distance" => query.OrderBy(e => e.Location).ThenByDescending(e => e.CreatedAt),
+                "rating_desc" => query.OrderByDescending(e => e.AverageRating).ThenByDescending(e => e.ReviewCount),
                 _ => query.OrderByDescending(e => e.CreatedAt)
             };
 
@@ -107,14 +124,39 @@ namespace KrishiLink.BLL.Services
                 SelectedCategories = c.SelectedCategories ?? new List<string>(),
                 Location = c.Location,
                 SelectedMaxPrice = c.SelectedMaxPrice ?? 5000,
-                AvailabilityDate = c.AvailabilityDate,
+                AvailabilityDate = c.AvailabilityDate ?? c.StartDate,
+                StartDate = c.StartDate ?? c.AvailabilityDate,
+                EndDate = c.EndDate,
                 SortBy = sort,
-                EquipmentList = items
+                EquipmentList = items,
+                AvailableCategories = new List<string>(OnboardingOptions.EquipmentCategories),
+                AvailableLocations = new List<string>(OnboardingOptions.Districts)
             };
 
-            var locations = await _equipment.Query().Select(e => e.Location).Distinct().OrderBy(l => l).ToListAsync();
-            if (locations.Count > 0) model.AvailableLocations = locations;
             return model;
+        }
+
+        private static string? GetDistrictAlias(string district)
+        {
+            var aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Bogra"] = "Bogura",
+                ["Bogura"] = "Bogra",
+                ["Comilla"] = "Cumilla",
+                ["Cumilla"] = "Comilla",
+                ["Jessore"] = "Jashore",
+                ["Jashore"] = "Jessore",
+                ["Chittagong"] = "Chattogram",
+                ["Chattogram"] = "Chittagong",
+                ["Barisal"] = "Barishal",
+                ["Barishal"] = "Barisal",
+                ["Nawabganj"] = "Chapainawabganj",
+                ["Chapainawabganj"] = "Nawabganj",
+                ["Maulvibazar"] = "Moulvibazar",
+                ["Moulvibazar"] = "Maulvibazar"
+            };
+
+            return aliases.TryGetValue(district, out var alt) ? alt : null;
         }
 
         public async Task<EquipmentDetailViewModel?> GetDetailsAsync(int id)

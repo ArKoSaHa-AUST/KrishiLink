@@ -59,33 +59,15 @@ namespace KrishiLink.Models.ViewModels
 
         public DateTime? AvailableStartDate { get; set; }
         public DateTime? AvailableEndDate { get; set; }
-        public string SortBy { get; set; } = "newest"; // "price_asc", "price_desc", "distance", "capacity_desc", "newest"
+        public string SortBy { get; set; } = "newest"; // "price_asc", "price_desc", "distance", "capacity_desc", "rating_desc", "newest"
 
         // Results
         public List<GodownItemViewModel> GodownList { get; set; } = new();
         public int TotalCount => GodownList.Count;
 
         // Filter Metadata
-        public List<string> AvailableStorageTypes { get; set; } = new()
-        {
-            "Cold Storage (Vegetable & Fruit)",
-            "Grain Warehouse (Paddy & Wheat)",
-            "Multi-Chamber Cold Storage",
-            "Seed & Fertilizer Godown",
-            "Dry Goods Warehouse",
-            "Jute & Crop Storage"
-        };
+        public List<string> AvailableStorageTypes { get; set; } = new(OnboardingOptions.StorageTypes);
 
-        public List<string> AvailableLocations { get; set; } = new()
-        {
-            "Dinajpur Sadar, Dinajpur",
-            "Bogra Sadar, Bogra",
-            "Sherpur, Bogra",
-            "Rangpur Sadar, Rangpur",
-            "Mymensingh Sadar, Mymensingh",
-            "Jessore Sadar, Jessore",
-            "Rajshahi Sadar, Rajshahi",
-            "Comilla Sadar, Comilla"
-        };
+        public List<string> AvailableLocations { get; set; } = new(OnboardingOptions.Districts);
     }
 }
