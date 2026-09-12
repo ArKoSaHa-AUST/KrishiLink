@@ -1,0 +1,489 @@
+@model KrishiLink.Models.ViewModels.PestAlertsIndexViewModel
+@{
+    ViewData["Title"] = L["Pest & Disease Alerts"].Value;
+    var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+}
+
+<!-- ADVISORY SECTION 3-TAB NAVIGATION -->
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4 pb-2 border-bottom" style="border-color: var(--krishi-border-color) !important;">
+    <div>
+        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">
+            <i class="bi bi-shield-exclamation text-danger me-2"></i>@L["Agrometeorological Pest & Disease Alerts"]
+        </h2>
+        <p class="mb-0 text-muted">
+            @L["Real-time crop disease warning rules based on temperature, relative humidity, and regional weather forecasts."]
+        </p>
+    </div>
+
+    <!-- Top Tab Bar -->
+    <div class="nav nav-pills bg-light p-1.5 rounded-pill border shadow-sm" role="tablist">
+        <a asp-controller="Advisory" asp-action="Index" class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-muted d-flex align-items-center gap-1.5">
+            <i class="bi bi-cpu"></i>
+            <span>@L["Smart Advisor"]</span>
+        </a>
+        <a asp-controller="Advisory" asp-action="Calendar" class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-muted d-flex align-items-center gap-1.5">
+            <i class="bi bi-calendar-week"></i>
+            <span>@L["Crop Calendar"]</span>
+        </a>
+        <a asp-controller="Advisory" asp-action="Alerts" class="nav-link active bg-danger text-white rounded-pill px-3.5 py-1.5 fw-bold d-flex align-items-center gap-1.5 shadow-sm">
+            <i class="bi bi-shield-shaded"></i>
+            <span>@L["Pest Alerts"]</span>
+        </a>
+    </div>
+</div>
+
+<!-- LIVE DISTRICT WEATHER HERO & TELEMETRY BAR -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+    <div class="card-body p-4 text-white">
+        <div class="row align-items-center gy-4">
+            
+            <!-- Left: Regional Weather Overview -->
+            <div class="col-12 col-lg-7">
+                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                    <span class="badge bg-danger text-white px-3 py-1 rounded-pill fw-bold text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                        <i class="bi bi-broadcast me-1"></i>@L["Live Weather Telemetry"]
+                    </span>
+                    <span class="badge bg-white bg-opacity-20 text-white px-2.5 py-1 rounded-pill small">
+                        @Model.Weather.Division @L["Division"]
+                    </span>
+                    @if (Model.IsCustomSimulated)
+                    {
+                        <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill small fw-bold">
+                            <i class="bi bi-sliders me-1"></i>@L["Simulation Mode Active"]
+                        </span>
+                    }
+                </div>
+
+                <div class="d-flex align-items-baseline gap-3 my-2">
+                    <h1 class="display-5 fw-bold text-white mb-0">@Model.Weather.Temperature.ToString("0.#")°C</h1>
+                    <div>
+                        <div class="fs-5 fw-semibold text-light mb-0">
+                            <i class="bi @Model.Weather.ConditionIcon text-warning me-1"></i>
+                            @(isBangla ? Model.Weather.BanglaCondition : Model.Weather.Condition)
+                        </div>
+                        <div class="text-white-50 small">
+                            @Model.Weather.District District · @Model.Weather.ForecastDate.ToString("MMM dd, yyyy")
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telemetry Chips -->
+                <div class="d-flex align-items-center gap-3 flex-wrap mt-3 text-white-50 small">
+                    <div class="d-flex align-items-center gap-1.5 bg-white bg-opacity-10 px-3 py-1.5 rounded-pill text-white">
+                        <i class="bi bi-moisture text-info fs-6"></i>
+                        <span>@L["Humidity:"] <strong>@Model.Weather.Humidity.ToString("0.#")%</strong></span>
+                    </div>
+                    <div class="d-flex align-items-center gap-1.5 bg-white bg-opacity-10 px-3 py-1.5 rounded-pill text-white">
+                        <i class="bi bi-cloud-rain text-primary fs-6"></i>
+                        <span>@L["Rain Chance:"] <strong>@Model.Weather.RainProbability.ToString("0.#")%</strong></span>
+                    </div>
+                    <div class="d-flex align-items-center gap-1.5 bg-white bg-opacity-10 px-3 py-1.5 rounded-pill text-white">
+                        <i class="bi bi-wind text-light fs-6"></i>
+                        <span>@L["Wind:"] <strong>@Model.Weather.WindSpeedKmh km/h</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Active Disease Warning Counters -->
+            <div class="col-12 col-lg-5">
+                <div class="p-3 bg-white bg-opacity-10 rounded-4 border border-white border-opacity-10">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="text-white-50 small fw-bold text-uppercase">@L["Active Disease Risk Assessment"]</span>
+                        <span class="badge bg-danger rounded-pill px-2.5 py-0.5 small">
+                            @L["{0} Active Warnings", Model.ActiveAlerts.Count]
+                        </span>
+                    </div>
+
+                    <div class="row g-2 text-center mt-1">
+                        <div class="col-4">
+                            <div class="p-2 rounded-3 bg-danger bg-opacity-25 border border-danger-subtle text-white">
+                                <div class="fs-4 fw-bold text-danger-subtle">@Model.CriticalAlertsCount</div>
+                                <div style="font-size: 0.72rem;" class="text-white-50">@L["Critical Risk"]</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 rounded-3 bg-warning bg-opacity-25 border border-warning-subtle text-white">
+                                <div class="fs-4 fw-bold text-warning-subtle">@Model.HighAlertsCount</div>
+                                <div style="font-size: 0.72rem;" class="text-white-50">@L["High Risk"]</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 rounded-3 bg-info bg-opacity-25 border border-info-subtle text-white">
+                                <div class="fs-4 fw-bold text-info-subtle">@Model.ModerateAlertsCount</div>
+                                <div style="font-size: 0.72rem;" class="text-white-50">@L["Moderate"]</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="text-white-50 mb-0 mt-3 small" style="font-size: 0.78rem;">
+                        <i class="bi bi-info-circle me-1"></i>
+                        @L["Rules match DAE guidelines. Humidity ≥85% drastically elevates fungal blast and blight spore propagation."]
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 5-Day Meteorological Forecast Strip -->
+        <div class="mt-4 pt-3 border-top border-white border-opacity-10">
+            <div class="d-flex align-items-center gap-2 overflow-x-auto pb-1 text-nowrap">
+                <span class="text-white-50 small fw-bold me-2">@L["5-Day Forecast:"]</span>
+                @foreach (var day in Model.Weather.FiveDayForecast)
+                {
+                    <div class="d-inline-flex align-items-center gap-2 bg-white bg-opacity-10 px-3 py-1.5 rounded-3 text-white small">
+                        <span class="fw-semibold">@(isBangla ? day.BanglaDayName : day.DayName)</span>
+                        <i class="bi @day.ConditionIcon text-warning"></i>
+                        <span>@day.MaxTemp° / @day.MinTemp°C</span>
+                        <span class="text-info-subtle"><i class="bi bi-moisture"></i> @day.Humidity%</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DISTRICT SELECTOR & WEATHER SCENARIO SIMULATOR -->
+<div class="card krishi-card border-0 shadow-sm rounded-4 p-3.5 mb-4">
+    <div class="row g-3 align-items-center">
+        
+        <!-- District Dropdown -->
+        <div class="col-12 col-md-5 col-lg-4">
+            <label class="form-label small fw-bold text-dark mb-1">
+                <i class="bi bi-geo-alt-fill text-danger me-1"></i>@L["Select Bangladesh District / Zone:"]
+            </label>
+            <form asp-controller="Advisory" asp-action="Alerts" method="get" id="districtForm">
+                <input type="hidden" name="crop" value="@Model.SelectedCrop" />
+                <select name="district" class="form-select form-select-lg fs-6 bg-light" onchange="this.form.submit()">
+                    @foreach (var d in Model.Districts)
+                    {
+                        <option value="@d.Value" selected="@(Model.SelectedDistrict == d.Value)">
+                            @(isBangla ? d.BanglaText : d.Text)
+                        </option>
+                    }
+                </select>
+            </form>
+        </div>
+
+        <!-- Target Crop Filter -->
+        <div class="col-12 col-md-4 col-lg-3">
+            <label class="form-label small fw-bold text-dark mb-1">
+                <i class="bi bi-flower2 text-success me-1"></i>@L["Filter by Target Crop:"]
+            </label>
+            <form asp-controller="Advisory" asp-action="Alerts" method="get" id="cropForm">
+                <input type="hidden" name="district" value="@Model.SelectedDistrict" />
+                @if (Model.IsCustomSimulated)
+                {
+                    <input type="hidden" name="temp" value="@Model.CustomTemp" />
+                    <input type="hidden" name="humidity" value="@Model.CustomHumidity" />
+                    <input type="hidden" name="condition" value="@Model.CustomCondition" />
+                }
+                <select name="crop" class="form-select form-select-lg fs-6 bg-light" onchange="this.form.submit()">
+                    @foreach (var c in Model.Crops)
+                    {
+                        <option value="@c.Value" selected="@(Model.SelectedCrop == c.Value)">
+                            @(isBangla ? c.BanglaText : c.Text)
+                        </option>
+                    }
+                </select>
+            </form>
+        </div>
+
+        <!-- Simulator Toggle Button -->
+        <div class="col-12 col-md-3 col-lg-5 text-md-end mt-md-4">
+            <button class="btn btn-krishi-outline rounded-pill px-3.5 py-2.5 fw-semibold d-inline-flex align-items-center gap-2"
+                    type="button" data-bs-toggle="collapse" data-bs-target="#simulatorCollapse" aria-expanded="false">
+                <i class="bi bi-sliders text-warning"></i>
+                <span>@L["Weather Scenario Simulator"]</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Collapsible Weather Simulator Panel -->
+    <div class="collapse @(Model.IsCustomSimulated ? "show" : "") mt-3 pt-3 border-top" id="simulatorCollapse">
+        <div class="p-3.5 bg-light rounded-4 border">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <div>
+                    <h6 class="fw-bold text-dark mb-0 d-flex align-items-center gap-1.5">
+                        <i class="bi bi-cpu text-primary"></i>@L["Agrometeorological Scenario Simulator"]
+                    </h6>
+                    <span class="text-muted small">@L["Test how different temperatures, humidities, and fog conditions trigger disease warnings."]</span>
+                </div>
+                <a asp-controller="Advisory" asp-action="Alerts" asp-route-district="@Model.SelectedDistrict" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                    <i class="bi bi-arrow-clockwise me-1"></i>@L["Reset to Live Weather"]
+                </a>
+            </div>
+
+            <!-- Preset Scenarios Quick Buttons -->
+            <div class="mb-3">
+                <span class="small fw-bold text-muted d-block mb-1.5">@L["Quick Presets:"]</span>
+                <div class="d-flex gap-2 flex-wrap">
+                    @foreach (var preset in Model.PresetScenarios)
+                    {
+                        <a href="@Url.Action("Alerts", "Advisory", new { district = Model.SelectedDistrict, crop = Model.SelectedCrop, temp = preset.Temperature, humidity = preset.Humidity, condition = preset.Condition })"
+                           class="btn btn-sm btn-white border rounded-pill px-3 py-1.5 text-dark shadow-xs d-inline-flex align-items-center gap-1.5 hover-shadow transition">
+                            <i class="bi @preset.IconClass text-primary"></i>
+                            <span class="fw-semibold">@(isBangla ? preset.BanglaName : preset.Name)</span>
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <!-- Interactive Sliders Form -->
+            <form asp-controller="Advisory" asp-action="Alerts" method="get">
+                <input type="hidden" name="district" value="@Model.SelectedDistrict" />
+                <input type="hidden" name="crop" value="@Model.SelectedCrop" />
+                
+                <div class="row g-3 align-items-center">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small fw-bold text-dark d-flex justify-content-between mb-1">
+                            <span>@L["Temperature (°C):"]</span>
+                            <span id="tempDisplay" class="badge bg-primary">@Model.Weather.Temperature.ToString("0.#")°C</span>
+                        </label>
+                        <input type="range" name="temp" class="form-range" min="8" max="40" step="0.5"
+                               value="@Model.Weather.Temperature" oninput="document.getElementById('tempDisplay').textContent = this.value + '°C'" />
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small fw-bold text-dark d-flex justify-content-between mb-1">
+                            <span>@L["Relative Humidity (%):"]</span>
+                            <span id="humDisplay" class="badge bg-info">@Model.Weather.Humidity.ToString("0.#")%</span>
+                        </label>
+                        <input type="range" name="humidity" class="form-range" min="30" max="100" step="1"
+                               value="@Model.Weather.Humidity" oninput="document.getElementById('humDisplay').textContent = this.value + '%'" />
+                    </div>
+
+                    <div class="col-12 col-md-3">
+                        <label class="form-label small fw-bold text-dark mb-1">@L["Weather Condition:"]</label>
+                        <select name="condition" class="form-select form-select-sm">
+                            <option value="Cloudy with Showers">Cloudy with Showers</option>
+                            <option value="Dense Fog & High Moisture">Dense Fog & High Moisture</option>
+                            <option value="Monsoon Rain & High Humidity">Monsoon Rain & High Humidity</option>
+                            <option value="Overcast with Light Drizzle">Overcast with Light Drizzle</option>
+                            <option value="Warm & Humid with Stagnant Air">Warm & Humid with Stagnant Air</option>
+                            <option value="Clear & Dry Skies">Clear & Dry Skies</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-1">
+                        <button type="submit" class="btn btn-krishi-primary w-100 btn-sm py-2 fw-bold" title='@L["Run Simulation"]'>
+                            <i class="bi bi-play-fill fs-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 1: ACTIVE TRIGGERED WARNINGS -->
+<div class="mb-5">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-2 border-bottom">
+        <div class="d-flex align-items-center gap-2">
+            <h4 class="fw-bold text-dark mb-0">@L["Active Outbreak Warnings for Your Area"]</h4>
+            <span class="badge bg-danger rounded-pill px-2.5 py-1 small">
+                @Model.ActiveAlerts.Count @L["Triggered"]
+            </span>
+        </div>
+        <span class="text-muted small">
+            @L["Evaluated for {0} at {1}°C and {2}% Humidity", Model.Weather.District, Model.Weather.Temperature.ToString("0.#"), Model.Weather.Humidity.ToString("0.#")]
+        </span>
+    </div>
+
+    @if (!Model.ActiveAlerts.Any())
+    {
+        <div class="card krishi-card border-0 shadow-sm rounded-4 text-center py-5 px-4 bg-success bg-opacity-10 border border-success-subtle">
+            <i class="bi bi-shield-check text-success" style="font-size: 3.5rem;"></i>
+            <h4 class="fw-bold text-success mt-2 mb-1">@L["No Critical Disease Outbreaks Detected"]</h4>
+            <p class="text-secondary small mb-0" style="max-width: 550px; margin: auto;">
+                @L["Current meteorological parameters ({0}°C, {1}% Humidity) in {2} do not currently satisfy high-risk thresholds for major fungal or bacterial crop epidemics. Continue standard agronomic scouting.", Model.Weather.Temperature.ToString("0.#"), Model.Weather.Humidity.ToString("0.#"), Model.Weather.District]
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var alert in Model.ActiveAlerts)
+            {
+                <div class="col-12">
+                    <div class="card krishi-card border-0 shadow-sm rounded-4 overflow-hidden"
+                         style="border-left: 6px solid @(alert.Severity == "Critical" ? "#dc2626" : (alert.Severity == "High" ? "#ea580c" : "#ca8a04")) !important;">
+                        
+                        <!-- Card Header -->
+                        <div class="card-body p-4 bg-white border-bottom">
+                            <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-2">
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="badge @(alert.Severity == "Critical" ? "bg-danger" : (alert.Severity == "High" ? "bg-warning text-dark" : "bg-info")) rounded-pill px-3 py-1 fw-bold text-uppercase" style="font-size: 0.75rem;">
+                                        <i class="bi bi-exclamation-octagon-fill me-1"></i>@alert.Severity @L["Risk"]
+                                    </span>
+                                    <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-0.5 small">
+                                        @alert.Category
+                                    </span>
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-0.5 small fw-semibold">
+                                        @L["{0}% Outbreak Likelihood", alert.RiskPercentage]
+                                    </span>
+                                </div>
+                                <span class="text-muted small fst-italic">
+                                    @L["Pathogen / Pest:"] <strong>@alert.PathogenOrPest</strong>
+                                </span>
+                            </div>
+
+                            <div class="row align-items-center gy-2">
+                                <div class="col-12 col-md-8">
+                                    <h4 class="fw-bold text-dark mb-1">
+                                        @(isBangla ? alert.BanglaName : alert.DiseaseName)
+                                    </h4>
+                                    <div class="d-flex align-items-center gap-2 text-muted small flex-wrap">
+                                        <span>@L["Susceptible Crops:"]</span>
+                                        @foreach (var cr in alert.TargetCrops)
+                                        {
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle rounded-pill px-2 py-0.5">
+                                                @cr
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4 text-md-end">
+                                    <span class="text-danger small fw-semibold d-block">
+                                        <i class="bi bi-clock-history me-1"></i>@(isBangla ? alert.BanglaTriggerExplanation : alert.TriggerExplanation)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Body: Symptoms & Actionable Remedies -->
+                        <div class="card-body p-4 bg-light">
+                            <div class="row g-4">
+                                
+                                <!-- Symptoms -->
+                                <div class="col-12 col-lg-5">
+                                    <div class="p-3 bg-white rounded-3 border h-100">
+                                        <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-1.5">
+                                            <i class="bi bi-eye-fill text-warning"></i>@L["Field Identification & Symptoms"]
+                                        </h6>
+                                        <p class="small text-secondary mb-0 leading-relaxed">
+                                            @(isBangla ? alert.BanglaSymptoms : alert.Symptoms)
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Actionable Farmer Remedies -->
+                                <div class="col-12 col-lg-7">
+                                    <div class="p-3 bg-white rounded-3 border h-100">
+                                        <h6 class="fw-bold text-danger mb-2 d-flex align-items-center gap-1.5">
+                                            <i class="bi bi-shield-check text-success"></i>@L["Immediate Actionable Control Measures"]
+                                        </h6>
+                                        <ul class="list-unstyled small text-secondary mb-3 d-flex flex-column gap-2">
+                                            @{
+                                                var remedies = isBangla ? alert.BanglaActionableRemedies : alert.ActionableRemedies;
+                                                for (int rIndex = 0; rIndex < remedies.Count; rIndex++)
+                                                {
+                                                    <li class="d-flex align-items-start gap-2">
+                                                        <span class="badge bg-danger text-white rounded-circle p-1" style="width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.65rem;">
+                                                            @(rIndex + 1)
+                                                        </span>
+                                                        <span>@remedies[rIndex]</span>
+                                                    </li>
+                                                }
+                                            }
+                                        </ul>
+
+                                        <!-- Chemical vs Organic Pill Box -->
+                                        <div class="row g-2 pt-2 border-top">
+                                            <div class="col-12 col-sm-6">
+                                                <div class="p-2 rounded bg-danger bg-opacity-10 border border-danger-subtle small">
+                                                    <strong class="text-danger d-block mb-0.5"><i class="bi bi-capsule me-1"></i>@L["Recommended Spray:"]</strong>
+                                                    <span class="text-dark">@alert.PreventiveSpray</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-sm-6">
+                                                <div class="p-2 rounded bg-success bg-opacity-10 border border-success-subtle small">
+                                                    <strong class="text-success d-block mb-0.5"><i class="bi bi-tree-fill me-1"></i>@L["Eco/Organic Control:"]</strong>
+                                                    <span class="text-dark">@alert.OrganicControl</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- SECTION 2: DISEASE & PEST ENCYCLOPEDIA / KNOWLEDGE BASE -->
+<div class="card krishi-card border-0 shadow-sm rounded-4 p-4 mb-5">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-2 border-bottom">
+        <div>
+            <h5 class="fw-bold text-dark mb-0">
+                <i class="bi bi-journal-bookmark-fill text-success me-2"></i>@L["Bangladesh Crop Disease & Weather Knowledge Base"]
+            </h5>
+            <span class="text-muted small">@L["Full reference catalog of agrometeorological rules established by DAE, BARI, and BRRI."]</span>
+        </div>
+        <span class="badge bg-light text-dark border rounded-pill px-3 py-1 fw-semibold small">
+            @L["{0} Verified Rules", Model.AllRulesEncyclopedia.Count]
+        </span>
+    </div>
+
+    <div class="accordion accordion-flush" id="rulesAccordion">
+        @foreach (var rule in Model.AllRulesEncyclopedia)
+        {
+            <div class="accordion-item border rounded-3 mb-2 overflow-hidden">
+                <h2 class="accordion-header" id="heading-@rule.Id">
+                    <button class="accordion-button collapsed py-3 px-3.5 bg-light fw-bold text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-@rule.Id" aria-expanded="false" aria-controls="collapse-@rule.Id">
+                        <div class="d-flex align-items-center justify-content-between w-100 me-3 flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge @(rule.Severity == "Critical" ? "bg-danger" : "bg-warning text-dark") rounded-pill px-2.5 py-1 small">
+                                    @rule.Severity
+                                </span>
+                                <span>@(isBangla ? rule.BanglaName : rule.DiseaseName)</span>
+                            </div>
+                            <div class="text-muted small">
+                                <i class="bi bi-thermometer-half"></i> @rule.MinTemp°–@rule.MaxTemp°C |
+                                <i class="bi bi-moisture"></i> @rule.MinHumidity%+ |
+                                <span class="badge bg-white text-dark border">@string.Join(", ", rule.TargetCrops.Take(2))</span>
+                            </div>
+                        </div>
+                    </button>
+                </h2>
+                <div id="collapse-@rule.Id" class="accordion-collapse collapse" aria-labelledby="heading-@rule.Id" data-bs-parent="#rulesAccordion">
+                    <div class="accordion-body p-4 bg-white">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <strong class="text-muted small text-uppercase d-block mb-1">@L["Pathogen & Biology"]</strong>
+                                <p class="small text-dark mb-2">@rule.PathogenOrPest (@rule.Category)</p>
+
+                                <strong class="text-muted small text-uppercase d-block mb-1">@L["Weather Trigger Mechanism"]</strong>
+                                <p class="small text-secondary mb-0">@(isBangla ? rule.BanglaTriggerReason : rule.TriggerReason)</p>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <strong class="text-muted small text-uppercase d-block mb-1">@L["Symptoms"]</strong>
+                                <p class="small text-secondary mb-2">@(isBangla ? rule.BanglaSymptoms : rule.Symptoms)</p>
+
+                                <strong class="text-muted small text-uppercase d-block mb-1">@L["Preventive Spray & Dose"]</strong>
+                                <p class="small text-danger fw-semibold mb-0">@rule.PreventiveSpray</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .shadow-xs {
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    .hover-shadow:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .transition {
+        transition: all 0.2s ease-in-out;
+    }
+</style>

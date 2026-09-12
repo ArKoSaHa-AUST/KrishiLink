@@ -7,23 +7,28 @@ namespace KrishiLink.Controllers
     public class AdvisoryController : Controller
     {
         private readonly ICropCalendarService _cropCalendarService;
+        private readonly IPestAlertService _pestAlertService;
 
-        public AdvisoryController(ICropCalendarService cropCalendarService)
+        public AdvisoryController(
+            ICropCalendarService cropCalendarService,
+            IPestAlertService pestAlertService)
         {
             _cropCalendarService = cropCalendarService;
+            _pestAlertService = pestAlertService;
         }
 
         /// <summary>
         /// GET: /Advisory
         /// Renders the Crop Advisory form and recommendations.
         /// </summary>
-        public IActionResult Index(bool analyze = false)
+        public async Task<IActionResult> Index(bool analyze = false)
         {
             var model = new CropAdvisoryViewModel();
 
             if (analyze)
             {
                 PopulateSampleRecommendations(model);
+                model.WeatherAlert = await _pestAlertService.GetWeatherAlertNoteAsync(model.Location);
                 model.HasSubmitted = true;
             }
 
@@ -44,6 +49,33 @@ namespace KrishiLink.Controllers
         {
             var model = await _cropCalendarService.GetCalendarModelAsync(search, category, season, division, month, stage);
             return View(model);
+        }
+
+        /// <summary>
+        /// GET: /Advisory/Alerts
+        /// Rule-based Agrometeorological Pest and Disease Warnings based on regional weather data.
+        /// </summary>
+        public async Task<IActionResult> Alerts(
+            string? district = null,
+            string? crop = null,
+            double? temp = null,
+            double? humidity = null,
+            string? condition = null)
+        {
+            var model = await _pestAlertService.GetPestAlertsDashboardAsync(district, crop, temp, humidity, condition);
+            return View(model);
+        }
+
+        /// <summary>
+        /// GET: /Advisory/WeatherAlertsJson
+        /// JSON endpoint returning live weather and triggered disease alerts for a district.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> WeatherAlertsJson(string district)
+        {
+            var weather = await _pestAlertService.GetRegionalWeatherAsync(district);
+            var alerts = await _pestAlertService.EvaluateAlertsAsync(weather);
+            return Json(new { success = true, weather, alerts });
         }
 
         /// <summary>
@@ -68,9 +100,10 @@ namespace KrishiLink.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Index(CropAdvisoryViewModel model)
+        public async Task<IActionResult> Index(CropAdvisoryViewModel model)
         {
             PopulateSampleRecommendations(model);
+            model.WeatherAlert = await _pestAlertService.GetWeatherAlertNoteAsync(model.Location);
             model.HasSubmitted = true;
             return View(model);
         }
