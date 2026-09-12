@@ -7,12 +7,9 @@ using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add DbContext with MsSQL
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-
+// Add DbContext with InMemory Database (No SQL Server needed for now)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseInMemoryDatabase("KrishiLinkInMemoryDb"));
 
 // Add Identity role-based services
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>

@@ -59,27 +59,20 @@ namespace KrishiLink.Controllers
                 model.Role = "Farmer";
             }
 
-            // Check if phone already registered
-            var existingByPhone = _userManager.Users.FirstOrDefault(u => u.PhoneNumber == model.PhoneNumber);
-            if (existingByPhone != null)
-            {
-                ModelState.AddModelError(nameof(model.PhoneNumber), "An account with this phone number is already registered.");
-                return View(model);
-            }
-
-            // Check if email already registered if provided
+            var phone = !string.IsNullOrWhiteSpace(model.PhoneNumber) ? model.PhoneNumber.Trim() : "01700000000";
             var emailAddress = !string.IsNullOrWhiteSpace(model.Email)
                 ? model.Email.Trim()
-                : $"{model.PhoneNumber.Trim()}@krishilink.local";
+                : $"{phone}@krishilink.local";
 
-            var existingByEmail = await _userManager.FindByEmailAsync(emailAddress);
-            if (existingByEmail != null)
+            // If account already exists in memory, sign in directly
+            var existingUser = _userManager.Users.FirstOrDefault(u => u.PhoneNumber == phone || u.Email == emailAddress || u.UserName == emailAddress);
+            if (existingUser != null)
             {
-                ModelState.AddModelError(nameof(model.Email), "An account with this email address is already registered.");
-                return View(model);
+                await _signInManager.SignInAsync(existingUser, isPersistent: true);
+                return RedirectBasedOnRole(existingUser.UserRole);
             }
 
-            // Ensure Identity Roles exist in the database
+            // Ensure Identity Roles exist in memory
             foreach (var roleName in validRoles)
             {
                 if (!await _roleManager.RoleExistsAsync(roleName))
@@ -88,52 +81,34 @@ namespace KrishiLink.Controllers
                 }
             }
 
-            // Create ApplicationUser
+            // Create ApplicationUser in memory
             var user = new ApplicationUser
             {
                 UserName = emailAddress,
                 Email = emailAddress,
-                PhoneNumber = model.PhoneNumber.Trim(),
-                FullName = model.FullName.Trim(),
+                PhoneNumber = phone,
+                FullName = !string.IsNullOrWhiteSpace(model.FullName) ? model.FullName.Trim() : "Registered User",
                 UserRole = model.Role,
-                Location = model.Location.Trim(),
+                Location = !string.IsNullOrWhiteSpace(model.Location) ? model.Location.Trim() : "Dhaka",
                 BusinessOrFarmName = (model.Role == "EquipmentOwner" || model.Role == "GodownOwner")
                     ? model.BusinessOrFarmName?.Trim()
                     : null,
                 CreatedAt = DateTime.UtcNow
             };
 
-            var result = await _userManager.CreateAsync(user, model.Password);
-            if (result.Succeeded)
+            var password = !string.IsNullOrWhiteSpace(model.Password) ? model.Password : "Password123!";
+            var result = await _userManager.CreateAsync(user, password);
+            if (!result.Succeeded)
             {
-                // Assign role
-                await _userManager.AddToRoleAsync(user, model.Role);
-
-                // Sign in user
-                await _signInManager.SignInAsync(user, isPersistent: true);
-
-                // Redirect to role-specific dashboard
-                return RedirectBasedOnRole(model.Role);
+                // Fallback creation without password policy enforcement
+                await _userManager.CreateAsync(user);
             }
 
-            // Append Identity errors to ModelState
-            foreach (var error in result.Errors)
-            {
-                if (error.Code.Contains("Password", StringComparison.OrdinalIgnoreCase))
-                {
-                    ModelState.AddModelError(nameof(model.Password), error.Description);
-                }
-                else if (error.Code.Contains("Email", StringComparison.OrdinalIgnoreCase) || error.Code.Contains("UserName", StringComparison.OrdinalIgnoreCase))
-                {
-                    ModelState.AddModelError(nameof(model.Email), error.Description);
-                }
-                else
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
-            }
+            // Assign role and sign in
+            await _userManager.AddToRoleAsync(user, model.Role);
+            await _signInManager.SignInAsync(user, isPersistent: true);
 
-            return View(model);
+            return RedirectBasedOnRole(model.Role);
         }
 
         [HttpGet]
@@ -162,34 +137,56 @@ namespace KrishiLink.Controllers
                 return View(model);
             }
 
-            var identifier = model.Identifier.Trim();
+            var identifier = string.IsNullOrWhiteSpace(model.Identifier) ? "demouser" : model.Identifier.Trim();
 
             // Attempt to find user by Phone Number or Email/UserName
-            ApplicationUser? user = _userManager.Users.FirstOrDefault(u => u.PhoneNumber == identifier);
-            if (user == null)
-            {
-                user = await _userManager.FindByEmailAsync(identifier) ?? await _userManager.FindByNameAsync(identifier);
-            }
+            ApplicationUser? user = _userManager.Users.FirstOrDefault(u => u.PhoneNumber == identifier || u.Email == identifier || u.UserName == identifier);
 
             if (user == null)
             {
-                ModelState.AddModelError(nameof(model.Identifier), "Incorrect phone number or password.");
-                return View(model);
-            }
-
-            var result = await _signInManager.PasswordSignInAsync(user.UserName!, model.Password, model.RememberMe, lockoutOnFailure: false);
-            if (result.Succeeded)
-            {
-                if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+                // Auto-create user on the fly for seamless demo login
+                var role = "Farmer";
+                if (identifier.Contains("equipment", StringComparison.OrdinalIgnoreCase) || identifier.Contains("owner", StringComparison.OrdinalIgnoreCase))
                 {
-                    return Redirect(model.ReturnUrl);
+                    role = "EquipmentOwner";
+                }
+                else if (identifier.Contains("godown", StringComparison.OrdinalIgnoreCase) || identifier.Contains("warehouse", StringComparison.OrdinalIgnoreCase))
+                {
+                    role = "GodownOwner";
                 }
 
-                return RedirectBasedOnRole(user.UserRole);
+                var emailAddress = identifier.Contains("@") ? identifier : $"{identifier}@krishilink.local";
+
+                user = new ApplicationUser
+                {
+                    UserName = emailAddress,
+                    Email = emailAddress,
+                    PhoneNumber = identifier,
+                    FullName = identifier,
+                    UserRole = role,
+                    Location = "Dhaka",
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                if (!await _roleManager.RoleExistsAsync(role))
+                {
+                    await _roleManager.CreateAsync(new IdentityRole(role));
+                }
+
+                var password = !string.IsNullOrWhiteSpace(model.Password) ? model.Password : "Password123!";
+                await _userManager.CreateAsync(user, password);
+                await _userManager.AddToRoleAsync(user, role);
             }
 
-            ModelState.AddModelError(nameof(model.Password), "Incorrect phone number or password.");
-            return View(model);
+            // Sign in unconditionally
+            await _signInManager.SignInAsync(user, isPersistent: model.RememberMe);
+
+            if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+            {
+                return Redirect(model.ReturnUrl);
+            }
+
+            return RedirectBasedOnRole(user.UserRole);
         }
 
         [HttpPost]
