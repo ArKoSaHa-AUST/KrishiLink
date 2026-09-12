@@ -112,4 +112,31 @@ namespace KrishiLink.Models.ViewModels
             BanglaText = banglaText;
         }
     }
+
+    /// <summary>
+    /// Dynamic crop calendar advisory customized for farmer's profile crop, district, and current month.
+    /// </summary>
+    public class FarmerCropAdvisoryViewModel
+    {
+        public int CropId { get; set; }
+        public string CropName { get; set; } = string.Empty;
+        public string BanglaCropName { get; set; } = string.Empty;
+        public string ProfileCropName { get; set; } = string.Empty;
+        public string CurrentPhase { get; set; } = string.Empty; // "sowing", "growing", "harvesting", "off-season"
+        public string CurrentPhaseBangla { get; set; } = string.Empty;
+        public string PhaseBadgeColor { get; set; } = "info";
+        public string AdvisorySummary { get; set; } = string.Empty;
+        public string AdvisorySummaryBangla { get; set; } = string.Empty;
+        public string KeyTips { get; set; } = string.Empty;
+        public string OptimalTemperature { get; set; } = string.Empty;
+        public string WaterRequirement { get; set; } = string.Empty;
+        public string PopularVarieties { get; set; } = string.Empty;
+        public string Season { get; set; } = string.Empty;
+        public string District { get; set; } = string.Empty;
+        public int Month { get; set; }
+        public string MonthName { get; set; } = string.Empty;
+        public string BanglaMonthName { get; set; } = string.Empty;
+        public bool IsSuitableDistrict { get; set; } = true;
+    }
 }
+

@@ -14,6 +14,7 @@ namespace KrishiLink.Models.ViewModels
         public decimal DailyRateAmount { get; set; }
         public string HourlyRate { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
+        public string? District { get; set; }
         public string Status { get; set; } = "Available";
 
         // Geographic Coordinates & Navigation

@@ -1,17 +1,34 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace KrishiLink.BLL.Services
 {
+    public class NotificationRequest
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string Type { get; set; } = NotificationTypes.System;
+        public string TitleKey { get; set; } = string.Empty;
+        public string MessageKey { get; set; } = string.Empty;
+        public object[] Args { get; set; } = Array.Empty<object>();
+        public string? LinkUrl { get; set; }
+        public string? DedupeKey { get; set; }
+        public bool SendEmail { get; set; }
+        public string? RecipientEmail { get; set; }
+    }
+
     public interface INotificationService
     {
+        Task<bool> NotifyAsync(NotificationRequest request);
         Task<Notification> CreateNotificationAsync(string userId, string title, string message, string linkUrl, string type = NotificationTypes.System, bool sendEmail = false, string? recipientEmail = null);
         Task<Notification> CreateAsync(string userId, string type, string title, string message, string? linkUrl = null, bool sendEmail = false, string? recipientEmail = null);
         Task<int> GetUnreadCountAsync(string userId);
@@ -29,17 +46,76 @@ namespace KrishiLink.BLL.Services
     public class NotificationService : INotificationService
     {
         private readonly IRepository<Notification> _notifications;
-        private readonly IEmailSender _emailSender;
+        private readonly IEmailQueue _emailQueue;
+        private readonly IStringLocalizer<SharedResource> _localizer;
+        private readonly AppOptions _appOptions;
         private readonly ILogger<NotificationService> _logger;
 
         public NotificationService(
             IRepository<Notification> notifications,
-            IEmailSender emailSender,
+            IEmailQueue emailQueue,
+            IStringLocalizer<SharedResource> localizer,
+            IOptions<AppOptions> appOptions,
             ILogger<NotificationService> logger)
         {
             _notifications = notifications;
-            _emailSender = emailSender;
+            _emailQueue = emailQueue;
+            _localizer = localizer;
+            _appOptions = appOptions.Value;
             _logger = logger;
+        }
+
+        public async Task<bool> NotifyAsync(NotificationRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.UserId)) return false;
+
+            var stringArgs = request.Args.Select(a => a?.ToString() ?? string.Empty).ToArray();
+            var argsJson = stringArgs.Length > 0 ? JsonSerializer.Serialize(stringArgs) : null;
+
+            // Render default English/current-culture text for fallback/storage
+            var resolvedTitle = ResolveString(request.TitleKey, stringArgs);
+            var resolvedMessage = ResolveString(request.MessageKey, stringArgs);
+
+            var notification = new Notification
+            {
+                UserId = request.UserId,
+                Type = request.Type,
+                TitleKey = request.TitleKey,
+                MessageKey = request.MessageKey,
+                ArgsJson = argsJson,
+                Title = resolvedTitle,
+                Message = resolvedMessage,
+                LinkUrl = string.IsNullOrWhiteSpace(request.LinkUrl) ? "/" : request.LinkUrl.Trim(),
+                DedupeKey = string.IsNullOrWhiteSpace(request.DedupeKey) ? null : request.DedupeKey.Trim(),
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            try
+            {
+                await _notifications.AddAsync(notification);
+                await _notifications.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (DbErrors.IsUniqueViolation(ex))
+            {
+                _logger.LogInformation("Notification with DedupeKey {DedupeKey} for user {UserId} already exists. Skipping duplicate.", request.DedupeKey, request.UserId);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save notification for user {UserId}", request.UserId);
+                return false;
+            }
+
+            if (request.SendEmail && ApplicationUser.HasRealEmail(request.RecipientEmail))
+            {
+                var fullLink = BuildAbsoluteUrl(notification.LinkUrl);
+                var emailBody = BuildEmailHtml(resolvedTitle, resolvedMessage, fullLink);
+                var emailJob = new EmailJob(request.RecipientEmail!.Trim(), $"[KrishiLink] {resolvedTitle}", emailBody);
+                await _emailQueue.EnqueueAsync(emailJob);
+            }
+
+            return true;
         }
 
         public async Task<Notification> CreateNotificationAsync(
@@ -51,26 +127,28 @@ namespace KrishiLink.BLL.Services
             bool sendEmail = false,
             string? recipientEmail = null)
         {
-            var notification = new Notification
+            var req = new NotificationRequest
             {
                 UserId = userId,
-                Title = title.Trim(),
-                Message = message.Trim(),
-                LinkUrl = string.IsNullOrWhiteSpace(linkUrl) ? "/" : linkUrl.Trim(),
                 Type = type,
-                IsRead = false,
-                CreatedAt = DateTime.UtcNow
+                TitleKey = title,
+                MessageKey = message,
+                LinkUrl = linkUrl,
+                SendEmail = sendEmail,
+                RecipientEmail = recipientEmail
             };
 
-            await _notifications.AddAsync(notification);
-            await _notifications.SaveChangesAsync();
+            await NotifyAsync(req);
 
-            if (sendEmail && !string.IsNullOrWhiteSpace(recipientEmail))
+            return new Notification
             {
-                _ = SendEmailNotificationAsync(recipientEmail, title, message, linkUrl);
-            }
-
-            return notification;
+                UserId = userId,
+                Title = title,
+                Message = message,
+                LinkUrl = linkUrl,
+                Type = type,
+                CreatedAt = DateTime.UtcNow
+            };
         }
 
         public Task<Notification> CreateAsync(
@@ -99,19 +177,9 @@ namespace KrishiLink.BLL.Services
                 .Where(n => n.UserId == userId)
                 .OrderByDescending(n => n.CreatedAt)
                 .Take(count)
-                .Select(n => new NotificationItemViewModel
-                {
-                    Id = n.Id,
-                    Title = n.Title,
-                    Message = n.Message,
-                    LinkUrl = n.LinkUrl,
-                    Type = n.Type,
-                    IsRead = n.IsRead,
-                    CreatedAt = n.CreatedAt
-                })
                 .ToListAsync();
 
-            return list;
+            return list.Select(ToViewModel).ToList();
         }
 
         public async Task<PaginatedNotificationsViewModel> GetUserNotificationsAsync(string userId, int page = 1, int pageSize = 15, string filter = "all")
@@ -120,7 +188,6 @@ namespace KrishiLink.BLL.Services
             if (pageSize < 5) pageSize = 5;
 
             var baseQuery = _notifications.Query().Where(n => n.UserId == userId);
-
             var unreadCount = await baseQuery.CountAsync(n => !n.IsRead);
 
             var query = filter.Equals("unread", StringComparison.OrdinalIgnoreCase)
@@ -133,21 +200,11 @@ namespace KrishiLink.BLL.Services
                 .OrderByDescending(n => n.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(n => new NotificationItemViewModel
-                {
-                    Id = n.Id,
-                    Title = n.Title,
-                    Message = n.Message,
-                    LinkUrl = n.LinkUrl,
-                    Type = n.Type,
-                    IsRead = n.IsRead,
-                    CreatedAt = n.CreatedAt
-                })
                 .ToListAsync();
 
             return new PaginatedNotificationsViewModel
             {
-                Notifications = items,
+                Notifications = items.Select(ToViewModel).ToList(),
                 CurrentPage = page,
                 PageSize = pageSize,
                 TotalCount = totalCount,
@@ -220,45 +277,106 @@ namespace KrishiLink.BLL.Services
 
         public async Task SendEmailNotificationAsync(string email, string subject, string htmlMessage)
         {
+            if (!ApplicationUser.HasRealEmail(email)) return;
+
+            var job = new EmailJob(email.Trim(), subject.StartsWith("[KrishiLink]") ? subject : $"[KrishiLink] {subject}", htmlMessage);
+            await _emailQueue.EnqueueAsync(job);
+        }
+
+        private NotificationItemViewModel ToViewModel(Notification n)
+        {
+            string[] args = Array.Empty<string>();
+            if (!string.IsNullOrWhiteSpace(n.ArgsJson))
+            {
+                try
+                {
+                    var deserialized = JsonSerializer.Deserialize<string[]>(n.ArgsJson);
+                    if (deserialized != null) args = deserialized;
+                }
+                catch { }
+            }
+
+            var title = !string.IsNullOrWhiteSpace(n.TitleKey)
+                ? ResolveString(n.TitleKey, args)
+                : n.Title;
+
+            var message = !string.IsNullOrWhiteSpace(n.MessageKey)
+                ? ResolveString(n.MessageKey, args)
+                : n.Message;
+
+            return new NotificationItemViewModel
+            {
+                Id = n.Id,
+                Title = title,
+                Message = message,
+                TitleKey = n.TitleKey,
+                MessageKey = n.MessageKey,
+                ArgsJson = n.ArgsJson,
+                LinkUrl = n.LinkUrl,
+                Type = n.Type,
+                IsRead = n.IsRead,
+                CreatedAt = n.CreatedAt
+            };
+        }
+
+        private string ResolveString(string key, string[] args)
+        {
+            if (string.IsNullOrWhiteSpace(key)) return string.Empty;
             try
             {
-                var htmlBody = $@"
+                var localized = args.Length > 0 ? _localizer[key, args] : _localizer[key];
+                if (!localized.ResourceNotFound && !string.IsNullOrWhiteSpace(localized.Value))
+                {
+                    return localized.Value;
+                }
+            }
+            catch { }
+
+            if (args.Length > 0)
+            {
+                try
+                {
+                    return string.Format(key, args);
+                }
+                catch { }
+            }
+
+            return key;
+        }
+
+        private string BuildAbsoluteUrl(string relativeUrl)
+        {
+            var baseUrl = (_appOptions.PublicBaseUrl ?? "https://localhost:7276").TrimEnd('/');
+            var rel = (relativeUrl ?? "/").TrimStart('~');
+            if (!rel.StartsWith("/")) rel = "/" + rel;
+            return $"{baseUrl}{rel}";
+        }
+
+        private string BuildEmailHtml(string title, string message, string fullLink)
+        {
+            return $@"
 <!DOCTYPE html>
 <html>
 <head><meta charset='utf-8'></head>
 <body style='font-family: Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 24px;'>
     <div style='max-width: 580px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;'>
         <div style='background-color: #16a34a; padding: 20px 24px; color: #ffffff;'>
-            <h2 style='margin: 0; font-size: 20px; font-weight: 700; display: flex; align-items: center;'>🌾 KrishiLink Notification</h2>
+            <h2 style='margin: 0; font-size: 20px; font-weight: 700;'>🌾 KrishiLink Notification</h2>
         </div>
         <div style='padding: 24px;'>
-            {htmlMessage}
+            <h3 style='color: #111827; margin-top: 0; font-size: 18px;'>{title}</h3>
+            <p style='color: #4b5563; font-size: 15px; line-height: 1.6;'>{message}</p>
+            <div style='margin-top: 28px; text-align: center;'>
+                <a href='{fullLink}' style='background-color: #16a34a; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 30px; font-weight: 600; font-size: 14px; display: inline-block;'>View in KrishiLink</a>
+            </div>
         </div>
         <div style='background-color: #f9fafb; padding: 16px 24px; border-top: 1px solid #f3f4f6; font-size: 12px; color: #9ca3af; text-align: center;'>
             © {DateTime.UtcNow.Year} KrishiLink — Empowering Farmers & Agricultural Providers in Bangladesh.<br/>
-            You received this notification because of an activity on your account.
+            You received this notification because of activity on your account.
         </div>
     </div>
 </body>
 </html>";
-
-                await _emailSender.SendAsync(email, subject.StartsWith("[KrishiLink]") ? subject : $"[KrishiLink] {subject}", htmlBody);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to send transactional email notification.");
-            }
-        }
-
-        private Task SendEmailNotificationAsync(string email, string title, string message, string linkUrl)
-        {
-            var content = $@"
-                <h3 style='color: #111827; margin-top: 0; font-size: 18px;'>{title}</h3>
-                <p style='color: #4b5563; font-size: 15px; line-height: 1.6;'>{message}</p>
-                <div style='margin-top: 28px; text-align: center;'>
-                    <a href='https://krishilink.com{linkUrl}' style='background-color: #16a34a; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 30px; font-weight: 600; font-size: 14px; display: inline-block;'>View in KrishiLink</a>
-                </div>";
-            return SendEmailNotificationAsync(email, title, content);
         }
     }
 }

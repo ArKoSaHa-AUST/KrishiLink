@@ -16,8 +16,20 @@ namespace KrishiLink.BLL.Services
         /// <summary>Stores validated uploaded images under wwwroot/uploads/{folder} with unique GUID filenames and returns their public URLs.</summary>
         Task<List<string>> SaveImagesAsync(IEnumerable<IFormFile>? files, string folder);
 
+        /// <summary>Stores validated uploaded identity documents under App_Data/{folder} with unique GUID filenames and returns their relative private paths.</summary>
+        Task<List<string>> SavePrivateFilesAsync(IEnumerable<IFormFile>? files, string folder);
+
         /// <summary>Safely deletes an image file from the wwwroot/uploads/ directory. Returns true if the file was found and deleted.</summary>
         bool DeleteImage(string? relativeUrl);
+
+        /// <summary>Safely deletes multiple image files from the wwwroot/uploads/ directory.</summary>
+        void DeleteFiles(IEnumerable<string>? relativeUrls);
+
+        /// <summary>Safely deletes a private file from the App_Data/ directory. Returns true if the file was found and deleted.</summary>
+        bool DeletePrivateFile(string? relativePath);
+
+        /// <summary>Safely deletes multiple private files from the App_Data/ directory.</summary>
+        void DeletePrivateFiles(IEnumerable<string>? relativePaths);
     }
 
     public class FileStorageService : IFileStorageService
@@ -115,6 +127,74 @@ namespace KrishiLink.BLL.Services
             return urls;
         }
 
+        public async Task<List<string>> SavePrivateFilesAsync(IEnumerable<IFormFile>? files, string folder)
+        {
+            var paths = new List<string>();
+            if (files is null) return paths;
+
+            var targetDir = Path.Combine(_env.ContentRootPath, "App_Data", folder);
+            Directory.CreateDirectory(targetDir);
+
+            foreach (var file in files)
+            {
+                if (file is null || file.Length == 0 || file.Length > MaxFileSizeBytes) continue;
+
+                var extension = Path.GetExtension(file.FileName);
+                if (string.IsNullOrWhiteSpace(extension) || !AllowedExtensions.Contains(extension)) continue;
+                if (!IsValidImageHeader(file, extension)) continue;
+
+                var uniqueFileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+                var destinationPath = Path.Combine(targetDir, uniqueFileName);
+
+                await using (var stream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                paths.Add(Path.Combine(folder, uniqueFileName).Replace('\\', '/'));
+            }
+
+            return paths;
+        }
+
+        public bool DeletePrivateFile(string? relativePath)
+        {
+            if (string.IsNullOrWhiteSpace(relativePath)) return false;
+
+            try
+            {
+                var cleanPath = relativePath.TrimStart('~', '/').Replace('/', Path.DirectorySeparatorChar);
+                var fullPath = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "App_Data", cleanPath));
+                var appDataDir = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "App_Data"));
+
+                if (!fullPath.StartsWith(appDataDir, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                if (File.Exists(fullPath))
+                {
+                    File.Delete(fullPath);
+                    return true;
+                }
+            }
+            catch
+            {
+                // Silently ignore
+            }
+
+            return false;
+        }
+
+        public void DeletePrivateFiles(IEnumerable<string>? relativePaths)
+        {
+            if (relativePaths is null) return;
+            foreach (var path in relativePaths)
+            {
+                DeletePrivateFile(path);
+            }
+        }
+
         public bool DeleteImage(string? relativeUrl)
         {
             if (string.IsNullOrWhiteSpace(relativeUrl)) return false;
@@ -148,6 +228,15 @@ namespace KrishiLink.BLL.Services
             }
 
             return false;
+        }
+
+        public void DeleteFiles(IEnumerable<string>? relativeUrls)
+        {
+            if (relativeUrls is null) return;
+            foreach (var url in relativeUrls)
+            {
+                DeleteImage(url);
+            }
         }
 
         private static bool IsValidImageHeader(IFormFile file, string extension)

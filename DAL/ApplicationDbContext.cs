@@ -27,6 +27,7 @@ namespace KrishiLink.DAL
         public DbSet<OwnerVerificationRequest> VerificationRequests { get; set; } = null!;
         public DbSet<EquipmentMaintenanceRecord> EquipmentMaintenanceRecords { get; set; } = null!;
         public DbSet<LoyaltyPointTransaction> LoyaltyPointTransactions { get; set; } = null!;
+        public DbSet<CropCalendarEntry> CropCalendarEntries { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -43,6 +44,8 @@ namespace KrishiLink.DAL
                 u.Property(x => x.TradeLicenseImagePath).HasMaxLength(255);
                 u.Property(x => x.VerificationRejectionReason).HasMaxLength(500);
                 u.Property(x => x.VerificationNotes).HasMaxLength(500);
+                u.Property(x => x.OwnerAverageRating).HasDefaultValue(0.0);
+                u.Property(x => x.OwnerReviewCount).HasDefaultValue(0);
                 u.HasIndex(x => x.IsVerified);
                 u.HasIndex(x => x.VerificationStatus);
             });
@@ -52,11 +55,13 @@ namespace KrishiLink.DAL
                 e.Property(x => x.Name).HasMaxLength(100);
                 e.Property(x => x.Category).HasMaxLength(50);
                 e.Property(x => x.Location).HasMaxLength(150);
+                e.Property(x => x.District).HasMaxLength(60);
                 e.Property(x => x.DailyRate).HasPrecision(18, 2);
                 e.Property(x => x.HourlyRate).HasPrecision(18, 2);
                 e.Property(x => x.AverageRating).HasDefaultValue(0.0);
                 e.Property(x => x.ReviewCount).HasDefaultValue(0);
                 e.HasIndex(x => x.OwnerId);
+                e.HasIndex(x => x.District);
                 e.HasIndex(x => new { x.Latitude, x.Longitude });
                 e.HasOne(x => x.Owner).WithMany().HasForeignKey(x => x.OwnerId).OnDelete(DeleteBehavior.Cascade);
             });
@@ -83,10 +88,12 @@ namespace KrishiLink.DAL
                 g.Property(x => x.Name).HasMaxLength(120);
                 g.Property(x => x.StorageType).HasMaxLength(50);
                 g.Property(x => x.Location).HasMaxLength(150);
+                g.Property(x => x.District).HasMaxLength(60);
                 g.Property(x => x.PricePerTonPerMonth).HasPrecision(18, 2);
                 g.Property(x => x.AverageRating).HasDefaultValue(0.0);
                 g.Property(x => x.ReviewCount).HasDefaultValue(0);
                 g.HasIndex(x => x.OwnerId);
+                g.HasIndex(x => x.District);
                 g.HasIndex(x => new { x.Latitude, x.Longitude });
                 g.HasOne(x => x.Owner).WithMany().HasForeignKey(x => x.OwnerId).OnDelete(DeleteBehavior.Cascade);
             });
@@ -119,6 +126,7 @@ namespace KrishiLink.DAL
             builder.Entity<Transaction>(t =>
             {
                 t.Property(x => x.Reference).HasMaxLength(30);
+                t.Property(x => x.ListingType).HasMaxLength(30);
                 t.Property(x => x.PaymentMethod).HasMaxLength(30);
                 t.Property(x => x.PayoutAccount).HasMaxLength(40);
                 t.Property(x => x.Status).HasMaxLength(20);
@@ -127,11 +135,13 @@ namespace KrishiLink.DAL
                 t.Property(x => x.Amount).HasPrecision(18, 2);
                 t.HasIndex(x => x.UserId);
                 t.HasIndex(x => x.Reference).IsUnique();
+                t.HasIndex(x => new { x.Status, x.TransactionDate });
             });
 
             builder.Entity<Review>(r =>
             {
                 r.Property(x => x.Comment).HasMaxLength(1000);
+                r.Property(x => x.OwnerReply).HasMaxLength(1000);
                 r.Property(x => x.BookingType).HasMaxLength(20);
                 r.HasIndex(x => new { x.EquipmentId, x.CreatedAt });
                 r.HasIndex(x => new { x.GodownId, x.CreatedAt });
@@ -151,15 +161,24 @@ namespace KrishiLink.DAL
                 n.Property(x => x.Message).HasMaxLength(1000);
                 n.Property(x => x.LinkUrl).HasMaxLength(255);
                 n.Property(x => x.Type).HasMaxLength(50);
+                n.Property(x => x.DedupeKey).HasMaxLength(120);
+                n.Property(x => x.TitleKey).HasMaxLength(100);
+                n.Property(x => x.MessageKey).HasMaxLength(100);
+                n.Property(x => x.ArgsJson).HasMaxLength(500);
+
                 n.HasIndex(x => new { x.UserId, x.IsRead });
                 n.HasIndex(x => new { x.UserId, x.CreatedAt });
+                n.HasIndex(x => new { x.UserId, x.DedupeKey })
+                    .IsUnique()
+                    .HasFilter("[DedupeKey] IS NOT NULL");
 
                 n.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             });
 
             builder.Entity<OwnerVerificationRequest>(v =>
             {
-                v.Property(x => x.NidNumber).HasMaxLength(30);
+                v.Property(x => x.NidNumber).HasMaxLength(500);
+                v.Property(x => x.NidLast4).HasMaxLength(10);
                 v.Property(x => x.NidFrontImagePath).HasMaxLength(255);
                 v.Property(x => x.NidBackImagePath).HasMaxLength(255);
                 v.Property(x => x.TradeLicenseImagePath).HasMaxLength(255);
@@ -202,6 +221,56 @@ namespace KrishiLink.DAL
                 l.HasIndex(x => new { x.UserId, x.CreatedAt });
                 l.HasIndex(x => x.PromoCode);
                 l.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<CropCalendarEntry>(c =>
+            {
+                c.Property(x => x.Name).HasMaxLength(100).IsRequired();
+                c.Property(x => x.BanglaName).HasMaxLength(100).IsRequired();
+                c.Property(x => x.ScientificName).HasMaxLength(100);
+                c.Property(x => x.Category).HasMaxLength(50);
+                c.Property(x => x.Season).HasMaxLength(50);
+                c.Property(x => x.DurationDays).HasMaxLength(50);
+                c.Property(x => x.OptimalTemperature).HasMaxLength(50);
+                c.Property(x => x.SoilTypes).HasMaxLength(150);
+                c.Property(x => x.WaterRequirement).HasMaxLength(255);
+                c.Property(x => x.PopularVarieties).HasMaxLength(300);
+                c.Property(x => x.MajorDistricts).HasMaxLength(300);
+                c.Property(x => x.Division).HasMaxLength(100);
+                c.Property(x => x.KeyTips).HasMaxLength(1000);
+                c.Property(x => x.IconClass).HasMaxLength(50);
+                c.Property(x => x.BadgeColor).HasMaxLength(30);
+                c.Property(x => x.ProfileCropName).HasMaxLength(60);
+
+                var intListComparer = new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<int>>(
+                    (c1, c2) => (c1 == null && c2 == null) || (c1 != null && c2 != null && c1.SequenceEqual(c2)),
+                    c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                    c => c.ToList());
+
+                c.Property(x => x.SowingMonths)
+                    .HasConversion(
+                        v => string.Join(',', v),
+                        v => string.IsNullOrEmpty(v) ? new List<int>() : v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList()
+                    )
+                    .Metadata.SetValueComparer(intListComparer);
+
+                c.Property(x => x.GrowingMonths)
+                    .HasConversion(
+                        v => string.Join(',', v),
+                        v => string.IsNullOrEmpty(v) ? new List<int>() : v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList()
+                    )
+                    .Metadata.SetValueComparer(intListComparer);
+
+                c.Property(x => x.HarvestingMonths)
+                    .HasConversion(
+                        v => string.Join(',', v),
+                        v => string.IsNullOrEmpty(v) ? new List<int>() : v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList()
+                    )
+                    .Metadata.SetValueComparer(intListComparer);
+
+                c.HasIndex(x => x.Category);
+                c.HasIndex(x => x.Season);
+                c.HasIndex(x => x.ProfileCropName);
             });
         }
     }

@@ -9,10 +9,13 @@ namespace KrishiLink.Models.ViewModels
         public string? Category { get; set; }
         public string? ImageUrl { get; set; }
         public string? Location { get; set; }
+        public string? District { get; set; }
         public string? Price { get; set; }
         public string? Status { get; set; }
         public string? DetailUrl { get; set; }
         public double Rating { get; set; }
         public int ReviewCount { get; set; }
+        public double OwnerRating { get; set; }
+        public int OwnerReviewCount { get; set; }
     }
 }

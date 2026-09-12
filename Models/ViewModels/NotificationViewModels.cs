@@ -9,6 +9,9 @@ namespace KrishiLink.Models.ViewModels
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
+        public string? TitleKey { get; set; }
+        public string? MessageKey { get; set; }
+        public string? ArgsJson { get; set; }
         public string LinkUrl { get; set; } = string.Empty;
         public string Type { get; set; } = NotificationTypes.System;
         public bool IsRead { get; set; }

@@ -23,6 +23,9 @@ namespace KrishiLink.BLL.Services
 
         /// <summary>Rows per page in the revenue transactions table.</summary>
         public int TransactionsPageSize { get; set; } = 25;
+
+        /// <summary>Hours after request before a payout is automatically settled by the scheduler (default: 24).</summary>
+        public int PayoutSettlementHours { get; set; } = 24;
     }
 
     public interface IOwnerRevenueService
@@ -36,6 +39,7 @@ namespace KrishiLink.BLL.Services
         PayoutHistoryViewModel GetPayoutHistory(string ownerId);
 
         /// <summary>Creates a "Processing" payout for every unpaid completed booking. Returns an error message, or null on success.</summary>
+        Task<string?> RequestPayoutAsync(string ownerId, string method, string? account);
         string? RequestPayout(string ownerId, string method, string? account);
 
         /// <summary>Adds (expenseId null) or updates an expense. Returns an error message, or null on success.</summary>
@@ -248,7 +252,10 @@ namespace KrishiLink.BLL.Services
             };
         }
 
-        public string? RequestPayout(string ownerId, string method, string? account)
+        public string? RequestPayout(string ownerId, string method, string? account) =>
+            RequestPayoutAsync(ownerId, method, account).GetAwaiter().GetResult();
+
+        public async Task<string?> RequestPayoutAsync(string ownerId, string method, string? account)
         {
             if (!PayoutHistoryViewModel.PayoutMethods.Contains(method)) return "Please choose a valid payout method.";
             if (string.IsNullOrWhiteSpace(account) || account.Trim().Length < 6) return "Please enter the account or wallet number the payout should go to.";
@@ -277,17 +284,19 @@ namespace KrishiLink.BLL.Services
             });
             _repo.MarkBookingsPaid(unpaid.Select(b => b.Id), payoutId);
 
-            var payoutLink = _profile.ListingLabel.Equals("Godown", StringComparison.OrdinalIgnoreCase)
-                ? "/GodownRevenue/Payouts"
-                : "/EquipmentRevenue/Payouts";
+            var payoutLink = AppLinks.OwnerPayouts(_profile.ListingLabel);
 
-            _notifications.CreateAsync(
-                ownerId,
-                NotificationTypes.PayoutProcessed,
-                "Payout Requested",
-                $"Your payout request of ৳{netAmount:N0} via {method} is being processed.",
-                payoutLink
-            ).GetAwaiter().GetResult();
+            await _notifications.NotifyAsync(new NotificationRequest
+            {
+                UserId = ownerId,
+                Type = NotificationTypes.PayoutProcessed,
+                TitleKey = "Payout Requested",
+                MessageKey = "Your payout request of ৳{0:N0} via {1} is being processed.",
+                Args = new object[] { netAmount, method },
+                LinkUrl = payoutLink,
+                DedupeKey = $"payout:{payoutId}:Requested",
+                SendEmail = false
+            });
 
             return null;
         }

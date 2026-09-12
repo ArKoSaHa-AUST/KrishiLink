@@ -91,6 +91,8 @@ namespace KrishiLink.Controllers
         /// <summary>POST: /EquipmentOwner/Save — create or update a listing (with robust server-side image validation).</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequestFormLimits(MultipartBodyLengthLimit = 32 * 1024 * 1024)]
+        [RequestSizeLimit(32 * 1024 * 1024)]
         public async Task<IActionResult> Save(EquipmentListingViewModel model, List<IFormFile>? imageFiles)
         {
             model.ImageFiles = imageFiles;
@@ -108,6 +110,10 @@ namespace KrishiLink.Controllers
             if (totalImagesCount == 0)
             {
                 ModelState.AddModelError("ImageFiles", "At least one photograph of the machinery is required.");
+            }
+            else if (totalImagesCount > 8)
+            {
+                ModelState.AddModelError("ImageFiles", "A listing cannot have more than 8 images.");
             }
 
             if (!ModelState.IsValid)

@@ -106,13 +106,33 @@ namespace KrishiLink.Controllers
         /// <summary>POST: /{Owner}/RequestPayout — asks the platform to settle the pending balance to the given wallet/account.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult RequestPayout(string method, string? account)
+        public async Task<IActionResult> RequestPayout(string method, string? account)
         {
-            var error = _revenueService.RequestPayout(OwnerId, method ?? string.Empty, account);
+            var error = await _revenueService.RequestPayoutAsync(OwnerId, method ?? string.Empty, account);
             if (error is null)
                 TempData["SuccessMessage"] = "Payout requested. It will show as Completed once the platform has transferred the funds.";
             else
                 TempData["ErrorMessage"] = error;
+
+            return RedirectToAction(nameof(Payouts));
+        }
+
+        /// <summary>POST: /{Owner}/SettlePayoutsNow — Dev-only action to immediately settle processing payouts.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SettlePayoutsNow(
+            [FromServices] IHostEnvironment env,
+            [FromServices] IPayoutSettlementService settlementService)
+        {
+            if (!env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            var count = await settlementService.SettleDuePayoutsAsync(maxHours: 0, ownerId: OwnerId);
+            TempData["SuccessMessage"] = count > 0
+                ? $"[Dev] Successfully settled {count} pending payout(s)."
+                : "[Dev] No processing payouts found to settle.";
 
             return RedirectToAction(nameof(Payouts));
         }

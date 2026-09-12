@@ -1,5 +1,14 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using KrishiLink.BLL.Helpers;
+using KrishiLink.DAL;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace KrishiLink.BLL.Services
 {
@@ -15,10 +24,28 @@ namespace KrishiLink.BLL.Services
 
         Task<CropCalendarEntry?> GetCropByIdAsync(int id);
         Task<List<CropCalendarEntry>> GetAllCropsAsync();
+        Task<FarmerCropAdvisoryViewModel?> GetRecommendationForFarmerAsync(string farmerId, int? month = null);
+        Task<FarmerCropAdvisoryViewModel?> GetRecommendationForCropAsync(string? cropName, string? district, int? month = null);
     }
 
     public class CropCalendarService : ICropCalendarService
     {
+        private readonly ApplicationDbContext _db;
+        private readonly IMemoryCache _cache;
+        private readonly UserManager<ApplicationUser> _userManager;
+
+        private const string CacheKeyAllCrops = "CropCalendar:All";
+
+        public CropCalendarService(
+            ApplicationDbContext db,
+            IMemoryCache cache,
+            UserManager<ApplicationUser> userManager)
+        {
+            _db = db;
+            _cache = cache;
+            _userManager = userManager;
+        }
+
         private static readonly List<CropCalendarEntry> ReferenceCrops = new()
         {
             new CropCalendarEntry
@@ -523,18 +550,39 @@ namespace KrishiLink.BLL.Services
             new MonthTimelineHeader { MonthNumber = 12, EnglishShort = "Dec", EnglishFull = "December", BanglaName = "ডিসেম্বর", BanglaMonthApprox = "অগ্রহায়ণ – পৌষ" }
         };
 
-        public Task<List<CropCalendarEntry>> GetAllCropsAsync()
+        public async Task<List<CropCalendarEntry>> GetAllCropsAsync()
         {
-            return Task.FromResult(ReferenceCrops.ToList());
+            if (_cache.TryGetValue(CacheKeyAllCrops, out List<CropCalendarEntry>? cached) && cached != null && cached.Count > 0)
+            {
+                return cached;
+            }
+
+            List<CropCalendarEntry> crops = new();
+            try
+            {
+                crops = await _db.CropCalendarEntries.AsNoTracking().ToListAsync();
+            }
+            catch
+            {
+                // Fallback in case of pre-migration state
+            }
+
+            if (crops.Count == 0)
+            {
+                crops = ReferenceCrops.ToList();
+            }
+
+            _cache.Set(CacheKeyAllCrops, crops, TimeSpan.FromHours(24));
+            return crops;
         }
 
-        public Task<CropCalendarEntry?> GetCropByIdAsync(int id)
+        public async Task<CropCalendarEntry?> GetCropByIdAsync(int id)
         {
-            var crop = ReferenceCrops.FirstOrDefault(c => c.Id == id);
-            return Task.FromResult(crop);
+            var crops = await GetAllCropsAsync();
+            return crops.FirstOrDefault(c => c.Id == id);
         }
 
-        public Task<CropCalendarIndexViewModel> GetCalendarModelAsync(
+        public async Task<CropCalendarIndexViewModel> GetCalendarModelAsync(
             string? search = null,
             string? category = null,
             string? season = null,
@@ -545,7 +593,8 @@ namespace KrishiLink.BLL.Services
             int currentMonth = DateTime.Now.Month;
             int activeMonth = month.HasValue && month.Value >= 1 && month.Value <= 12 ? month.Value : currentMonth;
 
-            var filtered = ReferenceCrops.AsQueryable();
+            var allCrops = await GetAllCropsAsync();
+            var filtered = allCrops.AsEnumerable();
 
             // 1. Search Query (English Name, Bangla Name, Scientific Name, or Varieties)
             if (!string.IsNullOrWhiteSpace(search))
@@ -633,9 +682,9 @@ namespace KrishiLink.BLL.Services
             var currentMonthHeader = monthsList.FirstOrDefault(m => m.MonthNumber == currentMonth) ?? monthsList[0];
 
             // Counts for Hero Bar based on all reference crops for current month
-            int sowingNow = ReferenceCrops.Count(c => c.SowingMonths.Contains(currentMonth));
-            int harvestingNow = ReferenceCrops.Count(c => c.HarvestingMonths.Contains(currentMonth));
-            int growingNow = ReferenceCrops.Count(c => c.GrowingMonths.Contains(currentMonth));
+            int sowingNow = allCrops.Count(c => c.SowingMonths.Contains(currentMonth));
+            int harvestingNow = allCrops.Count(c => c.HarvestingMonths.Contains(currentMonth));
+            int growingNow = allCrops.Count(c => c.GrowingMonths.Contains(currentMonth));
 
             var viewModel = new CropCalendarIndexViewModel
             {
@@ -663,7 +712,150 @@ namespace KrishiLink.BLL.Services
                 Divisions = GetDivisionOptions()
             };
 
-            return Task.FromResult(viewModel);
+            return viewModel;
+        }
+
+        public async Task<FarmerCropAdvisoryViewModel?> GetRecommendationForFarmerAsync(string farmerId, int? month = null)
+        {
+            if (string.IsNullOrWhiteSpace(farmerId)) return null;
+
+            var user = await _userManager.FindByIdAsync(farmerId);
+            if (user == null) return null;
+
+            string? cropName = user.Specialization;
+            string? district = user.District ?? user.Location;
+
+            return await GetRecommendationForCropAsync(cropName, district, month);
+        }
+
+        public async Task<FarmerCropAdvisoryViewModel?> GetRecommendationForCropAsync(string? cropName, string? district, int? month = null)
+        {
+            int targetMonth = month.HasValue && month.Value >= 1 && month.Value <= 12 ? month.Value : DateTime.Now.Month;
+            var allCrops = await GetAllCropsAsync();
+            if (allCrops.Count == 0) return null;
+
+            CropCalendarEntry? matchedCrop = null;
+
+            if (!string.IsNullOrWhiteSpace(cropName))
+            {
+                var cleanCrop = cropName.Trim();
+                // 1. Direct match on ProfileCropName
+                matchedCrop = allCrops.FirstOrDefault(c => string.Equals(c.ProfileCropName, cleanCrop, StringComparison.OrdinalIgnoreCase));
+
+                // 2. Partial match on Name or BanglaName
+                if (matchedCrop == null)
+                {
+                    matchedCrop = allCrops.FirstOrDefault(c =>
+                        c.Name.Contains(cleanCrop, StringComparison.OrdinalIgnoreCase) ||
+                        c.BanglaName.Contains(cleanCrop, StringComparison.OrdinalIgnoreCase));
+                }
+
+                // 3. Keyword matching for common onboarding strings
+                if (matchedCrop == null)
+                {
+                    if (cleanCrop.Contains("Boro", StringComparison.OrdinalIgnoreCase))
+                        matchedCrop = allCrops.FirstOrDefault(c => c.Name.Contains("Boro"));
+                    else if (cleanCrop.Contains("Aman", StringComparison.OrdinalIgnoreCase))
+                        matchedCrop = allCrops.FirstOrDefault(c => c.Name.Contains("Aman"));
+                    else if (cleanCrop.Contains("Aus", StringComparison.OrdinalIgnoreCase))
+                        matchedCrop = allCrops.FirstOrDefault(c => c.Name.Contains("Aus"));
+                    else if (cleanCrop.Contains("Wheat", StringComparison.OrdinalIgnoreCase) || cleanCrop.Contains("গম"))
+                        matchedCrop = allCrops.FirstOrDefault(c => c.Name.Contains("Wheat"));
+                    else if (cleanCrop.Contains("Potato", StringComparison.OrdinalIgnoreCase) || cleanCrop.Contains("আলু"))
+                        matchedCrop = allCrops.FirstOrDefault(c => c.Name.Contains("Potato"));
+                    else if (cleanCrop.Contains("Jute", StringComparison.OrdinalIgnoreCase) || cleanCrop.Contains("পাট"))
+                        matchedCrop = allCrops.FirstOrDefault(c => c.Name.Contains("Jute"));
+                    else if (cleanCrop.Contains("Maize", StringComparison.OrdinalIgnoreCase) || cleanCrop.Contains("ভুট্টা"))
+                        matchedCrop = allCrops.FirstOrDefault(c => c.Name.Contains("Maize"));
+                    else if (cleanCrop.Contains("Mustard", StringComparison.OrdinalIgnoreCase) || cleanCrop.Contains("সরিষা"))
+                        matchedCrop = allCrops.FirstOrDefault(c => c.Name.Contains("Mustard"));
+                    else if (cleanCrop.Contains("Vegetables", StringComparison.OrdinalIgnoreCase) || cleanCrop.Contains("সবজি"))
+                        matchedCrop = allCrops.FirstOrDefault(c => c.Category == "Vegetables");
+                    else if (cleanCrop.Contains("Pulses", StringComparison.OrdinalIgnoreCase) || cleanCrop.Contains("ডাল"))
+                        matchedCrop = allCrops.FirstOrDefault(c => c.Category == "Pulses");
+                }
+            }
+
+            // If still no crop specified or matched, pick the primary active crop in season for current month
+            if (matchedCrop == null)
+            {
+                matchedCrop = allCrops.FirstOrDefault(c => c.SowingMonths.Contains(targetMonth))
+                    ?? allCrops.FirstOrDefault(c => c.GrowingMonths.Contains(targetMonth))
+                    ?? allCrops.FirstOrDefault();
+            }
+
+            if (matchedCrop == null) return null;
+
+            bool isSuitable = BangladeshGeo.IsDistrictSuitable(district, matchedCrop.Division);
+
+            string currentPhase;
+            string currentPhaseBangla;
+            string phaseBadgeColor;
+            string summary;
+            string summaryBangla;
+
+            if (matchedCrop.SowingMonths.Contains(targetMonth))
+            {
+                currentPhase = "sowing";
+                currentPhaseBangla = "বপন ও চারা রোপণ পর্ব";
+                phaseBadgeColor = "success";
+                summary = $"Optimal sowing / transplanting window for {matchedCrop.Name}. Prepare well-tilled soil with organic compost and recommended basal fertilizer doses.";
+                summaryBangla = $"{matchedCrop.BanglaName} বীজ বপন ও চারা রোপণের উপযুক্ত মৌসুম। সুষম সার ও জৈব সার প্রয়োগ করে জমি উত্তমরূপে তৈরি করুন।";
+            }
+            else if (matchedCrop.HarvestingMonths.Contains(targetMonth))
+            {
+                currentPhase = "harvesting";
+                currentPhaseBangla = "ফসল কর্তন ও মাড়াই পর্ব";
+                phaseBadgeColor = "warning";
+                summary = $"Harvesting period for {matchedCrop.Name}. Harvest when 80-85% grains/pods show physiological maturity. Store in moisture-free godowns.";
+                summaryBangla = $"{matchedCrop.BanglaName} কাটার উপযুক্ত সময়। শতকরা ৮০-৮৫ ভাগ পরিপক্ব হলে ফসল কর্তন ও শুকিয়ে নিরাপদ গুদামে সংরক্ষণ করুন।";
+            }
+            else if (matchedCrop.GrowingMonths.Contains(targetMonth))
+            {
+                currentPhase = "growing";
+                currentPhaseBangla = "মাঠে বৃদ্ধি ও পরিচর্যা পর্যায়";
+                phaseBadgeColor = "primary";
+                summary = $"Active vegetative & growth phase for {matchedCrop.Name}. Maintain optimal soil moisture, top-dress urea/potash, and scout for pests.";
+                summaryBangla = $"{matchedCrop.BanglaName} এর মাঠে বৃদ্ধি ও পরিচর্যা পর্যায়। পরিমিত সেচ দিন, সুষম উপরি প্রয়োগ করুন এবং নিয়মিত ক্ষতিকর পোকা পর্যবেক্ষণ করুন।";
+            }
+            else
+            {
+                currentPhase = "off-season";
+                currentPhaseBangla = "মৌসুম বহির্ভূত প্রস্তুতি";
+                phaseBadgeColor = "secondary";
+                var sowingShortNames = matchedCrop.SowingMonths
+                    .Select(m => MonthHeaders.FirstOrDefault(h => h.MonthNumber == m)?.EnglishShort ?? m.ToString());
+                var sowingBanglaNames = matchedCrop.SowingMonths
+                    .Select(m => MonthHeaders.FirstOrDefault(h => h.MonthNumber == m)?.BanglaName ?? m.ToString());
+                summary = $"Currently off-season for {matchedCrop.Name}. Next active planting window begins in {string.Join(", ", sowingShortNames)}.";
+                summaryBangla = $"{matchedCrop.BanglaName} এখন মৌসুম বহির্ভূত। পরবর্তী রোপণ মৌসুম শুরু হবে {string.Join(", ", sowingBanglaNames)} মাসে।";
+            }
+
+            var monthHeader = MonthHeaders.FirstOrDefault(m => m.MonthNumber == targetMonth)
+                ?? new MonthTimelineHeader { MonthNumber = targetMonth, EnglishFull = "Current Month", BanglaName = "চলতি মাস" };
+
+            return new FarmerCropAdvisoryViewModel
+            {
+                CropId = matchedCrop.Id,
+                CropName = matchedCrop.Name,
+                BanglaCropName = matchedCrop.BanglaName,
+                ProfileCropName = matchedCrop.ProfileCropName ?? matchedCrop.Name,
+                CurrentPhase = currentPhase,
+                CurrentPhaseBangla = currentPhaseBangla,
+                PhaseBadgeColor = phaseBadgeColor,
+                AdvisorySummary = summary,
+                AdvisorySummaryBangla = summaryBangla,
+                KeyTips = matchedCrop.KeyTips,
+                OptimalTemperature = matchedCrop.OptimalTemperature,
+                WaterRequirement = matchedCrop.WaterRequirement,
+                PopularVarieties = matchedCrop.PopularVarieties,
+                Season = matchedCrop.Season,
+                District = district ?? "Bangladesh",
+                Month = targetMonth,
+                MonthName = monthHeader.EnglishFull,
+                BanglaMonthName = $"{monthHeader.BanglaName} ({monthHeader.BanglaMonthApprox})",
+                IsSuitableDistrict = isSuitable
+            };
         }
 
         private static string GetCategoryDisplay(string category) => category switch

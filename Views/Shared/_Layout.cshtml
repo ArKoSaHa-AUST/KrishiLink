@@ -183,12 +183,24 @@
                                             <span>@L["My Bookings"]</span>
                                         </a>
                                     </li>
-                                    <li>
-                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="Account" asp-action="Verification">
-                                            <i class="bi bi-shield-check text-success"></i>
-                                            <span>@L["Identity Verification"]</span>
-                                        </a>
-                                    </li>
+                                    @if (roleDisplay is "GodownOwner" or "EquipmentOwner")
+                                    {
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="Account" asp-action="Verification">
+                                                <i class="bi bi-shield-check text-success"></i>
+                                                <span>@L["Identity Verification"]</span>
+                                            </a>
+                                        </li>
+                                    }
+                                    @if (User.IsInRole(AppRoles.Admin))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="Verifications" asp-action="Index">
+                                                <i class="bi bi-shield-lock text-success"></i>
+                                                <span>@L["Admin Verifications"]</span>
+                                            </a>
+                                        </li>
+                                    }
                                     <li>
                                         <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="Account" asp-action="Profile">
                                             <i class="bi bi-person-gear text-success"></i>

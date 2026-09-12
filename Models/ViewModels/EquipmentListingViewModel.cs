@@ -24,8 +24,14 @@ namespace KrishiLink.Models.ViewModels
         public string Description { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Location is required.")]
-        [Display(Name = "Location / District")]
+        [Display(Name = "Location (Upazila / Village / Road)")]
         public string Location { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "District is required.")]
+        [Display(Name = "District")]
+        public string District { get; set; } = string.Empty;
+
+        public List<string> AvailableDistricts => new(OnboardingOptions.Districts);
 
         [Display(Name = "Latitude")]
         [Range(-90.0, 90.0, ErrorMessage = "Invalid latitude coordinate.")]

@@ -652,6 +652,16 @@ window.KrishiNotifications = {
         // Start background polling
         this.startPolling();
 
+        // Pause/resume polling on tab visibility change
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.stopPolling();
+            } else {
+                this.fetchUnreadCount();
+                this.startPolling();
+            }
+        });
+
         // Setup dropdown open event
         const dropdownContainer = document.getElementById('notificationDropdownContainer');
         if (dropdownContainer) {
@@ -672,10 +682,19 @@ window.KrishiNotifications = {
     },
 
     startPolling: function () {
-        if (this.timerId) clearInterval(this.timerId);
+        this.stopPolling();
         this.timerId = setInterval(() => {
-            this.fetchUnreadCount();
+            if (!document.hidden) {
+                this.fetchUnreadCount();
+            }
         }, this.pollingInterval);
+    },
+
+    stopPolling: function () {
+        if (this.timerId) {
+            clearInterval(this.timerId);
+            this.timerId = null;
+        }
     },
 
     fetchUnreadCount: function () {
@@ -760,6 +779,11 @@ window.KrishiNotifications = {
             data.items.forEach(item => {
                 const unreadClass = !item.isRead ? 'unread' : '';
                 const openUrl = `/Notifications/Open/${item.id}`;
+                const unreadAction = !item.isRead 
+                    ? `<button type="button" class="btn btn-link p-0 text-muted ms-1 flex-shrink-0" title="Mark as read" onclick="event.preventDefault(); event.stopPropagation(); KrishiNotifications.markAsRead(${item.id});">
+                         <span class="notification-unread-dot d-inline-block"></span>
+                       </button>`
+                    : '';
                 html += `
                     <a href="${openUrl}" class="list-group-item list-group-item-action notification-dropdown-item ${unreadClass} p-3 border-bottom">
                         <div class="d-flex align-items-start gap-2">
@@ -780,7 +804,7 @@ window.KrishiNotifications = {
                                     ${this.escapeHtml(item.message)}
                                 </p>
                             </div>
-                            ${!item.isRead ? '<span class="notification-unread-dot flex-shrink-0 mt-1"></span>' : ''}
+                            ${unreadAction}
                         </div>
                     </a>`;
             });
@@ -790,6 +814,31 @@ window.KrishiNotifications = {
         .catch(() => {
             listContainer.innerHTML = '<div class="p-3 text-center text-muted small">Could not load notifications.</div>';
         });
+    },
+
+    markAsRead: function (id) {
+        const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        const token = tokenInput ? tokenInput.value : '';
+
+        const formData = new FormData();
+        formData.append('id', id);
+        formData.append('__RequestVerificationToken', token);
+
+        fetch('/Notifications/MarkAsRead', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+            if (data && data.success) {
+                if (typeof data.unreadCount === 'number') {
+                    this.updateBadges(data.unreadCount);
+                }
+                this.loadRecentNotifications();
+            }
+        })
+        .catch(() => { /* silent */ });
     },
 
     markAllAsRead: function () {
@@ -821,4 +870,70 @@ window.KrishiNotifications = {
         return div.innerHTML;
     }
 };
+
+window.KrishiReviews = {
+    init: function () {
+        const loadMoreBtn = document.getElementById('loadMoreReviewsBtn');
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', () => this.loadMore(loadMoreBtn));
+        }
+    },
+
+    loadMore: async function (btn) {
+        const type = btn.getAttribute('data-type');
+        const id = btn.getAttribute('data-id');
+        let page = parseInt(btn.getAttribute('data-page') || '2', 10);
+        const total = parseInt(btn.getAttribute('data-total') || '0', 10);
+        const spinner = document.getElementById('loadMoreReviewsSpinner');
+        const btnText = document.getElementById('loadMoreReviewsBtnText');
+        const container = document.getElementById('reviewsContainer');
+
+        if (!type || !id || !container) return;
+
+        btn.disabled = true;
+        if (spinner) spinner.classList.remove('d-none');
+        if (btnText) btnText.classList.add('opacity-50');
+
+        try {
+            const response = await fetch(`/Reviews/List?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}&page=${page}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+
+            if (response.ok) {
+                const html = await response.text();
+                if (html && html.trim().length > 0) {
+                    const temp = document.createElement('div');
+                    temp.innerHTML = html;
+                    const items = Array.from(temp.querySelectorAll('.review-item'));
+                    items.forEach(el => container.appendChild(el));
+
+                    page++;
+                    btn.setAttribute('data-page', page);
+
+                    const currentLoaded = container.querySelectorAll('.review-item').length;
+                    if (currentLoaded >= total || items.length === 0) {
+                        const wrapper = document.getElementById('loadMoreReviewsContainer');
+                        if (wrapper) wrapper.classList.add('d-none');
+                    }
+                } else {
+                    const wrapper = document.getElementById('loadMoreReviewsContainer');
+                    if (wrapper) wrapper.classList.add('d-none');
+                }
+            }
+        } catch (e) {
+            console.error('[KrishiReviews] Failed to load reviews:', e);
+        } finally {
+            btn.disabled = false;
+            if (spinner) spinner.classList.add('d-none');
+            if (btnText) btnText.classList.remove('opacity-50');
+        }
+    }
+};
+
+document.addEventListener('DOMContentLoaded', function () {
+    if (window.KrishiReviews) {
+        window.KrishiReviews.init();
+    }
+});
+
 

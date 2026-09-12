@@ -1,13 +1,18 @@
 @model KrishiLink.Models.ViewModels.GodownBrowseViewModel
+@using System.Text.Json
 @{
     ViewData["Title"] = L["Browse Godowns"];
     var activeFiltersCount = 0;
     if (!string.IsNullOrWhiteSpace(Model.SearchTerm)) activeFiltersCount++;
     if (Model.SelectedStorageTypes.Any()) activeFiltersCount += Model.SelectedStorageTypes.Count;
-    if (!string.IsNullOrWhiteSpace(Model.Location)) activeFiltersCount++;
+    if (!string.IsNullOrWhiteSpace(Model.Location) || !string.IsNullOrWhiteSpace(Model.District)) activeFiltersCount++;
     if (Model.SelectedMinCapacity.HasValue && Model.SelectedMinCapacity.Value > 0) activeFiltersCount++;
+    if (Model.SelectedMinPrice.HasValue && Model.SelectedMinPrice.Value > Model.MinPrice) activeFiltersCount++;
     if (Model.SelectedMaxPrice.HasValue && Model.SelectedMaxPrice.Value < Model.MaxPrice) activeFiltersCount++;
     if (Model.AvailableStartDate.HasValue || Model.AvailableEndDate.HasValue) activeFiltersCount++;
+
+    var localizedStorageTypesJson = JsonSerializer.Serialize(Model.AvailableStorageTypes.ToDictionary(k => k, k => L[k].Value));
+    var localizedLocationsJson = JsonSerializer.Serialize(Model.AvailableLocations.ToDictionary(k => k, k => L[k].Value));
 }
 
 <!-- Page Header & Hero Banner -->
@@ -25,7 +30,7 @@
         <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
             <div class="d-inline-flex flex-column align-items-lg-end bg-white bg-opacity-10 border border-white border-opacity-25 rounded-3 p-3 text-white text-start">
                 <span class="small text-white-50">@L["Verified Facilities"]</span>
-                <span class="fs-4 fw-bold" id="heroListingCount">@L["{0} Storage Options", Model.GodownList.Count]</span>
+                <span class="fs-4 fw-bold" id="heroListingCount">@L["{0} Storage Options", Model.TotalCount]</span>
                 <span class="small text-white-50"><i class="bi bi-shield-check text-warning me-1"></i>@L["Pest-controlled & insured"]</span>
             </div>
         </div>
@@ -71,7 +76,7 @@
                 </button>
             </div>
 
-            <!-- 1. Location Filter -->
+            <!-- 1. Location / District Filter -->
             <div class="mb-4">
                 <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="desktopLocationSelect">
                     @L["Location / District"]
@@ -80,11 +85,11 @@
                     <span class="input-group-text bg-light border-end-0 text-muted">
                         <i class="bi bi-geo-alt-fill text-success"></i>
                     </span>
-                    <select class="form-select border-start-0" id="desktopLocationSelect" onchange="syncLocation(this.value); onFilterChanged();">
+                    <select class="form-select border-start-0 filter-input" id="desktopLocationSelect" onchange="syncLocation(this.value); onFilterChanged(1);">
                         <option value="">@L["All Locations (Bangladesh)"]</option>
                         @foreach (var loc in Model.AvailableLocations)
                         {
-                            <option value="@loc" selected="@(Model.Location == loc ? "selected" : null)">@L[loc]</option>
+                            <option value="@loc" selected="@((Model.District == loc || Model.Location == loc) ? "selected" : null)">@L[loc]</option>
                         }
                     </select>
                 </div>
@@ -100,11 +105,11 @@
                         @((Model.SelectedMinCapacity ?? 0) > 0 ? L["{0} Tons", Model.SelectedMinCapacity ?? 0] : L["Any Capacity"])
                     </span>
                 </div>
-                <input type="range" class="form-range" id="desktopCapacitySlider"
+                <input type="range" class="form-range filter-input" id="desktopCapacitySlider"
                        min="0" max="300" step="10"
                        value="@(Model.SelectedMinCapacity ?? 0)"
                        oninput="syncCapacity(this.value)"
-                       onchange="onFilterChanged()" />
+                       onchange="onFilterChanged(1)" />
                 <div class="d-flex justify-content-between small text-muted">
                     <span>@L["Any"]</span>
                     <span>@L["{0} Tons", "300+"]</span>
@@ -122,9 +127,9 @@
                     {
                         var isChecked = Model.SelectedStorageTypes.Contains(type);
                         <div class="form-check custom-checkbox">
-                            <input class="form-check-input desktop-type-filter" type="checkbox"
+                            <input class="form-check-input filter-input desktop-type-filter" type="checkbox"
                                    value="@type" id="desk_type_@type.Replace(" ", "_").Replace("(", "").Replace(")", "").Replace("&", "")"
-                                   @(isChecked ? "checked" : "") onchange="onFilterChanged()" />
+                                   @(isChecked ? "checked" : "") onchange="onFilterChanged(1)" />
                             <label class="form-check-label text-secondary small user-select-none" for="desk_type_@type.Replace(" ", "_").Replace("(", "").Replace(")", "").Replace("&", "")">
                                 @L[type]
                             </label>
@@ -133,21 +138,37 @@
                 </div>
             </div>
 
-            <!-- 4. Price Range Slider (Monthly Rate) -->
+            <!-- 4. Price Range (Monthly Rate) -->
             <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0" for="desktopPriceSlider">
-                        @L["Max Rate / Ton / Month"]
+                        @L["Monthly Rate (৳/Ton)"]
                     </label>
                     <span class="badge bg-success-subtle text-success fw-bold px-2 py-1 desktop-price-display">
-                        ৳@((Model.SelectedMaxPrice ?? Model.MaxPrice).ToString("N0"))
+                        ৳@((Model.SelectedMinPrice ?? Model.MinPrice).ToString("N0")) – ৳@((Model.SelectedMaxPrice ?? Model.MaxPrice).ToString("N0"))
                     </span>
                 </div>
-                <input type="range" class="form-range" id="desktopPriceSlider"
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="small text-muted mb-1" for="desktopMinPriceInput">@L["Min ৳"]</label>
+                        <input type="number" class="form-control form-control-sm filter-input" id="desktopMinPriceInput"
+                               min="@Model.MinPrice" max="@Model.MaxPrice" step="50" 
+                               value="@(Model.SelectedMinPrice ?? Model.MinPrice)" 
+                               onchange="syncPriceInputs(); onFilterChanged(1);" />
+                    </div>
+                    <div class="col-6">
+                        <label class="small text-muted mb-1" for="desktopMaxPriceInput">@L["Max ৳"]</label>
+                        <input type="number" class="form-control form-control-sm filter-input" id="desktopMaxPriceInput"
+                               min="@Model.MinPrice" max="@Model.MaxPrice" step="50" 
+                               value="@(Model.SelectedMaxPrice ?? Model.MaxPrice)" 
+                               onchange="syncPriceInputs(); onFilterChanged(1);" />
+                    </div>
+                </div>
+                <input type="range" class="form-range filter-input" id="desktopPriceSlider"
                        min="@Model.MinPrice" max="@Model.MaxPrice" step="50"
                        value="@(Model.SelectedMaxPrice ?? Model.MaxPrice)"
-                       oninput="syncPrice(this.value)"
-                       onchange="onFilterChanged()" />
+                       oninput="syncSliderToMaxInput(this.value)"
+                       onchange="onFilterChanged(1)" />
                 <div class="d-flex justify-content-between small text-muted">
                     <span>৳@Model.MinPrice.ToString("N0")</span>
                     <span>৳@Model.MaxPrice.ToString("N0")</span>
@@ -162,15 +183,15 @@
                 <div class="row g-2">
                     <div class="col-6">
                         <label class="small text-muted mb-1" for="desktopStartDateInput">@L["From"]</label>
-                        <input type="date" class="form-control form-control-sm" id="desktopStartDateInput"
+                        <input type="date" class="form-control form-control-sm filter-input" id="desktopStartDateInput"
                                value="@(Model.AvailableStartDate.HasValue ? Model.AvailableStartDate.Value.ToString("yyyy-MM-dd") : "")"
-                               min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncDates(); onFilterChanged();" />
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncDates(); onFilterChanged(1);" />
                     </div>
                     <div class="col-6">
                         <label class="small text-muted mb-1" for="desktopEndDateInput">@L["To"]</label>
-                        <input type="date" class="form-control form-control-sm" id="desktopEndDateInput"
+                        <input type="date" class="form-control form-control-sm filter-input" id="desktopEndDateInput"
                                value="@(Model.AvailableEndDate.HasValue ? Model.AvailableEndDate.Value.ToString("yyyy-MM-dd") : "")"
-                               min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncDates(); onFilterChanged();" />
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncDates(); onFilterChanged(1);" />
                     </div>
                 </div>
             </div>
@@ -215,7 +236,7 @@
                         <label class="small text-muted text-nowrap fw-semibold d-none d-sm-inline" for="mainSortSelect">
                             <i class="bi bi-arrow-down-up me-1"></i>@L["Sort:"]
                         </label>
-                        <select class="form-select form-select-sm py-2" id="mainSortSelect" onchange="onFilterChanged()">
+                        <select class="form-select form-select-sm py-2" id="mainSortSelect" onchange="onFilterChanged(1)">
                             <option value="newest" selected="@(Model.SortBy == "newest" ? "selected" : null)">@L["Newest First"]</option>
                             <option value="rating_desc" selected="@(Model.SortBy == "rating_desc" ? "selected" : null)">@L["Highest Rated"]</option>
                             <option value="price_asc" selected="@(Model.SortBy == "price_asc" ? "selected" : null)">@L["Price: Low to High"]</option>
@@ -232,7 +253,7 @@
         <!-- Results Summary & Active Filter Tags Bar -->
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 px-1">
             <span class="text-secondary small fw-medium" id="resultsCountSummary">
-                @L["Showing"] <strong class="text-dark" id="resultsCountNumber">@Model.GodownList.Count</strong> @L["storage facilities"]
+                @L["Showing"] <strong class="text-dark" id="resultsCountNumber">@Model.GodownList.Count</strong> @L["of"] <strong class="text-dark">@Model.TotalCount</strong> @L["storage facilities"]
             </span>
 
             <div class="d-flex flex-wrap align-items-center gap-1.5" id="activeFilterTagsContainer">
@@ -318,7 +339,16 @@
                             <div class="small text-muted mb-2.5">
                                 <div class="d-flex align-items-center gap-1 text-truncate mb-1">
                                     <i class="bi bi-geo-alt text-success"></i>
-                                    <span class="text-truncate">@L[item.Location]</span>
+                                    <span class="text-truncate">
+                                        @if (!string.IsNullOrWhiteSpace(item.District))
+                                        {
+                                            <strong>@L[item.District]</strong>@(item.Location != item.District && !string.IsNullOrWhiteSpace(item.Location) ? $" · {item.Location}" : "")
+                                        }
+                                        else
+                                        {
+                                            @L[item.Location]
+                                        }
+                                    </span>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between">
                                     <span class="text-truncate">
@@ -330,7 +360,8 @@
                                     </span>
                                     @if (item.ReviewCount > 0)
                                     {
-                                        <span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>@item.Rating.ToString("0.0") (@item.ReviewCount)</span>
+                                        var ownerInfo = item.OwnerReviewCount > 0 ? $" · {L["Owner"]}: {item.OwnerRating:F1} ({item.OwnerReviewCount})" : "";
+                                        <span class="text-warning fw-semibold" title="@($"{item.Rating:F1} ({item.ReviewCount} {L["reviews"]}){ownerInfo}")"><i class="bi bi-star-fill me-1"></i>@item.Rating.ToString("0.0") (@item.ReviewCount)</span>
                                     }
                                 </div>
                             </div>
@@ -381,13 +412,40 @@
             }
         </div>
 
-        <!-- Empty State (no listings on the platform vs. nothing matching the filters) -->
+        <!-- Server-Side Pagination Controls -->
+        <div class="d-flex justify-content-center mt-5 @(Model.TotalPages <= 1 ? "d-none" : "")" id="godownPaginationContainer">
+            <nav aria-label='@L["Godown Listings Pagination"]'>
+                <ul class="pagination pagination-sm flex-wrap justify-content-center gap-1" id="godownPaginationList">
+                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                        <a class="page-link rounded-pill px-3 me-1" href="javascript:void(0)" onclick="goToPage(@(Model.Page - 1))">
+                            <i class="bi bi-chevron-left me-1"></i> @L["Previous"]
+                        </a>
+                    </li>
+                    @for (int p = 1; p <= Model.TotalPages; p++)
+                    {
+                        <li class="page-item @(p == Model.Page ? "active" : "")">
+                            <a class="page-link rounded-circle mx-0.5 text-center" style="width: 32px; height: 32px; line-height: 18px;" href="javascript:void(0)" onclick="goToPage(@p)">
+                                @p
+                            </a>
+                        </li>
+                    }
+                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                        <a class="page-link rounded-pill px-3 ms-1" href="javascript:void(0)" onclick="goToPage(@(Model.Page + 1))">
+                            @L["Next"] <i class="bi bi-chevron-right ms-1"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+
+        <!-- Empty State -->
         @{
             var hasFilters = !string.IsNullOrWhiteSpace(Model.SearchTerm) || Model.SelectedStorageTypes.Any()
-                || !string.IsNullOrWhiteSpace(Model.Location) || Model.SelectedMinCapacity is > 0
+                || !string.IsNullOrWhiteSpace(Model.Location) || !string.IsNullOrWhiteSpace(Model.District)
+                || Model.SelectedMinCapacity is > 0
                 || Model.AvailableStartDate.HasValue || Model.AvailableEndDate.HasValue
+                || (Model.SelectedMinPrice.HasValue && Model.SelectedMinPrice > Model.MinPrice)
                 || (Model.SelectedMaxPrice.HasValue && Model.SelectedMaxPrice < Model.MaxPrice);
-            // Live filtering can reveal this container later, so only claim "nothing listed" when the platform really is empty
             var platformEmpty = !hasFilters && !Model.GodownList.Any();
         }
         <div class="card krishi-card border-0 shadow-sm rounded-4 p-5 text-center my-4 @(Model.GodownList.Any() ? "d-none" : "")" id="emptyStateContainer">
@@ -448,12 +506,12 @@
 
         <!-- Mobile: Location -->
         <div class="mb-4">
-            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2">@L["Location"]</label>
-            <select class="form-select" id="mobileLocationSelect" onchange="syncLocation(this.value); onFilterChanged();">
+            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="mobileLocationSelect">@L["Location / District"]</label>
+            <select class="form-select" id="mobileLocationSelect" onchange="syncLocation(this.value); onFilterChanged(1);">
                 <option value="">@L["All Locations (Bangladesh)"]</option>
                 @foreach (var loc in Model.AvailableLocations)
                 {
-                    <option value="@loc" selected="@(Model.Location == loc ? "selected" : null)">@L[loc]</option>
+                    <option value="@loc" selected="@((Model.District == loc || Model.Location == loc) ? "selected" : null)">@L[loc]</option>
                 }
             </select>
         </div>
@@ -461,7 +519,7 @@
         <!-- Mobile: Capacity Slider -->
         <div class="mb-4">
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0">@L["Min Capacity Needed"]</label>
+                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0" for="mobileCapacitySlider">@L["Min Capacity Needed"]</label>
                 <span class="badge bg-success-subtle text-success fw-bold px-2 py-1 mobile-capacity-display">
                     @((Model.SelectedMinCapacity ?? 0) > 0 ? L["{0} Tons", Model.SelectedMinCapacity ?? 0] : L["Any Capacity"])
                 </span>
@@ -470,7 +528,7 @@
                    min="0" max="300" step="10"
                    value="@(Model.SelectedMinCapacity ?? 0)"
                    oninput="syncCapacity(this.value)"
-                   onchange="onFilterChanged()" />
+                   onchange="onFilterChanged(1)" />
         </div>
 
         <!-- Mobile: Storage Type -->
@@ -483,7 +541,7 @@
                     <div class="form-check custom-checkbox w-100">
                         <input class="form-check-input mobile-type-filter" type="checkbox"
                                value="@type" id="mob_type_@type.Replace(" ", "_").Replace("(", "").Replace(")", "").Replace("&", "")"
-                               @(isChecked ? "checked" : "") onchange="syncMobileToDesktopType(); onFilterChanged();" />
+                               @(isChecked ? "checked" : "") onchange="syncMobileToDesktopType(); onFilterChanged(1);" />
                         <label class="form-check-label text-secondary small" for="mob_type_@type.Replace(" ", "_").Replace("(", "").Replace(")", "").Replace("&", "")">
                             @L[type]
                         </label>
@@ -492,19 +550,35 @@
             </div>
         </div>
 
-        <!-- Mobile: Price Slider -->
+        <!-- Mobile: Price Range Inputs -->
         <div class="mb-4">
             <div class="d-flex justify-content-between align-items-center mb-1">
-                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0">@L["Max Monthly Rate"]</label>
+                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0" for="mobilePriceSlider">@L["Monthly Rate (৳/Ton)"]</label>
                 <span class="badge bg-success-subtle text-success fw-bold px-2 py-1 mobile-price-display">
-                    ৳@((Model.SelectedMaxPrice ?? Model.MaxPrice).ToString("N0"))
+                    ৳@((Model.SelectedMinPrice ?? Model.MinPrice).ToString("N0")) – ৳@((Model.SelectedMaxPrice ?? Model.MaxPrice).ToString("N0"))
                 </span>
+            </div>
+            <div class="row g-2 mb-2">
+                <div class="col-6">
+                    <label class="small text-muted mb-1" for="mobileMinPriceInput">@L["Min ৳"]</label>
+                    <input type="number" class="form-control form-control-sm" id="mobileMinPriceInput"
+                           min="@Model.MinPrice" max="@Model.MaxPrice" step="50" 
+                           value="@(Model.SelectedMinPrice ?? Model.MinPrice)" 
+                           onchange="syncPriceInputsFromMobile(); onFilterChanged(1);" />
+                </div>
+                <div class="col-6">
+                    <label class="small text-muted mb-1" for="mobileMaxPriceInput">@L["Max ৳"]</label>
+                    <input type="number" class="form-control form-control-sm" id="mobileMaxPriceInput"
+                           min="@Model.MinPrice" max="@Model.MaxPrice" step="50" 
+                           value="@(Model.SelectedMaxPrice ?? Model.MaxPrice)" 
+                           onchange="syncPriceInputsFromMobile(); onFilterChanged(1);" />
+                </div>
             </div>
             <input type="range" class="form-range" id="mobilePriceSlider"
                    min="@Model.MinPrice" max="@Model.MaxPrice" step="50"
                    value="@(Model.SelectedMaxPrice ?? Model.MaxPrice)"
-                   oninput="syncPrice(this.value)"
-                   onchange="onFilterChanged()" />
+                   oninput="syncSliderToMaxInput(this.value)"
+                   onchange="onFilterChanged(1)" />
         </div>
 
         <!-- Mobile: Available Dates -->
@@ -512,14 +586,16 @@
             <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2">@L["Dates"]</label>
             <div class="row g-2">
                 <div class="col-6">
+                    <label class="small text-muted mb-1" for="mobileStartDateInput">@L["From"]</label>
                     <input type="date" class="form-control form-control-sm" id="mobileStartDateInput"
                            value="@(Model.AvailableStartDate.HasValue ? Model.AvailableStartDate.Value.ToString("yyyy-MM-dd") : "")"
-                           min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncMobileDates(); onFilterChanged();" />
+                           min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncMobileDates(); onFilterChanged(1);" />
                 </div>
                 <div class="col-6">
+                    <label class="small text-muted mb-1" for="mobileEndDateInput">@L["To"]</label>
                     <input type="date" class="form-control form-control-sm" id="mobileEndDateInput"
                            value="@(Model.AvailableEndDate.HasValue ? Model.AvailableEndDate.Value.ToString("yyyy-MM-dd") : "")"
-                           min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncMobileDates(); onFilterChanged();" />
+                           min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncMobileDates(); onFilterChanged(1);" />
                 </div>
             </div>
         </div>
@@ -527,7 +603,7 @@
         <!-- Bottom Sheet Actions -->
         <div class="d-grid gap-2 pt-2 pb-3">
             <button type="button" class="btn btn-krishi-primary py-2.5 fw-bold rounded-pill" data-bs-dismiss="offcanvas">
-                @L["View Results ("]<span id="mobileSheetResultCount">@Model.GodownList.Count</span>)
+                @L["View Results ("]<span id="mobileSheetResultCount">@Model.TotalCount</span>)
             </button>
             <button type="button" class="btn btn-outline-danger btn-sm py-2 rounded-pill" onclick="resetAllFilters()">
                 @L["Clear Filters"]
@@ -540,19 +616,60 @@
 @section Scripts {
     <script>
         let searchDebounceTimer = null;
+        let currentPage = @Model.Page;
         const DEFAULT_MAX_PRICE = @Model.MaxPrice;
-        const storageTypeTranslations = {
-            @foreach (var type in Model.AvailableStorageTypes)
-            {
-                <text>@Json.Serialize(type): @Json.Serialize(L[type].Value),</text>
-            }
-        };
-        const locationTranslations = {
-            @foreach (var loc in Model.AvailableLocations)
-            {
-                <text>@Json.Serialize(loc): @Json.Serialize(L[loc].Value),</text>
-            }
-        };
+        const DEFAULT_MIN_PRICE = @Model.MinPrice;
+        const storageTypeTranslations = @Html.Raw(localizedStorageTypesJson);
+        const locationTranslations = @Html.Raw(localizedLocationsJson);
+
+        function syncPriceInputs() {
+            const minVal = Number(document.getElementById('desktopMinPriceInput')?.value || DEFAULT_MIN_PRICE);
+            const maxVal = Number(document.getElementById('desktopMaxPriceInput')?.value || DEFAULT_MAX_PRICE);
+            
+            const mobMin = document.getElementById('mobileMinPriceInput');
+            const mobMax = document.getElementById('mobileMaxPriceInput');
+            if (mobMin) mobMin.value = minVal;
+            if (mobMax) mobMax.value = maxVal;
+
+            const deskSlider = document.getElementById('desktopPriceSlider');
+            const mobSlider = document.getElementById('mobilePriceSlider');
+            if (deskSlider) deskSlider.value = maxVal;
+            if (mobSlider) mobSlider.value = maxVal;
+
+            updatePriceDisplay(minVal, maxVal);
+        }
+
+        function syncPriceInputsFromMobile() {
+            const minVal = Number(document.getElementById('mobileMinPriceInput')?.value || DEFAULT_MIN_PRICE);
+            const maxVal = Number(document.getElementById('mobileMaxPriceInput')?.value || DEFAULT_MAX_PRICE);
+            
+            const deskMin = document.getElementById('desktopMinPriceInput');
+            const deskMax = document.getElementById('desktopMaxPriceInput');
+            if (deskMin) deskMin.value = minVal;
+            if (deskMax) deskMax.value = maxVal;
+
+            const deskSlider = document.getElementById('desktopPriceSlider');
+            const mobSlider = document.getElementById('mobilePriceSlider');
+            if (deskSlider) deskSlider.value = maxVal;
+            if (mobSlider) mobSlider.value = maxVal;
+
+            updatePriceDisplay(minVal, maxVal);
+        }
+
+        function syncSliderToMaxInput(val) {
+            const deskMax = document.getElementById('desktopMaxPriceInput');
+            const mobMax = document.getElementById('mobileMaxPriceInput');
+            if (deskMax) deskMax.value = val;
+            if (mobMax) mobMax.value = val;
+
+            const minVal = Number(document.getElementById('desktopMinPriceInput')?.value || DEFAULT_MIN_PRICE);
+            updatePriceDisplay(minVal, Number(val));
+        }
+
+        function updatePriceDisplay(minVal, maxVal) {
+            const formatted = '৳' + minVal.toLocaleString() + ' – ৳' + maxVal.toLocaleString();
+            document.querySelectorAll('.desktop-price-display, .mobile-price-display').forEach(el => el.innerText = formatted);
+        }
 
         function syncLocation(val) {
             const desk = document.getElementById('desktopLocationSelect');
@@ -562,19 +679,10 @@
         }
 
         function syncCapacity(val) {
-            const formatted = Number(val) > 0 ? `@L["{0} Tons", "${val}"]` : '@L["Any Capacity"]';
+            const formatted = Number(val) > 0 ? `@L["{0} Tons", "__CAP__"]`.replace('__CAP__', val) : '@L["Any Capacity"]';
             document.querySelectorAll('.desktop-capacity-display, .mobile-capacity-display').forEach(el => el.innerText = formatted);
             const desk = document.getElementById('desktopCapacitySlider');
             const mob = document.getElementById('mobileCapacitySlider');
-            if (desk && desk.value !== val) desk.value = val;
-            if (mob && mob.value !== val) mob.value = val;
-        }
-
-        function syncPrice(val) {
-            const formatted = '৳' + Number(val).toLocaleString();
-            document.querySelectorAll('.desktop-price-display, .mobile-price-display').forEach(el => el.innerText = formatted);
-            const desk = document.getElementById('desktopPriceSlider');
-            const mob = document.getElementById('mobilePriceSlider');
             if (desk && desk.value !== val) desk.value = val;
             if (mob && mob.value !== val) mob.value = val;
         }
@@ -619,7 +727,7 @@
             }
             clearTimeout(searchDebounceTimer);
             searchDebounceTimer = setTimeout(() => {
-                onFilterChanged();
+                onFilterChanged(1);
             }, 250);
         }
 
@@ -640,7 +748,12 @@
             document.querySelectorAll('.desktop-type-filter, .mobile-type-filter').forEach(cb => cb.checked = false);
             syncLocation('');
             syncCapacity(0);
-            syncPrice(DEFAULT_MAX_PRICE);
+
+            const deskMin = document.getElementById('desktopMinPriceInput');
+            const deskMax = document.getElementById('desktopMaxPriceInput');
+            if (deskMin) deskMin.value = DEFAULT_MIN_PRICE;
+            if (deskMax) deskMax.value = DEFAULT_MAX_PRICE;
+            syncPriceInputs();
 
             const sDesk = document.getElementById('desktopStartDateInput');
             const eDesk = document.getElementById('desktopEndDateInput');
@@ -651,17 +764,31 @@
             const sortSelect = document.getElementById('mainSortSelect');
             if (sortSelect) sortSelect.value = 'newest';
 
-            onFilterChanged();
+            onFilterChanged(1);
         }
 
-        async function onFilterChanged() {
+        function goToPage(page) {
+            if (page < 1) return;
+            currentPage = page;
+            onFilterChanged(page);
+            window.scrollTo({ top: 120, behavior: 'smooth' });
+        }
+
+        async function onFilterChanged(page) {
+            if (typeof page === 'number') {
+                currentPage = page;
+            } else {
+                currentPage = 1;
+            }
+
             syncDesktopToMobileType();
 
             const searchTerm = document.getElementById('mainSearchInput')?.value || '';
             const selectedStorageTypes = Array.from(document.querySelectorAll('.desktop-type-filter:checked')).map(cb => cb.value);
             const location = document.getElementById('desktopLocationSelect')?.value || '';
             const capacity = document.getElementById('desktopCapacitySlider')?.value || 0;
-            const maxPrice = document.getElementById('desktopPriceSlider')?.value || DEFAULT_MAX_PRICE;
+            const minPrice = Number(document.getElementById('desktopMinPriceInput')?.value || DEFAULT_MIN_PRICE);
+            const maxPrice = Number(document.getElementById('desktopMaxPriceInput')?.value || DEFAULT_MAX_PRICE);
             const startDate = document.getElementById('desktopStartDateInput')?.value || '';
             const endDate = document.getElementById('desktopEndDateInput')?.value || '';
             const sortBy = document.getElementById('mainSortSelect')?.value || 'newest';
@@ -669,6 +796,7 @@
             const grid = document.getElementById('godownResultsGrid');
             const skeleton = document.getElementById('skeletonLoadingContainer');
             const emptyState = document.getElementById('emptyStateContainer');
+            const paginationContainer = document.getElementById('godownPaginationContainer');
 
             if (skeleton) skeleton.classList.remove('d-none');
             if (grid) grid.classList.add('d-none');
@@ -677,12 +805,14 @@
             const params = new URLSearchParams();
             if (searchTerm.trim()) params.append('searchTerm', searchTerm.trim());
             selectedStorageTypes.forEach(t => params.append('selectedStorageTypes', t));
-            if (location) params.append('location', location);
+            if (location) params.append('district', location);
             if (Number(capacity) > 0) params.append('selectedMinCapacity', capacity);
-            if (Number(maxPrice) < DEFAULT_MAX_PRICE) params.append('selectedMaxPrice', maxPrice);
+            if (minPrice > DEFAULT_MIN_PRICE) params.append('selectedMinPrice', minPrice);
+            if (maxPrice < DEFAULT_MAX_PRICE) params.append('selectedMaxPrice', maxPrice);
             if (startDate) params.append('availableStartDate', startDate);
             if (endDate) params.append('availableEndDate', endDate);
             if (sortBy && sortBy !== 'newest') params.append('sortBy', sortBy);
+            if (currentPage > 1) params.append('page', currentPage);
 
             const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
             window.history.replaceState({}, '', newUrl);
@@ -696,6 +826,7 @@
 
                 const data = await response.json();
                 renderGodownResults(data);
+                renderPagination(data);
             } catch (err) {
                 console.error('Filter fetch failed:', err);
                 if (grid) grid.classList.remove('d-none');
@@ -713,15 +844,16 @@
             const mobileFilterBadge = document.getElementById('mobileFilterBadge');
 
             const count = data.totalCount || 0;
-            if (countNum) countNum.innerText = count;
-            if (heroCount) heroCount.innerText = `@L["{0} Storage Options", "${count}"]`;
-            if (mobileCount) mobileCount.innerText = `@L["{0} items", "${count}"]`;
+            if (countNum) countNum.innerText = (data.items ? data.items.length : 0);
+            if (heroCount) heroCount.innerText = '@L["{0} Storage Options", "__COUNT__"]'.replace('__COUNT__', count);
+            if (mobileCount) mobileCount.innerText = '@L["{0} items", "__COUNT__"]'.replace('__COUNT__', count);
 
             // Active filters count
             const searchTerm = document.getElementById('mainSearchInput')?.value || '';
             const selectedTypes = Array.from(document.querySelectorAll('.desktop-type-filter:checked')).map(cb => cb.value);
             const location = document.getElementById('desktopLocationSelect')?.value || '';
             const capacity = Number(document.getElementById('desktopCapacitySlider')?.value || 0);
+            const minPrice = Number(document.getElementById('desktopMinPriceInput')?.value || DEFAULT_MIN_PRICE);
             const maxPrice = Number(document.getElementById('desktopPriceSlider')?.value || DEFAULT_MAX_PRICE);
             const startDate = document.getElementById('desktopStartDateInput')?.value || '';
             const endDate = document.getElementById('desktopEndDateInput')?.value || '';
@@ -731,11 +863,12 @@
             activeCount += selectedTypes.length;
             if (location) activeCount++;
             if (capacity > 0) activeCount++;
+            if (minPrice > DEFAULT_MIN_PRICE) activeCount++;
             if (maxPrice < DEFAULT_MAX_PRICE) activeCount++;
             if (startDate || endDate) activeCount++;
 
             if (mobileFilterBadge) {
-                mobileFilterBadge.innerText = activeCount > 0 ? `@L["{0} active", "${activeCount}"]` : '@L["Filters"]';
+                mobileFilterBadge.innerText = activeCount > 0 ? '@L["{0} active", "__COUNT__"]'.replace('__COUNT__', activeCount) : '@L["Filters"]';
             }
 
             document.querySelectorAll('.clear-filters-btn').forEach(btn => {
@@ -743,7 +876,7 @@
                 else btn.classList.add('d-none');
             });
 
-            renderActiveTags(searchTerm, selectedTypes, location, capacity, maxPrice, startDate, endDate);
+            renderActiveTags(searchTerm, selectedTypes, location, capacity, minPrice, maxPrice, startDate, endDate);
 
             if (count === 0) {
                 if (grid) {
@@ -759,6 +892,14 @@
                 grid.classList.remove('d-none');
                 grid.innerHTML = data.items.map(item => {
                     const percent = item.totalCapacityTons > 0 ? (item.availableCapacityTons / item.totalCapacityTons) * 100 : 0;
+                    const locDisplay = item.district 
+                        ? `<strong>${locationTranslations[item.district] || item.district}</strong>${item.location && item.location !== item.district ? ' · ' + item.location : ''}`
+                        : (locationTranslations[item.location] || item.location);
+
+                    const ratingTooltip = item.ownerReviewCount > 0
+                        ? `${item.rating.toFixed(1)} (${item.reviewCount} reviews) · @L["Owner"]: ${item.ownerRating.toFixed(1)} (${item.ownerReviewCount})`
+                        : `${item.rating.toFixed(1)} (${item.reviewCount} reviews)`;
+
                     return `
                     <div class="col godown-card-col">
                         <div class="card krishi-card h-100 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column transition-hover"
@@ -783,7 +924,7 @@
 
                                 ${item.distanceKm > 0 ? `<div class="position-absolute bottom-0 start-0 m-2">
                                     <span class="badge bg-dark bg-opacity-75 text-white rounded-pill px-2.5 py-1 small" style="font-size: 0.75rem;">
-                                        <i class="bi bi-compass me-1"></i>@L["{0} km away", "${item.distanceKm.toFixed(1)}"]
+                                        <i class="bi bi-compass me-1"></i>${'@L["{0} km away", "__DISTANCE__"]'.replace('__DISTANCE__', Number(item.distanceKm).toFixed(1))}
                                     </span>
                                 </div>` : ''}
                             </div>
@@ -797,11 +938,11 @@
                                 <div class="small text-muted mb-2.5">
                                     <div class="d-flex align-items-center gap-1 text-truncate mb-1">
                                         <i class="bi bi-geo-alt text-success"></i>
-                                        <span class="text-truncate">${locationTranslations[item.location] || item.location}</span>
+                                        <span class="text-truncate">${locDisplay}</span>
                                     </div>
                                     <div class="d-flex align-items-center justify-content-between">
                                         <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>${item.ownerName}${item.ownerIsVerified ? ` <span class="text-success ms-1" title="@L["Verified Owner"]"><i class="bi bi-patch-check-fill"></i></span>` : ''}</span>
-                                        ${item.reviewCount > 0 ? `<span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>${item.rating.toFixed(1)} (${item.reviewCount})</span>` : ''}
+                                        ${item.reviewCount > 0 ? `<span class="text-warning fw-semibold" title="${ratingTooltip}"><i class="bi bi-star-fill me-1"></i>${item.rating.toFixed(1)} (${item.reviewCount})</span>` : ''}
                                     </div>
                                 </div>
 
@@ -809,7 +950,7 @@
                                 <div class="p-2 rounded-3 bg-light border mb-3">
                                     <div class="d-flex justify-content-between align-items-center small mb-1">
                                         <span class="text-muted"><i class="bi bi-box-seam text-success me-1"></i>@L["Storage Space:"]</span>
-                                        <span class="fw-bold text-dark">@L["{0} / {1} Tons", "${item.availableCapacityTons.toLocaleString()}", "${item.totalCapacityTons.toLocaleString()}"]</span>
+                                        <span class="fw-bold text-dark">${'@L["{0} / {1} Tons", "__AVAIL__", "__TOTAL__"]'.replace('__AVAIL__', Number(item.availableCapacityTons).toLocaleString()).replace('__TOTAL__', Number(item.totalCapacityTons).toLocaleString())}</span>
                                     </div>
                                     <div class="progress" style="height: 6px;">
                                         <div class="progress-bar bg-success" role="progressbar" style="width: ${percent}%;" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100"></div>
@@ -847,21 +988,64 @@
             }
         }
 
-        function renderActiveTags(search, types, location, capacity, maxPrice, startDate, endDate) {
+        function renderPagination(data) {
+            const container = document.getElementById('godownPaginationContainer');
+            const list = document.getElementById('godownPaginationList');
+            if (!container || !list) return;
+
+            if (data.totalPages <= 1) {
+                container.classList.add('d-none');
+                list.innerHTML = '';
+                return;
+            }
+
+            container.classList.remove('d-none');
+            let html = `
+                <li class="page-item ${!data.hasPreviousPage ? 'disabled' : ''}">
+                    <a class="page-link rounded-pill px-3 me-1" href="javascript:void(0)" onclick="goToPage(${data.page - 1})">
+                        <i class="bi bi-chevron-left me-1"></i> @L["Previous"]
+                    </a>
+                </li>
+            `;
+
+            for (let p = 1; p <= data.totalPages; p++) {
+                html += `
+                    <li class="page-item ${p === data.page ? 'active' : ''}">
+                        <a class="page-link rounded-circle mx-0.5 text-center" style="width: 32px; height: 32px; line-height: 18px;" href="javascript:void(0)" onclick="goToPage(${p})">
+                            ${p}
+                        </a>
+                    </li>
+                `;
+            }
+
+            html += `
+                <li class="page-item ${!data.hasNextPage ? 'disabled' : ''}">
+                    <a class="page-link rounded-pill px-3 ms-1" href="javascript:void(0)" onclick="goToPage(${data.page + 1})">
+                        @L["Next"] <i class="bi bi-chevron-right ms-1"></i>
+                    </a>
+                </li>
+            `;
+
+            list.innerHTML = html;
+        }
+
+        function renderActiveTags(search, types, location, capacity, minPrice, maxPrice, startDate, endDate) {
             const container = document.getElementById('activeFilterTagsContainer');
             if (!container) return;
 
             let html = '';
-            if (search.trim()) {
+            if (search && search.trim()) {
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small d-inline-flex align-items-center gap-1">
                     @L["Search:"] "${search.trim()}" <i class="bi bi-x-circle-fill text-muted ms-1" style="cursor:pointer;" onclick="clearSearch()"></i>
                 </span>`;
             }
-            types.forEach(t => {
-                html += `<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill small">
-                    ${storageTypeTranslations[t] || t}
-                </span>`;
-            });
+            if (types && types.length > 0) {
+                types.forEach(t => {
+                    html += `<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill small">
+                        ${storageTypeTranslations[t] || t}
+                    </span>`;
+                });
+            }
             if (location) {
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
                     <i class="bi bi-geo-alt me-1"></i>${locationTranslations[location] || location}
@@ -869,17 +1053,18 @@
             }
             if (capacity > 0) {
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
-                    ≥ @L["{0} Tons", "${capacity}"]
+                    ≥ ${'@L["{0} Tons", "__CAP__"]'.replace('__CAP__', capacity)}
                 </span>`;
             }
-            if (maxPrice < DEFAULT_MAX_PRICE) {
+            if (minPrice > DEFAULT_MIN_PRICE || maxPrice < DEFAULT_MAX_PRICE) {
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
-                    ≤ ৳${maxPrice.toLocaleString()} @L["/ mo"]
+                    ৳${minPrice.toLocaleString()} – ৳${maxPrice.toLocaleString()} @L["/ mo"]
                 </span>`;
             }
             if (startDate || endDate) {
+                const dateText = startDate && endDate ? `${startDate} ~ ${endDate}` : (startDate || endDate);
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
-                    <i class="bi bi-calendar-range me-1"></i>${startDate || '@L["Any"]'} → ${endDate || '@L["Any"]'}
+                    <i class="bi bi-calendar3 me-1"></i>${dateText}
                 </span>`;
             }
             container.innerHTML = html;
@@ -896,7 +1081,8 @@
                 Array.from(document.querySelectorAll('.desktop-type-filter:checked')).map(cb => cb.value),
                 document.getElementById('desktopLocationSelect')?.value || '',
                 Number(document.getElementById('desktopCapacitySlider')?.value || 0),
-                Number(document.getElementById('desktopPriceSlider')?.value || DEFAULT_MAX_PRICE),
+                Number(document.getElementById('desktopMinPriceInput')?.value || DEFAULT_MIN_PRICE),
+                Number(document.getElementById('desktopMaxPriceInput')?.value || DEFAULT_MAX_PRICE),
                 document.getElementById('desktopStartDateInput')?.value || '',
                 document.getElementById('desktopEndDateInput')?.value || ''
             );

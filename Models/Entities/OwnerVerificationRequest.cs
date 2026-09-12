@@ -10,6 +10,7 @@ namespace KrishiLink.Models.Entities
         public ApplicationUser? User { get; set; }
 
         public string NidNumber { get; set; } = string.Empty;
+        public string? NidLast4 { get; set; }
         public string NidFrontImagePath { get; set; } = string.Empty;
         public string? NidBackImagePath { get; set; }
         public string? TradeLicenseImagePath { get; set; }

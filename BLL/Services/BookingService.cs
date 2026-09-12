@@ -28,17 +28,20 @@ namespace KrishiLink.BLL.Services
         private readonly IRepository<GodownBooking> _storage;
         private readonly IQrCodeService _qrCode;
         private readonly ILoyaltyService _loyalty;
+        private readonly INotificationService _notifications;
 
         public BookingService(
             IRepository<EquipmentBooking> rentals,
             IRepository<GodownBooking> storage,
             IQrCodeService qrCode,
-            ILoyaltyService loyalty)
+            ILoyaltyService loyalty,
+            INotificationService notifications)
         {
             _rentals = rentals;
             _storage = storage;
             _qrCode = qrCode;
             _loyalty = loyalty;
+            _notifications = notifications;
         }
 
         public async Task<BookingHistoryViewModel> GetHistoryAsync(string farmerId, string tab, string status, DateTime? from, DateTime? to, string? search)
@@ -127,7 +130,10 @@ namespace KrishiLink.BLL.Services
         {
             if (bookingType.Equals("Equipment", StringComparison.OrdinalIgnoreCase))
             {
-                var b = await _rentals.QueryTracked().FirstOrDefaultAsync(x => x.Id == bookingId && x.FarmerId == farmerId);
+                var b = await _rentals.QueryTracked()
+                    .Include(x => x.Equipment)
+                    .Include(x => x.Farmer)
+                    .FirstOrDefaultAsync(x => x.Id == bookingId && x.FarmerId == farmerId);
                 var error = ValidateCancel(b?.Status, b?.StartDate);
                 if (error is not null) return error;
                 b!.Status = BookingStatus.Cancelled;
@@ -139,10 +145,29 @@ namespace KrishiLink.BLL.Services
                     await _loyalty.RefundPointsForCancelledBookingAsync(farmerId, "Equipment", b.Id, $"#EQ-{b.Id:D4}");
                 }
 
+                if (b.Equipment != null && !string.IsNullOrEmpty(b.Equipment.OwnerId))
+                {
+                    var farmerName = b.Farmer?.FullName ?? "A farmer";
+                    await _notifications.NotifyAsync(new NotificationRequest
+                    {
+                        UserId = b.Equipment.OwnerId,
+                        Type = NotificationTypes.BookingRejected,
+                        TitleKey = "Rental Booking Cancelled",
+                        MessageKey = "{0} cancelled the equipment booking for {1} ({2} - {3}).",
+                        Args = new object[] { farmerName, b.Equipment.Name, $"{b.StartDate:dd MMM yyyy}", $"{b.EndDate:dd MMM yyyy}" },
+                        LinkUrl = AppLinks.OwnerRequests("equipment", b.Id),
+                        DedupeKey = $"booking:equipment:{b.Id}:Cancelled",
+                        SendEmail = false
+                    });
+                }
+
                 return null;
             }
 
-            var g = await _storage.QueryTracked().FirstOrDefaultAsync(x => x.Id == bookingId && x.FarmerId == farmerId);
+            var g = await _storage.QueryTracked()
+                .Include(x => x.Godown)
+                .Include(x => x.Farmer)
+                .FirstOrDefaultAsync(x => x.Id == bookingId && x.FarmerId == farmerId);
             var err = ValidateCancel(g?.Status, g?.StartDate);
             if (err is not null) return err;
             g!.Status = BookingStatus.Cancelled;
@@ -152,6 +177,22 @@ namespace KrishiLink.BLL.Services
             if (g.PointsUsed > 0 || g.DiscountAmount > 0)
             {
                 await _loyalty.RefundPointsForCancelledBookingAsync(farmerId, "Godown", g.Id, $"#GD-{g.Id:D4}");
+            }
+
+            if (g.Godown != null && !string.IsNullOrEmpty(g.Godown.OwnerId))
+            {
+                var farmerName = g.Farmer?.FullName ?? "A farmer";
+                await _notifications.NotifyAsync(new NotificationRequest
+                {
+                    UserId = g.Godown.OwnerId,
+                    Type = NotificationTypes.BookingRejected,
+                    TitleKey = "Storage Booking Cancelled",
+                    MessageKey = "{0} cancelled the storage booking for {1} tons in {2} ({3} - {4}).",
+                    Args = new object[] { farmerName, g.StorageTons, g.Godown.Name, $"{g.StartDate:dd MMM yyyy}", $"{g.EndDate:dd MMM yyyy}" },
+                    LinkUrl = AppLinks.OwnerRequests("godown", g.Id),
+                    DedupeKey = $"booking:godown:{g.Id}:Cancelled",
+                    SendEmail = false
+                });
             }
 
             return null;

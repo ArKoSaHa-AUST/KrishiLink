@@ -15,6 +15,10 @@ namespace KrishiLink.Models.Entities
         [MaxLength(1000)]
         public string? Comment { get; set; }
 
+        [MaxLength(1000)]
+        public string? OwnerReply { get; set; }
+        public DateTime? OwnerRepliedAt { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         /// <summary>"Equipment" or "Godown"</summary>

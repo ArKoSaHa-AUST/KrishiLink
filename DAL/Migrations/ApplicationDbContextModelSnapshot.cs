@@ -96,6 +96,16 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<DateTime?>("OnboardingCompletedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<double>("OwnerAverageRating")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("float")
+                        .HasDefaultValue(0.0);
+
+                    b.Property<int>("OwnerReviewCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<string>("PasswordHash")
                         .HasColumnType("nvarchar(max)");
 
@@ -229,6 +239,116 @@ namespace KrishiLink.DAL.Migrations
                     b.ToTable("Crops");
                 });
 
+            modelBuilder.Entity("KrishiLink.Models.Entities.CropCalendarEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BadgeColor")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("BanglaName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Division")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("DurationDays")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("GrowingMonths")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HarvestingMonths")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IconClass")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("KeyTips")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("MajorDistricts")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("OptimalTemperature")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PopularVarieties")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("ProfileCropName")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("ScientificName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Season")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SoilTypes")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("SowingMonths")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WaterRequirement")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category");
+
+                    b.HasIndex("ProfileCropName");
+
+                    b.HasIndex("Season");
+
+                    b.ToTable("CropCalendarEntries");
+                });
+
             modelBuilder.Entity("KrishiLink.Models.Entities.CropRecommendation", b =>
                 {
                     b.Property<int>("Id")
@@ -283,6 +403,10 @@ namespace KrishiLink.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("District")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
                     b.Property<decimal?>("HourlyRate")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -320,6 +444,8 @@ namespace KrishiLink.DAL.Migrations
                         .HasDefaultValue(0);
 
                     b.HasKey("Id");
+
+                    b.HasIndex("District");
 
                     b.HasIndex("OwnerId");
 
@@ -489,6 +615,10 @@ namespace KrishiLink.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("District")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
                     b.Property<string>("Facilities")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -535,6 +665,8 @@ namespace KrishiLink.DAL.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("District");
 
                     b.HasIndex("OwnerId");
 
@@ -710,8 +842,16 @@ namespace KrishiLink.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ArgsJson")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("DedupeKey")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
 
                     b.Property<bool>("IsRead")
                         .HasColumnType("bit");
@@ -726,10 +866,18 @@ namespace KrishiLink.DAL.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<string>("MessageKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("TitleKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -743,6 +891,10 @@ namespace KrishiLink.DAL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("UserId", "CreatedAt");
+
+                    b.HasIndex("UserId", "DedupeKey")
+                        .IsUnique()
+                        .HasFilter("[DedupeKey] IS NOT NULL");
 
                     b.HasIndex("UserId", "IsRead");
 
@@ -770,10 +922,14 @@ namespace KrishiLink.DAL.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<string>("NidLast4")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
                     b.Property<string>("NidNumber")
                         .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("RejectionReason")
                         .HasMaxLength(500)
@@ -849,6 +1005,13 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<int?>("GodownId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("OwnerRepliedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OwnerReply")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<int>("Rating")
                         .HasColumnType("int");
 
@@ -891,6 +1054,10 @@ namespace KrishiLink.DAL.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("ListingType")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -904,6 +1071,9 @@ namespace KrishiLink.DAL.Migrations
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("SettledOn")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -924,6 +1094,8 @@ namespace KrishiLink.DAL.Migrations
 
                     b.HasIndex("UserId");
 
+                    b.HasIndex("Status", "TransactionDate");
+
                     b.ToTable("Transactions");
                 });
 
@@ -939,15 +1111,42 @@ namespace KrishiLink.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("District")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("FetchedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("ForecastDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<double>("HumidityMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("HumidityMin")
+                        .HasColumnType("float");
 
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<double>("PrecipitationMm")
+                        .HasColumnType("float");
+
+                    b.Property<double>("PrecipitationProbability")
+                        .HasColumnType("float");
+
                     b.Property<double>("Temperature")
                         .HasColumnType("float");
+
+                    b.Property<double>("TemperatureMax")
+                        .HasColumnType("float");
+
+                    b.Property<double>("TemperatureMin")
+                        .HasColumnType("float");
+
+                    b.Property<int>("WeatherCode")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

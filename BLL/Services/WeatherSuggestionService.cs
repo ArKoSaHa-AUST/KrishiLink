@@ -102,7 +102,7 @@ namespace KrishiLink.BLL.Services
             }
 
             // 3. Resolve Crop Details from Crop Calendar Reference Data
-            var (matchedCropEntry, canonicalCropName, banglaCropName) = MatchCrop(rawCrop);
+            var (matchedCropEntry, canonicalCropName, banglaCropName) = await MatchCropAsync(rawCrop);
             string cropStage = "Growing";
             string banglaCropStage = "বাড়ন্ত পর্যায়";
 
@@ -443,9 +443,9 @@ namespace KrishiLink.BLL.Services
             return c.Contains("rain") || c.Contains("shower") || c.Contains("drizzle") || c.Contains("storm") || c.Contains("বৃষ্টি");
         }
 
-        private (CropCalendarEntry? Entry, string CanonicalName, string BanglaName) MatchCrop(string userCrop)
+        private async Task<(CropCalendarEntry? Entry, string CanonicalName, string BanglaName)> MatchCropAsync(string userCrop)
         {
-            var crops = _cropCalendarService.GetAllCropsAsync().Result;
+            var crops = await _cropCalendarService.GetAllCropsAsync();
             var clean = userCrop.Trim();
 
             if (clean.Contains("Boro", StringComparison.OrdinalIgnoreCase))

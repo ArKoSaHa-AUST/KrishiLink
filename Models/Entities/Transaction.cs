@@ -13,6 +13,8 @@ namespace KrishiLink.Models.Entities
         /// <summary>Human-readable settlement reference, e.g. KL-PO-20260911-3F9A2C.</summary>
         public string Reference { get; set; } = string.Empty;
 
+        public string? ListingType { get; set; }
+
         public decimal GrossAmount { get; set; }
         public decimal Commission { get; set; }
 
@@ -27,5 +29,6 @@ namespace KrishiLink.Models.Entities
         /// <summary>"Processing" while the platform is transferring, then "Completed".</summary>
         public string Status { get; set; } = "Completed";
         public DateTime TransactionDate { get; set; } = DateTime.UtcNow;
+        public DateTime? SettledOn { get; set; }
     }
 }

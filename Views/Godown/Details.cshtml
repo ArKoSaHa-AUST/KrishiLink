@@ -109,7 +109,19 @@
                     @L[Model.StorageType]
                 </span>
                 <span class="text-muted small d-flex align-items-center gap-1">
-                    <i class="bi bi-geo-alt text-success"></i> @L[Model.Location]
+                    <i class="bi bi-geo-alt text-success"></i>
+                    @if (!string.IsNullOrWhiteSpace(Model.District))
+                    {
+                        <strong class="text-dark">@L[Model.District]</strong>
+                        if (!string.IsNullOrWhiteSpace(Model.Location) && !Model.Location.Equals(Model.District, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <span>· @L[Model.Location]</span>
+                        }
+                    }
+                    else
+                    {
+                        @L[Model.Location]
+                    }
                 </span>
             </div>
 
@@ -160,17 +172,17 @@
                                 <i class="bi bi-patch-check-fill text-success" title="@L["Verified Owner"]"></i>
                             }
                         </h6>
-                        <div class="d-flex align-items-center gap-2 small text-muted">
-                            @if (Model.ReviewCount > 0)
+                        <div class="d-flex align-items-center gap-2 small text-muted flex-wrap">
+                            @if (Model.TotalReviews > 0)
                             {
-                                <span class="text-warning fw-bold d-inline-flex align-items-center gap-1">
-                                    <i class="bi bi-star-fill"></i> @Model.AverageRating.ToString("0.0")
+                                <span class="text-warning fw-bold d-inline-flex align-items-center gap-1" title="@L["Owner rating across all listings"]">
+                                    <i class="bi bi-star-fill"></i> @Model.OwnerRating.ToString("0.0")
                                 </span>
-                                <span>(@L["{0} reviews", Model.ReviewCount])</span>
+                                <span>(@L["{0} owner reviews", Model.TotalReviews])</span>
                             }
                             else
                             {
-                                <span class="badge bg-light text-muted border py-0.5 px-2">@L["New Listing"]</span>
+                                <span class="badge bg-light text-muted border py-0.5 px-2">@L["New Owner"]</span>
                             }
                             <span>@L["Member since"] @(ownerMemberSinceParts.Length == 2 ? $"{L[ownerMemberSinceParts[0]]} {ownerMemberSinceParts[1]}" : Model.OwnerMemberSince)</span>
                         </div>
@@ -347,54 +359,22 @@
                 </div>
 
                 <!-- Individual Reviews List -->
-                <div class="d-flex flex-column gap-3">
-                    @foreach (var review in Model.Reviews.Reviews)
-                    {
-                        <div class="p-3.5 rounded-3 border bg-white shadow-xs">
-                            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                                <div class="d-flex align-items-center gap-2.5">
-                                    <div class="rounded-circle bg-success-subtle text-success border border-success-subtle d-flex align-items-center justify-content-center fw-bold" style="width: 38px; height: 38px;">
-                                        @review.UserInitial
-                                    </div>
-                                    <div>
-                                        <h6 class="fw-bold text-dark mb-0">@review.FarmerName</h6>
-                                        <div class="small text-muted d-flex align-items-center gap-2">
-                                            @if (!string.IsNullOrWhiteSpace(review.FarmerLocation))
-                                            {
-                                                <span><i class="bi bi-geo-alt text-success"></i> @review.FarmerLocation</span>
-                                            }
-                                            <span class="badge bg-light text-muted border py-0.5 px-1.5" style="font-size: 0.7rem;">@L["Verified Storage"]</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="text-end">
-                                    <div class="text-warning small mb-0.5">
-                                        @for (int s = 1; s <= 5; s++)
-                                        {
-                                            if (s <= review.Rating)
-                                            {
-                                                <i class="bi bi-star-fill"></i>
-                                            }
-                                            else
-                                            {
-                                                <i class="bi bi-star text-muted opacity-50"></i>
-                                            }
-                                        }
-                                    </div>
-                                    <span class="text-muted small" style="font-size: 0.75rem;">@review.TimeAgo</span>
-                                </div>
-                            </div>
-
-                            @if (!string.IsNullOrWhiteSpace(review.Comment))
-                            {
-                                <p class="text-secondary small mb-0 mt-2 ps-1 border-start border-2 border-success-subtle ps-2.5">
-                                    @review.Comment
-                                </p>
-                            }
-                        </div>
-                    }
+                <div class="d-flex flex-column gap-3" id="reviewsContainer">
+                    <partial name="_ReviewList" model="Model.Reviews.Reviews" />
                 </div>
+
+                @if (Model.Reviews.HasMoreReviews)
+                {
+                    <div class="text-center mt-3" id="loadMoreReviewsContainer">
+                        <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-4 fw-semibold" id="loadMoreReviewsBtn"
+                                data-type="Godown" data-id="@Model.Id" data-page="2" data-total="@Model.Reviews.TotalReviews">
+                            <span id="loadMoreReviewsBtnText">@L["Show more reviews"]</span>
+                            <div class="spinner-border spinner-border-sm d-none" id="loadMoreReviewsSpinner" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </button>
+                    </div>
+                }
             }
             else
             {

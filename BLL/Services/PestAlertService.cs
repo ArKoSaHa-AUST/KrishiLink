@@ -20,6 +20,13 @@ namespace KrishiLink.BLL.Services
 
     public class PestAlertService : IPestAlertService
     {
+        private readonly IWeatherService _weatherService;
+
+        public PestAlertService(IWeatherService weatherService)
+        {
+            _weatherService = weatherService;
+        }
+
         // 1. DAE, BARI & BRRI Agrometeorological Rule Knowledge Base
         private static readonly List<PestDiseaseRule> DiseaseRules = new()
         {
@@ -586,59 +593,9 @@ namespace KrishiLink.BLL.Services
             return Task.FromResult(DiseaseRules.ToList());
         }
 
-        public Task<RegionalWeatherForecast> GetRegionalWeatherAsync(string district)
+        public async Task<RegionalWeatherForecast> GetRegionalWeatherAsync(string district)
         {
-            string key = string.IsNullOrWhiteSpace(district) ? "Bogra" : district.Trim();
-
-            // Handle Bogra / Bogura alternate spelling
-            if (key.Contains("Bogura", StringComparison.OrdinalIgnoreCase) || key.Contains("Bogra", StringComparison.OrdinalIgnoreCase))
-            {
-                var baseF = DistrictForecasts["Bogra"];
-                return Task.FromResult(new RegionalWeatherForecast
-                {
-                    District = "Bogra",
-                    Division = baseF.Division,
-                    Temperature = baseF.Temperature,
-                    MinTemp = baseF.MinTemp,
-                    MaxTemp = baseF.MaxTemp,
-                    Humidity = baseF.Humidity,
-                    RainProbability = baseF.RainProbability,
-                    WindSpeedKmh = baseF.WindSpeedKmh,
-                    Condition = baseF.Condition,
-                    BanglaCondition = baseF.BanglaCondition,
-                    ConditionIcon = baseF.ConditionIcon,
-                    ForecastDate = baseF.ForecastDate,
-                    FiveDayForecast = baseF.FiveDayForecast
-                });
-            }
-
-            // Search dictionary by direct match or prefix (e.g. "Jessore, Khulna" -> "Jessore")
-            foreach (var kvp in DistrictForecasts)
-            {
-                if (key.Contains(kvp.Key, StringComparison.OrdinalIgnoreCase))
-                {
-                    return Task.FromResult(kvp.Value);
-                }
-            }
-
-            // Default fallback
-            var defaultF = DistrictForecasts["Bogra"];
-            return Task.FromResult(new RegionalWeatherForecast
-            {
-                District = "Bogra",
-                Division = defaultF.Division,
-                Temperature = defaultF.Temperature,
-                MinTemp = defaultF.MinTemp,
-                MaxTemp = defaultF.MaxTemp,
-                Humidity = defaultF.Humidity,
-                RainProbability = defaultF.RainProbability,
-                WindSpeedKmh = defaultF.WindSpeedKmh,
-                Condition = defaultF.Condition,
-                BanglaCondition = defaultF.BanglaCondition,
-                ConditionIcon = defaultF.ConditionIcon,
-                ForecastDate = defaultF.ForecastDate,
-                FiveDayForecast = defaultF.FiveDayForecast
-            });
+            return await _weatherService.GetForecastAsync(district);
         }
 
         public Task<List<EvaluatedPestAlert>> EvaluateAlertsAsync(RegionalWeatherForecast weather, string? crop = null)
@@ -664,10 +621,47 @@ namespace KrishiLink.BLL.Services
                 bool humidityMatches = weather.Humidity >= rule.MinHumidity &&
                                        (!rule.MaxHumidity.HasValue || weather.Humidity <= rule.MaxHumidity.Value);
 
-                // If both temperature and humidity conditions match, rule is triggered!
-                if (tempMatches && humidityMatches)
+                // 4. Consecutive days condition evaluation across 7-day telemetry
+                bool consecutiveDaysMet = true;
+                if (rule.RequiresConsecutiveDays && weather.FiveDayForecast != null && weather.FiveDayForecast.Count >= 2)
+                {
+                    int matchingConsecutiveDays = 0;
+                    int maxConsecutive = 0;
+                    foreach (var day in weather.FiveDayForecast)
+                    {
+                        bool dayTemp = day.MaxTemp <= rule.MaxTemp + 4 && day.MinTemp >= rule.MinTemp - 4;
+                        bool dayHum = day.Humidity >= rule.MinHumidity - 5;
+                        bool dayCond = rule.MatchingWeatherConditions.Any(c => day.Condition.Contains(c, StringComparison.OrdinalIgnoreCase));
+
+                        if ((dayTemp && dayHum) || dayCond)
+                        {
+                            matchingConsecutiveDays++;
+                            if (matchingConsecutiveDays > maxConsecutive) maxConsecutive = matchingConsecutiveDays;
+                        }
+                        else
+                        {
+                            matchingConsecutiveDays = 0;
+                        }
+                    }
+                    consecutiveDaysMet = maxConsecutive >= 2;
+                }
+
+                // Trigger alert if core thresholds match or multi-day consecutive threat is detected
+                if ((tempMatches && humidityMatches) || (rule.RequiresConsecutiveDays && consecutiveDaysMet))
                 {
                     double riskScore = CalculateRiskPercentage(weather, rule);
+                    if (rule.RequiresConsecutiveDays && consecutiveDaysMet)
+                    {
+                        riskScore = Math.Min(98.0, riskScore + 10.0);
+                    }
+
+                    string triggerExp = rule.RequiresConsecutiveDays && consecutiveDaysMet
+                        ? $"Triggered by multi-day overcast/fog conditions with {weather.Temperature:0.#}°C temp and {weather.Humidity:0.#}% humidity in {weather.District}."
+                        : $"Triggered by {weather.Temperature:0.#}°C temperature and {weather.Humidity:0.#}% relative humidity in {weather.District}.";
+
+                    string banglaTriggerExp = rule.RequiresConsecutiveDays && consecutiveDaysMet
+                        ? $"{weather.District} জেলায় টানা কয়েক দিনের মেঘলা/কুয়াশাচ্ছন্ন আবহাওয়া, {weather.Temperature:0.#}° সে. তাপমাত্রা ও {weather.Humidity:0.#}% আর্দ্রতার কারণে উচ্চ ঝুঁকি বিদ্যমান।"
+                        : $"{weather.District} জেলায় {weather.Temperature:0.#}° সে. তাপমাত্রা এবং {weather.Humidity:0.#}% আর্দ্রতার কারণে এই রোগ/পোকার ঝুঁকি তৈরি হয়েছে।";
 
                     matchedAlerts.Add(new EvaluatedPestAlert
                     {
@@ -677,11 +671,11 @@ namespace KrishiLink.BLL.Services
                         PathogenOrPest = rule.PathogenOrPest,
                         Category = rule.Category,
                         TargetCrops = rule.TargetCrops,
-                        Severity = rule.Severity,
+                        Severity = (rule.RequiresConsecutiveDays && consecutiveDaysMet) ? "Critical" : rule.Severity,
                         Symptoms = rule.Symptoms,
                         BanglaSymptoms = rule.BanglaSymptoms,
-                        TriggerExplanation = $"Triggered by {weather.Temperature:0.#}°C temperature and {weather.Humidity:0.#}% relative humidity in {weather.District}.",
-                        BanglaTriggerExplanation = $"{weather.District} জেলায় {weather.Temperature:0.#}° সে. তাপমাত্রা এবং {weather.Humidity:0.#}% আর্দ্রতার কারণে এই রোগ/পোকার ঝুঁকি তৈরি হয়েছে।",
+                        TriggerExplanation = triggerExp,
+                        BanglaTriggerExplanation = banglaTriggerExp,
                         ActionableRemedies = rule.ActionableRemedies,
                         BanglaActionableRemedies = rule.BanglaActionableRemedies,
                         PreventiveSpray = rule.PreventiveSpray,

@@ -67,5 +67,8 @@ namespace KrishiLink.Models.Entities
 
         /// <summary>Visual theme color / badge style (e.g., "success", "warning", "info", "primary")</summary>
         public string BadgeColor { get; set; } = "success";
+
+        /// <summary>Canonical mapping to onboarding farmer crop options (e.g. "Rice (Boro)", "Potato", "Wheat")</summary>
+        public string? ProfileCropName { get; set; }
     }
 }

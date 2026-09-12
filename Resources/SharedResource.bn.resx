@@ -61,6 +61,9 @@
   <data name="8.5 (Alkaline)" xml:space="preserve">
     <value>৮.৫ (ক্ষারীয়)</value>
   </data>
+  <data name="A listing cannot have more than 8 images." xml:space="preserve">
+    <value>একটি লিস্টিংয়ে ৮টির বেশি ছবি থাকতে পারে না।</value>
+  </data>
   <data name="A trustworthy digital agricultural ecosystem connecting farmers with equipment owners, godown facilities, and expert crop advisory." xml:space="preserve">
     <value>একটি বিশ্বস্ত ডিজিটাল কৃষি ইকোসিস্টেম যা কৃষকদের যন্ত্রপাতির মালিক, গুদাম সুবিধা এবং বিশেষজ্ঞ ফসল পরামর্শের সাথে সংযুক্ত করে।</value>
   </data>
@@ -3277,5 +3280,119 @@
   </data>
   <data name="Platinum Tier" xml:space="preserve">
     <value>প্লাটিনাম স্তর</value>
+  </data>
+  <data name="Pending Owner Verifications" xml:space="preserve">
+    <value>অপেক্ষমাণ মালিক যাচাইকরণ</value>
+  </data>
+  <data name="Owner Verification Review" xml:space="preserve">
+    <value>মালিক পরিচয়পত্র যাচাই পর্যালোচনা</value>
+  </data>
+  <data name="Review submitted government ID documents and verify owner accounts." xml:space="preserve">
+    <value>জমা দেওয়া সরকারি জাতীয় পরিচয়পত্র পর্যালোচনা করুন এবং মালিক অ্যাকাউন্ট যাচাই করুন।</value>
+  </data>
+  <data name="{0} Pending Requests" xml:space="preserve">
+    <value>{0}টি অপেক্ষমাণ অনুরোধ</value>
+  </data>
+  <data name="No Pending Verifications" xml:space="preserve">
+    <value>কোনো অপেক্ষমাণ যাচাইকরণ অনুরোধ নেই</value>
+  </data>
+  <data name="All owner verification requests have been processed." xml:space="preserve">
+    <value>সকল মালিক পরিচয় যাচাইকরণ অনুরোধ প্রক্রিয়াজাত করা হয়েছে।</value>
+  </data>
+  <data name="Admin Verifications" xml:space="preserve">
+    <value>এডমিন যাচাইকরণ</value>
+  </data>
+  <data name="Reject Verification Request" xml:space="preserve">
+    <value>যাচাইকরণ অনুরোধ প্রত্যাখ্যান করুন</value>
+  </data>
+  <data name="Please specify a reason for rejecting the verification request for {0}." xml:space="preserve">
+    <value>{0}-এর যাচাইকরণ অনুরোধ প্রত্যাখ্যানের কারণ উল্লেখ করুন।</value>
+  </data>
+  <data name="Confirm Reject" xml:space="preserve">
+    <value>প্রত্যাখ্যান নিশ্চিত করুন</value>
+  </data>
+  <data name="This booking has been reviewed by the farmer and can no longer be reopened." xml:space="preserve">
+    <value>কৃষক এই বুকিংয়ের রিভিউ দিয়েছেন, তাই এটি আর পুনরায় খোলা যাবে না।</value>
+  </data>
+  <data name="Owner Response" xml:space="preserve">
+    <value>মালিকের উত্তর</value>
+  </data>
+  <data name="Show more reviews" xml:space="preserve">
+    <value>আরও রিভিউ দেখুন</value>
+  </data>
+  <data name="Owner rating across all listings" xml:space="preserve">
+    <value>সকল লিস্টিং জুড়ে মালিকের রেটিং</value>
+  </data>
+  <data name="{0} owner reviews" xml:space="preserve">
+    <value>{0}টি মালিকের রিভিউ</value>
+  </data>
+  <data name="Reply to Review" xml:space="preserve">
+    <value>রিভিউতে উত্তর দিন</value>
+  </data>
+  <data name="Write your reply..." xml:space="preserve">
+    <value>আপনার উত্তর লিখুন...</value>
+  </data>
+  <data name="Submit Reply" xml:space="preserve">
+    <value>উত্তর জমা দিন</value>
+  </data>
+  <data name="Reply posted successfully." xml:space="preserve">
+    <value>উত্তর সফলভাবে পোস্ট করা হয়েছে।</value>
+  </data>
+  <data name="You are not authorized to reply to this review." xml:space="preserve">
+    <value>আপনি এই রিভিউতে উত্তর দেওয়ার জন্য অনুমোদিত নন।</value>
+  </data>
+  <data name="New Owner" xml:space="preserve">
+    <value>নতুন মালিক</value>
+  </data>
+  <data name="Verified Booking" xml:space="preserve">
+    <value>যাচাইকৃত বুকিং</value>
+  </data>
+  <data name="Reviewed" xml:space="preserve">
+    <value>রিভিউ করা হয়েছে</value>
+  </data>
+  <data name="Monthly Crop Advisory" xml:space="preserve">
+    <value>মাসিক ফসল নির্দেশনা</value>
+  </data>
+  <data name="What to do this month for your crop" xml:space="preserve">
+    <value>চলতি মাসে আপনার ফসলের জন্য করণীয়</value>
+  </data>
+  <data name="Non-primary zone for {0}" xml:space="preserve">
+    <value>{0}-এর জন্য অপ্রধান অঞ্চল</value>
+  </data>
+  <data name="Agronomic Advice:" xml:space="preserve">
+    <value>কৃষি পরামর্শ:</value>
+  </data>
+  <data name="Full Crop Calendar" xml:space="preserve">
+    <value>সম্পূর্ণ ফসল ক্যালেন্ডার</value>
+  </data>
+  <data name="Fast 24h verification turnaround" xml:space="preserve">
+    <value>দ্রুত ২৪ ঘণ্টার মধ্যে যাচাইকরণ সম্পন্ন</value>
+  </data>
+  <data name="Submit Verification Documents" xml:space="preserve">
+    <value>যাচাইকরণ নথি জমা দিন</value>
+  </data>
+  <data name="Verified NID Number" xml:space="preserve">
+    <value>যাচাইকৃত জাতীয় পরিচয়পত্র নম্বর</value>
+  </data>
+  <data name="Submitted ID Documents" xml:space="preserve">
+    <value>জমা দেওয়া পরিচয়পত্র নথি</value>
+  </data>
+  <data name="Submitted NID Front" xml:space="preserve">
+    <value>জমা দেওয়া জাতীয় পরিচয়পত্রের সামনের দিক</value>
+  </data>
+  <data name="Submitted NID Back" xml:space="preserve">
+    <value>জমা দেওয়া জাতীয় পরিচয়পত্রের পিছনের দিক</value>
+  </data>
+  <data name="Update or Re-upload Documents" xml:space="preserve">
+    <value>নথি হালনাগাদ বা পুনরায় আপলোড করুন</value>
+  </data>
+  <data name="e.g. Photo is blurry; NID number does not match name; document expired." xml:space="preserve">
+    <value>উদাঃ ছবি অস্পষ্ট; জাতীয় পরিচয়পত্র নম্বর নামের সাথে মিলছে না; নথির মেয়াদ উত্তীর্ণ।</value>
+  </data>
+  <data name="You already have an active verification request under review. Please wait for administrator approval." xml:space="preserve">
+    <value>আপনার একটি সক্রিয় যাচাইকরণ অনুরোধ পর্যালোচনার জন্য অপেক্ষমাণ রয়েছে। অনুগ্রহ করে প্রশাসকের অনুমোদনের জন্য অপেক্ষা করুন।</value>
+  </data>
+  <data name="Your owner account is already verified." xml:space="preserve">
+    <value>আপনার মালিক অ্যাকাউন্ট ইতিমধ্যে যাচাইকৃত।</value>
   </data>
 </root>

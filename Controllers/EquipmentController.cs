@@ -37,6 +37,7 @@ namespace KrishiLink.Controllers
                 hourlyRate = e.HourlyRate,
                 hourlyRateFormatted = e.HourlyRate.HasValue ? $"৳{e.HourlyRate.Value:N0}" : null,
                 location = e.Location,
+                district = e.District,
                 distanceKm = e.DistanceKm,
                 isAvailable = e.IsAvailable,
                 status = e.Status,
@@ -46,12 +47,23 @@ namespace KrishiLink.Controllers
                 ownerVerificationStatus = e.OwnerVerificationStatus,
                 rating = e.Rating,
                 reviewCount = e.ReviewCount,
+                ownerRating = e.OwnerRating,
+                ownerReviewCount = e.OwnerReviewCount,
                 lastServicedDaysAgo = e.LastServicedDaysAgo,
                 lastServicedText = e.LastServicedText,
                 detailsUrl = Url.Action(nameof(Details), "Equipment", new { id = e.Id })
             });
 
-            return Json(new { totalCount = model.TotalCount, items });
+            return Json(new
+            {
+                totalCount = model.TotalCount,
+                page = model.Page,
+                pageSize = model.PageSize,
+                totalPages = model.TotalPages,
+                hasPreviousPage = model.HasPreviousPage,
+                hasNextPage = model.HasNextPage,
+                items
+            });
         }
 
         /// <summary>GET: /Equipment/Details/5 — details & rental request form.</summary>

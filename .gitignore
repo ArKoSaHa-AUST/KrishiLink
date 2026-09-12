@@ -30,6 +30,10 @@ appsettings.Local.json
 # User-uploaded listing images
 wwwroot/uploads/
 
+# Private storage (identity documents, private files)
+App_Data/
+[Aa]pp_[Dd]ata/
+
 # Database & temp files
 *.mdf
 *.ldf
