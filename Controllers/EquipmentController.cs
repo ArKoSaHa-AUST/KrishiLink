@@ -57,7 +57,8 @@ namespace KrishiLink.Controllers
         /// <summary>GET: /Equipment/Details/5 — details & rental request form.</summary>
         public async Task<IActionResult> Details(int id, bool requestSent = false)
         {
-            var model = await _equipment.GetDetailsAsync(id);
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var model = await _equipment.GetDetailsAsync(id, currentUserId);
             if (model is null) return NotFound();
 
             model.IsRequestSubmitted = requestSent;
@@ -71,7 +72,15 @@ namespace KrishiLink.Controllers
         public async Task<IActionResult> SubmitRequest(EquipmentDetailViewModel model)
         {
             var farmerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            var (error, bookingId) = await _equipment.RequestRentalWithResultAsync(farmerId, model.Id, model.StartDate, model.EndDate, model.Note);
+            var (error, bookingId) = await _equipment.RequestRentalWithResultAsync(
+                farmerId,
+                model.Id,
+                model.StartDate,
+                model.EndDate,
+                model.Note,
+                model.AppliedPromoCode,
+                model.PointsUsed
+            );
 
             if (error is null && bookingId.HasValue)
             {

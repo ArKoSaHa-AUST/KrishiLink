@@ -10,11 +10,11 @@ namespace KrishiLink.BLL.Services
     {
         // Farmer / public
         Task<EquipmentBrowseViewModel> BrowseAsync(EquipmentSearchCriteria criteria);
-        Task<EquipmentDetailViewModel?> GetDetailsAsync(int id);
+        Task<EquipmentDetailViewModel?> GetDetailsAsync(int id, string? currentUserId = null);
 
-        /// <summary>Creates a pending rental request. Returns a user-facing error message, or null on success.</summary>
-        Task<string?> RequestRentalAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note);
-        Task<(string? Error, int? BookingId)> RequestRentalWithResultAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note);
+        /// <summary>Creates a pending rental request with optional loyalty promo or points. Returns a user-facing error message, or null on success.</summary>
+        Task<string?> RequestRentalAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note, string? promoCode = null, int? pointsToRedeem = null);
+        Task<(string? Error, int? BookingId)> RequestRentalWithResultAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note, string? promoCode = null, int? pointsToRedeem = null);
 
         // Owner
         Task<EquipmentOwnerDashboardViewModel> GetOwnerDashboardAsync(string ownerId);
@@ -50,6 +50,7 @@ namespace KrishiLink.BLL.Services
         private readonly INotificationService _notifications;
         private readonly IBadgeService _badges;
         private readonly ILeaderboardService _leaderboard;
+        private readonly ILoyaltyService _loyalty;
 
         public EquipmentService(
             IRepository<Equipment> equipment,
@@ -61,7 +62,8 @@ namespace KrishiLink.BLL.Services
             IReviewService reviews,
             INotificationService notifications,
             IBadgeService badges,
-            ILeaderboardService leaderboard)
+            ILeaderboardService leaderboard,
+            ILoyaltyService loyalty)
         {
             _equipment = equipment;
             _bookings = bookings;
@@ -73,6 +75,7 @@ namespace KrishiLink.BLL.Services
             _notifications = notifications;
             _badges = badges;
             _leaderboard = leaderboard;
+            _loyalty = loyalty;
         }
 
         // ---------------------------------------------------------------- Browse & details
@@ -226,7 +229,7 @@ namespace KrishiLink.BLL.Services
             return aliases.TryGetValue(district, out var alt) ? alt : null;
         }
 
-        public async Task<EquipmentDetailViewModel?> GetDetailsAsync(int id)
+        public async Task<EquipmentDetailViewModel?> GetDetailsAsync(int id, string? currentUserId = null)
         {
             var e = await _equipment.Query().Include(x => x.Owner).FirstOrDefaultAsync(x => x.Id == id);
             if (e is null) return null;
@@ -326,16 +329,35 @@ namespace KrishiLink.BLL.Services
                 }
             }
 
+            // Populate Farmer Loyalty Context if user is authenticated
+            if (!string.IsNullOrWhiteSpace(currentUserId))
+            {
+                var farmer = await _users.FirstOrDefaultAsync(u => u.Id == currentUserId);
+                if (farmer != null)
+                {
+                    model.FarmerLoyaltyPoints = farmer.LoyaltyPoints;
+                    model.FarmerTierName = _loyalty.CalculateTier(farmer.LoyaltyPoints).TierName;
+                    model.AvailableConversionTiers = _loyalty.GetConversionTiers();
+                }
+            }
+
             return model;
         }
 
-        public async Task<string?> RequestRentalAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note)
+        public async Task<string?> RequestRentalAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note, string? promoCode = null, int? pointsToRedeem = null)
         {
-            var res = await RequestRentalWithResultAsync(farmerId, equipmentId, start, end, note);
+            var res = await RequestRentalWithResultAsync(farmerId, equipmentId, start, end, note, promoCode, pointsToRedeem);
             return res.Error;
         }
 
-        public async Task<(string? Error, int? BookingId)> RequestRentalWithResultAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note)
+        public async Task<(string? Error, int? BookingId)> RequestRentalWithResultAsync(
+            string farmerId,
+            int equipmentId,
+            DateTime? start,
+            DateTime? end,
+            string? note,
+            string? promoCode = null,
+            int? pointsToRedeem = null)
         {
             if (start is null || end is null) return ("Please choose a start and end date.", null);
             var s = start.Value.Date;
@@ -351,6 +373,26 @@ namespace KrishiLink.BLL.Services
             var clash = await FindConflictAsync(equipmentId, s, t);
             if (clash is not null) return (clash, null);
 
+            int days = (t - s).Days + 1;
+            decimal gross = days * e.DailyRate;
+
+            decimal discountAmount = 0m;
+            string? appliedPromo = null;
+            int pointsUsed = 0;
+
+            if (!string.IsNullOrWhiteSpace(promoCode) || (pointsToRedeem.HasValue && pointsToRedeem.Value > 0))
+            {
+                var discountCheck = await _loyalty.ValidateAndCalculateDiscountAsync(farmerId, promoCode, pointsToRedeem, gross);
+                if (!discountCheck.IsValid)
+                {
+                    return (discountCheck.Message, null);
+                }
+
+                discountAmount = discountCheck.DiscountAmount;
+                appliedPromo = discountCheck.PromoCode;
+                pointsUsed = discountCheck.PointsRequired;
+            }
+
             var newBooking = new EquipmentBooking
             {
                 EquipmentId = equipmentId,
@@ -359,11 +401,28 @@ namespace KrishiLink.BLL.Services
                 EndDate = t,
                 Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim(),
                 Status = BookingStatus.Pending,
-                RequestedOn = DateTime.Now
+                RequestedOn = DateTime.Now,
+                DiscountAmount = discountAmount,
+                AppliedPromoCode = appliedPromo,
+                PointsUsed = pointsUsed
             };
 
             await _bookings.AddAsync(newBooking);
             await _bookings.SaveChangesAsync();
+
+            // If points or promo were redeemed, deduct from farmer's balance and record ledger transaction
+            if (pointsUsed > 0 || discountAmount > 0)
+            {
+                await _loyalty.RedeemPointsForBookingAsync(
+                    farmerId,
+                    appliedPromo,
+                    pointsUsed,
+                    gross,
+                    "Equipment",
+                    newBooking.Id,
+                    $"#EQ-{newBooking.Id:D4}"
+                );
+            }
 
             // Notify equipment owner of new pending rental request
             var farmer = await _users.FirstOrDefaultAsync(u => u.Id == farmerId);
@@ -558,6 +617,12 @@ namespace KrishiLink.BLL.Services
                         $"<h3>Hello, {farmer.FullName}</h3><p>Your rental request for <strong>{booking.Equipment!.Name}</strong> from {booking.StartDate:dd MMM yyyy} to {booking.EndDate:dd MMM yyyy} was declined by the owner.{(!string.IsNullOrWhiteSpace(booking.RejectReason) ? $"<br/><strong>Reason:</strong> {booking.RejectReason}" : "")}</p><p><a href=\"https://krishilink.com/Equipment/Browse\">Browse other listings on KrishiLink</a></p>"
                     );
                 }
+
+                // Refund points if promo/points were redeemed
+                if (booking.PointsUsed > 0 || booking.DiscountAmount > 0)
+                {
+                    await _loyalty.RefundPointsForCancelledBookingAsync(booking.FarmerId, "Equipment", booking.Id, $"#EQ-{booking.Id:D4}");
+                }
             }
             else if (next == BookingStatus.Completed)
             {
@@ -567,6 +632,17 @@ namespace KrishiLink.BLL.Services
                     "Rental Completed",
                     $"Your rental of {booking.Equipment!.Name} is completed. Please take a moment to rate and review your experience!",
                     "/Farmer/EquipmentBookings"
+                );
+
+                // Award loyalty points for completed rental
+                int days = (booking.EndDate - booking.StartDate).Days + 1;
+                decimal grossSpent = (days * booking.Equipment!.DailyRate) - booking.DiscountAmount;
+                await _loyalty.AwardPointsForCompletedBookingAsync(
+                    booking.FarmerId,
+                    "Equipment",
+                    booking.Id,
+                    Math.Max(0m, grossSpent),
+                    $"#EQ-{booking.Id:D4}"
                 );
             }
 

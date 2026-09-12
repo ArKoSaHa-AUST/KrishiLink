@@ -10,11 +10,11 @@ namespace KrishiLink.BLL.Services
     {
         // Farmer / public
         Task<GodownBrowseViewModel> BrowseAsync(GodownSearchCriteria criteria);
-        Task<GodownDetailViewModel?> GetDetailsAsync(int id);
+        Task<GodownDetailViewModel?> GetDetailsAsync(int id, string? currentUserId = null);
 
         /// <summary>Creates a pending storage request. Returns a user-facing error message, or null on success.</summary>
-        Task<string?> RequestStorageAsync(string farmerId, GodownDetailViewModel request);
-        Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel request);
+        Task<string?> RequestStorageAsync(string farmerId, GodownDetailViewModel request, string? promoCode = null, int? pointsToRedeem = null);
+        Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel request, string? promoCode = null, int? pointsToRedeem = null);
 
         // Owner
         Task<GodownOwnerDashboardViewModel> GetOwnerDashboardAsync(string ownerId);
@@ -45,6 +45,7 @@ namespace KrishiLink.BLL.Services
         private readonly INotificationService _notifications;
         private readonly IBadgeService _badges;
         private readonly ILeaderboardService _leaderboard;
+        private readonly ILoyaltyService _loyalty;
 
         public GodownService(
             IRepository<Godown> godowns,
@@ -55,7 +56,8 @@ namespace KrishiLink.BLL.Services
             IReviewService reviews,
             INotificationService notifications,
             IBadgeService badges,
-            ILeaderboardService leaderboard)
+            ILeaderboardService leaderboard,
+            ILoyaltyService loyalty)
         {
             _godowns = godowns;
             _bookings = bookings;
@@ -66,6 +68,7 @@ namespace KrishiLink.BLL.Services
             _notifications = notifications;
             _badges = badges;
             _leaderboard = leaderboard;
+            _loyalty = loyalty;
         }
 
         // ---------------------------------------------------------------- Browse & details
@@ -206,7 +209,7 @@ namespace KrishiLink.BLL.Services
             return aliases.TryGetValue(district, out var alt) ? alt : null;
         }
 
-        public async Task<GodownDetailViewModel?> GetDetailsAsync(int id)
+        public async Task<GodownDetailViewModel?> GetDetailsAsync(int id, string? currentUserId = null)
         {
             var g = await _godowns.Query().Include(x => x.Owner).FirstOrDefaultAsync(x => x.Id == id);
             if (g is null) return null;
@@ -249,6 +252,7 @@ namespace KrishiLink.BLL.Services
                 AvailableCapacityTons = available,
                 UnavailableDates = blocked.Concat(fullDays).Distinct().OrderBy(d => d).ToList(),
                 PricePerTonPerMonth = $"{ListingFormat.Taka(g.PricePerTonPerMonth)} / Ton / Month",
+                PricePerTonPerMonthAmount = g.PricePerTonPerMonth,
                 DailyRatePerTon = $"{ListingFormat.Taka(Math.Round(g.PricePerTonPerMonth / 30m, 2))} / Ton / Day",
                 Status = !g.IsActive ? "Inactive" : available > 0 ? "Available" : "Fully Booked",
                 OwnerName = g.Owner?.FullName ?? string.Empty,
@@ -279,16 +283,28 @@ namespace KrishiLink.BLL.Services
                 }
             }
 
+            // Populate Farmer Loyalty Context if user is authenticated
+            if (!string.IsNullOrWhiteSpace(currentUserId))
+            {
+                var farmer = await _users.FirstOrDefaultAsync(u => u.Id == currentUserId);
+                if (farmer != null)
+                {
+                    model.FarmerLoyaltyPoints = farmer.LoyaltyPoints;
+                    model.FarmerTierName = _loyalty.CalculateTier(farmer.LoyaltyPoints).TierName;
+                    model.AvailableConversionTiers = _loyalty.GetConversionTiers();
+                }
+            }
+
             return model;
         }
 
-        public async Task<string?> RequestStorageAsync(string farmerId, GodownDetailViewModel r)
+        public async Task<string?> RequestStorageAsync(string farmerId, GodownDetailViewModel r, string? promoCode = null, int? pointsToRedeem = null)
         {
-            var res = await RequestStorageWithResultAsync(farmerId, r);
+            var res = await RequestStorageWithResultAsync(farmerId, r, promoCode, pointsToRedeem);
             return res.Error;
         }
 
-        public async Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel r)
+        public async Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel r, string? promoCode = null, int? pointsToRedeem = null)
         {
             if (r.StartDate is null || r.EndDate is null) return ("Please choose a start and end date.", null);
             var s = r.StartDate.Value.Date;
@@ -305,6 +321,27 @@ namespace KrishiLink.BLL.Services
             var clash = await FindConflictAsync(g, r.RequestedCapacityTons, s, t);
             if (clash is not null) return (clash, null);
 
+            var days = (t - s).Days + 1;
+            var months = Math.Max(1.0, (double)days / 30.0);
+            decimal gross = decimal.Round((decimal)r.RequestedCapacityTons * g.PricePerTonPerMonth * (decimal)months, 0);
+
+            decimal discountAmount = 0m;
+            string? appliedPromo = null;
+            int pointsUsed = 0;
+
+            if (!string.IsNullOrWhiteSpace(promoCode) || (pointsToRedeem.HasValue && pointsToRedeem.Value > 0))
+            {
+                var discountCheck = await _loyalty.ValidateAndCalculateDiscountAsync(farmerId, promoCode, pointsToRedeem, gross);
+                if (!discountCheck.IsValid)
+                {
+                    return (discountCheck.Message, null);
+                }
+
+                discountAmount = discountCheck.DiscountAmount;
+                appliedPromo = discountCheck.PromoCode;
+                pointsUsed = discountCheck.PointsRequired;
+            }
+
             var newBooking = new GodownBooking
             {
                 GodownId = g.Id,
@@ -314,11 +351,28 @@ namespace KrishiLink.BLL.Services
                 EndDate = t,
                 Note = string.IsNullOrWhiteSpace(r.BookingNotes) ? null : r.BookingNotes.Trim(),
                 Status = BookingStatus.Pending,
-                RequestedOn = DateTime.Now
+                RequestedOn = DateTime.Now,
+                DiscountAmount = discountAmount,
+                AppliedPromoCode = appliedPromo,
+                PointsUsed = pointsUsed
             };
 
             await _bookings.AddAsync(newBooking);
             await _bookings.SaveChangesAsync();
+
+            // If points or promo were redeemed, deduct from farmer's balance and record ledger transaction
+            if (pointsUsed > 0 || discountAmount > 0)
+            {
+                await _loyalty.RedeemPointsForBookingAsync(
+                    farmerId,
+                    appliedPromo,
+                    pointsUsed,
+                    gross,
+                    "Godown",
+                    newBooking.Id,
+                    $"#GD-{newBooking.Id:D4}"
+                );
+            }
 
             // Notify godown owner of new pending storage request
             var farmer = await _users.FirstOrDefaultAsync(u => u.Id == farmerId);
@@ -399,6 +453,12 @@ namespace KrishiLink.BLL.Services
                     other.UpdatedOn = DateTime.Now;
                     autoRejected.Add(other.Id);
 
+                    // Refund points if promo/points were redeemed on auto-rejected booking
+                    if (other.PointsUsed > 0 || other.DiscountAmount > 0)
+                    {
+                        await _loyalty.RefundPointsForCancelledBookingAsync(other.FarmerId, "Godown", other.Id, $"#GD-{other.Id:D4}");
+                    }
+
                     // Notify auto-rejected farmer
                     var otherUser = await _users.FirstOrDefaultAsync(u => u.Id == other.FarmerId);
                     await _notifications.CreateAsync(
@@ -465,6 +525,12 @@ namespace KrishiLink.BLL.Services
                         $"<h3>Hello, {farmer.FullName}</h3><p>Your storage request for <strong>{booking.StorageTons} tons</strong> in <strong>{booking.Godown!.Name}</strong> from {booking.StartDate:dd MMM yyyy} to {booking.EndDate:dd MMM yyyy} was declined by the owner.{(!string.IsNullOrWhiteSpace(booking.RejectReason) ? $"<br/><strong>Reason:</strong> {booking.RejectReason}" : "")}</p><p><a href=\"https://krishilink.com/Godown/Browse\">Browse other storage options on KrishiLink</a></p>"
                     );
                 }
+
+                // Refund points if promo/points were redeemed
+                if (booking.PointsUsed > 0 || booking.DiscountAmount > 0)
+                {
+                    await _loyalty.RefundPointsForCancelledBookingAsync(booking.FarmerId, "Godown", booking.Id, $"#GD-{booking.Id:D4}");
+                }
             }
             else if (next == BookingStatus.Completed)
             {
@@ -474,6 +540,19 @@ namespace KrishiLink.BLL.Services
                     "Storage Booking Completed",
                     $"Your storage booking at {booking.Godown!.Name} is completed. Please take a moment to rate and review your experience!",
                     "/Farmer/GodownBookings"
+                );
+
+                // Award loyalty points for completed storage
+                var days = (booking.EndDate - booking.StartDate).Days + 1;
+                var months = Math.Max(1.0, (double)days / 30.0);
+                decimal gross = decimal.Round((decimal)booking.StorageTons * booking.Godown!.PricePerTonPerMonth * (decimal)months, 0);
+                decimal netSpent = Math.Max(0m, gross - booking.DiscountAmount);
+                await _loyalty.AwardPointsForCompletedBookingAsync(
+                    booking.FarmerId,
+                    "Godown",
+                    booking.Id,
+                    netSpent,
+                    $"#GD-{booking.Id:D4}"
                 );
             }
 

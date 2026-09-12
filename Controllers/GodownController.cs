@@ -58,7 +58,8 @@ namespace KrishiLink.Controllers
         /// <summary>GET: /Godown/Details/3</summary>
         public async Task<IActionResult> Details(int id)
         {
-            var model = await _godowns.GetDetailsAsync(id);
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var model = await _godowns.GetDetailsAsync(id, currentUserId);
             return model is null ? NotFound() : View(model);
         }
 
@@ -69,7 +70,7 @@ namespace KrishiLink.Controllers
         public async Task<IActionResult> SubmitBooking(GodownDetailViewModel model)
         {
             var farmerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            var (error, bookingId) = await _godowns.RequestStorageWithResultAsync(farmerId, model);
+            var (error, bookingId) = await _godowns.RequestStorageWithResultAsync(farmerId, model, model.AppliedPromoCode, model.PointsUsed);
 
             if (error is null && bookingId.HasValue)
             {
