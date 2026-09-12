@@ -28,6 +28,12 @@ namespace KrishiLink.Models.ViewModels
 
         /// <summary>Monthly crop calendar advisory strip customized to farmer's crop and district.</summary>
         public FarmerCropAdvisoryViewModel? CropCalendarAdvisory { get; set; }
+
+        /// <summary>Number of draft harvest plans currently saved by the farmer.</summary>
+        public int DraftHarvestPlansCount { get; set; }
+
+        /// <summary>Next active/upcoming submitted harvest plan.</summary>
+        public HarvestPlanSummaryViewModel? NextSubmittedHarvestPlan { get; set; }
     }
 
     /// <summary>

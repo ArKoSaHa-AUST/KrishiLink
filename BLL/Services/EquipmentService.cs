@@ -20,7 +20,7 @@ namespace KrishiLink.BLL.Services
 
         /// <summary>Creates a pending rental request with optional loyalty promo or points. Returns a user-facing error message, or null on success.</summary>
         Task<string?> RequestRentalAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note, int units = 1, string? promoCode = null, int? pointsToRedeem = null);
-        Task<(string? Error, int? BookingId)> RequestRentalWithResultAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note, int units = 1, string? promoCode = null, int? pointsToRedeem = null);
+        Task<(string? Error, int? BookingId)> RequestRentalWithResultAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note, int units = 1, string? promoCode = null, int? pointsToRedeem = null, int? harvestPlanId = null, string? planName = null);
 
         // Owner
         Task<EquipmentOwnerDashboardViewModel> GetOwnerDashboardAsync(string ownerId);
@@ -467,7 +467,9 @@ namespace KrishiLink.BLL.Services
             string? note,
             int units = 1,
             string? promoCode = null,
-            int? pointsToRedeem = null)
+            int? pointsToRedeem = null,
+            int? harvestPlanId = null,
+            string? planName = null)
         {
             if (start is null || end is null) return ("Please choose a start and end date.", null);
             var s = start.Value.Date;
@@ -529,7 +531,8 @@ namespace KrishiLink.BLL.Services
                 PricingNote = pricingNote,
                 DiscountAmount = discountAmount,
                 AppliedPromoCode = appliedPromo,
-                PointsUsed = pointsUsed
+                PointsUsed = pointsUsed,
+                HarvestPlanId = harvestPlanId
             };
 
             await _bookings.AddAsync(newBooking);
@@ -552,13 +555,18 @@ namespace KrishiLink.BLL.Services
             // Notify equipment owner of new pending rental request
             var farmer = await _users.FirstOrDefaultAsync(u => u.Id == farmerId);
             var farmerName = farmer?.FullName ?? "A farmer";
+            var hasPlan = !string.IsNullOrWhiteSpace(planName);
             await _notifications.NotifyAsync(new NotificationRequest
             {
                 UserId = e.OwnerId,
                 Type = NotificationTypes.BookingRequest,
                 TitleKey = "New Equipment Booking Request",
-                MessageKey = "{0} requested to rent {1} from {2} to {3}.",
-                Args = new object[] { farmerName, e.Name, $"{s:dd MMM yyyy}", $"{t:dd MMM yyyy}" },
+                MessageKey = hasPlan
+                    ? "{0} requested to rent {1} from {2} to {3} as part of harvest plan \"{4}\"."
+                    : "{0} requested to rent {1} from {2} to {3}.",
+                Args = hasPlan
+                    ? new object[] { farmerName, e.Name, $"{s:dd MMM yyyy}", $"{t:dd MMM yyyy}", planName!.Trim() }
+                    : new object[] { farmerName, e.Name, $"{s:dd MMM yyyy}", $"{t:dd MMM yyyy}" },
                 LinkUrl = AppLinks.OwnerRequests("equipment", newBooking.Id),
                 DedupeKey = $"booking:equipment:{newBooking.Id}:Requested",
                 SendEmail = false
@@ -1718,31 +1726,55 @@ namespace KrishiLink.BLL.Services
                 .Include(b => b.Equipment)
                 .Include(b => b.Farmer)
                 .Include(b => b.Payment)
+                .Include(b => b.HarvestPlan)
+                    .ThenInclude(p => p!.Items)
                 .Where(b => b.Equipment!.OwnerId == ownerId);
 
-        private static RentalRequestItem ToRequestItem(EquipmentBooking b) => new()
+        private static RentalRequestItem ToRequestItem(EquipmentBooking b)
         {
-            Id = b.Id,
-            FarmerName = string.IsNullOrWhiteSpace(b.Farmer?.FullName) ? "Farmer" : b.Farmer!.FullName,
-            EquipmentName = b.Equipment?.Name ?? string.Empty,
-            EquipmentCategory = b.Equipment?.Category ?? string.Empty,
-            DailyRate = $"{ListingFormat.Taka(b.AgreedRate ?? b.Equipment?.DailyRate ?? 0)} / Day",
-            Location = b.Equipment?.Location ?? string.Empty,
-            DateRange = ListingFormat.DateRange(b.StartDate, b.EndDate),
-            StartDate = b.StartDate,
-            EndDate = b.EndDate,
-            Units = b.Units,
-            Quantity = b.Equipment?.Quantity ?? 1,
-            Note = b.Note,
-            Status = b.Status,
-            RejectReason = b.RejectReason,
-            RequestedOn = b.RequestedOn,
-            AgreedGross = BookingPricing.EquipmentGrossOf(b, b.Equipment?.DailyRate ?? 0),
-            PricingNote = b.PricingNote,
-            PaymentReference = b.Payment?.Status == PaymentStatus.Succeeded ? b.Payment.Reference : null,
-            ModificationCount = b.ModificationCount,
-            PreviousDetails = b.PreviousDetails
-        };
+            var plan = b.HarvestPlan;
+            string? otherItemsText = null;
+            if (plan?.Items != null)
+            {
+                var others = plan.Items
+                    .Where(i => i.BookingId != b.Id)
+                    .Select(i => i.ItemType == HarvestPlanItemType.Equipment
+                        ? $"{i.Units}x Equipment ({ListingFormat.DateRange(i.StartDate, i.EndDate)})"
+                        : $"{i.Tons}T Storage ({ListingFormat.DateRange(i.StartDate, i.EndDate)})")
+                    .ToList();
+                otherItemsText = others.Count > 0
+                    ? "Also in plan: " + string.Join(", ", others)
+                    : "Single item in plan";
+            }
+
+            return new RentalRequestItem
+            {
+                Id = b.Id,
+                FarmerName = string.IsNullOrWhiteSpace(b.Farmer?.FullName) ? "Farmer" : b.Farmer!.FullName,
+                EquipmentName = b.Equipment?.Name ?? string.Empty,
+                EquipmentCategory = b.Equipment?.Category ?? string.Empty,
+                DailyRate = $"{ListingFormat.Taka(b.AgreedRate ?? b.Equipment?.DailyRate ?? 0)} / Day",
+                Location = b.Equipment?.Location ?? string.Empty,
+                DateRange = ListingFormat.DateRange(b.StartDate, b.EndDate),
+                StartDate = b.StartDate,
+                EndDate = b.EndDate,
+                Units = b.Units,
+                Quantity = b.Equipment?.Quantity ?? 1,
+                Note = b.Note,
+                Status = b.Status,
+                RejectReason = b.RejectReason,
+                RequestedOn = b.RequestedOn,
+                AgreedGross = BookingPricing.EquipmentGrossOf(b, b.Equipment?.DailyRate ?? 0),
+                PricingNote = b.PricingNote,
+                PaymentReference = b.Payment?.Status == PaymentStatus.Succeeded ? b.Payment.Reference : null,
+                ModificationCount = b.ModificationCount,
+                PreviousDetails = b.PreviousDetails,
+                HarvestPlanId = b.HarvestPlanId,
+                HarvestPlanName = plan?.Name,
+                HarvestPlanItemCount = plan?.Items?.Count ?? 0,
+                HarvestPlanOtherItems = otherItemsText
+            };
+        }
 
         private static IEnumerable<DateTime> EachDay(DateTime start, DateTime end)
         {

@@ -40,6 +40,12 @@
                     <i class="bi bi-box-seam me-1 text-success"></i>@L["{0} Tons", Model.RequestedCapacityTons.ToString("N0")]
                     <span class="mx-1">·</span>
                     <i class="bi bi-calendar-range me-1 text-success"></i>@Model.DateRange
+                    @if (Model.HarvestPlanId.HasValue)
+                    {
+                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle ms-1" style="font-size: 0.72rem;" title="@Model.HarvestPlanOtherItems">
+                            <i class="bi bi-diagram-3 me-1"></i>@L["Harvest plan: {0} · {1} items", Model.HarvestPlanName ?? "Plan", Model.HarvestPlanItemCount]
+                        </span>
+                    }
                     @if (Model.ModificationCount > 0)
                     {
                         <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1" style="font-size: 0.72rem;" title="@Model.PreviousDetails">

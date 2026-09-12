@@ -181,7 +181,149 @@ namespace KrishiLink.DAL
                     demoTiller.Quantity = 3;
                     await db.SaveChangesAsync();
                 }
+
+                // Seed demo harvest plans
+                await SeedDemoHarvestPlansAsync(db, userManager);
             }
+        }
+
+        private static async Task SeedDemoHarvestPlansAsync(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+        {
+            var farmer = await userManager.FindByEmailAsync("farmer@krishilink.com");
+            if (farmer == null) return;
+
+            if (await db.HarvestPlans.AnyAsync(p => p.FarmerId == farmer.Id)) return;
+
+            var harvesterOrTractor = await db.Equipment.FirstOrDefaultAsync(e => e.Category == "Harvester" || e.Category == "Tractor")
+                ?? await db.Equipment.FirstOrDefaultAsync();
+
+            var godown = await db.Godowns.FirstOrDefaultAsync(g => g.IsActive)
+                ?? await db.Godowns.FirstOrDefaultAsync();
+
+            if (harvesterOrTractor == null || godown == null) return;
+
+            var today = DateTime.Today;
+
+            // 1. Draft Harvest Plan: "Boro Season 2026 Harvest"
+            var draftPlan = new HarvestPlan
+            {
+                FarmerId = farmer.Id,
+                Name = "Boro Season 2026 Harvest",
+                Crop = "Rice (Boro)",
+                Note = "Coordinated harvest and storage plan for Boro rice field in Shibganj.",
+                Status = HarvestPlanStatus.Draft,
+                CreatedAt = DateTime.UtcNow.AddDays(-5),
+                Items = new List<HarvestPlanItem>
+                {
+                    new()
+                    {
+                        ItemType = HarvestPlanItemType.Equipment,
+                        ListingId = harvesterOrTractor.Id,
+                        StartDate = today.AddDays(25),
+                        EndDate = today.AddDays(29),
+                        Units = 1,
+                        Note = "Require skilled operator for 5-day harvesting window.",
+                        AddedAt = DateTime.UtcNow.AddDays(-5)
+                    },
+                    new()
+                    {
+                        ItemType = HarvestPlanItemType.Godown,
+                        ListingId = godown.Id,
+                        StartDate = today.AddDays(30),
+                        EndDate = today.AddDays(59),
+                        Tons = 5,
+                        Note = "5 Tons paddy storage right after harvest.",
+                        AddedAt = DateTime.UtcNow.AddDays(-5)
+                    }
+                }
+            };
+            db.HarvestPlans.Add(draftPlan);
+            await db.SaveChangesAsync();
+
+            // 2. Submitted Harvest Plan: "Wheat Harvest 2026"
+            var wheatPlan = new HarvestPlan
+            {
+                FarmerId = farmer.Id,
+                Name = "Wheat Harvest 2026",
+                Crop = "Wheat",
+                Note = "Wheat field preparation, cutting, and grain storage.",
+                Status = HarvestPlanStatus.Submitted,
+                CreatedAt = DateTime.UtcNow.AddDays(-2),
+                SubmittedOn = DateTime.UtcNow.AddDays(-1)
+            };
+            db.HarvestPlans.Add(wheatPlan);
+            await db.SaveChangesAsync();
+
+            // Create Pending Equipment Booking linked to wheatPlan
+            var eqStart = today.AddDays(15);
+            var eqEnd = today.AddDays(19);
+            var eqGross = BookingPricing.EquipmentGross(eqStart, eqEnd, harvesterOrTractor.DailyRate, 1);
+
+            var eqBooking = new EquipmentBooking
+            {
+                EquipmentId = harvesterOrTractor.Id,
+                FarmerId = farmer.Id,
+                StartDate = eqStart,
+                EndDate = eqEnd,
+                Units = 1,
+                Status = BookingStatus.Pending,
+                RequestedOn = DateTime.UtcNow.AddDays(-1),
+                AgreedRate = harvesterOrTractor.DailyRate,
+                QuotedGross = eqGross,
+                HarvestPlanId = wheatPlan.Id,
+                Note = "Requested as part of Wheat Harvest 2026 harvest plan."
+            };
+            db.EquipmentBookings.Add(eqBooking);
+
+            // Create Pending Godown Booking linked to wheatPlan
+            var gdStart = today.AddDays(20);
+            var gdEnd = today.AddDays(49);
+            var gdGross = BookingPricing.GodownGross(gdStart, gdEnd, 4, godown.PricePerTonPerMonth);
+
+            var gdBooking = new GodownBooking
+            {
+                GodownId = godown.Id,
+                FarmerId = farmer.Id,
+                StartDate = gdStart,
+                EndDate = gdEnd,
+                StorageTons = 4,
+                Status = BookingStatus.Pending,
+                RequestedOn = DateTime.UtcNow.AddDays(-1),
+                AgreedRate = godown.PricePerTonPerMonth,
+                AgreedGross = gdGross,
+                HarvestPlanId = wheatPlan.Id,
+                Note = "Requested as part of Wheat Harvest 2026 harvest plan."
+            };
+            db.GodownBookings.Add(gdBooking);
+            await db.SaveChangesAsync();
+
+            // Add the items to wheatPlan with their BookingId set
+            wheatPlan.Items = new List<HarvestPlanItem>
+            {
+                new()
+                {
+                    HarvestPlanId = wheatPlan.Id,
+                    ItemType = HarvestPlanItemType.Equipment,
+                    ListingId = harvesterOrTractor.Id,
+                    StartDate = eqStart,
+                    EndDate = eqEnd,
+                    Units = 1,
+                    BookingId = eqBooking.Id,
+                    AddedAt = DateTime.UtcNow.AddDays(-2)
+                },
+                new()
+                {
+                    HarvestPlanId = wheatPlan.Id,
+                    ItemType = HarvestPlanItemType.Godown,
+                    ListingId = godown.Id,
+                    StartDate = gdStart,
+                    EndDate = gdEnd,
+                    Tons = 4,
+                    BookingId = gdBooking.Id,
+                    AddedAt = DateTime.UtcNow.AddDays(-2)
+                }
+            };
+            await db.SaveChangesAsync();
         }
 
         private static async Task SeedDemoRateRulesAsync(ApplicationDbContext db)

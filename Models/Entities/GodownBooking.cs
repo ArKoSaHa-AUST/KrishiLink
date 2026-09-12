@@ -54,5 +54,9 @@ namespace KrishiLink.Models.Entities
         public int PointsUsed { get; set; } = 0;
         public int PointsEarned { get; set; } = 0;
         public bool PointsAwarded { get; set; } = false;
+
+        /// <summary>Optional link to a multi-item Harvest Plan if this booking was created from one.</summary>
+        public int? HarvestPlanId { get; set; }
+        public HarvestPlan? HarvestPlan { get; set; }
     }
 }

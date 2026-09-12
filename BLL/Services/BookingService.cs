@@ -29,6 +29,7 @@ namespace KrishiLink.BLL.Services
     {
         private readonly IRepository<EquipmentBooking> _rentals;
         private readonly IRepository<GodownBooking> _storage;
+        private readonly IRepository<HarvestPlan> _harvestPlans;
         private readonly IQrCodeService _qrCode;
         private readonly ILoyaltyService _loyalty;
         private readonly INotificationService _notifications;
@@ -39,6 +40,7 @@ namespace KrishiLink.BLL.Services
         public BookingService(
             IRepository<EquipmentBooking> rentals,
             IRepository<GodownBooking> storage,
+            IRepository<HarvestPlan> harvestPlans,
             IQrCodeService qrCode,
             ILoyaltyService loyalty,
             INotificationService notifications,
@@ -48,6 +50,7 @@ namespace KrishiLink.BLL.Services
         {
             _rentals = rentals;
             _storage = storage;
+            _harvestPlans = harvestPlans;
             _qrCode = qrCode;
             _loyalty = loyalty;
             _notifications = notifications;
@@ -125,6 +128,32 @@ namespace KrishiLink.BLL.Services
                 activity.Add((b.UpdatedAt.Value, Feed(text, icon, color, b.UpdatedAt.Value)));
             }
 
+            var draftPlansCount = await _harvestPlans.Query()
+                .CountAsync(p => p.FarmerId == farmerId && p.Status == HarvestPlanStatus.Draft);
+
+            var nextPlan = await _harvestPlans.Query()
+                .Include(p => p.Items)
+                .Where(p => p.FarmerId == farmerId && p.Status == HarvestPlanStatus.Submitted)
+                .OrderByDescending(p => p.SubmittedOn ?? p.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            HarvestPlanSummaryViewModel? nextPlanSummary = null;
+            if (nextPlan != null)
+            {
+                var minDate = nextPlan.Items.Count > 0 ? nextPlan.Items.Min(i => i.StartDate) : (DateTime?)null;
+                var maxDate = nextPlan.Items.Count > 0 ? nextPlan.Items.Max(i => i.EndDate) : (DateTime?)null;
+                nextPlanSummary = new HarvestPlanSummaryViewModel
+                {
+                    Id = nextPlan.Id,
+                    Name = nextPlan.Name,
+                    Crop = nextPlan.Crop,
+                    Status = nextPlan.Status,
+                    ItemCount = nextPlan.Items.Count,
+                    EarliestStartDate = minDate,
+                    TargetDateRange = minDate.HasValue && maxDate.HasValue ? ListingFormat.DateRange(minDate.Value, maxDate.Value) : string.Empty
+                };
+            }
+
             return new FarmerDashboardViewModel
             {
                 ActiveBookings = all
@@ -141,7 +170,9 @@ namespace KrishiLink.BLL.Services
                         Status = b.Status,
                         DetailUrl = "/Bookings"
                     }).ToList(),
-                RecentActivity = activity.OrderByDescending(a => a.At).Take(6).Select(a => a.Item).ToList()
+                RecentActivity = activity.OrderByDescending(a => a.At).Take(6).Select(a => a.Item).ToList(),
+                DraftHarvestPlansCount = draftPlansCount,
+                NextSubmittedHarvestPlan = nextPlanSummary
             };
         }
 
@@ -911,12 +942,14 @@ namespace KrishiLink.BLL.Services
                 .Include(b => b.Equipment!).ThenInclude(e => e.Owner)
                 .Include(b => b.Review)
                 .Include(b => b.Payment)
+                .Include(b => b.HarvestPlan)
                 .Where(b => b.FarmerId == farmerId)
                 .ToListAsync();
             var storage = await _storage.Query()
                 .Include(b => b.Godown!).ThenInclude(g => g.Owner)
                 .Include(b => b.Review)
                 .Include(b => b.Payment)
+                .Include(b => b.HarvestPlan)
                 .Where(b => b.FarmerId == farmerId)
                 .ToListAsync();
 
@@ -949,7 +982,9 @@ namespace KrishiLink.BLL.Services
                 ReviewedAt = b.Review?.CreatedAt,
                 Units = b.Units,
                 MaxUnits = e.Quantity,
-                MinDays = e.MinRentalDays
+                MinDays = e.MinRentalDays,
+                HarvestPlanId = b.HarvestPlanId,
+                HarvestPlanName = b.HarvestPlan?.Name
             };
             return Finish(item, b, b.Note, b.RejectReason, b.RequestedOn, b.UpdatedOn, e.Owner, "Rental Requested", "Active in Field", "Equipment in use", "Completed & Handover");
         }
@@ -979,7 +1014,9 @@ namespace KrishiLink.BLL.Services
                 ReviewComment = b.Review?.Comment,
                 ReviewedAt = b.Review?.CreatedAt,
                 StorageTons = b.StorageTons,
-                MinDays = 1
+                MinDays = 1,
+                HarvestPlanId = b.HarvestPlanId,
+                HarvestPlanName = b.HarvestPlan?.Name
             };
             return Finish(item, b, b.Note, b.RejectReason, b.RequestedOn, b.UpdatedOn, g.Owner, "Booking Requested", "Produce Stored", "Goods in storage", "Storage Period Ended");
         }

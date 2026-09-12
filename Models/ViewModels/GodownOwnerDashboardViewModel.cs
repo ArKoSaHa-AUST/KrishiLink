@@ -72,6 +72,11 @@ namespace KrishiLink.Models.ViewModels
         public int ModificationCount { get; set; } = 0;
         public string? PreviousDetails { get; set; }
 
+        public int? HarvestPlanId { get; set; }
+        public string? HarvestPlanName { get; set; }
+        public int HarvestPlanItemCount { get; set; }
+        public string? HarvestPlanOtherItems { get; set; }
+
         /// <summary>Compact relative timestamp, e.g. "2h ago". Empty when RequestedOn is unset.</summary>
         public string TimeAgo => TimeAgoFormatter.Format(RequestedOn);
     }

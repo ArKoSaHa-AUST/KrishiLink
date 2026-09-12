@@ -23,6 +23,7 @@
 | **Verified Ratings & Reviews** | Review Completed Bookings (1-5 ⭐) | Reply to Reviews & View Aggregates | Reply to Reviews & View Aggregates | Moderate Reviews |
 | **Revenue & Financial Reports** | — | KPIs, Trends, PDF Statements | KPIs, Trends, PDF Statements | Platform Commission & Payouts |
 | **Agronomic Crop Calendar** | DAE 23 Crop Advisories by District | — | — | Database Calendar Management |
+| **Harvest Plan Cart** | Linked Multi-Item Plan, Seasonal Clone & Single-Click Submit | Context Badges on Requests | Context Badges on Requests | — |
 | **Weather & Pest Early Warning** | Live 7-Day Open-Meteo Forecast & Alerts | — | — | Regional Alert Triggers |
 | **Multi-Channel Notifications** | In-App Real-Time & Emailed Updates | In-App Real-Time & Emailed Updates | In-App Real-Time & Emailed Updates | System Audit Notifications |
 
@@ -123,6 +124,15 @@ Pending ──reject──▶ Rejected ──undo──▶ Pending              
 - **Automated Loyalty Re-pricing**: Prior loyalty points redemption and promo code discounts are safely refunded and re-calculated against the newly quoted gross amount.
 - **Owner Visibility & Notifications**: Triggers `NotificationTypes.BookingModified` alerts to owners and displays `"Changed ×N"` indicator badges with previous booking summaries on all owner dashboards and request rows.
 
+### 12. 🌾 Harvest Plan Cart (Multi-Item Seasonal Planning & Re-usable Templates)
+- **Multi-Item Agricultural Cart**: Farmers can bundle multiple equipment rentals (combine harvester, tractor, tiller) and godown storage facilities into a single unified seasonal plan (up to 10 items per plan, up to 5 draft plans per farmer).
+- **Live Availability & Quoting**: Real-time evaluation of live availability, conflicting dates, owner-blocked blackout periods, and dynamic daily / seasonal rate quotes on every plan item.
+- **Fail-Fast Two-Pass Submission**: Batch submission performs a complete validation pass over all items before writing any bookings. If all items pass, bookings are created via canonical booking flows, atomically linking `HarvestPlanId`.
+- **Race Condition Resiliency**: If any item fails during creation due to concurrent bookings, successfully created bookings remain intact, the plan remains in `Draft`, and the farmer is guided to adjust dates and resubmit (skipping already-booked items).
+- **Owner Visibility & Request Linking**: Equipment and godown owner request dashboards display a distinct `bi-diagram-3` badge (`Harvest plan: {name} · {n} items`) with a comprehensive tooltip listing other items in the plan for context.
+- **Seasonal Plan Cloning**: One-click duplication of previous harvest plans shifted by a customizable number of days (1–730 days, default 365 days) with all booking references cleared, streamlining recurring seasonal operations.
+- **Automated Lifecycle Closure**: Harvest plans automatically transition from `Submitted` to `Completed` once all associated bookings reach terminal states (`Completed`, `Rejected`, or `Cancelled`).
+
 ---
 
 ## 🏗️ Architecture & Project Structure
@@ -138,6 +148,7 @@ KrishiLink/
 │   ├── FarmerController.cs        # Farmer Hub, Dashboard & Crop Recommendations
 │   ├── EquipmentController.cs     # Machinery Catalog, Search, Filtering & Details
 │   ├── GodownController.cs        # Storage Facilities Directory & Booking
+│   ├── HarvestPlanController.cs   # Multi-Item Harvest Plan Cart, Submission & Seasonal Cloning
 │   ├── AdvisoryController.cs      # Weather Forecasts & Crop Calendars
 │   ├── BookingsController.cs      # User Booking History & Status Updates
 │   ├── ReviewsController.cs       # Verified Review Submission, AJAX Pagination & Owner Replies
@@ -152,13 +163,14 @@ KrishiLink/
 │   ├── Farmer/                    # Farmer Dashboard & Advisory Strips
 │   ├── Equipment/                 # Equipment Catalog & Details UI
 │   ├── Godown/                    # Storage Directory UI
+│   ├── HarvestPlan/               # Harvest Plan Management & Multi-Item Details UI
 │   ├── Advisory/                  # Advisory Dashboard & Pest Warnings
 │   ├── Bookings/                  # History & Review Modal Views
 │   ├── EquipmentOwner/            # Equipment Management Views
 │   └── GodownOwner/               # Godown Management Views
 ├── Models/                        # Data Transfer & Entity Models
-│   ├── Entities/                  # EF Core Domain Entities (User, Equipment, Godown, Bookings, CropCalendar, WeatherData, etc.)
-│   └── ViewModels/                # Strongly-typed Razor ViewModels
+│   ├── Entities/                  # EF Core Domain Entities (User, Equipment, Godown, Bookings, HarvestPlan, CropCalendar, WeatherData, etc.)
+│   └── ViewModels/                # Strongly-typed Razor ViewModels (HarvestPlanViewModels, etc.)
 ├── BLL/                           # Business Logic Layer Services
 │   ├── Services/                  # Core Business Services:
 │   │   ├── AppLinks.cs            # Centralized Type-Safe URL Registry
@@ -168,6 +180,7 @@ KrishiLink/
 │   │   ├── EmailDispatchService.cs# Asynchronous Background Email Dispatcher
 │   │   ├── EquipmentService.cs    # Equipment Management & Search
 │   │   ├── GodownService.cs       # Godown Space Management & Search
+│   │   ├── HarvestPlanService.cs  # Harvest Plan Cart, Multi-Item Submission & Validation
 │   │   ├── NotificationService.cs # Localized Multi-Channel Alerts
 │   │   ├── OwnerRevenueService.cs # Revenue, Settlements & QuestPDF Reporting
 │   │   ├── OwnerVerificationService.cs # Encrypted NID & Document Verification

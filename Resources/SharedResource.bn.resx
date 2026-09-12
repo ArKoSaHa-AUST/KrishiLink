@@ -3911,4 +3911,265 @@
   <data name="Please provide both start and end dates." xml:space="preserve">
     <value>অনুগ্রহ করে শুরুর এবং শেষের উভয় তারিখ প্রদান করুন।</value>
   </data>
+  <data name="Harvest Plans" xml:space="preserve">
+    <value>ফসল কাটার পরিকল্পনা</value>
+  </data>
+  <data name="Harvest Plan" xml:space="preserve">
+    <value>ফসল কাটার পরিকল্পনা</value>
+  </data>
+  <data name="Bundle equipment rentals and crop storage into coordinated harvest plans. Track availability and submit requests simultaneously." xml:space="preserve">
+    <value>যন্ত্রপাতি ভাড়া এবং গুদামজাতকরণকে সমন্বিত ফসল কাটার পরিকল্পনায় যুক্ত করুন। প্রাপ্যতা যাচাই করুন এবং একসাথে অনুরোধ পাঠান।</value>
+  </data>
+  <data name="New Harvest Plan" xml:space="preserve">
+    <value>নতুন ফসল পরিকল্পনা</value>
+  </data>
+  <data name="Draft Limit Reached (5/5)" xml:space="preserve">
+    <value>খসড়া সীমা পূর্ণ হয়েছে (৫/৫)</value>
+  </data>
+  <data name="Maximum 5 draft plans allowed. Submit or delete an existing draft first." xml:space="preserve">
+    <value>সর্বোচ্চ ৫টি খসড়া পরিকল্পনা রাখা যাবে। প্রথমে একটি জমা দিন অথবা মুছে ফেলুন।</value>
+  </data>
+  <data name="Total Plans" xml:space="preserve">
+    <value>মোট পরিকল্পনা</value>
+  </data>
+  <data name="Drafts" xml:space="preserve">
+    <value>খসড়া</value>
+  </data>
+  <data name="Submitted" xml:space="preserve">
+    <value>জমা দেওয়া হয়েছে</value>
+  </data>
+  <data name="Closed" xml:space="preserve">
+    <value>সমাপ্ত</value>
+  </data>
+  <data name="No Harvest Plans Yet" xml:space="preserve">
+    <value>এখনো কোনো ফসল কাটার পরিকল্পনা নেই</value>
+  </data>
+  <data name="Create a seasonal harvest plan to group machinery and storage needs together. You can assemble multiple items and submit booking requests with a single click." xml:space="preserve">
+    <value>যন্ত্রপাতি ও গুদামজাতকরণের চাহিদা একত্রিত করে একটি মৌসুমী ফসল কাটার পরিকল্পনা তৈরি করুন। একাধিক সামগ্রী একত্র করে এক ক্লিকে বুকিং অনুরোধ পাঠানো সম্ভব।</value>
+  </data>
+  <data name="Create Your First Plan" xml:space="preserve">
+    <value>আপনার প্রথম পরিকল্পনা তৈরি করুন</value>
+  </data>
+  <data name="Target Window" xml:space="preserve">
+    <value>লক্ষ্য সময়কাল</value>
+  </data>
+  <data name="Est. Gross" xml:space="preserve">
+    <value>আনুমানিক মোট</value>
+  </data>
+  <data name="View Plan" xml:space="preserve">
+    <value>পরিকল্পনা দেখুন</value>
+  </data>
+  <data name="Clone for Next Season" xml:space="preserve">
+    <value>পরবর্তী মৌসুমের জন্য ক্লোন করুন</value>
+  </data>
+  <data name="Shift Dates By (Days)" xml:space="preserve">
+    <value>তারিখ এগিয়ে নিন (দিন)</value>
+  </data>
+  <data name="Standard: 365 days for the next annual season, or custom offset (1-730 days)." xml:space="preserve">
+    <value>সাধারণত: পরবর্তী বার্ষিক মৌসুমের জন্য ৩৬৫ দিন, অথবা নির্দিষ্ট দিন (১-৭৩০ দিন)।</value>
+  </data>
+  <data name="Standard: 365 days for next year's season (range: 1 - 730 days)." xml:space="preserve">
+    <value>সাধারণত: পরবর্তী মৌসুমের জন্য ৩৬৫ দিন (১ - ৭৩০ দিন পর্যন্ত)।</value>
+  </data>
+  <data name="Create Duplicate" xml:space="preserve">
+    <value>অনুলিপি তৈরি করুন</value>
+  </data>
+  <data name="Duplicate Plan" xml:space="preserve">
+    <value>পরিকল্পনা প্রতিলিপি করুন</value>
+  </data>
+  <data name="Delete Plan" xml:space="preserve">
+    <value>পরিকল্পনা মুছুন</value>
+  </data>
+  <data name="Are you sure you want to delete this harvest plan?" xml:space="preserve">
+    <value>আপনি কি নিশ্চিতভাবে এই ফসল কাটার পরিকল্পনাটি মুছে ফেলতে চান?</value>
+  </data>
+  <data name="Clone Harvest Plan for Next Season" xml:space="preserve">
+    <value>পরবর্তী মৌসুমের জন্য ফসল পরিকল্পনা ক্লোন করুন</value>
+  </data>
+  <data name="This will duplicate all items from &quot;{0}&quot; into a new draft plan with future dates." xml:space="preserve">
+    <value>এটি "{0}"-এর সমস্ত সামগ্রী ভবিষ্যতের তারিখসহ একটি নতুন খসড়া পরিকল্পনায় প্রতিলিপি করবে।</value>
+  </data>
+  <data name="All {0} items in this plan will be duplicated into a new Draft harvest plan with dates shifted forward." xml:space="preserve">
+    <value>এই পরিকল্পনার সকল {0}টি সামগ্রী ভবিষ্যতের তারিখ সমন্বয় করে একটি নতুন খসড়া পরিকল্পনায় প্রতিলিপি করা হবে।</value>
+  </data>
+  <data name="Create New Harvest Plan" xml:space="preserve">
+    <value>নতুন ফসল কাটার পরিকল্পনা তৈরি করুন</value>
+  </data>
+  <data name="Plan Name" xml:space="preserve">
+    <value>পরিকল্পনার নাম</value>
+  </data>
+  <data name="e.g. Boro Harvest 2027" xml:space="preserve">
+    <value>যেমন: বোরো ফসল সংগ্রহ ২০২৭</value>
+  </data>
+  <data name="Target Crop" xml:space="preserve">
+    <value>লক্ষ্য ফসল</value>
+  </data>
+  <data name="e.g. Rice (Boro), Wheat, Potato" xml:space="preserve">
+    <value>যেমন: ধান (বোরো), গম, আলু</value>
+  </data>
+  <data name="Notes &amp; Instructions" xml:space="preserve">
+    <value>নোট ও নির্দেশাবলী</value>
+  </data>
+  <data name="Internal notes on harvest timing, field locations, or labor coordination..." xml:space="preserve">
+    <value>ফসল তোলার সময়, জমির অবস্থান বা শ্রমিক সমন্বয় সংক্রান্ত অভ্যন্তরীণ নোট...</value>
+  </data>
+  <data name="Create Plan" xml:space="preserve">
+    <value>পরিকল্পনা তৈরি করুন</value>
+  </data>
+  <data name="Edit Details" xml:space="preserve">
+    <value>বিবরণ সম্পাদনা</value>
+  </data>
+  <data name="Edit Harvest Plan" xml:space="preserve">
+    <value>ফসল পরিকল্পনা সম্পাদনা</value>
+  </data>
+  <data name="Edit Plan Item" xml:space="preserve">
+    <value>আইটেম সম্পাদনা</value>
+  </data>
+  <data name="Availability Conflict Detected" xml:space="preserve">
+    <value>প্রাপ্যতা সংক্রান্ত বিরোধ পাওয়া গেছে</value>
+  </data>
+  <data name="One or more items in this harvest plan are currently unavailable for the requested dates or quantities. Please adjust dates or unit counts before submitting." xml:space="preserve">
+    <value>এই ফসল কাটার পরিকল্পনার এক বা একাধিক সামগ্রী কাঙ্ক্ষিত তারিখ বা পরিমাণের জন্য অনুপলব্ধ। জমা দেওয়ার পূর্বে তারিখ বা পরিমাণ পরিবর্তন করুন।</value>
+  </data>
+  <data name="Linked Booking Requests Status" xml:space="preserve">
+    <value>সংযুক্ত বুকিং অনুরোধের স্থিতি</value>
+  </data>
+  <data name="View in Bookings" xml:space="preserve">
+    <value>বুকিংয়ে দেখুন</value>
+  </data>
+  <data name="Plan Items" xml:space="preserve">
+    <value>পরিকল্পনার সামগ্রী</value>
+  </data>
+  <data name="Add More Items" xml:space="preserve">
+    <value>আরও সামগ্রী যোগ করুন</value>
+  </data>
+  <data name="Browse Godown Storage" xml:space="preserve">
+    <value>গুদাম সংরক্ষণ খুঁজুন</value>
+  </data>
+  <data name="This harvest plan is empty" xml:space="preserve">
+    <value>এই ফসল পরিকল্পনাটি খালি</value>
+  </data>
+  <data name="Add equipment rentals and godown storage listings to this plan to coordinate your harvest." xml:space="preserve">
+    <value>আপনার ফসল তোলার কাজের সমন্বয় করতে এই পরিকল্পনায় যন্ত্রপাতি ভাড়া এবং গুদামজাতকরণ যোগ করুন।</value>
+  </data>
+  <data name="Browse Storage" xml:space="preserve">
+    <value>সংরক্ষণাগার খুঁজুন</value>
+  </data>
+  <data name="Conflict" xml:space="preserve">
+    <value>বিরোধ</value>
+  </data>
+  <data name="Remove this item from the harvest plan?" xml:space="preserve">
+    <value>এই সামগ্রীটি ফসল কাটার পরিকল্পনা থেকে সরিয়ে ফেলবেন?</value>
+  </data>
+  <data name="Remove Item" xml:space="preserve">
+    <value>আইটেম সরান</value>
+  </data>
+  <data name="Pay Now" xml:space="preserve">
+    <value>এখনই পরিশোধ করুন</value>
+  </data>
+  <data name="Units (Max: {0})" xml:space="preserve">
+    <value>ইউনিট (সর্বোচ্চ: {0})</value>
+  </data>
+  <data name="Requested Capacity (Tons)" xml:space="preserve">
+    <value>কাঙ্ক্ষিত ধারণক্ষমতা (টন)</value>
+  </data>
+  <data name="Note / Special Instructions" xml:space="preserve">
+    <value>নোট / বিশেষ নির্দেশাবলী</value>
+  </data>
+  <data name="Plan Summary" xml:space="preserve">
+    <value>পরিকল্পনার সারসংক্ষেপ</value>
+  </data>
+  <data name="Total Items" xml:space="preserve">
+    <value>মোট সামগ্রী</value>
+  </data>
+  <data name="Total Estimated Cost" xml:space="preserve">
+    <value>মোট আনুমানিক খরচ</value>
+  </data>
+  <data name="Submitting will simultaneously send {0} booking request(s) to owners. Standard rates apply. Batch plans cannot combine individual promo codes." xml:space="preserve">
+    <value>জমা দিলে মালিকদের কাছে একসাথে {0}টি বুকিং অনুরোধ যাবে। সাধারণ মূল্য প্রযোজ্য হবে। দলগত পরিকল্পনায় আলাদা প্রোমো কোড প্রয়োগ করা যায় না।</value>
+  </data>
+  <data name="Plan is Empty" xml:space="preserve">
+    <value>পরিকল্পনা খালি</value>
+  </data>
+  <data name="Resolve Conflicts to Submit" xml:space="preserve">
+    <value>জমা দিতে বিরোধ নিষ্পত্তি করুন</value>
+  </data>
+  <data name="Submit Harvest Plan ({0})" xml:space="preserve">
+    <value>ফসল পরিকল্পনা জমা দিন ({0})</value>
+  </data>
+  <data name="View Bookings Tracker" xml:space="preserve">
+    <value>বুকিং ট্র্যাকার দেখুন</value>
+  </data>
+  <data name="Confirm Harvest Plan Submission" xml:space="preserve">
+    <value>ফসল পরিকল্পনা জমা নিশ্চিতকরণ</value>
+  </data>
+  <data name="Are you ready to submit &quot;{0}&quot;? This will create and send {1} booking request(s) to respective equipment and storage owners." xml:space="preserve">
+    <value>আপনি কি "{0}" জমা দিতে প্রস্তুত? এটি সংশ্লিষ্ট যন্ত্রপাতি ও গুদাম মালিকদের কাছে {1}টি বুকিং অনুরোধ পাঠাবে।</value>
+  </data>
+  <data name="Owners will receive notification of your coordinated harvest plan." xml:space="preserve">
+    <value>মালিকরা আপনার সমন্বিত ফসল পরিকল্পনার নোটিফিকেশন পাবেন।</value>
+  </data>
+  <data name="You will be notified as owners review and accept your requests." xml:space="preserve">
+    <value>মালিকরা আপনার অনুরোধ পর্যালোচনা ও গ্রহণ করলে আপনি অবহিত হবেন।</value>
+  </data>
+  <data name="Payments can be completed once owners accept each request." xml:space="preserve">
+    <value>মালিকরা প্রতিটি অনুরোধ গ্রহণ করার পর পেমেন্ট সম্পন্ন করা যাবে।</value>
+  </data>
+  <data name="Confirm &amp; Send Requests" xml:space="preserve">
+    <value>নিশ্চিত করুন ও অনুরোধ পাঠান</value>
+  </data>
+  <data name="Add to Harvest Plan" xml:space="preserve">
+    <value>ফসল পরিকল্পনায় যোগ করুন</value>
+  </data>
+  <data name="Add to Plan" xml:space="preserve">
+    <value>পরিকল্পনায় যোগ করুন</value>
+  </data>
+  <data name="Select Harvest Plan" xml:space="preserve">
+    <value>ফসল পরিকল্পনা নির্বাচন করুন</value>
+  </data>
+  <data name="Create New Plan..." xml:space="preserve">
+    <value>নতুন পরিকল্পনা তৈরি করুন...</value>
+  </data>
+  <data name="Create New Harvest Plan..." xml:space="preserve">
+    <value>নতুন ফসল পরিকল্পনা তৈরি করুন...</value>
+  </data>
+  <data name="New Plan Name" xml:space="preserve">
+    <value>নতুন পরিকল্পনার নাম</value>
+  </data>
+  <data name="e.g. Harvest Plan {0}" xml:space="preserve">
+    <value>যেমন: ফসল পরিকল্পনা {0}</value>
+  </data>
+  <data name="Please choose start and end dates first." xml:space="preserve">
+    <value>দয়া করে প্রথমে শুরুর ও শেষের তারিখ নির্বাচন করুন।</value>
+  </data>
+  <data name="Harvest plan: {0} · {1} items" xml:space="preserve">
+    <value>ফসল পরিকল্পনা: {0} · {1}টি সামগ্রী</value>
+  </data>
+  <data name="Part of Harvest Plan" xml:space="preserve">
+    <value>ফসল পরিকল্পনার অংশ</value>
+  </data>
+  <data name="Active Plan" xml:space="preserve">
+    <value>সক্রিয় পরিকল্পনা</value>
+  </data>
+  <data name="You have {0} draft harvest plan(s)" xml:space="preserve">
+    <value>আপনার {0}টি খসড়া ফসল পরিকল্পনা রয়েছে</value>
+  </data>
+  <data name="Coordinate and submit your bundled equipment and godown storage requests." xml:space="preserve">
+    <value>আপনার সমন্বিত যন্ত্রপাতি ও গুদাম সংরক্ষণ অনুরোধ পরিচালনা ও জমা দিন।</value>
+  </data>
+  <data name="Manage Harvest Plans" xml:space="preserve">
+    <value>ফসল পরিকল্পনা পরিচালনা</value>
+  </data>
+  <data name="{0} requested to rent {1} from {2} to {3} as part of harvest plan &quot;{4}&quot;." xml:space="preserve">
+    <value>{0} ফসল পরিকল্পনা "{4}"-এর অংশ হিসেবে {2} থেকে {3} পর্যন্ত {1} ভাড়ার অনুরোধ করেছেন।</value>
+  </data>
+  <data name="{0} requested {1} tons of storage at {2} from {3} to {4} as part of harvest plan &quot;{5}&quot;." xml:space="preserve">
+    <value>{0} ফসল পরিকল্পনা "{5}"-এর অংশ হিসেবে {3} থেকে {4} পর্যন্ত {2}-এ {1} টন সংরক্ষণের অনুরোধ করেছেন।</value>
+  </data>
+  <data name="Harvest Plan Submitted" xml:space="preserve">
+    <value>ফসল কাটার পরিকল্পনা জমা দেওয়া হয়েছে</value>
+  </data>
+  <data name="{0}: {1} requests sent to owners." xml:space="preserve">
+    <value>{0}: মালিকদের কাছে {1}টি অনুরোধ পাঠানো হয়েছে।</value>
+  </data>
 </root>

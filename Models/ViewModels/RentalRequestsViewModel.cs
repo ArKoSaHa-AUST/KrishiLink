@@ -59,6 +59,11 @@ namespace KrishiLink.Models.ViewModels
         public int ModificationCount { get; set; } = 0;
         public string? PreviousDetails { get; set; }
 
+        public int? HarvestPlanId { get; set; }
+        public string? HarvestPlanName { get; set; }
+        public int HarvestPlanItemCount { get; set; }
+        public string? HarvestPlanOtherItems { get; set; }
+
         /// <summary>Owner's reason shown on rejected requests.</summary>
         public string? RejectReason { get; set; }
 

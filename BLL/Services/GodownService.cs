@@ -15,7 +15,7 @@ namespace KrishiLink.BLL.Services
 
         /// <summary>Creates a pending storage request. Returns a user-facing error message, or null on success.</summary>
         Task<string?> RequestStorageAsync(string farmerId, GodownDetailViewModel request, string? promoCode = null, int? pointsToRedeem = null);
-        Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel request, string? promoCode = null, int? pointsToRedeem = null);
+        Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel request, string? promoCode = null, int? pointsToRedeem = null, int? harvestPlanId = null, string? planName = null);
 
         // Owner
         Task<GodownOwnerDashboardViewModel> GetOwnerDashboardAsync(string ownerId);
@@ -355,7 +355,7 @@ namespace KrishiLink.BLL.Services
             return res.Error;
         }
 
-        public async Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel r, string? promoCode = null, int? pointsToRedeem = null)
+        public async Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel r, string? promoCode = null, int? pointsToRedeem = null, int? harvestPlanId = null, string? planName = null)
         {
             if (r.StartDate is null || r.EndDate is null) return ("Please choose a start and end date.", null);
             var s = r.StartDate.Value.Date;
@@ -405,7 +405,8 @@ namespace KrishiLink.BLL.Services
                 RequestedOn = DateTime.Now,
                 DiscountAmount = discountAmount,
                 AppliedPromoCode = appliedPromo,
-                PointsUsed = pointsUsed
+                PointsUsed = pointsUsed,
+                HarvestPlanId = harvestPlanId
             };
 
             await _bookings.AddAsync(newBooking);
@@ -428,13 +429,18 @@ namespace KrishiLink.BLL.Services
             // Notify godown owner of new pending storage request
             var farmer = await _users.FirstOrDefaultAsync(u => u.Id == farmerId);
             var farmerName = farmer?.FullName ?? "A farmer";
+            var hasPlan = !string.IsNullOrWhiteSpace(planName);
             await _notifications.NotifyAsync(new NotificationRequest
             {
                 UserId = g.OwnerId,
                 Type = NotificationTypes.BookingRequest,
                 TitleKey = "New Godown Storage Request",
-                MessageKey = "{0} requested storage for {1} tons in {2} from {3} to {4}.",
-                Args = new object[] { farmerName, r.RequestedCapacityTons, g.Name, $"{s:dd MMM yyyy}", $"{t:dd MMM yyyy}" },
+                MessageKey = hasPlan
+                    ? "{0} requested {1} tons of storage at {2} from {3} to {4} as part of harvest plan \"{5}\"."
+                    : "{0} requested storage for {1} tons in {2} from {3} to {4}.",
+                Args = hasPlan
+                    ? new object[] { farmerName, r.RequestedCapacityTons, g.Name, $"{s:dd MMM yyyy}", $"{t:dd MMM yyyy}", planName!.Trim() }
+                    : new object[] { farmerName, r.RequestedCapacityTons, g.Name, $"{s:dd MMM yyyy}", $"{t:dd MMM yyyy}" },
                 LinkUrl = AppLinks.OwnerRequests("godown", newBooking.Id),
                 DedupeKey = $"booking:godown:{newBooking.Id}:Requested",
                 SendEmail = false
@@ -1066,24 +1072,48 @@ namespace KrishiLink.BLL.Services
                 .Include(b => b.Godown)
                 .Include(b => b.Farmer)
                 .Include(b => b.Payment)
+                .Include(b => b.HarvestPlan)
+                    .ThenInclude(p => p!.Items)
                 .Where(b => b.Godown!.OwnerId == ownerId);
 
-        private static GodownBookingRequestItem ToRequestItem(GodownBooking b) => new()
+        private static GodownBookingRequestItem ToRequestItem(GodownBooking b)
         {
-            Id = b.Id,
-            FarmerName = string.IsNullOrWhiteSpace(b.Farmer?.FullName) ? "Farmer" : b.Farmer!.FullName,
-            GodownId = b.GodownId,
-            GodownName = b.Godown?.Name ?? string.Empty,
-            RequestedCapacityTons = b.StorageTons,
-            DateRange = ListingFormat.DateRange(b.StartDate, b.EndDate),
-            Note = b.Note,
-            Status = b.Status,
-            RejectReason = b.RejectReason,
-            RequestedOn = b.RequestedOn,
-            AgreedGross = b.AgreedGross ?? (b.Godown is null ? 0 : BookingPricing.GodownGross(b.StartDate, b.EndDate, b.StorageTons, b.Godown.PricePerTonPerMonth)),
-            PaymentReference = b.Payment?.Status == PaymentStatus.Succeeded ? b.Payment.Reference : null,
-            ModificationCount = b.ModificationCount,
-            PreviousDetails = b.PreviousDetails
-        };
+            var plan = b.HarvestPlan;
+            string? otherItemsText = null;
+            if (plan?.Items != null)
+            {
+                var others = plan.Items
+                    .Where(i => i.BookingId != b.Id)
+                    .Select(i => i.ItemType == HarvestPlanItemType.Equipment
+                        ? $"{i.Units}x Equipment ({ListingFormat.DateRange(i.StartDate, i.EndDate)})"
+                        : $"{i.Tons}T Storage ({ListingFormat.DateRange(i.StartDate, i.EndDate)})")
+                    .ToList();
+                otherItemsText = others.Count > 0
+                    ? "Also in plan: " + string.Join(", ", others)
+                    : "Single item in plan";
+            }
+
+            return new GodownBookingRequestItem
+            {
+                Id = b.Id,
+                FarmerName = string.IsNullOrWhiteSpace(b.Farmer?.FullName) ? "Farmer" : b.Farmer!.FullName,
+                GodownId = b.GodownId,
+                GodownName = b.Godown?.Name ?? string.Empty,
+                RequestedCapacityTons = b.StorageTons,
+                DateRange = ListingFormat.DateRange(b.StartDate, b.EndDate),
+                Note = b.Note,
+                Status = b.Status,
+                RejectReason = b.RejectReason,
+                RequestedOn = b.RequestedOn,
+                AgreedGross = b.AgreedGross ?? (b.Godown is null ? 0 : BookingPricing.GodownGross(b.StartDate, b.EndDate, b.StorageTons, b.Godown.PricePerTonPerMonth)),
+                PaymentReference = b.Payment?.Status == PaymentStatus.Succeeded ? b.Payment.Reference : null,
+                ModificationCount = b.ModificationCount,
+                PreviousDetails = b.PreviousDetails,
+                HarvestPlanId = b.HarvestPlanId,
+                HarvestPlanName = plan?.Name,
+                HarvestPlanItemCount = plan?.Items?.Count ?? 0,
+                HarvestPlanOtherItems = otherItemsText
+            };
+        }
     }
 }

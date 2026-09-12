@@ -681,10 +681,15 @@
                         <textarea class="form-control rounded-3" id="noteInput" name="Note" rows="3" placeholder="@L["e.g. Need operator, location details, or specific crop field details..."]"></textarea>
                     </div>
 
-                    <!-- Submit Button -->
-                    <button type="submit" id="submitRequestBtn" class="btn btn-krishi-primary w-100 py-3 rounded-pill fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm fs-6">
-                        <span id="btnText">@L["Send Rental Request"]</span>
-                    </button>
+                    <!-- Submit Buttons -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" id="submitRequestBtn" class="btn btn-krishi-primary py-3 rounded-pill fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm fs-6">
+                            <span id="btnText">@L["Send Rental Request"]</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-success py-2.5 rounded-pill fw-semibold d-flex align-items-center justify-content-center gap-2" onclick="openAddToHarvestPlanModal()">
+                            <i class="bi bi-calendar-plus"></i> @L["Add to Harvest Plan"]
+                        </button>
+                    </div>
                 </form>
 
                 <p class="text-muted small text-center mb-0 mt-3">
@@ -1220,6 +1225,128 @@
 
             setTimeout(() => { map.invalidateSize(); }, 300);
         });
+
+        function openAddToHarvestPlanModal() {
+            if (!isAuthenticated) {
+                window.location.href = loginUrl;
+                return;
+            }
+            const startInput = document.getElementById('startDateInput');
+            const endInput = document.getElementById('endDateInput');
+            if (!startInput || !startInput.value || !endInput || !endInput.value) {
+                alert('@L["Please choose start and end dates first."]');
+                return;
+            }
+            if (typeof validateDates === 'function' && !validateDates()) return;
+
+            document.getElementById('hpStartDate').value = startInput.value;
+            document.getElementById('hpEndDate').value = endInput.value;
+            document.getElementById('hpSummaryDates').textContent = `@L["Dates"]: ${startInput.value} → ${endInput.value}`;
+
+            const unitsInput = document.getElementById('unitsInput');
+            const unitsVal = unitsInput ? unitsInput.value : 1;
+            document.getElementById('hpUnits').value = unitsVal;
+            document.getElementById('hpSummaryQty').textContent = `@L["Quantity"]: ${unitsVal} @L["Units"]`;
+
+            const noteInput = document.getElementById('noteInput');
+            document.getElementById('hpNote').value = noteInput ? noteInput.value : '';
+
+            fetch('/HarvestPlan/GetDraftPlans')
+                .then(r => r.json())
+                .then(plans => {
+                    const select = document.getElementById('hpPlanSelect');
+                    select.innerHTML = '';
+                    if (plans && plans.length > 0) {
+                        plans.forEach(p => {
+                            const opt = document.createElement('option');
+                            opt.value = p.id;
+                            opt.textContent = `${p.name} (${p.itemCount} @L["items"])`;
+                            select.appendChild(opt);
+                        });
+                    }
+                    const newOpt = document.createElement('option');
+                    newOpt.value = '0';
+                    newOpt.textContent = '+ @L["Create New Harvest Plan..."]';
+                    select.appendChild(newOpt);
+
+                    if (plans && plans.length > 0) {
+                        select.value = plans[0].id;
+                        toggleNewPlanInput(plans[0].id);
+                    } else {
+                        select.value = '0';
+                        toggleNewPlanInput('0');
+                    }
+
+                    const modal = new bootstrap.Modal(document.getElementById('addToHarvestPlanModal'));
+                    modal.show();
+                })
+                .catch(() => {
+                    const select = document.getElementById('hpPlanSelect');
+                    select.innerHTML = '<option value="0">+ @L["Create New Harvest Plan..."]</option>';
+                    toggleNewPlanInput('0');
+                    const modal = new bootstrap.Modal(document.getElementById('addToHarvestPlanModal'));
+                    modal.show();
+                });
+        }
+
+        function toggleNewPlanInput(val) {
+            const group = document.getElementById('hpNewPlanGroup');
+            if (group) {
+                group.style.display = val === '0' ? 'block' : 'none';
+            }
+        }
     </script>
+
+    <!-- Add to Harvest Plan Modal -->
+    <div class="modal fade" id="addToHarvestPlanModal" tabindex="-1" aria-labelledby="addToHarvestPlanModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-4">
+                <form action="/HarvestPlan/AddItem" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ItemType" value="Equipment" />
+                    <input type="hidden" name="ListingId" value="@Model.Id" />
+                    <input type="hidden" name="EquipmentId" value="@Model.Id" />
+                    <input type="hidden" name="StartDate" id="hpStartDate" />
+                    <input type="hidden" name="EndDate" id="hpEndDate" />
+                    <input type="hidden" name="Units" id="hpUnits" />
+                    <input type="hidden" name="Note" id="hpNote" />
+                    <input type="hidden" name="ReturnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+
+                    <div class="modal-header border-bottom pb-3">
+                        <h5 class="modal-title fw-bold" id="addToHarvestPlanModalLabel">
+                            <i class="bi bi-diagram-3 text-success me-2"></i>@L["Add to Harvest Plan"]
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body py-3">
+                        <div class="p-3 bg-light rounded-3 mb-3 small">
+                            <div class="fw-bold text-dark mb-1">@Model.Name</div>
+                            <div class="text-muted" id="hpSummaryDates">@L["Dates"]: -</div>
+                            <div class="text-muted" id="hpSummaryQty">@L["Quantity"]: -</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">@L["Select Harvest Plan"]</label>
+                            <select name="PlanId" id="hpPlanSelect" class="form-select rounded-3" onchange="toggleNewPlanInput(this.value)">
+                                <option value="0">+ @L["Create New Harvest Plan..."]</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3" id="hpNewPlanGroup">
+                            <label class="form-label fw-semibold">@L["New Plan Name"]</label>
+                            <input type="text" name="NewPlanName" id="hpNewPlanName" class="form-control rounded-3" placeholder="@L["e.g. Harvest Plan {0}", DateTime.Now.ToString("MMM yyyy")]" maxlength="80" />
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top pt-3">
+                        <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">@L["Cancel"]</button>
+                        <button type="submit" class="btn btn-success rounded-pill px-4 fw-semibold">
+                            <i class="bi bi-plus-circle me-1"></i>@L["Add to Plan"]
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 }

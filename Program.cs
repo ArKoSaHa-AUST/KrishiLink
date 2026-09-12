@@ -80,6 +80,7 @@ builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IEquipmentService, EquipmentService>();
 builder.Services.AddScoped<IGodownService, GodownService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IHarvestPlanService, HarvestPlanService>();
 builder.Services.AddScoped<IGodownRevenueService, GodownRevenueService>();
 builder.Services.AddScoped<IEquipmentRevenueService, EquipmentRevenueService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();

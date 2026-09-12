@@ -31,6 +31,8 @@ namespace KrishiLink.DAL
         public DbSet<CropCalendarEntry> CropCalendarEntries { get; set; } = null!;
         public DbSet<Payment> Payments { get; set; } = null!;
         public DbSet<LedgerEntry> LedgerEntries { get; set; } = null!;
+        public DbSet<HarvestPlan> HarvestPlans { get; set; } = null!;
+        public DbSet<HarvestPlanItem> HarvestPlanItems { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -89,6 +91,8 @@ namespace KrishiLink.DAL
                 b.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);
                 b.HasOne(x => x.Payout).WithMany().HasForeignKey(x => x.PayoutId).OnDelete(DeleteBehavior.NoAction);
                 b.HasOne(x => x.Payment).WithMany().HasForeignKey(x => x.PaymentId).OnDelete(DeleteBehavior.NoAction);
+                b.HasOne(x => x.HarvestPlan).WithMany().HasForeignKey(x => x.HarvestPlanId).OnDelete(DeleteBehavior.SetNull);
+                b.HasIndex(x => x.HarvestPlanId);
             });
 
             builder.Entity<EquipmentBlockedDate>(d =>
@@ -137,6 +141,8 @@ namespace KrishiLink.DAL
                 b.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);
                 b.HasOne(x => x.Payout).WithMany().HasForeignKey(x => x.PayoutId).OnDelete(DeleteBehavior.NoAction);
                 b.HasOne(x => x.Payment).WithMany().HasForeignKey(x => x.PaymentId).OnDelete(DeleteBehavior.NoAction);
+                b.HasOne(x => x.HarvestPlan).WithMany().HasForeignKey(x => x.HarvestPlanId).OnDelete(DeleteBehavior.SetNull);
+                b.HasIndex(x => x.HarvestPlanId);
             });
 
             builder.Entity<GodownBlockedDate>(d =>
@@ -335,6 +341,34 @@ namespace KrishiLink.DAL
                 c.HasIndex(x => x.Category);
                 c.HasIndex(x => x.Season);
                 c.HasIndex(x => x.ProfileCropName);
+            });
+
+            builder.Entity<HarvestPlan>(p =>
+            {
+                p.Property(x => x.Name).HasMaxLength(80).IsRequired();
+                p.Property(x => x.Crop).HasMaxLength(60);
+                p.Property(x => x.Note).HasMaxLength(500);
+                p.Property(x => x.Status).HasMaxLength(20).HasDefaultValue(HarvestPlanStatus.Draft);
+
+                p.HasOne(x => x.Farmer)
+                    .WithMany()
+                    .HasForeignKey(x => x.FarmerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                p.HasMany(x => x.Items)
+                    .WithOne(x => x.Plan)
+                    .HasForeignKey(x => x.HarvestPlanId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                p.HasIndex(x => new { x.FarmerId, x.Status });
+            });
+
+            builder.Entity<HarvestPlanItem>(i =>
+            {
+                i.Property(x => x.ItemType).HasMaxLength(20).IsRequired();
+                i.Property(x => x.Note).HasMaxLength(300);
+
+                i.HasIndex(x => x.HarvestPlanId);
             });
         }
     }

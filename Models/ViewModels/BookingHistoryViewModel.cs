@@ -63,6 +63,8 @@ namespace KrishiLink.Models.ViewModels
         public int MinDays { get; set; } = 1;
         public int ModificationCount { get; set; } = 0;
         public string? PreviousDetails { get; set; }
+        public int? HarvestPlanId { get; set; }
+        public string? HarvestPlanName { get; set; }
         public List<BookingTimelineStep> Timeline { get; set; } = new();
 
         // Review Information (For Completed bookings)

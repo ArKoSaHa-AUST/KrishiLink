@@ -45,5 +45,7 @@ namespace KrishiLink.BLL.Services
         public static string BrowseGodowns => "/Godown";
         public static string Verification() => "/Account/Verification";
         public static string Notifications => "/Notifications";
+        public static string HarvestPlans => "/HarvestPlan";
+        public static string HarvestPlan(int id) => $"/HarvestPlan/Details/{id}";
     }
 }

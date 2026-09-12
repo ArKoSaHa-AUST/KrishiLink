@@ -1,12 +1,19 @@
 @using Microsoft.AspNetCore.Identity
 @using KrishiLink.Models.Entities
+@using KrishiLink.BLL.Services
+@using System.Security.Claims
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
+@inject IHarvestPlanService HarvestPlanService
 @{
     var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
     var targetCulture = isBangla ? "en" : "bn";
     var targetLangLabel = isBangla ? "English" : "বাংলা";
     var langReturnUrl = Context.Request.Path + Context.Request.QueryString;
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    var draftItemCount = (User.Identity?.IsAuthenticated == true && User.IsInRole(AppRoles.Farmer) && !string.IsNullOrEmpty(currentUserId))
+        ? await HarvestPlanService.CountDraftItemsAsync(currentUserId)
+        : 0;
 }
 <!DOCTYPE html>
 <html lang="@(isBangla ? "bn" : "en")">
@@ -183,6 +190,21 @@
                                             <span>@L["My Bookings"]</span>
                                         </a>
                                     </li>
+                                    @if (User.IsInRole(AppRoles.Farmer))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center justify-content-between gap-2 py-2" asp-controller="HarvestPlan" asp-action="Index">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <i class="bi bi-diagram-3 text-success"></i>
+                                                    <span>@L["Harvest Plans"]</span>
+                                                </div>
+                                                @if (draftItemCount > 0)
+                                                {
+                                                    <span class="badge bg-success rounded-pill px-2 py-0.5 small">@draftItemCount</span>
+                                                }
+                                            </a>
+                                        </li>
+                                    }
                                     @if (roleDisplay is "GodownOwner" or "EquipmentOwner")
                                     {
                                         <li>

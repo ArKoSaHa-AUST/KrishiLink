@@ -13,9 +13,19 @@
             @L["Here's your farming overview for today. Manage bookings, explore equipment, and get crop advice."]
         </p>
     </div>
-    <a asp-controller="Bookings" asp-action="Index" class="btn btn-krishi-outline rounded-pill px-3 py-2 d-flex align-items-center gap-2 fw-semibold flex-shrink-0">
-        <span>@L["All Bookings"]</span>
-    </a>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+        <a asp-controller="HarvestPlan" asp-action="Index" class="btn btn-outline-success rounded-pill px-3 py-2 d-flex align-items-center gap-2 fw-semibold flex-shrink-0">
+            <i class="bi bi-diagram-3"></i>
+            <span>@L["Harvest Plans"]</span>
+            @if (Model.DraftHarvestPlansCount > 0)
+            {
+                <span class="badge bg-success rounded-pill">@Model.DraftHarvestPlansCount</span>
+            }
+        </a>
+        <a asp-controller="Bookings" asp-action="Index" class="btn btn-krishi-outline rounded-pill px-3 py-2 d-flex align-items-center gap-2 fw-semibold flex-shrink-0">
+            <span>@L["All Bookings"]</span>
+        </a>
+    </div>
 </div>
 
 @if (TempData["SuccessMessage"] != null)
@@ -26,6 +36,41 @@
     </div>
 }
 <partial name="_OnboardingBanner" />
+
+@if (Model.NextSubmittedHarvestPlan != null || Model.DraftHarvestPlansCount > 0)
+{
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white p-3.5 border-start border-4 border-success">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle p-2.5 bg-success-subtle text-success fs-4 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px;">
+                    <i class="bi bi-diagram-3"></i>
+                </div>
+                <div>
+                    @if (Model.NextSubmittedHarvestPlan != null)
+                    {
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-2.5 py-0.5 small fw-semibold">
+                                @L["Active Plan"]: @Model.NextSubmittedHarvestPlan.Name
+                            </span>
+                            <span class="text-muted small">@Model.NextSubmittedHarvestPlan.ItemCount @L["items"]</span>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="bi bi-calendar-event me-1"></i>@Model.NextSubmittedHarvestPlan.TargetDateRange
+                        </div>
+                    }
+                    else
+                    {
+                        <h6 class="fw-bold mb-1 text-dark">@L["You have {0} draft harvest plan(s)", Model.DraftHarvestPlansCount]</h6>
+                        <p class="mb-0 text-muted small">@L["Coordinate and submit your bundled equipment and godown storage requests."]</p>
+                    }
+                </div>
+            </div>
+            <a asp-controller="HarvestPlan" asp-action="Index" class="btn btn-sm btn-success rounded-pill px-3 py-1.5 fw-semibold text-nowrap">
+                @L["Manage Harvest Plans"] <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+}
 
 @if (Model.WeatherSuggestion != null)
 {
