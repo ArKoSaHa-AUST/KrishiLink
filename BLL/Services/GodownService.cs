@@ -111,8 +111,9 @@ namespace KrishiLink.BLL.Services
                 g.Facilities,
                 g.AverageRating,
                 g.ReviewCount,
-                g.CreatedAt,
+                CreatedAt = g.CreatedAt,
                 OwnerName = g.Owner!.FullName,
+                OwnerIsVerified = g.Owner.IsVerified,
                 Occupied = g.Bookings
                     .Where(b => b.Status == BookingStatus.Accepted && b.StartDate <= windowEnd && windowStart <= b.EndDate)
                     .Sum(b => (double?)b.StorageTons) ?? 0
@@ -129,6 +130,7 @@ namespace KrishiLink.BLL.Services
                 PricePerTonPerMonth = g.PricePerTonPerMonth,
                 ImageUrl = ListingFormat.Split(g.ImageUrls).FirstOrDefault() ?? string.Empty,
                 OwnerName = g.OwnerName,
+                OwnerIsVerified = g.OwnerIsVerified,
                 Rating = g.AverageRating,
                 ReviewCount = g.ReviewCount,
                 Facilities = ListingFormat.Split(g.Facilities),
@@ -227,6 +229,8 @@ namespace KrishiLink.BLL.Services
                 DailyRatePerTon = $"{ListingFormat.Taka(Math.Round(g.PricePerTonPerMonth / 30m, 2))} / Ton / Day",
                 Status = !g.IsActive ? "Inactive" : available > 0 ? "Available" : "Fully Booked",
                 OwnerName = g.Owner?.FullName ?? string.Empty,
+                OwnerIsVerified = g.Owner?.IsVerified ?? false,
+                OwnerVerificationStatus = g.Owner?.VerificationStatus ?? "Unverified",
                 OwnerPhone = g.Owner?.PhoneNumber ?? string.Empty,
                 OwnerMemberSince = ListingFormat.MemberSince(g.Owner?.CreatedAt ?? g.CreatedAt),
                 OwnerRating = g.AverageRating,

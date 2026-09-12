@@ -13,6 +13,9 @@ namespace KrishiLink.Models.ViewModels
         public int PendingRequests => PendingRequestItems.Count;
         public decimal ThisMonthRevenue { get; set; }
 
+        public bool IsVerified { get; set; } = false;
+        public string VerificationStatus { get; set; } = "Unverified";
+
         public List<OwnerListingItem> Listings { get; set; } = new();
         public List<RentalRequestItem> PendingRequestItems { get; set; } = new();
     }

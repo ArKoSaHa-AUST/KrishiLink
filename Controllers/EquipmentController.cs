@@ -42,6 +42,8 @@ namespace KrishiLink.Controllers
                 status = e.Status,
                 imageUrl = e.ImageUrl,
                 ownerName = e.OwnerName,
+                ownerIsVerified = e.OwnerIsVerified,
+                ownerVerificationStatus = e.OwnerVerificationStatus,
                 rating = e.Rating,
                 reviewCount = e.ReviewCount,
                 detailsUrl = Url.Action(nameof(Details), "Equipment", new { id = e.Id })

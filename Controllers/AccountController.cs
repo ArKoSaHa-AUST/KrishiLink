@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using KrishiLink.BLL.Services;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
 
@@ -10,13 +11,16 @@ namespace KrishiLink.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly IOwnerVerificationService _verificationService;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager)
+            SignInManager<ApplicationUser> signInManager,
+            IOwnerVerificationService verificationService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _verificationService = verificationService;
         }
 
         [HttpGet]
@@ -208,6 +212,9 @@ namespace KrishiLink.Controllers
                 District = currentUser.District,
                 Specialization = currentUser.Specialization,
                 OnboardingComplete = currentUser.OnboardingCompletedAt is not null,
+                IsVerified = currentUser.IsVerified,
+                VerificationStatus = currentUser.VerificationStatus ?? "Unverified",
+                NidNumber = currentUser.NidNumber,
                 MemberSince = currentUser.CreatedAt
             };
             return View(model);
@@ -347,6 +354,73 @@ namespace KrishiLink.Controllers
             }
 
             return Json(new { success = false, message = string.Join(" ", result.Errors.Select(e => e.Description)) });
+        }
+
+        // ==========================================
+        // OWNER IDENTITY VERIFICATION (PHASE 7)
+        // ==========================================
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> Verification()
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser is null) return Challenge();
+
+            var model = await _verificationService.GetVerificationStatusAsync(currentUser.Id);
+            if (model is null) return NotFound();
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Verification(OwnerVerificationViewModel model)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser is null) return Challenge();
+
+            var (success, error) = await _verificationService.SubmitVerificationAsync(currentUser.Id, model);
+            if (!success)
+            {
+                TempData["ErrorMessage"] = error;
+                var currentModel = await _verificationService.GetVerificationStatusAsync(currentUser.Id) ?? model;
+                return View(currentModel);
+            }
+
+            TempData["SuccessMessage"] = "Your National ID verification documents have been submitted successfully and are now pending review.";
+            return RedirectToAction(nameof(Verification));
+        }
+
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SimulateVerificationApproval(VerificationReviewSubmitModel model)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser is null) return Challenge();
+
+            var targetUserId = string.IsNullOrWhiteSpace(model.UserId) ? currentUser.Id : model.UserId;
+            string decision = model.Decision?.ToLowerInvariant() ?? "approve";
+
+            if (decision == "approve")
+            {
+                await _verificationService.ApproveVerificationAsync(targetUserId, adminId: currentUser.Id, notes: model.Notes ?? "Demo instant verification approval.");
+                TempData["SuccessMessage"] = "Verification successfully APPROVED! The 'Verified Owner' trust badge is now active on all your listings.";
+            }
+            else if (decision == "reject")
+            {
+                await _verificationService.RejectVerificationAsync(targetUserId, reason: model.Reason ?? "Document photo is unclear or blurred.", adminId: currentUser.Id);
+                TempData["ErrorMessage"] = "Verification status set to REJECTED. Reason recorded.";
+            }
+            else if (decision == "reset")
+            {
+                await _verificationService.ResetVerificationAsync(targetUserId);
+                TempData["SuccessMessage"] = "Verification status RESET to Unverified.";
+            }
+
+            return RedirectToAction(nameof(Verification));
         }
 
         [HttpGet]

@@ -122,6 +122,7 @@ namespace KrishiLink.BLL.Services
                 IsAvailable = e.IsAvailable,
                 ImageUrl = e.ImageUrls,
                 OwnerName = e.Owner!.FullName,
+                OwnerIsVerified = e.Owner.IsVerified,
                 Rating = e.AverageRating,
                 ReviewCount = e.ReviewCount,
                 CreatedAt = e.CreatedAt
@@ -200,6 +201,8 @@ namespace KrishiLink.BLL.Services
                 Location = e.Location,
                 Status = e.IsAvailable ? "Available" : "Unavailable",
                 OwnerName = e.Owner?.FullName ?? string.Empty,
+                OwnerIsVerified = e.Owner?.IsVerified ?? false,
+                OwnerVerificationStatus = e.Owner?.VerificationStatus ?? "Unverified",
                 OwnerPhone = e.Owner?.PhoneNumber ?? string.Empty,
                 OwnerMemberSince = ListingFormat.MemberSince(e.Owner?.CreatedAt ?? e.CreatedAt),
                 OwnerRating = e.AverageRating,

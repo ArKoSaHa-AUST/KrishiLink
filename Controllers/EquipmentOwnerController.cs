@@ -30,6 +30,14 @@ namespace KrishiLink.Controllers
             var model = await _equipment.GetOwnerDashboardAsync(OwnerId);
             model.OwnerName = await OwnerDisplayNameAsync();
             model.ThisMonthRevenue = ThisMonthRevenue;
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null)
+            {
+                model.IsVerified = user.IsVerified;
+                model.VerificationStatus = user.VerificationStatus ?? "Unverified";
+            }
+
             return View(model);
         }
 

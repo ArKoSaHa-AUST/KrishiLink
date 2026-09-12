@@ -19,6 +19,8 @@ namespace KrishiLink.Models.ViewModels
         public string Status => IsAvailable ? "Available" : "Unavailable";
         public string ImageUrl { get; set; } = string.Empty;
         public string OwnerName { get; set; } = string.Empty;
+        public bool OwnerIsVerified { get; set; } = false;
+        public string OwnerVerificationStatus { get; set; } = "Unverified";
         public double Rating { get; set; }
         public int ReviewCount { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

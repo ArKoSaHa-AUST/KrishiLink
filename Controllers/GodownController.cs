@@ -44,6 +44,8 @@ namespace KrishiLink.Controllers
                 status = g.Status,
                 imageUrl = g.ImageUrl,
                 ownerName = g.OwnerName,
+                ownerIsVerified = g.OwnerIsVerified,
+                ownerVerificationStatus = g.OwnerVerificationStatus,
                 rating = g.Rating,
                 reviewCount = g.ReviewCount,
                 facilities = g.Facilities,

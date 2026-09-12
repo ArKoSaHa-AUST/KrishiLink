@@ -18,6 +18,8 @@ namespace KrishiLink.Models.ViewModels
 
         // Owner Details
         public string OwnerName { get; set; } = string.Empty;
+        public bool OwnerIsVerified { get; set; } = false;
+        public string OwnerVerificationStatus { get; set; } = "Unverified";
         public double OwnerRating { get; set; }
         public int TotalReviews { get; set; }
         public string OwnerPhone { get; set; } = string.Empty;
