@@ -1,3 +1,4 @@
+using KrishiLink.BLL.Helpers;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
@@ -105,6 +106,8 @@ namespace KrishiLink.BLL.Services
                 g.Name,
                 g.StorageType,
                 g.Location,
+                g.Latitude,
+                g.Longitude,
                 g.CapacityInTons,
                 g.PricePerTonPerMonth,
                 g.ImageUrls,
@@ -125,6 +128,8 @@ namespace KrishiLink.BLL.Services
                 Name = g.Name,
                 StorageType = g.StorageType,
                 Location = g.Location,
+                Latitude = g.Latitude,
+                Longitude = g.Longitude,
                 TotalCapacityTons = g.CapacityInTons,
                 AvailableCapacityTons = Math.Max(0, g.CapacityInTons - g.Occupied),
                 PricePerTonPerMonth = g.PricePerTonPerMonth,
@@ -215,12 +220,23 @@ namespace KrishiLink.BLL.Services
                 .Where(day => accepted.Where(b => b.StartDate <= day && day <= b.EndDate).Sum(b => b.StorageTons) >= g.CapacityInTons);
             var reviewsList = await _reviews.GetReviewsForGodownAsync(id);
 
+            var lat = g.Latitude;
+            var lng = g.Longitude;
+            if (!lat.HasValue || !lng.HasValue)
+            {
+                var (fallbackLat, fallbackLng) = GeoLocationHelper.GetDistrictCoordinates(g.Location);
+                lat = fallbackLat;
+                lng = fallbackLng;
+            }
+
             return new GodownDetailViewModel
             {
                 Id = g.Id,
                 Name = g.Name,
                 StorageType = g.StorageType,
                 Location = g.Location,
+                Latitude = lat,
+                Longitude = lng,
                 Description = g.Description,
                 TotalCapacityTons = g.CapacityInTons,
                 AvailableCapacityTons = available,
@@ -442,6 +458,8 @@ namespace KrishiLink.BLL.Services
                 Name = g.Name,
                 Category = g.StorageType,
                 Location = g.Location,
+                Latitude = g.Latitude,
+                Longitude = g.Longitude,
                 TotalCapacity = g.CapacityInTons,
                 CapacityUnit = "Tons",
                 AvailableCapacity = Math.Max(0, g.CapacityInTons - await OccupiedTonsAsync(g.Id, DateTime.Today, DateTime.Today)),
@@ -484,6 +502,19 @@ namespace KrishiLink.BLL.Services
             entity.Name = model.Name.Trim();
             entity.StorageType = model.Category.Trim();
             entity.Location = model.Location.Trim();
+
+            if (model.Latitude.HasValue && model.Longitude.HasValue)
+            {
+                entity.Latitude = model.Latitude.Value;
+                entity.Longitude = model.Longitude.Value;
+            }
+            else
+            {
+                var (fallbackLat, fallbackLng) = GeoLocationHelper.GetDistrictCoordinates(model.Location);
+                entity.Latitude = fallbackLat;
+                entity.Longitude = fallbackLng;
+            }
+
             entity.Description = model.Description.Trim();
             entity.CapacityInTons = ToTons(model.TotalCapacity, model.CapacityUnit);
             entity.PricePerTonPerMonth = model.PricePeriod == "Day" ? model.PriceAmount * 30 : model.PriceAmount;
@@ -493,6 +524,8 @@ namespace KrishiLink.BLL.Services
 
             await _godowns.SaveChangesAsync();
             model.Id = entity.Id;
+            model.Latitude = entity.Latitude;
+            model.Longitude = entity.Longitude;
             return true;
         }
 

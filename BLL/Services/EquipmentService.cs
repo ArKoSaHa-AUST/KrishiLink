@@ -1,3 +1,4 @@
+using KrishiLink.BLL.Helpers;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
@@ -119,6 +120,8 @@ namespace KrishiLink.BLL.Services
                 DailyRate = e.DailyRate,
                 HourlyRate = e.HourlyRate,
                 Location = e.Location,
+                Latitude = e.Latitude,
+                Longitude = e.Longitude,
                 IsAvailable = e.IsAvailable,
                 ImageUrl = e.ImageUrls,
                 OwnerName = e.Owner!.FullName,
@@ -189,6 +192,15 @@ namespace KrishiLink.BLL.Services
             var bookedDates = accepted.SelectMany(b => EachDay(b.StartDate, b.EndDate)).Concat(blocked).Distinct().OrderBy(d => d).ToList();
             var reviewsList = await _reviews.GetReviewsForEquipmentAsync(id);
 
+            var lat = e.Latitude;
+            var lng = e.Longitude;
+            if (!lat.HasValue || !lng.HasValue)
+            {
+                var (fallbackLat, fallbackLng) = GeoLocationHelper.GetDistrictCoordinates(e.Location);
+                lat = fallbackLat;
+                lng = fallbackLng;
+            }
+
             return new EquipmentDetailViewModel
             {
                 Id = e.Id,
@@ -199,6 +211,8 @@ namespace KrishiLink.BLL.Services
                 DailyRateAmount = e.DailyRate,
                 HourlyRate = e.HourlyRate.HasValue ? $"{ListingFormat.Taka(e.HourlyRate.Value)} / Hour" : string.Empty,
                 Location = e.Location,
+                Latitude = lat,
+                Longitude = lng,
                 Status = e.IsAvailable ? "Available" : "Unavailable",
                 OwnerName = e.Owner?.FullName ?? string.Empty,
                 OwnerIsVerified = e.Owner?.IsVerified ?? false,
@@ -438,6 +452,8 @@ namespace KrishiLink.BLL.Services
                 Category = e.Category,
                 Description = e.Description,
                 Location = e.Location,
+                Latitude = e.Latitude,
+                Longitude = e.Longitude,
                 DailyRate = e.DailyRate,
                 HourlyRate = e.HourlyRate,
                 IsAvailable = e.IsAvailable,
@@ -476,6 +492,19 @@ namespace KrishiLink.BLL.Services
             entity.Category = model.Category.Trim();
             entity.Description = model.Description.Trim();
             entity.Location = model.Location.Trim();
+
+            if (model.Latitude.HasValue && model.Longitude.HasValue)
+            {
+                entity.Latitude = model.Latitude.Value;
+                entity.Longitude = model.Longitude.Value;
+            }
+            else
+            {
+                var (fallbackLat, fallbackLng) = GeoLocationHelper.GetDistrictCoordinates(model.Location);
+                entity.Latitude = fallbackLat;
+                entity.Longitude = fallbackLng;
+            }
+
             entity.DailyRate = model.DailyRate;
             entity.HourlyRate = model.HourlyRate is > 0 ? model.HourlyRate : null;
             entity.IsAvailable = model.IsAvailable;
@@ -483,6 +512,8 @@ namespace KrishiLink.BLL.Services
 
             await _equipment.SaveChangesAsync();
             model.Id = entity.Id;
+            model.Latitude = entity.Latitude;
+            model.Longitude = entity.Longitude;
             return true;
         }
 
