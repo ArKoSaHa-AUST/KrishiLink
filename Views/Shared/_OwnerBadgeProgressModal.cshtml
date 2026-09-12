@@ -1,0 +1,160 @@
+@model KrishiLink.Models.ViewModels.OwnerBadgeDashboardWidgetViewModel
+
+<div class="modal fade" id="ownerBadgeProgressModal" tabindex="-1" aria-labelledby="ownerBadgeProgressModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <!-- Modal Header with gradient -->
+            <div class="modal-header border-0 text-white p-4" style="background: linear-gradient(135deg, #15803d 0%, #166534 100%);">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 bg-white bg-opacity-20 rounded-circle text-white d-flex align-items-center justify-content-center shadow-sm" style="width: 52px; height: 52px;">
+                        <i class="bi bi-award-fill fs-3"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0 text-white" id="ownerBadgeProgressModalLabel">
+                            @L["Host Recognition & Badges"]
+                        </h5>
+                        <p class="mb-0 text-white-50 small">
+                            @L["Unlock trust badges to boost visibility, build farmer confidence, and climb the KrishiLink Leaderboard."]
+                        </p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body p-4 bg-light bg-opacity-50">
+                <!-- Overview Stats Bar -->
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-4">
+                        <div class="card border-0 shadow-xs rounded-3 p-3 bg-white text-center">
+                            <span class="text-muted small fw-medium d-block mb-1">@L["Leaderboard Rank"]</span>
+                            <h4 class="fw-bold mb-0 text-success">
+                                @(Model.CurrentRank.HasValue ? $"#{Model.CurrentRank.Value}" : L["Unranked"])
+                            </h4>
+                            <span class="text-secondary" style="font-size: 0.75rem;">
+                                @if (Model.TotalRankedOwners > 0)
+                                {
+                                    <span>@L["out of {0} hosts", Model.TotalRankedOwners]</span>
+                                }
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="card border-0 shadow-xs rounded-3 p-3 bg-white text-center">
+                            <span class="text-muted small fw-medium d-block mb-1">@L["KrishiLink Trust Score"]</span>
+                            <h4 class="fw-bold mb-0 text-primary">@Model.TrustScore.ToString("F1")</h4>
+                            <span class="text-secondary" style="font-size: 0.75rem;">@L["Based on ratings & activity"]</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="card border-0 shadow-xs rounded-3 p-3 bg-white text-center">
+                            <span class="text-muted small fw-medium d-block mb-1">@L["Unlocked Badges"]</span>
+                            <h4 class="fw-bold mb-0 text-warning-emphasis">
+                                @Model.EarnedCount <span class="fs-6 text-muted fw-normal">/ @Model.TotalBadgesCount</span>
+                            </h4>
+                            <div class="progress mt-2" style="height: 5px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: @Model.OverallProgressPercentage%;" aria-valuenow="@Model.OverallProgressPercentage" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 1: Earned Badges -->
+                <div class="mb-4">
+                    <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                        <span>@L["Unlocked Badges ({0})", Model.EarnedCount]</span>
+                    </h6>
+
+                    @if (Model.EarnedBadges.Any())
+                    {
+                        <div class="row g-2.5">
+                            @foreach (var badge in Model.EarnedBadges)
+                            {
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-xs rounded-3 p-3 bg-white h-100 border-start border-4 border-success">
+                                        <div class="d-flex align-items-start gap-2.5">
+                                            <div class="p-2.5 rounded-circle bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                                                <i class="bi @badge.IconClass fs-5"></i>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex align-items-center justify-content-between gap-1 mb-0.5">
+                                                    <h6 class="fw-bold mb-0 text-dark small">@badge.Title</h6>
+                                                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
+                                                        <i class="bi bi-patch-check-fill me-0.5"></i> @L["Active"]
+                                                    </span>
+                                                </div>
+                                                <p class="text-muted mb-1" style="font-size: 0.78rem;">@badge.Description</p>
+                                                <span class="badge bg-light text-secondary border rounded-pill px-2 py-0.5" style="font-size: 0.7rem;">
+                                                    @badge.ProgressText
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="card border-0 rounded-3 p-3 bg-white text-center text-muted small">
+                            @L["No badges unlocked yet. Complete bookings and maintain high ratings to earn recognition!"]
+                        </div>
+                    }
+                </div>
+
+                <!-- Section 2: In-Progress & Upcoming Badges -->
+                <div>
+                    <h6 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-hourglass-split text-warning"></i>
+                        <span>@L["Badges in Progress ({0})", Model.UnearnedBadges.Count]</span>
+                    </h6>
+
+                    @if (Model.UnearnedBadges.Any())
+                    {
+                        <div class="row g-2.5">
+                            @foreach (var badge in Model.UnearnedBadges)
+                            {
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-xs rounded-3 p-3 bg-white h-100 opacity-90">
+                                        <div class="d-flex align-items-start gap-2.5">
+                                            <div class="p-2.5 rounded-circle bg-secondary bg-opacity-10 text-secondary d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                                                <i class="bi @badge.IconClass fs-5"></i>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex align-items-center justify-content-between gap-1 mb-0.5">
+                                                    <h6 class="fw-bold mb-0 text-secondary small">@badge.Title</h6>
+                                                    <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2 py-0.5" style="font-size: 0.65rem;">
+                                                        @badge.ProgressPercentage%
+                                                    </span>
+                                                </div>
+                                                <p class="text-muted mb-2" style="font-size: 0.78rem;">@badge.CriteriaDescription</p>
+                                                
+                                                <div class="progress mb-1" style="height: 6px;">
+                                                    <div class="progress-bar bg-warning" role="progressbar" style="width: @badge.ProgressPercentage%;" aria-valuenow="@badge.ProgressPercentage" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center text-secondary" style="font-size: 0.72rem;">
+                                                    <span>@L["Progress"]: @badge.ProgressText</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer border-0 bg-white p-3 d-flex justify-content-between">
+                <a asp-controller="Leaderboard" asp-action="Index" class="btn btn-outline-success btn-sm rounded-pill px-3 fw-semibold">
+                    <i class="bi bi-trophy-fill me-1"></i> @L["View Public Leaderboard"]
+                </a>
+                <button type="button" class="btn btn-secondary btn-sm rounded-pill px-3.5" data-bs-dismiss="modal">
+                    @L["Close"]
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

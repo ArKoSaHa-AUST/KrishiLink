@@ -1,0 +1,34 @@
+@model IEnumerable<KrishiLink.Models.ViewModels.OwnerBadgeViewModel>
+@{
+    var badges = Model?.ToList() ?? new List<KrishiLink.Models.ViewModels.OwnerBadgeViewModel>();
+}
+
+@if (badges.Any())
+{
+    <div class="d-flex flex-wrap align-items-center gap-1.5">
+        @foreach (var badge in badges)
+        {
+            var badgeBg = badge.Code switch
+            {
+                "VERIFIED_OWNER" => "bg-success bg-opacity-10 text-success border-success-subtle",
+                "CENTURY_HOST" => "bg-warning bg-opacity-15 text-warning-emphasis border-warning-subtle",
+                "PRO_HOST" => "bg-purple-subtle text-purple border-purple-subtle",
+                "ACTIVE_HOST" => "bg-primary bg-opacity-10 text-primary border-primary-subtle",
+                "TOP_RATED" => "bg-amber-subtle text-dark border-amber-subtle",
+                "QUICK_RESPONDER" => "bg-info bg-opacity-15 text-info-emphasis border-info-subtle",
+                "MACHINERY_MASTER" => "bg-secondary bg-opacity-10 text-secondary border-secondary-subtle",
+                "RISING_STAR" => "bg-danger bg-opacity-10 text-danger border-danger-subtle",
+                _ => "bg-light text-dark border-light-subtle"
+            };
+
+            <span class="badge border rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1 shadow-2xs @badgeBg"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  data-bs-title="@badge.Description"
+                  style="font-size: 0.72rem; cursor: help; transition: transform 0.15s ease;">
+                <i class="bi @badge.IconClass"></i>
+                <span>@badge.Title</span>
+            </span>
+        }
+    </div>
+}

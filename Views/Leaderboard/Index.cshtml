@@ -1,0 +1,460 @@
+@model KrishiLink.Models.ViewModels.LeaderboardPageViewModel
+@{
+    ViewData["Title"] = L["Host Leaderboard & Recognition"];
+    ViewData["BodyClass"] = "krishi-body-gradient";
+}
+
+<!-- Leaderboard Hero Header -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: linear-gradient(135deg, #166534 0%, #15803d 50%, #1e3a8a 100%);">
+    <div class="card-body p-4 p-md-5 text-white position-relative">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill bg-white bg-opacity-15 backdrop-blur text-white small fw-medium mb-3 shadow-2xs">
+                    <i class="bi bi-trophy-fill text-warning"></i>
+                    <span>@L["KrishiLink Trust & Recognition Awards"]</span>
+                </div>
+                <h1 class="display-6 fw-bold mb-2 text-white">@L["Host Leaderboard & Rankings"]</h1>
+                <p class="text-white-50 fs-6 mb-0" style="max-width: 650px;">
+                    @L["Celebrating top-performing equipment and godown owners across Bangladesh delivering certified reliability, peak machine maintenance, and 5-star agricultural service."]
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <div class="d-inline-flex flex-column align-items-lg-end gap-2">
+                    <div class="d-flex align-items-center gap-2 text-white-50 small bg-dark bg-opacity-25 px-3 py-2 rounded-pill">
+                        <i class="bi bi-clock-history"></i>
+                        <span>@L["Cached rankings • 15m update cycle"]</span>
+                    </div>
+                    <form asp-controller="Leaderboard" asp-action="Refresh" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                        <button type="submit" class="btn btn-outline-light btn-sm rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5">
+                            <i class="bi bi-arrow-clockwise"></i>
+                            <span>@L["Refresh Rankings"]</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2">
+        <i class="bi bi-check-circle-fill text-success"></i>
+        <span class="small">@TempData["SuccessMessage"]</span>
+    </div>
+}
+
+<!-- Filters Bar -->
+<div class="card border-0 shadow-xs rounded-4 p-3 mb-4 bg-white">
+    <form method="get" asp-controller="Leaderboard" asp-action="Index" id="leaderboardFilterForm">
+        <div class="row g-3 align-items-center justify-content-between">
+            <!-- Category Pills -->
+            <div class="col-md-5">
+                <div class="nav nav-pills gap-1 p-1 bg-light rounded-pill d-inline-flex" role="tablist">
+                    <a href="@Url.Action("Index", "Leaderboard", new { category = "All", sortBy = Model.SortBy, district = Model.District })"
+                       class="nav-link rounded-pill px-3 py-1.5 small fw-semibold @(Model.Category.Equals("All", StringComparison.OrdinalIgnoreCase) ? "active bg-success text-white" : "text-secondary")">
+                        <i class="bi bi-grid-fill me-1"></i> @L["All Hosts"]
+                    </a>
+                    <a href="@Url.Action("Index", "Leaderboard", new { category = "Equipment", sortBy = Model.SortBy, district = Model.District })"
+                       class="nav-link rounded-pill px-3 py-1.5 small fw-semibold @(Model.Category.Equals("Equipment", StringComparison.OrdinalIgnoreCase) ? "active bg-success text-white" : "text-secondary")">
+                        <i class="bi bi-truck me-1"></i> @L["Equipment"]
+                    </a>
+                    <a href="@Url.Action("Index", "Leaderboard", new { category = "Godown", sortBy = Model.SortBy, district = Model.District })"
+                       class="nav-link rounded-pill px-3 py-1.5 small fw-semibold @(Model.Category.Equals("Godown", StringComparison.OrdinalIgnoreCase) ? "active bg-success text-white" : "text-secondary")">
+                        <i class="bi bi-building me-1"></i> @L["Godowns"]
+                    </a>
+                </div>
+                <input type="hidden" name="category" value="@Model.Category" />
+            </div>
+
+            <!-- District & Sort Controls -->
+            <div class="col-md-7">
+                <div class="d-flex flex-wrap align-items-center justify-content-md-end gap-2">
+                    <!-- District Dropdown -->
+                    <div class="d-flex align-items-center gap-1.5">
+                        <label class="text-muted small fw-medium text-nowrap"><i class="bi bi-geo-alt"></i> @L["District"]:</label>
+                        <select name="district" class="form-select form-select-sm rounded-pill border-light-subtle shadow-2xs" style="width: auto; min-width: 140px;" onchange="this.form.submit()">
+                            <option value="">@L["All Bangladesh (64)"]</option>
+                            @foreach (var dist in Model.AvailableDistricts)
+                            {
+                                <option value="@dist" selected="@(Model.District == dist ? "selected" : null)">@dist</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Sort Dropdown -->
+                    <div class="d-flex align-items-center gap-1.5">
+                        <label class="text-muted small fw-medium text-nowrap"><i class="bi bi-sort-down"></i> @L["Sort By"]:</label>
+                        <select name="sortBy" class="form-select form-select-sm rounded-pill border-light-subtle shadow-2xs" style="width: auto; min-width: 150px;" onchange="this.form.submit()">
+                            <option value="trust" selected="@(Model.SortBy == "trust" ? "selected" : null)">🏆 @L["Trust Score"]</option>
+                            <option value="bookings" selected="@(Model.SortBy == "bookings" ? "selected" : null)">⚡ @L["Most Bookings"]</option>
+                            <option value="rating" selected="@(Model.SortBy == "rating" ? "selected" : null)">⭐ @L["Highest Rating"]</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@if (!Model.AllEntries.Any())
+{
+    <!-- Empty State -->
+    <div class="card border-0 shadow-xs rounded-4 p-5 text-center bg-white my-4">
+        <div class="p-3 bg-light rounded-circle text-muted d-inline-flex mx-auto mb-3" style="width: 64px; height: 64px; align-items: center; justify-content: center;">
+            <i class="bi bi-trophy fs-2"></i>
+        </div>
+        <h5 class="fw-bold text-dark mb-1">@L["No hosts found matching your criteria"]</h5>
+        <p class="text-muted small mb-3">@L["Try adjusting the district or category filter to view rankings."]</p>
+        <a asp-controller="Leaderboard" asp-action="Index" class="btn btn-outline-success btn-sm rounded-pill px-3.5 mx-auto">
+            @L["Reset Filters"]
+        </a>
+    </div>
+}
+else
+{
+    <!-- ========================================== -->
+    <!-- TOP 3 PODIUM SHOWCASE                      -->
+    <!-- ========================================== -->
+    if (Model.TopPodium.Any())
+    {
+        <div class="mb-5">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-stars text-warning"></i>
+                    <span>@L["Top Ranked Hosts Podium"]</span>
+                </h5>
+                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-2.5 py-1 small">
+                    @L["{0} Verified Providers", Model.TotalOwnersCount]
+                </span>
+            </div>
+
+            <div class="row g-3 align-items-end justify-content-center">
+                <!-- Rank 2 (Silver) -->
+                @if (Model.TopPodium.Count > 1)
+                {
+                    var rank2 = Model.TopPodium[1];
+                    <div class="col-md-4 order-2 order-md-1">
+                        <div class="card border-0 shadow-sm rounded-4 text-center p-4 bg-white h-100 position-relative" style="border-top: 5px solid #94a3b8 !important;">
+                            <!-- Silver Trophy Badge -->
+                            <div class="position-absolute top-0 start-50 translate-middle p-2 rounded-circle bg-light border border-2 border-secondary shadow-sm" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-trophy-fill text-secondary fs-5"></i>
+                            </div>
+
+                            <div class="mt-2 mb-2">
+                                <span class="badge bg-secondary rounded-pill px-2.5 py-0.5 text-white fw-bold mb-2">
+                                    #2 @L["Silver Host"]
+                                </span>
+                                <h5 class="fw-bold text-dark mb-0 text-truncate" title="@rank2.DisplayName">@rank2.DisplayName</h5>
+                                <span class="text-muted small d-block"><i class="bi bi-geo-alt"></i> @(!string.IsNullOrWhiteSpace(rank2.District) ? rank2.District : rank2.Location)</span>
+                            </div>
+
+                            <!-- Trust Score Pill -->
+                            <div class="my-2 py-1.5 px-3 bg-light rounded-pill d-inline-flex align-items-center justify-content-center gap-1.5 mx-auto">
+                                <i class="bi bi-shield-check text-primary"></i>
+                                <span class="small fw-bold text-dark">@L["Trust Score"]: @rank2.TrustScore.ToString("F1")</span>
+                            </div>
+
+                            <!-- Key Metrics -->
+                            <div class="row g-1 my-2 py-2 border-top border-bottom">
+                                <div class="col-6 text-center border-end">
+                                    <strong class="d-block text-dark fw-bold">@rank2.CompletedBookingsCount</strong>
+                                    <span class="text-secondary" style="font-size: 0.72rem;">@L["Bookings"]</span>
+                                </div>
+                                <div class="col-6 text-center">
+                                    <strong class="d-block text-warning-emphasis fw-bold">
+                                        <i class="bi bi-star-fill text-warning"></i> @rank2.AverageRating.ToString("F1")
+                                    </strong>
+                                    <span class="text-secondary" style="font-size: 0.72rem;">(@rank2.ReviewCount @L["reviews"])</span>
+                                </div>
+                            </div>
+
+                            <!-- Badges -->
+                            <div class="my-2 d-flex justify-content-center">
+                                <partial name="_OwnerBadgeList" model="rank2.Badges.Take(3)" />
+                            </div>
+
+                            <div class="mt-auto pt-2">
+                                @if (rank2.UserRole == "EquipmentOwner" || rank2.UserRole == "Both")
+                                {
+                                    <a asp-controller="Equipment" asp-action="Index" asp-route-location="@rank2.District" class="btn btn-outline-success btn-sm rounded-pill px-3 w-100 fw-semibold">
+                                        @L["View Machinery"]
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Godown" asp-action="Index" asp-route-location="@rank2.District" class="btn btn-outline-success btn-sm rounded-pill px-3 w-100 fw-semibold">
+                                        @L["View Storage"]
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Rank 1 (Gold Champion) -->
+                @if (Model.TopPodium.Count > 0)
+                {
+                    var rank1 = Model.TopPodium[0];
+                    <div class="col-md-4 order-1 order-md-2">
+                        <div class="card border-0 shadow-lg rounded-4 text-center p-4 bg-white h-100 position-relative" style="border-top: 6px solid #eab308 !important; transform: scale(1.03); z-index: 2;">
+                            <!-- Gold Crown Badge -->
+                            <div class="position-absolute top-0 start-50 translate-middle p-2 rounded-circle bg-warning text-dark border border-2 border-white shadow" style="width: 52px; height: 52px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-crown-fill fs-4"></i>
+                            </div>
+
+                            <div class="mt-3 mb-2">
+                                <span class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold mb-2 shadow-2xs">
+                                    👑 #1 @L["Gold Champion"]
+                                </span>
+                                <h4 class="fw-bold text-dark mb-0 text-truncate" title="@rank1.DisplayName">@rank1.DisplayName</h4>
+                                <span class="text-muted small d-block"><i class="bi bi-geo-alt"></i> @(!string.IsNullOrWhiteSpace(rank1.District) ? rank1.District : rank1.Location)</span>
+                            </div>
+
+                            <!-- Trust Score Pill -->
+                            <div class="my-2 py-1.5 px-3 bg-warning bg-opacity-15 rounded-pill d-inline-flex align-items-center justify-content-center gap-1.5 mx-auto">
+                                <i class="bi bi-shield-fill-check text-warning-emphasis"></i>
+                                <span class="small fw-bold text-dark">@L["Trust Score"]: @rank1.TrustScore.ToString("F1")</span>
+                            </div>
+
+                            <!-- Key Metrics -->
+                            <div class="row g-1 my-2 py-2 border-top border-bottom bg-light bg-opacity-50 rounded-3">
+                                <div class="col-6 text-center border-end">
+                                    <h5 class="mb-0 text-dark fw-bold">@rank1.CompletedBookingsCount</h5>
+                                    <span class="text-secondary" style="font-size: 0.75rem;">@L["Completed Bookings"]</span>
+                                </div>
+                                <div class="col-6 text-center">
+                                    <h5 class="mb-0 text-warning-emphasis fw-bold">
+                                        <i class="bi bi-star-fill text-warning"></i> @rank1.AverageRating.ToString("F1")
+                                    </h5>
+                                    <span class="text-secondary" style="font-size: 0.75rem;">(@rank1.ReviewCount @L["reviews"])</span>
+                                </div>
+                            </div>
+
+                            <!-- Badges -->
+                            <div class="my-2 d-flex justify-content-center">
+                                <partial name="_OwnerBadgeList" model="rank1.Badges.Take(4)" />
+                            </div>
+
+                            <div class="mt-auto pt-2">
+                                @if (rank1.UserRole == "EquipmentOwner" || rank1.UserRole == "Both")
+                                {
+                                    <a asp-controller="Equipment" asp-action="Index" asp-route-location="@rank1.District" class="btn btn-krishi-primary btn-sm rounded-pill px-4 w-100 fw-semibold shadow-xs">
+                                        @L["View Top Listings"]
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Godown" asp-action="Index" asp-route-location="@rank1.District" class="btn btn-krishi-primary btn-sm rounded-pill px-4 w-100 fw-semibold shadow-xs">
+                                        @L["View Storage"]
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Rank 3 (Bronze) -->
+                @if (Model.TopPodium.Count > 2)
+                {
+                    var rank3 = Model.TopPodium[2];
+                    <div class="col-md-4 order-3">
+                        <div class="card border-0 shadow-sm rounded-4 text-center p-4 bg-white h-100 position-relative" style="border-top: 5px solid #d97706 !important;">
+                            <!-- Bronze Trophy Badge -->
+                            <div class="position-absolute top-0 start-50 translate-middle p-2 rounded-circle bg-light border border-2 border-warning shadow-sm" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-trophy-fill text-warning-emphasis fs-5"></i>
+                            </div>
+
+                            <div class="mt-2 mb-2">
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-0.5 fw-bold mb-2">
+                                    #3 @L["Bronze Host"]
+                                </span>
+                                <h5 class="fw-bold text-dark mb-0 text-truncate" title="@rank3.DisplayName">@rank3.DisplayName</h5>
+                                <span class="text-muted small d-block"><i class="bi bi-geo-alt"></i> @(!string.IsNullOrWhiteSpace(rank3.District) ? rank3.District : rank3.Location)</span>
+                            </div>
+
+                            <!-- Trust Score Pill -->
+                            <div class="my-2 py-1.5 px-3 bg-light rounded-pill d-inline-flex align-items-center justify-content-center gap-1.5 mx-auto">
+                                <i class="bi bi-shield-check text-primary"></i>
+                                <span class="small fw-bold text-dark">@L["Trust Score"]: @rank3.TrustScore.ToString("F1")</span>
+                            </div>
+
+                            <!-- Key Metrics -->
+                            <div class="row g-1 my-2 py-2 border-top border-bottom">
+                                <div class="col-6 text-center border-end">
+                                    <strong class="d-block text-dark fw-bold">@rank3.CompletedBookingsCount</strong>
+                                    <span class="text-secondary" style="font-size: 0.72rem;">@L["Bookings"]</span>
+                                </div>
+                                <div class="col-6 text-center">
+                                    <strong class="d-block text-warning-emphasis fw-bold">
+                                        <i class="bi bi-star-fill text-warning"></i> @rank3.AverageRating.ToString("F1")
+                                    </strong>
+                                    <span class="text-secondary" style="font-size: 0.72rem;">(@rank3.ReviewCount @L["reviews"])</span>
+                                </div>
+                            </div>
+
+                            <!-- Badges -->
+                            <div class="my-2 d-flex justify-content-center">
+                                <partial name="_OwnerBadgeList" model="rank3.Badges.Take(3)" />
+                            </div>
+
+                            <div class="mt-auto pt-2">
+                                @if (rank3.UserRole == "EquipmentOwner" || rank3.UserRole == "Both")
+                                {
+                                    <a asp-controller="Equipment" asp-action="Index" asp-route-location="@rank3.District" class="btn btn-outline-success btn-sm rounded-pill px-3 w-100 fw-semibold">
+                                        @L["View Machinery"]
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Godown" asp-action="Index" asp-route-location="@rank3.District" class="btn btn-outline-success btn-sm rounded-pill px-3 w-100 fw-semibold">
+                                        @L["View Storage"]
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- ========================================== -->
+    <!-- FULL RANKINGS TABLE & CARDS                -->
+    <!-- ========================================== -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
+        <div class="card-header bg-white border-bottom p-3.5 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-list-ol text-success"></i>
+                <span>@L["Full Provider Rankings"]</span>
+            </h6>
+            <span class="text-muted small">
+                @L["Showing {0} rated owners", Model.AllEntries.Count]
+            </span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light text-secondary small text-uppercase fw-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">
+                    <tr>
+                        <th class="ps-3 py-3" style="width: 80px;">@L["Rank"]</th>
+                        <th class="py-3">@L["Host / Farm"]</th>
+                        <th class="py-3">@L["Location"]</th>
+                        <th class="py-3 text-center">@L["Bookings"]</th>
+                        <th class="py-3 text-center">@L["Rating"]</th>
+                        <th class="py-3 text-center">@L["Trust Score"]</th>
+                        <th class="py-3">@L["Badges Earned"]</th>
+                        <th class="pe-3 py-3 text-end">@L["Action"]</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    @foreach (var entry in Model.AllEntries)
+                    {
+                        var rankBadgeClass = entry.Rank switch
+                        {
+                            1 => "bg-warning text-dark fw-bold",
+                            2 => "bg-secondary text-white fw-bold",
+                            3 => "bg-amber text-dark fw-bold",
+                            _ => "bg-light text-secondary fw-semibold border"
+                        };
+
+                        <tr>
+                            <!-- Rank -->
+                            <td class="ps-3">
+                                <span class="badge rounded-pill px-2.5 py-1.5 @rankBadgeClass" style="font-size: 0.8rem;">
+                                    #@entry.Rank
+                                </span>
+                            </td>
+
+                            <!-- Owner Info -->
+                            <td>
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="rounded-circle bg-success bg-opacity-10 text-success fw-bold d-flex align-items-center justify-content-center shadow-2xs flex-shrink-0" style="width: 38px; height: 38px; font-size: 0.85rem;">
+                                        @entry.AvatarInitials
+                                    </div>
+                                    <div>
+                                        <div class="d-flex align-items-center gap-1.5">
+                                            <strong class="text-dark small d-block">@entry.DisplayName</strong>
+                                            @if (entry.IsVerified)
+                                            {
+                                                <i class="bi bi-patch-check-fill text-success" title="@L["Verified Host"]" data-bs-toggle="tooltip"></i>
+                                            }
+                                        </div>
+                                        <span class="text-secondary" style="font-size: 0.75rem;">
+                                            @entry.RoleDisplay
+                                        </span>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Location -->
+                            <td>
+                                <span class="text-secondary small">
+                                    <i class="bi bi-geo-alt text-danger me-0.5"></i>
+                                    @(!string.IsNullOrWhiteSpace(entry.District) ? entry.District : entry.Location)
+                                </span>
+                            </td>
+
+                            <!-- Bookings -->
+                            <td class="text-center">
+                                <strong class="text-dark small">@entry.CompletedBookingsCount</strong>
+                                <span class="text-muted d-block" style="font-size: 0.7rem;">@L["completed"]</span>
+                            </td>
+
+                            <!-- Rating -->
+                            <td class="text-center">
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    <i class="bi bi-star-fill text-warning" style="font-size: 0.85rem;"></i>
+                                    <strong class="text-dark small">@entry.AverageRating.ToString("F1")</strong>
+                                </div>
+                                <span class="text-secondary d-block" style="font-size: 0.7rem;">(@entry.ReviewCount)</span>
+                            </td>
+
+                            <!-- Trust Score -->
+                            <td class="text-center">
+                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-2.5 py-1 fw-bold" style="font-size: 0.78rem;">
+                                    @entry.TrustScore.ToString("F1")
+                                </span>
+                            </td>
+
+                            <!-- Badges -->
+                            <td>
+                                <partial name="_OwnerBadgeList" model="entry.Badges.Take(3)" />
+                            </td>
+
+                            <!-- Action -->
+                            <td class="pe-3 text-end">
+                                @if (entry.UserRole == "EquipmentOwner" || entry.UserRole == "Both")
+                                {
+                                    <a asp-controller="Equipment" asp-action="Index" asp-route-location="@entry.District" class="btn btn-outline-success btn-xs rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 0.75rem;">
+                                        @L["View"]
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Godown" asp-action="Index" asp-route-location="@entry.District" class="btn btn-outline-success btn-xs rounded-pill px-2.5 py-1 fw-semibold" style="font-size: 0.75rem;">
+                                        @L["View"]
+                                    </a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Enable tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+}
