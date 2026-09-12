@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
@@ -13,17 +14,28 @@ namespace KrishiLink.BLL.Services
 
         /// <summary>Farmer cancels their own pending or not-yet-started accepted booking. Returns an error message, or null on success.</summary>
         Task<string?> CancelAsync(string farmerId, string bookingType, int bookingId);
+
+        // QR Code Booking Confirmation & Verification
+        Task<BookingConfirmationViewModel?> GetConfirmationAsync(string? userId, string bookingType, int bookingId, string requestHost, bool justCreated = false);
+        Task<BookingConfirmationViewModel?> GetConfirmationByCodeAsync(string? userId, string bookingCode, string requestHost);
+        Task<BookingVerificationViewModel> GetVerificationByCodeAsync(string bookingCode, string? currentUserId, string requestHost);
+        Task<string?> QuickVerifyActionAsync(string ownerId, string bookingCode, string action);
     }
 
     public class BookingService : IBookingService
     {
         private readonly IRepository<EquipmentBooking> _rentals;
         private readonly IRepository<GodownBooking> _storage;
+        private readonly IQrCodeService _qrCode;
 
-        public BookingService(IRepository<EquipmentBooking> rentals, IRepository<GodownBooking> storage)
+        public BookingService(
+            IRepository<EquipmentBooking> rentals,
+            IRepository<GodownBooking> storage,
+            IQrCodeService qrCode)
         {
             _rentals = rentals;
             _storage = storage;
+            _qrCode = qrCode;
         }
 
         public async Task<BookingHistoryViewModel> GetHistoryAsync(string farmerId, string tab, string status, DateTime? from, DateTime? to, string? search)
@@ -140,7 +152,457 @@ namespace KrishiLink.BLL.Services
             _ => $"A {status.ToLowerInvariant()} booking cannot be cancelled."
         };
 
-        // ---------------------------------------------------------------- Mapping
+        // ---------------------------------------------------------------- QR Code & Confirmation Voucher
+
+        public async Task<BookingConfirmationViewModel?> GetConfirmationAsync(string? userId, string bookingType, int bookingId, string requestHost, bool justCreated = false)
+        {
+            if (string.Equals(bookingType, "Equipment", StringComparison.OrdinalIgnoreCase))
+            {
+                var b = await _rentals.Query()
+                    .Include(x => x.Equipment!).ThenInclude(e => e.Owner)
+                    .Include(x => x.Farmer)
+                    .FirstOrDefaultAsync(x => x.Id == bookingId);
+
+                if (b == null || b.Equipment == null) return null;
+                return BuildEquipmentConfirmation(b, requestHost, justCreated);
+            }
+            else
+            {
+                var g = await _storage.Query()
+                    .Include(x => x.Godown!).ThenInclude(god => god.Owner)
+                    .Include(x => x.Farmer)
+                    .FirstOrDefaultAsync(x => x.Id == bookingId);
+
+                if (g == null || g.Godown == null) return null;
+                return BuildGodownConfirmation(g, requestHost, justCreated);
+            }
+        }
+
+        public async Task<BookingConfirmationViewModel?> GetConfirmationByCodeAsync(string? userId, string bookingCode, string requestHost)
+        {
+            var (type, id) = ParseBookingCode(bookingCode);
+            if (id <= 0) return null;
+            return await GetConfirmationAsync(userId, type, id, requestHost, false);
+        }
+
+        public async Task<BookingVerificationViewModel> GetVerificationByCodeAsync(string bookingCode, string? currentUserId, string requestHost)
+        {
+            var (type, id) = ParseBookingCode(bookingCode);
+            if (id <= 0)
+            {
+                return new BookingVerificationViewModel
+                {
+                    IsFound = false,
+                    IsValid = false,
+                    VerificationStatusMessage = "Invalid or unrecognized booking reference code.",
+                    SecurityBadgeClass = "bg-danger"
+                };
+            }
+
+            if (type.Equals("Equipment", StringComparison.OrdinalIgnoreCase))
+            {
+                var b = await _rentals.Query()
+                    .Include(x => x.Equipment!).ThenInclude(e => e.Owner)
+                    .Include(x => x.Farmer)
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (b == null || b.Equipment == null)
+                {
+                    return new BookingVerificationViewModel
+                    {
+                        IsFound = false,
+                        IsValid = false,
+                        VerificationStatusMessage = "Booking record not found in system.",
+                        SecurityBadgeClass = "bg-danger"
+                    };
+                }
+
+                var code = $"KL-EQ-{b.RequestedOn.Year}-{b.Id:D3}";
+                var verUrl = $"{requestHost.TrimEnd('/')}/Verify/{code}";
+                var isOwner = !string.IsNullOrEmpty(currentUserId) && b.Equipment.OwnerId == currentUserId;
+                var days = ListingFormat.InclusiveDays(b.StartDate, b.EndDate);
+
+                var vm = new BookingVerificationViewModel
+                {
+                    IsFound = true,
+                    IsValid = b.Status != BookingStatus.Cancelled && b.Status != BookingStatus.Rejected,
+                    BookingCode = code,
+                    BookingId = b.Id,
+                    BookingType = "Equipment",
+                    ListingId = b.EquipmentId,
+                    ItemName = b.Equipment.Name,
+                    Category = b.Equipment.Category,
+                    ImageUrl = ListingFormat.Split(b.Equipment.ImageUrls).FirstOrDefault() ?? string.Empty,
+                    Location = b.Equipment.Location,
+                    StartDate = b.StartDate,
+                    EndDate = b.EndDate,
+                    DurationDisplay = days == 1 ? "1 Day" : $"{days} Days",
+                    TotalCost = days * b.Equipment.DailyRate,
+                    RateDescription = $"{ListingFormat.Taka(b.Equipment.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
+                    QuantityDisplay = $"1 {b.Equipment.Category}",
+                    Status = b.Status,
+                    PaymentStatus = GetPaymentStatus(b.Status),
+                    RequestedAt = b.RequestedOn,
+                    UpdatedAt = b.UpdatedOn,
+                    FarmerId = b.FarmerId,
+                    FarmerName = b.Farmer?.FullName ?? "Registered Farmer",
+                    FarmerPhone = b.Farmer?.PhoneNumber ?? "—",
+                    FarmerLocation = b.Farmer?.Location ?? "—",
+                    OwnerId = b.Equipment.OwnerId,
+                    OwnerName = b.Equipment.Owner?.FullName ?? "Equipment Owner",
+                    OwnerPhone = b.Equipment.Owner?.PhoneNumber ?? "—",
+                    OwnerBusiness = b.Equipment.Owner?.BusinessOrFarmName ?? string.Empty,
+                    IsCurrentOwner = isOwner,
+                    CanAccept = isOwner && b.Status == BookingStatus.Pending,
+                    CanReject = isOwner && b.Status == BookingStatus.Pending,
+                    CanConfirmPickup = isOwner && b.Status == BookingStatus.Accepted,
+                    CanComplete = isOwner && b.Status == BookingStatus.Accepted,
+                    VerificationUrl = verUrl,
+                    QrCodeSvg = _qrCode.GenerateSvg(verUrl, 8),
+                    QrCodeBase64 = _qrCode.GenerateBase64Png(verUrl, 8),
+                    SecurityBadgeClass = b.Status switch
+                    {
+                        BookingStatus.Accepted => "bg-success",
+                        BookingStatus.Completed => "bg-primary",
+                        BookingStatus.Pending => "bg-warning text-dark",
+                        _ => "bg-danger"
+                    },
+                    VerificationStatusMessage = b.Status switch
+                    {
+                        BookingStatus.Accepted => "Authentic & Verified Booking — Confirmed & Active",
+                        BookingStatus.Pending => "Pending Owner Review — Not Yet Confirmed",
+                        BookingStatus.Completed => "Completed Booking — Service Finished & Handover Settled",
+                        BookingStatus.Cancelled => "Booking Cancelled by Farmer",
+                        BookingStatus.Rejected => "Booking Rejected by Owner",
+                        _ => "Unverified Status"
+                    }
+                };
+
+                return vm;
+            }
+            else
+            {
+                var g = await _storage.Query()
+                    .Include(x => x.Godown!).ThenInclude(god => god.Owner)
+                    .Include(x => x.Farmer)
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (g == null || g.Godown == null)
+                {
+                    return new BookingVerificationViewModel
+                    {
+                        IsFound = false,
+                        IsValid = false,
+                        VerificationStatusMessage = "Storage booking record not found.",
+                        SecurityBadgeClass = "bg-danger"
+                    };
+                }
+
+                var code = $"KL-GD-{g.RequestedOn.Year}-{g.Id:D3}";
+                var verUrl = $"{requestHost.TrimEnd('/')}/Verify/{code}";
+                var isOwner = !string.IsNullOrEmpty(currentUserId) && g.Godown.OwnerId == currentUserId;
+                var months = ListingFormat.Months(g.StartDate, g.EndDate);
+
+                var vm = new BookingVerificationViewModel
+                {
+                    IsFound = true,
+                    IsValid = g.Status != BookingStatus.Cancelled && g.Status != BookingStatus.Rejected,
+                    BookingCode = code,
+                    BookingId = g.Id,
+                    BookingType = "Godown",
+                    ListingId = g.GodownId,
+                    ItemName = g.Godown.Name,
+                    Category = g.Godown.StorageType,
+                    ImageUrl = ListingFormat.Split(g.Godown.ImageUrls).FirstOrDefault() ?? string.Empty,
+                    Location = g.Godown.Location,
+                    StartDate = g.StartDate,
+                    EndDate = g.EndDate,
+                    DurationDisplay = $"{months:0.#} Months ({g.StorageTons:N0} Tons)",
+                    TotalCost = decimal.Round((decimal)g.StorageTons * g.Godown.PricePerTonPerMonth * (decimal)months, 0),
+                    RateDescription = $"{ListingFormat.Taka(g.Godown.PricePerTonPerMonth)} / ton / mo × {g.StorageTons:N0} Tons",
+                    QuantityDisplay = $"{g.StorageTons:N0} Tons Capacity",
+                    Status = g.Status,
+                    PaymentStatus = GetPaymentStatus(g.Status),
+                    RequestedAt = g.RequestedOn,
+                    UpdatedAt = g.UpdatedOn,
+                    FarmerId = g.FarmerId,
+                    FarmerName = g.Farmer?.FullName ?? "Registered Farmer",
+                    FarmerPhone = g.Farmer?.PhoneNumber ?? "—",
+                    FarmerLocation = g.Farmer?.Location ?? "—",
+                    OwnerId = g.Godown.OwnerId,
+                    OwnerName = g.Godown.Owner?.FullName ?? "Godown Owner",
+                    OwnerPhone = g.Godown.Owner?.PhoneNumber ?? "—",
+                    OwnerBusiness = g.Godown.Owner?.BusinessOrFarmName ?? string.Empty,
+                    IsCurrentOwner = isOwner,
+                    CanAccept = isOwner && g.Status == BookingStatus.Pending,
+                    CanReject = isOwner && g.Status == BookingStatus.Pending,
+                    CanConfirmPickup = isOwner && g.Status == BookingStatus.Accepted,
+                    CanComplete = isOwner && g.Status == BookingStatus.Accepted,
+                    VerificationUrl = verUrl,
+                    QrCodeSvg = _qrCode.GenerateSvg(verUrl, 8),
+                    QrCodeBase64 = _qrCode.GenerateBase64Png(verUrl, 8),
+                    SecurityBadgeClass = g.Status switch
+                    {
+                        BookingStatus.Accepted => "bg-success",
+                        BookingStatus.Completed => "bg-primary",
+                        BookingStatus.Pending => "bg-warning text-dark",
+                        _ => "bg-danger"
+                    },
+                    VerificationStatusMessage = g.Status switch
+                    {
+                        BookingStatus.Accepted => "Authentic & Verified Storage Booking — Space Allocated & Active",
+                        BookingStatus.Pending => "Pending Owner Review — Not Yet Confirmed",
+                        BookingStatus.Completed => "Completed Storage — Storage Period Ended & Handover Settled",
+                        BookingStatus.Cancelled => "Booking Cancelled by Farmer",
+                        BookingStatus.Rejected => "Booking Rejected by Owner",
+                        _ => "Unverified Status"
+                    }
+                };
+
+                return vm;
+            }
+        }
+
+        public async Task<string?> QuickVerifyActionAsync(string ownerId, string bookingCode, string action)
+        {
+            var (type, id) = ParseBookingCode(bookingCode);
+            if (id <= 0) return "Invalid booking reference code.";
+
+            action = action.ToLowerInvariant().Trim();
+
+            if (type.Equals("Equipment", StringComparison.OrdinalIgnoreCase))
+            {
+                var b = await _rentals.QueryTracked()
+                    .Include(x => x.Equipment)
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (b == null || b.Equipment == null) return "Booking not found.";
+                if (b.Equipment.OwnerId != ownerId) return "You are not authorized to perform actions on this booking.";
+
+                switch (action)
+                {
+                    case "accept":
+                        if (b.Status != BookingStatus.Pending) return "Only pending requests can be accepted.";
+                        b.Status = BookingStatus.Accepted;
+                        b.UpdatedOn = DateTime.Now;
+                        break;
+                    case "reject":
+                        if (b.Status != BookingStatus.Pending) return "Only pending requests can be rejected.";
+                        b.Status = BookingStatus.Rejected;
+                        b.UpdatedOn = DateTime.Now;
+                        break;
+                    case "confirm-pickup":
+                    case "complete":
+                        if (b.Status != BookingStatus.Accepted) return "Only accepted bookings can be confirmed / completed.";
+                        b.Status = BookingStatus.Completed;
+                        b.UpdatedOn = DateTime.Now;
+                        break;
+                    default:
+                        return "Unknown action.";
+                }
+
+                await _rentals.SaveChangesAsync();
+                return null;
+            }
+            else
+            {
+                var g = await _storage.QueryTracked()
+                    .Include(x => x.Godown)
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (g == null || g.Godown == null) return "Storage booking not found.";
+                if (g.Godown.OwnerId != ownerId) return "You are not authorized to perform actions on this booking.";
+
+                switch (action)
+                {
+                    case "accept":
+                        if (g.Status != BookingStatus.Pending) return "Only pending requests can be accepted.";
+                        g.Status = BookingStatus.Accepted;
+                        g.UpdatedOn = DateTime.Now;
+                        break;
+                    case "reject":
+                        if (g.Status != BookingStatus.Pending) return "Only pending requests can be rejected.";
+                        g.Status = BookingStatus.Rejected;
+                        g.UpdatedOn = DateTime.Now;
+                        break;
+                    case "confirm-pickup":
+                    case "complete":
+                        if (g.Status != BookingStatus.Accepted) return "Only accepted bookings can be confirmed / completed.";
+                        g.Status = BookingStatus.Completed;
+                        g.UpdatedOn = DateTime.Now;
+                        break;
+                    default:
+                        return "Unknown action.";
+                }
+
+                await _storage.SaveChangesAsync();
+                return null;
+            }
+        }
+
+        // ---------------------------------------------------------------- Mapping & Helpers
+
+        private static (string Type, int Id) ParseBookingCode(string code)
+        {
+            if (string.IsNullOrWhiteSpace(code)) return ("Equipment", 0);
+            var clean = code.Trim().ToUpperInvariant();
+
+            // Match KL-EQ-2026-001 or EQ-001 or KL-GD-2026-002
+            if (clean.Contains("GD"))
+            {
+                var match = Regex.Match(clean, @"\d+$");
+                return ("Godown", match.Success && int.TryParse(match.Value, out var id) ? id : 0);
+            }
+            else
+            {
+                var match = Regex.Match(clean, @"\d+$");
+                return ("Equipment", match.Success && int.TryParse(match.Value, out var id) ? id : 0);
+            }
+        }
+
+        private BookingConfirmationViewModel BuildEquipmentConfirmation(EquipmentBooking b, string requestHost, bool justCreated)
+        {
+            var e = b.Equipment!;
+            var days = ListingFormat.InclusiveDays(b.StartDate, b.EndDate);
+            var code = $"KL-EQ-{b.RequestedOn.Year}-{b.Id:D3}";
+            var verUrl = $"{requestHost.TrimEnd('/')}/Verify/{code}";
+
+            var vm = new BookingConfirmationViewModel
+            {
+                BookingId = b.Id,
+                BookingCode = code,
+                BookingType = "Equipment",
+                ListingId = e.Id,
+                ItemName = e.Name,
+                Category = e.Category,
+                ImageUrl = ListingFormat.Split(e.ImageUrls).FirstOrDefault() ?? string.Empty,
+                Location = e.Location,
+                Latitude = e.Latitude,
+                Longitude = e.Longitude,
+                StartDate = b.StartDate,
+                EndDate = b.EndDate,
+                TotalCost = days * e.DailyRate,
+                RateDescription = $"{ListingFormat.Taka(e.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
+                QuantityDisplay = $"1 {e.Category}",
+                PaymentStatus = GetPaymentStatus(b.Status),
+                Status = b.Status,
+                RequestedAt = b.RequestedOn,
+                UpdatedAt = b.UpdatedOn,
+                FarmerNotes = b.Note,
+                OwnerRemarks = b.RejectReason,
+                FarmerId = b.FarmerId,
+                FarmerName = b.Farmer?.FullName ?? "Registered Farmer",
+                FarmerPhone = b.Farmer?.PhoneNumber ?? "—",
+                FarmerEmail = b.Farmer?.Email ?? "—",
+                FarmerAddress = b.Farmer?.Location ?? "—",
+                OwnerId = e.OwnerId,
+                OwnerName = e.Owner?.FullName ?? "Equipment Owner",
+                OwnerPhone = e.Owner?.PhoneNumber ?? "—",
+                OwnerBusiness = e.Owner?.BusinessOrFarmName ?? string.Empty,
+                OwnerLocation = e.Owner?.Location ?? e.Location,
+                OwnerIsVerified = e.Owner?.IsVerified ?? false,
+                VerificationUrl = verUrl,
+                QrCodeSvg = _qrCode.GenerateSvg(verUrl, 8),
+                QrCodeBase64 = _qrCode.GenerateBase64Png(verUrl, 8),
+                JustCreated = justCreated,
+                CanCancel = b.Status == BookingStatus.Pending || (b.Status == BookingStatus.Accepted && b.StartDate > DateTime.Today),
+                Timeline = GenerateTimeline(b.Status, b.RequestedOn, b.UpdatedOn, e.Owner?.FullName ?? "Owner", b.StartDate, b.EndDate, "Rental Requested", "Active in Field", "Equipment in use", "Completed & Handover")
+            };
+
+            return vm;
+        }
+
+        private BookingConfirmationViewModel BuildGodownConfirmation(GodownBooking b, string requestHost, bool justCreated)
+        {
+            var g = b.Godown!;
+            var months = ListingFormat.Months(b.StartDate, b.EndDate);
+            var code = $"KL-GD-{b.RequestedOn.Year}-{b.Id:D3}";
+            var verUrl = $"{requestHost.TrimEnd('/')}/Verify/{code}";
+
+            var vm = new BookingConfirmationViewModel
+            {
+                BookingId = b.Id,
+                BookingCode = code,
+                BookingType = "Godown",
+                ListingId = g.Id,
+                ItemName = g.Name,
+                Category = g.StorageType,
+                ImageUrl = ListingFormat.Split(g.ImageUrls).FirstOrDefault() ?? string.Empty,
+                Location = g.Location,
+                Latitude = g.Latitude,
+                Longitude = g.Longitude,
+                StartDate = b.StartDate,
+                EndDate = b.EndDate,
+                TotalCost = decimal.Round((decimal)b.StorageTons * g.PricePerTonPerMonth * (decimal)months, 0),
+                RateDescription = $"{ListingFormat.Taka(g.PricePerTonPerMonth)} / ton / mo × {b.StorageTons:N0} Tons × {months:0.#} Months",
+                QuantityDisplay = $"{b.StorageTons:N0} Tons Capacity",
+                PaymentStatus = GetPaymentStatus(b.Status),
+                Status = b.Status,
+                RequestedAt = b.RequestedOn,
+                UpdatedAt = b.UpdatedOn,
+                FarmerNotes = b.Note,
+                OwnerRemarks = b.RejectReason,
+                FarmerId = b.FarmerId,
+                FarmerName = b.Farmer?.FullName ?? "Registered Farmer",
+                FarmerPhone = b.Farmer?.PhoneNumber ?? "—",
+                FarmerEmail = b.Farmer?.Email ?? "—",
+                FarmerAddress = b.Farmer?.Location ?? "—",
+                OwnerId = g.OwnerId,
+                OwnerName = g.Owner?.FullName ?? "Godown Owner",
+                OwnerPhone = g.Owner?.PhoneNumber ?? "—",
+                OwnerBusiness = g.Owner?.BusinessOrFarmName ?? string.Empty,
+                OwnerLocation = g.Owner?.Location ?? g.Location,
+                OwnerIsVerified = g.Owner?.IsVerified ?? false,
+                VerificationUrl = verUrl,
+                QrCodeSvg = _qrCode.GenerateSvg(verUrl, 8),
+                QrCodeBase64 = _qrCode.GenerateBase64Png(verUrl, 8),
+                JustCreated = justCreated,
+                CanCancel = b.Status == BookingStatus.Pending || (b.Status == BookingStatus.Accepted && b.StartDate > DateTime.Today),
+                Timeline = GenerateTimeline(b.Status, b.RequestedOn, b.UpdatedOn, g.Owner?.FullName ?? "Owner", b.StartDate, b.EndDate, "Storage Requested", "Produce Stored", "Goods in storage", "Storage Period Ended")
+            };
+
+            return vm;
+        }
+
+        private static string GetPaymentStatus(string status) => status switch
+        {
+            BookingStatus.Completed => "Paid on Service",
+            BookingStatus.Accepted => "Pending on Delivery",
+            BookingStatus.Pending => "Unpaid (Awaiting Confirmation)",
+            _ => "Not Applicable"
+        };
+
+        private static List<BookingTimelineStep> GenerateTimeline(string status, DateTime requestedOn, DateTime? updatedOn, string ownerName, DateTime start, DateTime end, string requestedTitle, string activeTitle, string activeDesc, string completedTitle)
+        {
+            var range = ListingFormat.DateRange(start, end);
+            var decided = updatedOn?.ToString("dd MMM yyyy, hh:mm tt");
+            var timeline = new List<BookingTimelineStep>
+            {
+                new() { Title = requestedTitle, Description = "Request submitted", DateDisplay = requestedOn.ToString("dd MMM yyyy, hh:mm tt"), IsCompleted = true, State = "done" }
+            };
+
+            switch (status)
+            {
+                case BookingStatus.Pending:
+                    timeline.Add(new() { Title = "Owner Review", Description = $"{ownerName} is reviewing your request", DateDisplay = "In Progress", IsCurrent = true, State = "active" });
+                    timeline.Add(new() { Title = activeTitle, Description = activeDesc, DateDisplay = range, State = "pending" });
+                    timeline.Add(new() { Title = completedTitle, Description = "Final handover and payment", DateDisplay = $"Expected {end:dd MMM yyyy}", State = "pending" });
+                    break;
+                case BookingStatus.Rejected:
+                case BookingStatus.Cancelled:
+                    timeline.Add(new() { Title = status, Description = status == BookingStatus.Cancelled ? "Cancelled by you" : "Request rejected", DateDisplay = decided, IsCompleted = true, IsCurrent = true, State = "rejected" });
+                    break;
+                default:
+                    var inField = status == BookingStatus.Accepted && start <= DateTime.Today;
+                    var completed = status == BookingStatus.Completed;
+                    timeline.Add(new() { Title = "Owner Accepted", Description = $"Accepted by {ownerName}", DateDisplay = decided, IsCompleted = true, State = "done" });
+                    timeline.Add(new() { Title = activeTitle, Description = activeDesc, DateDisplay = range, IsCompleted = completed, IsCurrent = inField && !completed, State = completed ? "done" : inField ? "active" : "pending" });
+                    timeline.Add(new() { Title = completedTitle, Description = "Final handover and payment", DateDisplay = completed ? decided : $"Expected {end:dd MMM yyyy}", IsCompleted = completed, IsCurrent = completed, State = completed ? "done" : "pending" });
+                    break;
+            }
+
+            return timeline;
+        }
 
         private async Task<List<BookingHistoryItemViewModel>> LoadAllAsync(string farmerId)
         {
@@ -225,41 +687,8 @@ namespace KrishiLink.BLL.Services
             item.FarmerNotes = note ?? string.Empty;
             item.OwnerRemarks = rejectReason;
             item.CanCancel = status == BookingStatus.Pending || (status == BookingStatus.Accepted && item.StartDate > DateTime.Today);
-            item.PaymentStatus = status switch
-            {
-                BookingStatus.Completed => "Paid on Service",
-                BookingStatus.Accepted => "Pending on Delivery",
-                BookingStatus.Pending => "Unpaid (Awaiting Confirmation)",
-                _ => "Not Applicable"
-            };
-
-            var today = DateTime.Today;
-            var decided = updatedOn?.ToString("dd MMM yyyy, hh:mm tt");
-            var range = ListingFormat.DateRange(item.StartDate, item.EndDate);
-            item.Timeline = new List<BookingTimelineStep>
-            {
-                new() { Title = requestedTitle, Description = "Request submitted", DateDisplay = requestedOn.ToString("dd MMM yyyy, hh:mm tt"), IsCompleted = true, State = "done" }
-            };
-
-            switch (status)
-            {
-                case BookingStatus.Pending:
-                    item.Timeline.Add(new() { Title = "Owner Review", Description = $"{item.OwnerName} is reviewing your request", DateDisplay = "In Progress", IsCurrent = true, State = "active" });
-                    item.Timeline.Add(new() { Title = activeTitle, Description = activeDesc, DateDisplay = range, State = "pending" });
-                    item.Timeline.Add(new() { Title = completedTitle, Description = "Final handover and payment", DateDisplay = $"Expected {item.EndDate:dd MMM yyyy}", State = "pending" });
-                    break;
-                case BookingStatus.Rejected:
-                case BookingStatus.Cancelled:
-                    item.Timeline.Add(new() { Title = status, Description = status == BookingStatus.Cancelled ? "Cancelled by you" : rejectReason ?? "Request rejected", DateDisplay = decided, IsCompleted = true, IsCurrent = true, State = "rejected" });
-                    break;
-                default:
-                    var inField = status == BookingStatus.Accepted && item.StartDate <= today;
-                    var completed = status == BookingStatus.Completed;
-                    item.Timeline.Add(new() { Title = "Owner Accepted", Description = $"Accepted by {item.OwnerName}", DateDisplay = decided, IsCompleted = true, State = "done" });
-                    item.Timeline.Add(new() { Title = activeTitle, Description = activeDesc, DateDisplay = range, IsCompleted = completed, IsCurrent = inField && !completed, State = completed ? "done" : inField ? "active" : "pending" });
-                    item.Timeline.Add(new() { Title = completedTitle, Description = "Final handover and payment", DateDisplay = completed ? decided : $"Expected {item.EndDate:dd MMM yyyy}", IsCompleted = completed, IsCurrent = completed, State = completed ? "done" : "pending" });
-                    break;
-            }
+            item.PaymentStatus = GetPaymentStatus(status);
+            item.Timeline = GenerateTimeline(status, requestedOn, updatedOn, item.OwnerName, item.StartDate, item.EndDate, requestedTitle, activeTitle, activeDesc, completedTitle);
 
             return item;
         }

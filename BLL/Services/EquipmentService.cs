@@ -14,6 +14,7 @@ namespace KrishiLink.BLL.Services
 
         /// <summary>Creates a pending rental request. Returns a user-facing error message, or null on success.</summary>
         Task<string?> RequestRentalAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note);
+        Task<(string? Error, int? BookingId)> RequestRentalWithResultAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note);
 
         // Owner
         Task<EquipmentOwnerDashboardViewModel> GetOwnerDashboardAsync(string ownerId);
@@ -311,21 +312,27 @@ namespace KrishiLink.BLL.Services
 
         public async Task<string?> RequestRentalAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note)
         {
-            if (start is null || end is null) return "Please choose a start and end date.";
+            var res = await RequestRentalWithResultAsync(farmerId, equipmentId, start, end, note);
+            return res.Error;
+        }
+
+        public async Task<(string? Error, int? BookingId)> RequestRentalWithResultAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note)
+        {
+            if (start is null || end is null) return ("Please choose a start and end date.", null);
             var s = start.Value.Date;
             var t = end.Value.Date;
-            if (s < DateTime.Today) return "Start date cannot be in the past.";
-            if (t < s) return "End date must be on or after the start date.";
+            if (s < DateTime.Today) return ("Start date cannot be in the past.", null);
+            if (t < s) return ("End date must be on or after the start date.", null);
 
             var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == equipmentId);
-            if (e is null) return "This equipment listing no longer exists.";
-            if (!e.IsAvailable) return "This equipment is currently unavailable for rent.";
-            if (e.OwnerId == farmerId) return "You cannot rent your own equipment.";
+            if (e is null) return ("This equipment listing no longer exists.", null);
+            if (!e.IsAvailable) return ("This equipment is currently unavailable for rent.", null);
+            if (e.OwnerId == farmerId) return ("You cannot rent your own equipment.", null);
 
             var clash = await FindConflictAsync(equipmentId, s, t);
-            if (clash is not null) return clash;
+            if (clash is not null) return (clash, null);
 
-            await _bookings.AddAsync(new EquipmentBooking
+            var newBooking = new EquipmentBooking
             {
                 EquipmentId = equipmentId,
                 FarmerId = farmerId,
@@ -334,7 +341,9 @@ namespace KrishiLink.BLL.Services
                 Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim(),
                 Status = BookingStatus.Pending,
                 RequestedOn = DateTime.Now
-            });
+            };
+
+            await _bookings.AddAsync(newBooking);
             await _bookings.SaveChangesAsync();
 
             // Notify equipment owner of new pending rental request
@@ -348,7 +357,7 @@ namespace KrishiLink.BLL.Services
                 "/Equipment/OwnerDashboard#rental-requests"
             );
 
-            return null;
+            return (null, newBooking.Id);
         }
 
         // ---------------------------------------------------------------- Owner

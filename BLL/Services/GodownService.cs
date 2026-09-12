@@ -14,6 +14,7 @@ namespace KrishiLink.BLL.Services
 
         /// <summary>Creates a pending storage request. Returns a user-facing error message, or null on success.</summary>
         Task<string?> RequestStorageAsync(string farmerId, GodownDetailViewModel request);
+        Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel request);
 
         // Owner
         Task<GodownOwnerDashboardViewModel> GetOwnerDashboardAsync(string ownerId);
@@ -264,22 +265,28 @@ namespace KrishiLink.BLL.Services
 
         public async Task<string?> RequestStorageAsync(string farmerId, GodownDetailViewModel r)
         {
-            if (r.StartDate is null || r.EndDate is null) return "Please choose a start and end date.";
+            var res = await RequestStorageWithResultAsync(farmerId, r);
+            return res.Error;
+        }
+
+        public async Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel r)
+        {
+            if (r.StartDate is null || r.EndDate is null) return ("Please choose a start and end date.", null);
             var s = r.StartDate.Value.Date;
             var t = r.EndDate.Value.Date;
-            if (s < DateTime.Today) return "Start date cannot be in the past.";
-            if (t <= s) return "End date must be after the start date.";
-            if (r.RequestedCapacityTons <= 0) return "Requested capacity must be greater than zero.";
+            if (s < DateTime.Today) return ("Start date cannot be in the past.", null);
+            if (t <= s) return ("End date must be after the start date.", null);
+            if (r.RequestedCapacityTons <= 0) return ("Requested capacity must be greater than zero.", null);
 
             var g = await _godowns.Query().FirstOrDefaultAsync(x => x.Id == r.Id);
-            if (g is null) return "This storage facility no longer exists.";
-            if (!g.IsActive) return "This storage facility is not accepting bookings right now.";
-            if (g.OwnerId == farmerId) return "You cannot book your own storage facility.";
+            if (g is null) return ("This storage facility no longer exists.", null);
+            if (!g.IsActive) return ("This storage facility is not accepting bookings right now.", null);
+            if (g.OwnerId == farmerId) return ("You cannot book your own storage facility.", null);
 
             var clash = await FindConflictAsync(g, r.RequestedCapacityTons, s, t);
-            if (clash is not null) return clash;
+            if (clash is not null) return (clash, null);
 
-            await _bookings.AddAsync(new GodownBooking
+            var newBooking = new GodownBooking
             {
                 GodownId = g.Id,
                 FarmerId = farmerId,
@@ -289,7 +296,9 @@ namespace KrishiLink.BLL.Services
                 Note = string.IsNullOrWhiteSpace(r.BookingNotes) ? null : r.BookingNotes.Trim(),
                 Status = BookingStatus.Pending,
                 RequestedOn = DateTime.Now
-            });
+            };
+
+            await _bookings.AddAsync(newBooking);
             await _bookings.SaveChangesAsync();
 
             // Notify godown owner of new pending storage request
@@ -303,7 +312,7 @@ namespace KrishiLink.BLL.Services
                 "/Godown/OwnerDashboard#booking-requests"
             );
 
-            return null;
+            return (null, newBooking.Id);
         }
 
         // ---------------------------------------------------------------- Owner

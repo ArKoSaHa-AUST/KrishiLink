@@ -73,6 +73,7 @@ builder.Services.AddScoped<ICropCalendarService, CropCalendarService>();
 builder.Services.AddScoped<IPestAlertService, PestAlertService>();
 builder.Services.AddScoped<IOwnerVerificationService, OwnerVerificationService>();
 builder.Services.AddScoped<IWeatherSuggestionService, WeatherSuggestionService>();
+builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
 
 // Email + scheduled background services
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
