@@ -8,13 +8,16 @@ namespace KrishiLink.Controllers
     {
         private readonly ICropCalendarService _cropCalendarService;
         private readonly IPestAlertService _pestAlertService;
+        private readonly IWeatherSuggestionService _weatherSuggestionService;
 
         public AdvisoryController(
             ICropCalendarService cropCalendarService,
-            IPestAlertService pestAlertService)
+            IPestAlertService pestAlertService,
+            IWeatherSuggestionService weatherSuggestionService)
         {
             _cropCalendarService = cropCalendarService;
             _pestAlertService = pestAlertService;
+            _weatherSuggestionService = weatherSuggestionService;
         }
 
         /// <summary>
@@ -70,6 +73,41 @@ namespace KrishiLink.Controllers
 
             var model = await _pestAlertService.GetPestAlertsDashboardAsync(safeDistrict, safeCrop, safeTemp, safeHumidity, safeCondition);
             return View(model);
+        }
+
+        /// <summary>
+        /// GET: /Advisory/Suggestions
+        /// Proactive weather-triggered crop & machinery suggestions based on regional weather & crop calendar stages.
+        /// </summary>
+        public async Task<IActionResult> Suggestions(string? district = null, string? crop = null, int? month = null)
+        {
+            var safeDistrict = SanitizeDistrict(district);
+            var safeCrop = string.IsNullOrWhiteSpace(crop) ? "Rice (Boro)" : crop.Trim();
+
+            var suggestion = await _weatherSuggestionService.GenerateSuggestionForDistrictAndCropAsync(safeDistrict, safeCrop, month);
+
+            var model = new WeatherSuggestionAdvisoryViewModel
+            {
+                SelectedDistrict = safeDistrict,
+                SelectedCrop = safeCrop,
+                Suggestion = suggestion,
+                AllGeneratedItems = suggestion.Suggestions
+            };
+
+            return View(model);
+        }
+
+        /// <summary>
+        /// GET: /Advisory/WeatherSuggestionsJson
+        /// JSON endpoint returning proactive suggestions for dynamic client-side filtering.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> WeatherSuggestionsJson(string? district, string? crop, int? month = null)
+        {
+            var safeDistrict = SanitizeDistrict(district);
+            var safeCrop = string.IsNullOrWhiteSpace(crop) ? "Rice (Boro)" : crop.Trim();
+            var suggestion = await _weatherSuggestionService.GenerateSuggestionForDistrictAndCropAsync(safeDistrict, safeCrop, month);
+            return Json(new { success = true, suggestion });
         }
 
         /// <summary>
