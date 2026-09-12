@@ -37,6 +37,9 @@ namespace KrishiLink.Models.ViewModels
 
         public double OccupiedTons => TotalCapacityTons - AvailableCapacityTons;
         public int UtilizationPercent => TotalCapacityTons > 0 ? (int)Math.Round(OccupiedTons / TotalCapacityTons * 100) : 0;
+
+        /// <summary>Total actual physical tonnage currently stored across active intake lots.</summary>
+        public double StoredTonsActual { get; set; }
     }
 
     /// <summary>An incoming storage booking request row in the pending requests widget.</summary>
@@ -81,6 +84,11 @@ namespace KrishiLink.Models.ViewModels
         public string? HarvestPlanName { get; set; }
         public int HarvestPlanItemCount { get; set; }
         public string? HarvestPlanOtherItems { get; set; }
+
+        /// <summary>Total actual physical tonnage currently stored for this booking.</summary>
+        public double StoredTonsActual { get; set; }
+        public int IntakeLotCount { get; set; }
+        public List<StorageIntakeLotItemViewModel> IntakeLots { get; set; } = new();
 
         /// <summary>Compact relative timestamp, e.g. "2h ago". Empty when RequestedOn is unset.</summary>
         public string TimeAgo => TimeAgoFormatter.Format(RequestedOn);

@@ -78,6 +78,9 @@ namespace KrishiLink.Models.ViewModels
         public string? PreviousDetails { get; set; }
         public string? FarmerProfileUrl { get; set; }
         public List<BookingTimelineStep> Timeline { get; set; } = new();
+
+        /// <summary>Recorded intake lots and warehouse receipts (Godown bookings only).</summary>
+        public List<StorageIntakeLotItemViewModel> IntakeLots { get; set; } = new();
     }
 
     public class BookingVerificationViewModel

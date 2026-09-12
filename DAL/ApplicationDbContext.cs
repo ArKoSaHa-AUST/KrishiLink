@@ -35,6 +35,7 @@ namespace KrishiLink.DAL
         public DbSet<HarvestPlanItem> HarvestPlanItems { get; set; } = null!;
         public DbSet<Favorite> Favorites { get; set; } = null!;
         public DbSet<SavedSearch> SavedSearches { get; set; } = null!;
+        public DbSet<StorageIntakeLot> StorageIntakeLots { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -399,6 +400,29 @@ namespace KrishiLink.DAL
                 s.HasOne(x => x.User)
                     .WithMany()
                     .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<StorageIntakeLot>(lot =>
+            {
+                lot.Property(x => x.ReceiptNumber).HasMaxLength(20).IsRequired();
+                lot.Property(x => x.Crop).HasMaxLength(60).IsRequired();
+                lot.Property(x => x.Variety).HasMaxLength(60);
+                lot.Property(x => x.BagWeightKg).HasPrecision(6, 2);
+                lot.Property(x => x.NetWeightKg).HasPrecision(12, 2);
+                lot.Property(x => x.MoisturePercent).HasPrecision(5, 2);
+                lot.Property(x => x.Grade).HasMaxLength(10).HasDefaultValue(IntakeGrades.Ungraded);
+                lot.Property(x => x.Remarks).HasMaxLength(500);
+                lot.Property(x => x.Status).HasMaxLength(20).HasDefaultValue(IntakeLotStatus.Stored);
+                lot.Property(x => x.ReleasedTo).HasMaxLength(120);
+                lot.Property(x => x.ReleaseRemarks).HasMaxLength(300);
+                lot.Property(x => x.RecordedByUserId).HasMaxLength(450);
+
+                lot.HasIndex(x => x.ReceiptNumber).IsUnique();
+                lot.HasIndex(x => x.GodownBookingId);
+                lot.HasOne(x => x.Booking)
+                    .WithMany(b => b.IntakeLots)
+                    .HasForeignKey(x => x.GodownBookingId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }

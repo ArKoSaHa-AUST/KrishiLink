@@ -14,6 +14,7 @@ namespace KrishiLink.Controllers
         private readonly IGodownService _godowns;
         private readonly IFileStorageService _files;
         private readonly ISavedSearchService _savedSearches;
+        private readonly IStorageIntakeService _intakeService;
         private readonly ILogger<GodownOwnerController> _logger;
         private readonly IStringLocalizer<SharedResource> _localizer;
 
@@ -21,6 +22,7 @@ namespace KrishiLink.Controllers
             IGodownService godowns,
             IFileStorageService files,
             ISavedSearchService savedSearches,
+            IStorageIntakeService intakeService,
             ILogger<GodownOwnerController> logger,
             IGodownRevenueService revenueService,
             UserManager<ApplicationUser> userManager,
@@ -30,6 +32,7 @@ namespace KrishiLink.Controllers
             _godowns = godowns;
             _files = files;
             _savedSearches = savedSearches;
+            _intakeService = intakeService;
             _logger = logger;
             _localizer = localizer;
         }
@@ -217,6 +220,101 @@ namespace KrishiLink.Controllers
 
             var targetMonth = m.Month == default ? m.From : m.Month;
             return RedirectToAction(nameof(Availability), new { id = m.ListingId, month = targetMonth.ToString("yyyy-MM-dd") });
+        }
+
+        /// <summary>POST: /GodownOwner/RecordIntake — records a physical produce intake lot against a paid storage booking.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RecordIntake(IntakeLotInput input, string? returnUrl = null)
+        {
+            var (error, lotId) = await _intakeService.RecordAsync(OwnerId, input);
+            if (!string.IsNullOrEmpty(error))
+            {
+                TempData["ErrorMessage"] = _localizer[error].Value;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = _localizer["Warehouse receipt issued successfully."].Value;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(Requests));
+        }
+
+        /// <summary>POST: /GodownOwner/UpdateIntake — edits an existing Stored intake lot.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateIntake(int lotId, IntakeLotInput input, string? returnUrl = null)
+        {
+            var error = await _intakeService.UpdateAsync(OwnerId, lotId, input);
+            if (!string.IsNullOrEmpty(error))
+            {
+                TempData["ErrorMessage"] = _localizer[error].Value;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = _localizer["Intake lot updated successfully."].Value;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(Requests));
+        }
+
+        /// <summary>POST: /GodownOwner/DeleteIntake — deletes an unreleased intake lot.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteIntake(int lotId, string? returnUrl = null)
+        {
+            var error = await _intakeService.DeleteAsync(OwnerId, lotId);
+            if (!string.IsNullOrEmpty(error))
+            {
+                TempData["ErrorMessage"] = _localizer[error].Value;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = _localizer["Intake lot deleted successfully."].Value;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(Requests));
+        }
+
+        /// <summary>POST: /GodownOwner/ReleaseIntake — marks an intake lot as released to the farmer or representative.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReleaseIntake(int lotId, string releasedTo, string? remarks = null, string? returnUrl = null)
+        {
+            var error = await _intakeService.ReleaseAsync(OwnerId, lotId, releasedTo, remarks);
+            if (!string.IsNullOrEmpty(error))
+            {
+                TempData["ErrorMessage"] = _localizer[error].Value;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = _localizer["Goods released and farmer notified."].Value;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(Requests));
+        }
+
+        /// <summary>GET: /GodownOwner/WarehouseReceipt/5 — download official Warehouse Receipt PDF.</summary>
+        [HttpGet]
+        public async Task<IActionResult> WarehouseReceipt(int id)
+        {
+            var result = await _intakeService.GetReceiptPdfAsync(id, OwnerId, isOwner: true);
+            if (result is null)
+                return NotFound();
+
+            return File(result.Value.Content, "application/pdf", result.Value.FileName);
         }
     }
 }

@@ -53,6 +53,8 @@ namespace KrishiLink.BLL.Services
         private readonly IFarmerProfileService _farmerProfile;
         private readonly ILedgerRepository _ledger;
         private readonly IFavoriteService _favoriteService;
+        private readonly IRepository<StorageIntakeLot> _intakeLots;
+        private readonly IStorageIntakeService _intakeService;
         private readonly RevenueOptions _revenue;
 
         public GodownService(
@@ -69,6 +71,8 @@ namespace KrishiLink.BLL.Services
             IFarmerProfileService farmerProfile,
             ILedgerRepository ledger,
             IFavoriteService favoriteService,
+            IRepository<StorageIntakeLot> intakeLots,
+            IStorageIntakeService intakeService,
             IOptions<RevenueOptions> revenue)
         {
             _godowns = godowns;
@@ -84,6 +88,8 @@ namespace KrishiLink.BLL.Services
             _farmerProfile = farmerProfile;
             _ledger = ledger;
             _favoriteService = favoriteService;
+            _intakeLots = intakeLots;
+            _intakeService = intakeService;
             _revenue = revenue.Value;
         }
 
@@ -542,6 +548,52 @@ namespace KrishiLink.BLL.Services
                         item.FarmerMemberSince = s.MemberSince;
                         item.FarmerTrustLevel = s.TrustLevel;
                     }
+                }
+            }
+
+            var bookingIds = items.Select(i => i.Id).ToList();
+            var intakeSummaries = await _intakeService.SummariseAsync(bookingIds);
+            var intakeLots = await _intakeLots.Query()
+                .Where(l => bookingIds.Contains(l.GodownBookingId))
+                .OrderByDescending(l => l.IntakeDate)
+                .ThenByDescending(l => l.Id)
+                .ToListAsync();
+
+            var lotsByBooking = intakeLots.GroupBy(l => l.GodownBookingId).ToDictionary(
+                g => g.Key,
+                g => g.Select(l => new StorageIntakeLotItemViewModel
+                {
+                    Id = l.Id,
+                    GodownBookingId = l.GodownBookingId,
+                    ReceiptNumber = l.ReceiptNumber,
+                    IntakeDate = l.IntakeDate,
+                    Crop = l.Crop,
+                    Variety = l.Variety,
+                    Bags = l.Bags,
+                    BagWeightKg = l.BagWeightKg,
+                    NetWeightKg = l.NetWeightKg,
+                    MoisturePercent = l.MoisturePercent,
+                    Grade = l.Grade,
+                    Remarks = l.Remarks,
+                    Status = l.Status,
+                    ReleasedOn = l.ReleasedOn,
+                    ReleasedTo = l.ReleasedTo,
+                    ReleaseRemarks = l.ReleaseRemarks,
+                    RecordedAt = l.RecordedAt,
+                    UpdatedAt = l.UpdatedAt,
+                    ReceiptPdfUrl = AppLinks.OwnerWarehouseReceipt(l.Id)
+                }).ToList());
+
+            foreach (var item in items)
+            {
+                if (intakeSummaries.TryGetValue(item.Id, out var sum))
+                {
+                    item.StoredTonsActual = sum.StoredTons;
+                    item.IntakeLotCount = sum.LotCount;
+                }
+                if (lotsByBooking.TryGetValue(item.Id, out var bLots))
+                {
+                    item.IntakeLots = bLots;
                 }
             }
 
@@ -1088,9 +1140,17 @@ namespace KrishiLink.BLL.Services
                 })
                 .ToListAsync();
 
+            var godownIds = rows.Select(g => g.Id).ToList();
+            var storedTonsPerGodown = await _intakeLots.Query()
+                .Where(l => l.Status == IntakeLotStatus.Stored && godownIds.Contains(l.Booking!.GodownId))
+                .GroupBy(l => l.Booking!.GodownId)
+                .Select(g => new { GodownId = g.Key, StoredKg = g.Sum(l => l.NetWeightKg) })
+                .ToDictionaryAsync(x => x.GodownId, x => (double)(x.StoredKg / 1000m));
+
             return rows.Select(g =>
             {
                 var available = Math.Max(0, g.CapacityInTons - g.Occupied);
+                storedTonsPerGodown.TryGetValue(g.Id, out var actualStored);
                 return new OwnerGodownItem
                 {
                     Id = g.Id,
@@ -1098,6 +1158,7 @@ namespace KrishiLink.BLL.Services
                     StorageType = g.StorageType,
                     TotalCapacityTons = g.CapacityInTons,
                     AvailableCapacityTons = available,
+                    StoredTonsActual = actualStored,
                     Status = !g.IsActive ? "Inactive" : available <= 0 ? "Full" : "Active"
                 };
             }).ToList();

@@ -187,6 +187,9 @@ namespace KrishiLink.DAL
 
                 // Seed demo favorites and saved searches
                 await SeedDemoFavoritesAndSavedSearchesAsync(db, userManager);
+
+                // Seed demo storage intake lots and warehouse receipts
+                await SeedDemoIntakeLotsAsync(db);
             }
         }
 
@@ -1601,5 +1604,85 @@ namespace KrishiLink.DAL
             await db.CropCalendarEntries.AddRangeAsync(entries);
             await db.SaveChangesAsync();
         }
+
+        private static async Task SeedDemoIntakeLotsAsync(ApplicationDbContext db)
+        {
+            if (await db.StorageIntakeLots.AnyAsync()) return;
+
+            var booking = await db.GodownBookings
+                .Include(b => b.Godown)
+                .Include(b => b.Farmer)
+                .FirstOrDefaultAsync(b => b.Status == BookingStatus.Paid || b.Status == BookingStatus.Completed);
+
+            if (booking == null) return;
+
+            var totalCapKg = (decimal)booking.StorageTons * 1000m;
+            decimal lot1Net, lot2Net;
+            int lot1Bags, lot2Bags;
+            decimal lot1BagWeight, lot2BagWeight;
+
+            if (totalCapKg >= 30000m)
+            {
+                lot1Net = 20000m;
+                lot1Bags = 400;
+                lot1BagWeight = 50m;
+
+                lot2Net = 10000m;
+                lot2Bags = 200;
+                lot2BagWeight = 50m;
+            }
+            else
+            {
+                lot1Net = Math.Round(totalCapKg * 0.50m, 0);
+                lot1Bags = Math.Max(1, (int)(lot1Net / 50m));
+                lot1BagWeight = Math.Round(lot1Net / lot1Bags, 1);
+
+                lot2Net = Math.Round(totalCapKg * 0.30m, 0);
+                lot2Bags = Math.Max(1, (int)(lot2Net / 50m));
+                lot2BagWeight = Math.Round(lot2Net / lot2Bags, 1);
+            }
+
+            var ownerId = booking.Godown?.OwnerId ?? string.Empty;
+            var year = booking.StartDate.Year;
+            var lot1 = new StorageIntakeLot
+            {
+                GodownBookingId = booking.Id,
+                ReceiptNumber = $"KL-WR-{year:D4}-00001",
+                IntakeDate = booking.StartDate.AddDays(1),
+                Crop = "Potato",
+                Variety = "Diamond",
+                Bags = lot1Bags,
+                BagWeightKg = lot1BagWeight,
+                NetWeightKg = lot1Net,
+                MoisturePercent = 12.5m,
+                Grade = IntakeGrades.A,
+                Remarks = "Chamber A, Stack 04. Inspected and verified sound.",
+                Status = IntakeLotStatus.Stored,
+                RecordedByUserId = ownerId,
+                RecordedAt = booking.StartDate.AddDays(1)
+            };
+
+            var lot2 = new StorageIntakeLot
+            {
+                GodownBookingId = booking.Id,
+                ReceiptNumber = $"KL-WR-{year:D4}-00002",
+                IntakeDate = booking.StartDate.AddDays(3),
+                Crop = "Potato",
+                Variety = "Cardinal",
+                Bags = lot2Bags,
+                BagWeightKg = lot2BagWeight,
+                NetWeightKg = lot2Net,
+                MoisturePercent = 13.0m,
+                Grade = IntakeGrades.B,
+                Remarks = "Chamber B, Stack 02. Grade B minor skin blemishes.",
+                Status = IntakeLotStatus.Stored,
+                RecordedByUserId = ownerId,
+                RecordedAt = booking.StartDate.AddDays(3)
+            };
+
+            db.StorageIntakeLots.AddRange(lot1, lot2);
+            await db.SaveChangesAsync();
+        }
     }
 }
+

@@ -11,11 +11,13 @@ namespace KrishiLink.Controllers
     {
         private readonly IBookingService _bookings;
         private readonly IPaymentService _payments;
+        private readonly IStorageIntakeService _intakeService;
 
-        public BookingsController(IBookingService bookings, IPaymentService payments)
+        public BookingsController(IBookingService bookings, IPaymentService payments, IStorageIntakeService intakeService)
         {
             _bookings = bookings;
             _payments = payments;
+            _intakeService = intakeService;
         }
 
         /// <summary>GET: /Bookings — the farmer's rental and storage booking history.</summary>
@@ -200,6 +202,20 @@ namespace KrishiLink.Controllers
                 TempData["ErrorMessage"] = $"Payment failed: {error}. You can try again from your bookings.";
 
             return LocalRedirect(AppLinks.FarmerBookings(payment.BookingType, payment.BookingId));
+        }
+
+        /// <summary>GET: /Bookings/WarehouseReceipt/5 — download official Warehouse Receipt PDF as farmer.</summary>
+        [HttpGet]
+        [Authorize(Roles = AppRoles.Farmer)]
+        [Route("Bookings/WarehouseReceipt/{id}")]
+        public async Task<IActionResult> WarehouseReceipt(int id)
+        {
+            var farmerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var result = await _intakeService.GetReceiptPdfAsync(id, farmerId, isOwner: false);
+            if (result is null)
+                return NotFound();
+
+            return File(result.Value.Content, "application/pdf", result.Value.FileName);
         }
     }
 }

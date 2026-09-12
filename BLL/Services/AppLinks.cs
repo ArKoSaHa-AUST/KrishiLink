@@ -50,6 +50,9 @@ namespace KrishiLink.BLL.Services
         public static string FarmerProfile(string farmerId) => $"/FarmerProfile/{farmerId}";
         public static string Favorites => "/Favorites";
         public static string SavedSearches => "/SavedSearches";
+        public static string ReceiptVerification(string receiptNumber) => $"/Verify/Receipt/{receiptNumber}";
+        public static string WarehouseReceipt(int lotId) => $"/Bookings/WarehouseReceipt/{lotId}";
+        public static string OwnerWarehouseReceipt(int lotId) => $"/GodownOwner/WarehouseReceipt/{lotId}";
 
         public static string BrowseWith(SavedSearch search)
         {

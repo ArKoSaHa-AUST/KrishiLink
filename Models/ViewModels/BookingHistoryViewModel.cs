@@ -72,6 +72,9 @@ namespace KrishiLink.Models.ViewModels
         public int? ReviewRating { get; set; }
         public string? ReviewComment { get; set; }
         public DateTime? ReviewedAt { get; set; }
+
+        /// <summary>Recorded intake lots and warehouse receipts (Godown bookings only).</summary>
+        public List<StorageIntakeLotItemViewModel> IntakeLots { get; set; } = new();
     }
 
     public class BookingHistoryViewModel

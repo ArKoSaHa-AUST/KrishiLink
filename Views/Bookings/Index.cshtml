@@ -412,6 +412,70 @@
                                             </div>
                                         </div>
 
+                                        @if (b.BookingType == "Godown" && b.IntakeLots.Any())
+                                        {
+                                            <div class="col-12 mt-3 pt-3 border-top">
+                                                <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-2 small">
+                                                    <i class="bi bi-boxes text-success"></i> @L["Stored Produce & Warehouse Receipts"]
+                                                </h6>
+                                                <div class="table-responsive bg-white rounded-3 border">
+                                                    <table class="table table-sm align-middle mb-0" style="font-size: 0.8rem;">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th class="ps-3">@L["Receipt #"]</th>
+                                                                <th>@L["Crop & Variety"]</th>
+                                                                <th>@L["Net Weight"]</th>
+                                                                <th>@L["Quality"]</th>
+                                                                <th>@L["Status"]</th>
+                                                                <th class="pe-3 text-end">@L["Receipt PDF"]</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var lot in b.IntakeLots)
+                                                            {
+                                                                <tr>
+                                                                    <td class="ps-3 font-monospace fw-bold">@lot.ReceiptNumber</td>
+                                                                    <td>
+                                                                        <strong>@lot.Crop</strong>
+                                                                        @if (!string.IsNullOrEmpty(lot.Variety))
+                                                                        {
+                                                                            <span class="text-muted small d-block">@lot.Variety</span>
+                                                                        }
+                                                                    </td>
+                                                                    <td>
+                                                                        <strong>@lot.NetWeightKg.ToString("N0") kg</strong>
+                                                                        <span class="text-muted small d-block">(@lot.Bags @L["bags"])</span>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span class="badge bg-light text-dark border">@L["Grade"] @lot.Grade</span>
+                                                                        @if (lot.MoisturePercent.HasValue)
+                                                                        {
+                                                                            <span class="text-muted small d-block">@lot.MoisturePercent.Value.ToString("N1")%</span>
+                                                                        }
+                                                                    </td>
+                                                                    <td>
+                                                                        @if (lot.IsReleased)
+                                                                        {
+                                                                            <span class="badge bg-secondary">@L["Released"]</span>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <span class="badge bg-success">@L["Stored"]</span>
+                                                                        }
+                                                                    </td>
+                                                                    <td class="pe-3 text-end">
+                                                                        <a href="@AppLinks.WarehouseReceipt(lot.Id)" target="_blank" class="btn btn-outline-success btn-sm py-0 px-2 rounded-pill fw-semibold">
+                                                                            <i class="bi bi-file-earmark-pdf me-1"></i>@L["Download"]
+                                                                        </a>
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        }
+
                                     </div>
                                 </div>
                             </td>
@@ -544,6 +608,27 @@
                                 <i class="bi bi-star-fill text-dark"></i>
                                 <span>@L["Rate & Review This Booking"]</span>
                             </button>
+                        }
+
+                        @if (b.BookingType == "Godown" && b.IntakeLots.Any())
+                        {
+                            <div class="p-2.5 bg-light rounded-3 mb-2">
+                                <span class="small fw-bold text-dark d-block mb-1"><i class="bi bi-boxes text-success me-1"></i>@L["Warehouse Receipts"]</span>
+                                <div class="d-flex flex-column gap-1.5">
+                                    @foreach (var lot in b.IntakeLots)
+                                    {
+                                        <div class="d-flex justify-content-between align-items-center bg-white p-2 rounded border small">
+                                            <div>
+                                                <div class="fw-bold text-dark">@lot.ReceiptNumber <span class="badge @(lot.IsReleased ? "bg-secondary" : "bg-success") ms-1">@(lot.IsReleased ? L["Released"] : L["Stored"])</span></div>
+                                                <div class="text-muted small">@lot.Crop · @lot.NetWeightKg.ToString("N0") kg (@lot.Bags @L["bags"])</div>
+                                            </div>
+                                            <a href="@AppLinks.WarehouseReceipt(lot.Id)" target="_blank" class="btn btn-outline-success btn-sm py-1 px-2 rounded-pill">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
                         }
 
                         <div class="d-grid gap-2 mt-2">

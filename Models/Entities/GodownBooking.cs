@@ -58,5 +58,8 @@ namespace KrishiLink.Models.Entities
         /// <summary>Optional link to a multi-item Harvest Plan if this booking was created from one.</summary>
         public int? HarvestPlanId { get; set; }
         public HarvestPlan? HarvestPlan { get; set; }
+
+        /// <summary>Physical produce lots recorded in storage for this booking.</summary>
+        public ICollection<StorageIntakeLot> IntakeLots { get; set; } = new List<StorageIntakeLot>();
     }
 }

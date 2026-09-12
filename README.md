@@ -148,6 +148,15 @@ Pending ──reject──▶ Rejected ──undo──▶ Pending              
 - **Immediate New Listing Evaluation**: When equipment or godown owners publish new listings, matching saved searches are immediately evaluated to notify interested farmers without delay.
 - **Lifecycle & Spam Guardrails**: Searches with past target dates are automatically retired with notification, while strict user scoping and deduplication keys prevent redundant alerts.
 
+### 15. 📦 Godown Produce Intake Tracking & Official Warehouse Receipts (QuestPDF + QR Verification)
+- **Produce Intake Lot Recording**: Godown owners can record physical batches/lots of produce (crop, variety, number of bags, bag weight in kg, auto-calculated net weight, moisture %, quality grade: Ungraded, Grade A, Grade B, Grade C, and handling/storage location remarks) against **Paid** or **Completed** storage bookings.
+- **Over-Storage Guard**: Enforces that total stored net weight (`Σ Stored + New Lot`) cannot exceed booked storage capacity plus a 5% weighbridge tolerance (`StorageTons * 1000 * 1.05`), protecting against inadvertent warehouse overfill.
+- **Sequential Year-Based Receipt Numbers**: Generates canonical, human-readable receipt identifiers in the format `KL-WR-{yyyy}-{Id:D5}` (e.g. `KL-WR-2026-00001`).
+- **Official Warehouse Receipt PDF (`QuestPDF`)**: Generates an official, print-ready A4 PDF receipt using KrishiLink's green design palette, complete with depositor and warehouse facility credentials, commodity specifications, quality grades, storage terms, official non-negotiable legal disclaimer, and a scannable verification QR code.
+- **Public QR Code Verification (`/Verify/Receipt/{receiptNumber}`)**: Anyone scanning the receipt's QR code is directed to a public verification page validating authenticity, current storage status (`STORED` vs `RELEASED`), and commodity specs while strictly protecting farmer privacy (zero farmer PII exposed).
+- **Produce Release Workflow**: Godown owners can release stored lots to the farmer or an authorized representative (recording release timestamp, recipient name/ID, and gate pass remarks). Releasing permanently stamps the lot and its receipt as `RELEASED` and renders it immutable against further edits or deletions.
+- **Comprehensive Lifecycle Notifications**: Farmers receive instant notifications when produce is accepted into the warehouse and when lots are released at pickup.
+
 ---
 
 ## 🏗️ Architecture & Project Structure
@@ -169,9 +178,10 @@ KrishiLink/
 │   ├── FarmerProfileController.cs # Privacy-Scoped Read-Only Farmer Trust Profiles
 │   ├── AdvisoryController.cs      # Weather Forecasts & Crop Calendars
 │   ├── BookingsController.cs      # User Booking History & Status Updates
+│   ├── VerifyController.cs        # Public QR Verification (Bookings & Warehouse Receipts)
 │   ├── ReviewsController.cs       # Verified Review Submission, AJAX Pagination & Owner Replies
 │   ├── EquipmentOwnerController.cs# Owner Listings, Rental Requests, Maintenance & Revenue
-│   ├── GodownOwnerController.cs   # Facility Listings, Space Requests & Revenue
+│   ├── GodownOwnerController.cs   # Facility Listings, Space Requests, Produce Intake & Revenue
 │   └── OwnerRevenueControllerBase.cs # Shared Revenue / Invoice / Expense base controller
 ├── Views/                         # Razor Views & Component Partials
 │   ├── Admin/Verifications/       # Admin Identity Verification Management
@@ -187,11 +197,12 @@ KrishiLink/
 │   ├── FarmerProfile/             # Farmer Trust Profile Views
 │   ├── Advisory/                  # Advisory Dashboard & Pest Warnings
 │   ├── Bookings/                  # History & Review Modal Views
+│   ├── Verify/                    # QR Verification Views (Booking & Warehouse Receipt)
 │   ├── EquipmentOwner/            # Equipment Management Views
-│   └── GodownOwner/               # Godown Management Views
+│   └── GodownOwner/               # Godown Management Views & Intake Modals
 ├── Models/                        # Data Transfer & Entity Models
-│   ├── Entities/                  # EF Core Domain Entities (User, Equipment, Godown, Bookings, HarvestPlan, CropCalendar, WeatherData, etc.)
-│   └── ViewModels/                # Strongly-typed Razor ViewModels (FarmerProfileViewModels, etc.)
+│   ├── Entities/                  # EF Core Domain Entities (User, Equipment, Godown, Bookings, StorageIntakeLot, HarvestPlan, CropCalendar, WeatherData, etc.)
+│   └── ViewModels/                # Strongly-typed Razor ViewModels (StorageIntakeViewModels, etc.)
 ├── BLL/                           # Business Logic Layer Services
 │   ├── Services/                  # Core Business Services:
 │   │   ├── AppLinks.cs            # Centralized Type-Safe URL Registry
@@ -211,6 +222,8 @@ KrishiLink/
 │   │   ├── ReviewService.cs       # Verified Reviews & Atomic Aggregations
 │   │   ├── SavedSearchService.cs  # Saved Queries & Immediate Match Evaluation
 │   │   ├── SavedSearchAlertScheduler.cs # Background Periodic Search Match Dispatcher
+│   │   ├── StorageIntakeService.cs# Produce Intake Tracking & Warehouse Receipts
+│   │   ├── WarehouseReceiptDocument.cs # QuestPDF A4 Non-Negotiable Warehouse Receipt Document
 │   │   └── WeatherService.cs      # Open-Meteo Live 7-Day Forecast Integrator
 ├── DAL/                           # Data Access Layer
 │   ├── ApplicationDbContext.cs    # EF Core DbContext with Identity Integration
@@ -229,7 +242,8 @@ KrishiLink/
 - **Backend Framework**: C# / ASP.NET Core MVC (.NET 8 LTS / .NET 9)
 - **Data Access & ORM**: Entity Framework Core 9.0, Microsoft SQL Server / LocalDB
 - **Security & Cryptography**: ASP.NET Core Identity (RBAC), `IDataProtectionProvider` (NID Data at Rest)
-- **PDF Generation**: QuestPDF (Community license) for monthly owner accounting statements
+- **PDF Generation**: QuestPDF (Community license) for monthly owner accounting statements & official non-negotiable warehouse receipts
+- **QR Code Generation**: QRCoder for gate passes, booking verification & warehouse receipts
 - **Frontend Architecture**: Razor Views (HTML5), Bootstrap 5.3, Bootstrap Icons, Vanilla JavaScript (no heavy runtime dependencies)
 - **Localization**: Full Bilingual Support — English (`en-US`) and Bengali (`bn-BD` বাংলা)
 

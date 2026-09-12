@@ -1,9 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <root>
-  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
-  <resheader name="version"><value>2.0</value></resheader>
-  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
-  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
   <data name="(Decimal / Shatangsho)" xml:space="preserve">
     <value>(ডেসিমাল / শতাংশ)</value>
   </data>
@@ -427,7 +435,7 @@
   <data name="Distance: Nearest" xml:space="preserve">
     <value>দূরত্ব: নিকটতম</value>
   </data>
-  <data name="Don&#x27;t know / Not sure" xml:space="preserve">
+  <data name="Don't know / Not sure" xml:space="preserve">
     <value>জানি না / নিশ্চিত নই</value>
   </data>
   <data name="Drag &amp; drop equipment photos here, or" xml:space="preserve">
@@ -523,7 +531,7 @@
   <data name="Farmer Dashboard Placeholder" xml:space="preserve">
     <value>কৃষক ড্যাশবোর্ডের স্থানধারক</value>
   </data>
-  <data name="Farmer&#x27;s Note" xml:space="preserve">
+  <data name="Farmer's Note" xml:space="preserve">
     <value>কৃষকের নোট</value>
   </data>
   <data name="Featured Listings" xml:space="preserve">
@@ -646,7 +654,7 @@
   <data name="Heavy Clay (Atel)" xml:space="preserve">
     <value>ভারী কাদামাটি (এঁটেল)</value>
   </data>
-  <data name="Here&#x27;s your farming overview for today. Manage bookings, explore equipment, and get crop advice." xml:space="preserve">
+  <data name="Here's your farming overview for today. Manage bookings, explore equipment, and get crop advice." xml:space="preserve">
     <value>আজকের জন্য আপনার কৃষি সারসংক্ষেপ। বুকিং পরিচালনা করুন, যন্ত্রপাতি দেখুন এবং ফসল পরামর্শ নিন।</value>
   </data>
   <data name="High-quality photos of the front, side, and engine bay increase rental bookings." xml:space="preserve">
@@ -1300,7 +1308,7 @@
   <data name="Unsaved changes will revert if you leave without saving." xml:space="preserve">
     <value>সংরক্ষণ না করে চলে গেলে অসংরক্ষিত পরিবর্তন বাতিল হবে।</value>
   </data>
-  <data name="Use this page to detail your site&#x27;s privacy policy." xml:space="preserve">
+  <data name="Use this page to detail your site's privacy policy." xml:space="preserve">
     <value>আপনার সাইটের গোপনীয়তা নীতি বর্ণনা করতে এই পাতাটি ব্যবহার করুন।</value>
   </data>
   <data name="User Profile Placeholder" xml:space="preserve">
@@ -1354,10 +1362,10 @@
   <data name="Yes (Pump / Canal)" xml:space="preserve">
     <value>হ্যাঁ (পাম্প / খাল)</value>
   </data>
-  <data name="You haven&#x27;t booked any crop or grain storage facilities yet. Discover nearby warehouses and cold storage rooms." xml:space="preserve">
+  <data name="You haven't booked any crop or grain storage facilities yet. Discover nearby warehouses and cold storage rooms." xml:space="preserve">
     <value>আপনি এখনও কোনো ফসল বা শস্য সংরক্ষণাগার বুক করেননি। কাছাকাছি গুদাম ও কোল্ড স্টোরেজ খুঁজে দেখুন।</value>
   </data>
-  <data name="You haven&#x27;t requested any machinery rentals yet. Explore tractors, harvesters, and tillers available in your area." xml:space="preserve">
+  <data name="You haven't requested any machinery rentals yet. Explore tractors, harvesters, and tillers available in your area." xml:space="preserve">
     <value>আপনি এখনও কোনো যন্ত্রপাতি ভাড়ার অনুরোধ করেননি। আপনার এলাকায় উপলব্ধ ট্রাক্টর, হারভেস্টার ও টিলার দেখুন।</value>
   </data>
   <data name="Your Note:" xml:space="preserve">
@@ -2788,7 +2796,6 @@
   <data name="You have verified the farmer's QR pass. Select an action below to update booking status immediately:" xml:space="preserve">
     <value>আপনি কৃষকের কিউআর পাস সফলভাবে যাচাই করেছেন। বুকিং স্ট্যাটাস আপডেট করতে নিচের অপশন নির্বাচন করুন:</value>
   </data>
-
   <data name="Reject Request" xml:space="preserve">
     <value>অনুরোধ প্রত্যাখ্যান করুন</value>
   </data>
@@ -3059,8 +3066,8 @@
   <data name="Service Records" xml:space="preserve">
     <value>সার্ভিস রেকর্ড</value>
   </data>
-  <data name="Expired (>90d)" xml:space="preserve">
-    <value>মেয়াদোত্তীর্ণ (>৯০ দিন)</value>
+  <data name="Expired (&gt;90d)" xml:space="preserve">
+    <value>মেয়াদোত্তীর্ণ (&gt;৯০ দিন)</value>
   </data>
   <data name="No badges unlocked yet. Complete bookings and maintain high ratings to earn recognition!" xml:space="preserve">
     <value>এখনও কোনো ব্যাজ আনলক হয়নি। বুকিং সম্পন্ন করুন এবং উচ্চ রেটিং বজায় রেখে স্বীকৃতি অর্জন করুন!</value>
@@ -3515,7 +3522,7 @@
   <data name="Settling automatically within ~{0}" xml:space="preserve">
     <value>প্রায় {0}-এর মধ্যে স্বয়ংক্রিয়ভাবে নিষ্পত্তি হবে</value>
   </data>
-  <data name="Farmer payments held for bookings you haven&apos;t completed yet" xml:space="preserve">
+  <data name="Farmer payments held for bookings you haven't completed yet" xml:space="preserve">
     <value>এখনও সম্পন্ন না হওয়া বুকিংয়ের জন্য সংরক্ষিত কৃষকের পেমেন্ট</value>
   </data>
   <data name="A payout of {0} is being processed. It settles automatically within ~{1}; you can request another once it completes." xml:space="preserve">
@@ -4503,7 +4510,7 @@
     <value>আপনার সংরক্ষিত অনুসন্ধানের নতুন ফলাফল</value>
   </data>
   <data name="{0} in {1} matches &quot;{2}&quot;{3}." xml:space="preserve">
-    <value>{1}-এ {0} আপনার &quot;{2}&quot; অনুসন্ধানের সাথে মিলেছে{3}।</value>
+    <value>{1}-এ {0} আপনার "{2}" অনুসন্ধানের সাথে মিলেছে{3}।</value>
   </data>
   <data name="Saved search expired" xml:space="preserve">
     <value>সংরক্ষিত অনুসন্ধানের মেয়াদ শেষ</value>
@@ -4513,5 +4520,230 @@
   </data>
   <data name="[Dev] Evaluated saved searches. {0} alert(s) sent." xml:space="preserve">
     <value>[Dev] সংরক্ষিত অনুসন্ধান মূল্যায়ন করা হয়েছে। {0}টি সতর্কতা পাঠানো হয়েছে।</value>
+  </data>
+  <data name="Storage Intake Lots &amp; Warehouse Receipts" xml:space="preserve">
+    <value>গুদামজাত পণ্য ও গুদাম রসিদ</value>
+  </data>
+  <data name="{0} / {1} t stored" xml:space="preserve">
+    <value>{0} / {1} টন সংরক্ষিত</value>
+  </data>
+  <data name="{0} t stored" xml:space="preserve">
+    <value>{0} টন সংরক্ষিত</value>
+  </data>
+  <data name="Physical goods logged via intake" xml:space="preserve">
+    <value>গুদামজাত হিসেবে সংরক্ষিত বাস্তব পণ্য</value>
+  </data>
+  <data name="Record intake" xml:space="preserve">
+    <value>পণ্য জমা নিন</value>
+  </data>
+  <data name="Record Produce Intake" xml:space="preserve">
+    <value>কৃষি পণ্য জমা রেকর্ড করুন</value>
+  </data>
+  <data name="Edit Intake Lot" xml:space="preserve">
+    <value>সংরক্ষিত লট সম্পাদনা</value>
+  </data>
+  <data name="Release" xml:space="preserve">
+    <value>খালাস করুন</value>
+  </data>
+  <data name="Release Stored Goods" xml:space="preserve">
+    <value>সংরক্ষিত পণ্য খালাস করুন</value>
+  </data>
+  <data name="Confirm Release" xml:space="preserve">
+    <value>খালাস নিশ্চিত করুন</value>
+  </data>
+  <data name="Delete this intake lot?" xml:space="preserve">
+    <value>এই সংরক্ষিত লটটি মুছে ফেলতে চান?</value>
+  </data>
+  <data name="Download Receipt PDF" xml:space="preserve">
+    <value>রসিদ PDF ডাউনলোড করুন</value>
+  </data>
+  <data name="PDF Receipt" xml:space="preserve">
+    <value>PDF রসিদ</value>
+  </data>
+  <data name="Receipt PDF" xml:space="preserve">
+    <value>রসিদ PDF</value>
+  </data>
+  <data name="Receipt #" xml:space="preserve">
+    <value>রসিদ নং</value>
+  </data>
+  <data name="Receipt Number:" xml:space="preserve">
+    <value>রসিদ নম্বর:</value>
+  </data>
+  <data name="Crop Name" xml:space="preserve">
+    <value>ফসলের নাম</value>
+  </data>
+  <data name="Number of Bags / Crates" xml:space="preserve">
+    <value>বস্তা / ক্রেটের সংখ্যা</value>
+  </data>
+  <data name="Avg. Bag Weight (kg)" xml:space="preserve">
+    <value>গড় বস্তার ওজন (কেজি)</value>
+  </data>
+  <data name="Auto-calculated (Bags × Bag Weight) or override from weighbridge ticket." xml:space="preserve">
+    <value>স্বয়ংক্রিয় হিসাব (বস্তা × বস্তার ওজন) অথবা ওজন স্কেলের মান লিখুন।</value>
+  </data>
+  <data name="Quality Grade" xml:space="preserve">
+    <value>মানের গ্রেড</value>
+  </data>
+  <data name="Grade A (Premium)" xml:space="preserve">
+    <value>গ্রেড এ (উন্নত মান)</value>
+  </data>
+  <data name="Grade B (Standard)" xml:space="preserve">
+    <value>গ্রেড বি (সাধারণ মান)</value>
+  </data>
+  <data name="Grade C (Fair)" xml:space="preserve">
+    <value>গ্রেড সি (চলতি মান)</value>
+  </data>
+  <data name="Ungraded" xml:space="preserve">
+    <value>অশ্রেণিকৃত (Ungraded)</value>
+  </data>
+  <data name="Grade" xml:space="preserve">
+    <value>গ্রেড</value>
+  </data>
+  <data name="Moisture %" xml:space="preserve">
+    <value>আর্দ্রতা %</value>
+  </data>
+  <data name="Moisture:" xml:space="preserve">
+    <value>আর্দ্রতা:</value>
+  </data>
+  <data name="Moisture Content:" xml:space="preserve">
+    <value>আর্দ্রতার পরিমাণ:</value>
+  </data>
+  <data name="Not Tested" xml:space="preserve">
+    <value>পরীক্ষা করা হয়নি</value>
+  </data>
+  <data name="Remarks / Storage Location Notes" xml:space="preserve">
+    <value>মন্তব্য / গুদামের অবস্থান নোট</value>
+  </data>
+  <data name="Save &amp; Issue Receipt" xml:space="preserve">
+    <value>সংরক্ষণ ও রসিদ ইস্যু করুন</value>
+  </data>
+  <data name="Update Lot" xml:space="preserve">
+    <value>লট আপডেট করুন</value>
+  </data>
+  <data name="Releasing goods marks this lot as finalized and cannot be undone. The warehouse receipt will reflect a permanent RELEASED status." xml:space="preserve">
+    <value>পণ্য খালাস করলে এই লটটি চূড়ান্ত হিসেবে চিহ্নিত হবে যা পরিবর্তন করা যাবে না। গুদাম রসিদে স্থায়ীভাবে খালাস (RELEASED) স্ট্যাটাস প্রতিফলিত হবে।</value>
+  </data>
+  <data name="Released To (Name / Phone / ID)" xml:space="preserve">
+    <value>কার কাছে খালাস (নাম / ফোন / আইডি)</value>
+  </data>
+  <data name="Release Remarks" xml:space="preserve">
+    <value>খালাসের মন্তব্য</value>
+  </data>
+  <data name="Warehouse receipt issued successfully." xml:space="preserve">
+    <value>গুদাম রসিদ সফলভাবে ইস্যু করা হয়েছে।</value>
+  </data>
+  <data name="Intake lot updated successfully." xml:space="preserve">
+    <value>সংরক্ষিত লট সফলভাবে আপডেট করা হয়েছে।</value>
+  </data>
+  <data name="Intake lot deleted successfully." xml:space="preserve">
+    <value>সংরক্ষিত লট সফলভাবে মুছে ফেলা হয়েছে।</value>
+  </data>
+  <data name="Goods released and farmer notified." xml:space="preserve">
+    <value>পণ্য খালাস করা হয়েছে এবং কৃষককে অবহিত করা হয়েছে।</value>
+  </data>
+  <data name="Cannot issue intake for non-godown bookings." xml:space="preserve">
+    <value>গুদাম ব্যতীত অন্য বুকিংয়ে পণ্য গ্রহণ সম্ভব নয়।</value>
+  </data>
+  <data name="Intake can only be recorded for paid or completed storage bookings." xml:space="preserve">
+    <value>কেবলমাত্র পরিশোধিত বা সম্পন্ন গুদাম বুকিংয়ের জন্য পণ্য জমা রেকর্ড করা যাবে।</value>
+  </data>
+  <data name="Intake date cannot be in the future." xml:space="preserve">
+    <value>পণ্য জমার তারিখ ভবিষ্যতের হতে পারে না।</value>
+  </data>
+  <data name="Intake date cannot precede storage booking start date." xml:space="preserve">
+    <value>পণ্য জমার তারিখ বুকিং শুরুর আগের হতে পারে না।</value>
+  </data>
+  <data name="Bags and bag weight must be positive." xml:space="preserve">
+    <value>বস্তার সংখ্যা এবং ওজন ধনাত্মক হতে হবে।</value>
+  </data>
+  <data name="Net weight cannot exceed booking capacity (+5% tolerance)." xml:space="preserve">
+    <value>মোট ওজন বুকিং ক্ষমতার অতিরিক্ত হতে পারে না (+৫% স্কেল সহনশীলতা)।</value>
+  </data>
+  <data name="Cannot edit an intake lot that has already been released." xml:space="preserve">
+    <value>ইতিমধ্যে খালাস হওয়া লট সম্পাদনা করা যাবে না।</value>
+  </data>
+  <data name="Cannot delete an intake lot that has already been released." xml:space="preserve">
+    <value>ইতিমধ্যে খালাস হওয়া লট মুছে ফেলা যাবে না।</value>
+  </data>
+  <data name="Warehouse Receipt Verification" xml:space="preserve">
+    <value>গুদাম রসিদ যাচাইকরণ</value>
+  </data>
+  <data name="Verified Authentic Warehouse Receipt" xml:space="preserve">
+    <value>যাচাইকৃত আসল গুদাম রসিদ</value>
+  </data>
+  <data name="Invalid Receipt" xml:space="preserve">
+    <value>অবৈধ গুদাম রসিদ</value>
+  </data>
+  <data name="Goods Released — Lot Finalized" xml:space="preserve">
+    <value>পণ্য খালাস সম্পন্ন — লট সমাপ্ত</value>
+  </data>
+  <data name="Receipt Not Found" xml:space="preserve">
+    <value>গুদাম রসিদ পাওয়া যায়নি</value>
+  </data>
+  <data name="STATUS: RELEASED" xml:space="preserve">
+    <value>স্ট্যাটাস: খালাস সম্পন্ন (RELEASED)</value>
+  </data>
+  <data name="STATUS: CURRENTLY STORED" xml:space="preserve">
+    <value>স্ট্যাটাস: বর্তমানে গুদামজাত (STORED)</value>
+  </data>
+  <data name="Currently Stored" xml:space="preserve">
+    <value>বর্তমানে গুদামজাত</value>
+  </data>
+  <data name="Licensed Storage Facility" xml:space="preserve">
+    <value>অনুমোদিত গুদাম সুবিধা</value>
+  </data>
+  <data name="Deposited Commodity Specifications" xml:space="preserve">
+    <value>জমা রাখা পণ্যের বিবরণ</value>
+  </data>
+  <data name="Net Stored Weight:" xml:space="preserve">
+    <value>সংরক্ষিত নেট ওজন:</value>
+  </data>
+  <data name="Storage Booking Ref:" xml:space="preserve">
+    <value>স্টোরেজ বুকিং রেফারেন্স:</value>
+  </data>
+  <data name="Storage Location &amp; Handling Remarks:" xml:space="preserve">
+    <value>গুদামের অবস্থান ও হ্যান্ডলিং মন্তব্য:</value>
+  </data>
+  <data name="Release Information:" xml:space="preserve">
+    <value>খালাসের তথ্য:</value>
+  </data>
+  <data name="Released To:" xml:space="preserve">
+    <value>যাকে দেওয়া হয়েছে:</value>
+  </data>
+  <data name="This digital verification confirms the issuance of an official KrishiLink Warehouse Receipt. Stored commodities are held under warehouse custody subject to the terms of the Agricultural Produce Storage Agreement. This receipt is non-negotiable." xml:space="preserve">
+    <value>এই ডিজিটাল যাচাইকরণ নিশ্চিত করে যে এটি একটি অফিশিয়াল কৃষিলিঙ্ক গুদাম রসিদ। সংরক্ষিত পণ্য কৃষিপণ্য গুদামজাতকরণ চুক্তির শর্তাধীনে গুদাম কর্তৃপক্ষের হেফাজতে রয়েছে। এই রসিদ হস্তান্তরযোগ্য নয়।</value>
+  </data>
+  <data name="No warehouse receipt matches the specified receipt number. Please check the QR code or URL and try again." xml:space="preserve">
+    <value>নির্দিষ্ট রসিদ নম্বরের সাথে কোনো গুদাম রসিদ মেলেনি। অনুগ্রহ করে কিউআর কোড বা লিঙ্কটি যাচাই করুন।</value>
+  </data>
+  <data name="Stored Goods &amp; Official Warehouse Receipts" xml:space="preserve">
+    <value>গুদামজাত পণ্য ও অফিশিয়াল গুদাম রসিদ</value>
+  </data>
+  <data name="Stored Produce &amp; Warehouse Receipts" xml:space="preserve">
+    <value>সংরক্ষিত পণ্য ও গুদাম রসিদ</value>
+  </data>
+  <data name="Warehouse Receipts" xml:space="preserve">
+    <value>গুদাম রসিদসমূহ</value>
+  </data>
+  <data name="{0} bags" xml:space="preserve">
+    <value>{0} বস্তা</value>
+  </data>
+  <data name="bags" xml:space="preserve">
+    <value>বস্তা</value>
+  </data>
+  <data name="{0} kg" xml:space="preserve">
+    <value>{0} কেজি</value>
+  </data>
+  <data name="{0} kg/bag" xml:space="preserve">
+    <value>{0} কেজি/বস্তা</value>
+  </data>
+  <data name="Released to {0} on {1}" xml:space="preserve">
+    <value>{0}-কে {1} তারিখে খালাস করা হয়েছে</value>
+  </data>
+  <data name="Intake lot logged: {0} kg of {1} at {2} (Receipt #{3})." xml:space="preserve">
+    <value>পণ্য জমা রেকর্ড করা হয়েছে: {0} কেজি {1}, স্থান: {2} (রসিদ #{3})।</value>
+  </data>
+  <data name="Stored goods released: {0} kg of {1} from {2} to {3} (Receipt #{4})." xml:space="preserve">
+    <value>সংরক্ষিত পণ্য খালাস করা হয়েছে: {0} কেজি {1}, {2} থেকে {3}-কে প্রদান করা হয়েছে (রসিদ #{4})।</value>
   </data>
 </root>

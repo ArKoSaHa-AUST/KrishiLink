@@ -537,6 +537,7 @@ namespace KrishiLink.BLL.Services
                     .Include(x => x.Godown!).ThenInclude(god => god.Owner)
                     .Include(x => x.Farmer)
                     .Include(x => x.Payment)
+                    .Include(x => x.IntakeLots)
                     .FirstOrDefaultAsync(x => x.Id == bookingId);
 
                 if (g == null || g.Godown == null) return null;
@@ -906,7 +907,8 @@ namespace KrishiLink.BLL.Services
                 CanModify = CanModify(b),
                 ModificationCount = b.ModificationCount,
                 PreviousDetails = b.PreviousDetails,
-                Timeline = GenerateTimeline(b.Status, b.RequestedOn, b.UpdatedOn, b.PaidOn, g.Owner?.FullName ?? "Owner", b.StartDate, b.EndDate, "Storage Requested", "Produce Stored", "Goods in storage", "Storage Period Ended")
+                Timeline = GenerateTimeline(b.Status, b.RequestedOn, b.UpdatedOn, b.PaidOn, g.Owner?.FullName ?? "Owner", b.StartDate, b.EndDate, "Storage Requested", "Produce Stored", "Goods in storage", "Storage Period Ended"),
+                IntakeLots = b.IntakeLots.OrderByDescending(l => l.IntakeDate).Select(ToLotViewModel).ToList()
             };
 
             return vm;
@@ -973,6 +975,7 @@ namespace KrishiLink.BLL.Services
                 .Include(b => b.Review)
                 .Include(b => b.Payment)
                 .Include(b => b.HarvestPlan)
+                .Include(b => b.IntakeLots)
                 .Where(b => b.FarmerId == farmerId)
                 .ToListAsync();
 
@@ -1039,7 +1042,8 @@ namespace KrishiLink.BLL.Services
                 StorageTons = b.StorageTons,
                 MinDays = 1,
                 HarvestPlanId = b.HarvestPlanId,
-                HarvestPlanName = b.HarvestPlan?.Name
+                HarvestPlanName = b.HarvestPlan?.Name,
+                IntakeLots = b.IntakeLots.OrderByDescending(l => l.IntakeDate).Select(ToLotViewModel).ToList()
             };
             return Finish(item, b, b.Note, b.RejectReason, b.RequestedOn, b.UpdatedOn, g.Owner, "Booking Requested", "Produce Stored", "Goods in storage", "Storage Period Ended");
         }
@@ -1073,5 +1077,28 @@ namespace KrishiLink.BLL.Services
 
         private static ActivityFeedItem Feed(string text, string icon, string color, DateTime at) =>
             new() { Description = text, IconClass = icon, IconColor = color, TimeAgo = TimeAgoFormatter.Format(at) };
+
+        private static StorageIntakeLotItemViewModel ToLotViewModel(StorageIntakeLot l) => new()
+        {
+            Id = l.Id,
+            GodownBookingId = l.GodownBookingId,
+            ReceiptNumber = l.ReceiptNumber,
+            IntakeDate = l.IntakeDate,
+            Crop = l.Crop,
+            Variety = l.Variety,
+            Bags = l.Bags,
+            BagWeightKg = l.BagWeightKg,
+            NetWeightKg = l.NetWeightKg,
+            MoisturePercent = l.MoisturePercent,
+            Grade = l.Grade,
+            Remarks = l.Remarks,
+            Status = l.Status,
+            ReleasedOn = l.ReleasedOn,
+            ReleasedTo = l.ReleasedTo,
+            ReleaseRemarks = l.ReleaseRemarks,
+            RecordedAt = l.RecordedAt,
+            UpdatedAt = l.UpdatedAt,
+            ReceiptPdfUrl = AppLinks.WarehouseReceipt(l.Id)
+        };
     }
 }
