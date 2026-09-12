@@ -55,6 +55,7 @@ namespace KrishiLink.DAL
                 e.Property(x => x.AverageRating).HasDefaultValue(0.0);
                 e.Property(x => x.ReviewCount).HasDefaultValue(0);
                 e.HasIndex(x => x.OwnerId);
+                e.HasIndex(x => new { x.Latitude, x.Longitude });
                 e.HasOne(x => x.Owner).WithMany().HasForeignKey(x => x.OwnerId).OnDelete(DeleteBehavior.Cascade);
             });
 
@@ -82,6 +83,7 @@ namespace KrishiLink.DAL
                 g.Property(x => x.AverageRating).HasDefaultValue(0.0);
                 g.Property(x => x.ReviewCount).HasDefaultValue(0);
                 g.HasIndex(x => x.OwnerId);
+                g.HasIndex(x => new { x.Latitude, x.Longitude });
                 g.HasOne(x => x.Owner).WithMany().HasForeignKey(x => x.OwnerId).OnDelete(DeleteBehavior.Cascade);
             });
 

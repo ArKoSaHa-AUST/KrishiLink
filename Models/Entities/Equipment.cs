@@ -7,6 +7,13 @@ namespace KrishiLink.Models.Entities
         public string Category { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
+
+        /// <summary>Geographic latitude coordinate for map pin location.</summary>
+        public double? Latitude { get; set; }
+
+        /// <summary>Geographic longitude coordinate for map pin location.</summary>
+        public double? Longitude { get; set; }
+
         public decimal DailyRate { get; set; }
         public decimal? HourlyRate { get; set; }
 
