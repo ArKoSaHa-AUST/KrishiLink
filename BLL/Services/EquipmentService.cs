@@ -37,14 +37,16 @@ namespace KrishiLink.BLL.Services
         private readonly IRepository<EquipmentBooking> _bookings;
         private readonly IRepository<EquipmentBlockedDate> _blockedDates;
         private readonly IFileStorageService _files;
+        private readonly IReviewService _reviews;
 
         public EquipmentService(IRepository<Equipment> equipment, IRepository<EquipmentBooking> bookings,
-            IRepository<EquipmentBlockedDate> blockedDates, IFileStorageService files)
+            IRepository<EquipmentBlockedDate> blockedDates, IFileStorageService files, IReviewService reviews)
         {
             _equipment = equipment;
             _bookings = bookings;
             _blockedDates = blockedDates;
             _files = files;
+            _reviews = reviews;
         }
 
         // ---------------------------------------------------------------- Browse & details
@@ -93,6 +95,8 @@ namespace KrishiLink.BLL.Services
                 IsAvailable = e.IsAvailable,
                 ImageUrl = e.ImageUrls,
                 OwnerName = e.Owner!.FullName,
+                Rating = e.AverageRating,
+                ReviewCount = e.ReviewCount,
                 CreatedAt = e.CreatedAt
             }).ToListAsync();
             items.ForEach(i => i.ImageUrl = ListingFormat.Split(i.ImageUrl).FirstOrDefault() ?? string.Empty);
@@ -130,6 +134,7 @@ namespace KrishiLink.BLL.Services
                 .ToListAsync();
 
             var bookedDates = accepted.SelectMany(b => EachDay(b.StartDate, b.EndDate)).Concat(blocked).Distinct().OrderBy(d => d).ToList();
+            var reviewsList = await _reviews.GetReviewsForEquipmentAsync(id);
 
             return new EquipmentDetailViewModel
             {
@@ -145,8 +150,13 @@ namespace KrishiLink.BLL.Services
                 OwnerName = e.Owner?.FullName ?? string.Empty,
                 OwnerPhone = e.Owner?.PhoneNumber ?? string.Empty,
                 OwnerMemberSince = ListingFormat.MemberSince(e.Owner?.CreatedAt ?? e.CreatedAt),
+                OwnerRating = e.AverageRating,
+                TotalReviews = e.ReviewCount,
+                AverageRating = e.AverageRating,
+                ReviewCount = e.ReviewCount,
                 ImageUrls = ListingFormat.Split(e.ImageUrls),
-                BookedDates = bookedDates
+                BookedDates = bookedDates,
+                Reviews = reviewsList
             };
         }
 

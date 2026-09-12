@@ -38,14 +38,16 @@ namespace KrishiLink.BLL.Services
         private readonly IRepository<GodownBooking> _bookings;
         private readonly IRepository<GodownBlockedDate> _blockedDates;
         private readonly IFileStorageService _files;
+        private readonly IReviewService _reviews;
 
         public GodownService(IRepository<Godown> godowns, IRepository<GodownBooking> bookings,
-            IRepository<GodownBlockedDate> blockedDates, IFileStorageService files)
+            IRepository<GodownBlockedDate> blockedDates, IFileStorageService files, IReviewService reviews)
         {
             _godowns = godowns;
             _bookings = bookings;
             _blockedDates = blockedDates;
             _files = files;
+            _reviews = reviews;
         }
 
         // ---------------------------------------------------------------- Browse & details
@@ -85,6 +87,8 @@ namespace KrishiLink.BLL.Services
                 g.PricePerTonPerMonth,
                 g.ImageUrls,
                 g.Facilities,
+                g.AverageRating,
+                g.ReviewCount,
                 g.CreatedAt,
                 OwnerName = g.Owner!.FullName,
                 Occupied = g.Bookings
@@ -103,6 +107,8 @@ namespace KrishiLink.BLL.Services
                 PricePerTonPerMonth = g.PricePerTonPerMonth,
                 ImageUrl = ListingFormat.Split(g.ImageUrls).FirstOrDefault() ?? string.Empty,
                 OwnerName = g.OwnerName,
+                Rating = g.AverageRating,
+                ReviewCount = g.ReviewCount,
                 Facilities = ListingFormat.Split(g.Facilities),
                 CreatedAt = g.CreatedAt
             });
@@ -161,6 +167,7 @@ namespace KrishiLink.BLL.Services
                 .ToListAsync();
             var fullDays = EachDay(from, to)
                 .Where(day => accepted.Where(b => b.StartDate <= day && day <= b.EndDate).Sum(b => b.StorageTons) >= g.CapacityInTons);
+            var reviewsList = await _reviews.GetReviewsForGodownAsync(id);
 
             return new GodownDetailViewModel
             {
@@ -178,11 +185,16 @@ namespace KrishiLink.BLL.Services
                 OwnerName = g.Owner?.FullName ?? string.Empty,
                 OwnerPhone = g.Owner?.PhoneNumber ?? string.Empty,
                 OwnerMemberSince = ListingFormat.MemberSince(g.Owner?.CreatedAt ?? g.CreatedAt),
+                OwnerRating = g.AverageRating,
+                TotalReviews = g.ReviewCount,
+                AverageRating = g.AverageRating,
+                ReviewCount = g.ReviewCount,
                 ImageUrls = ListingFormat.Split(g.ImageUrls),
                 Facilities = ListingFormat.Split(g.Facilities),
                 StartDate = DateTime.Today.AddDays(1),
                 EndDate = DateTime.Today.AddMonths(1),
-                RequestedCapacityTons = Math.Min(10, available)
+                RequestedCapacityTons = Math.Min(10, available),
+                Reviews = reviewsList
             };
         }
 

@@ -35,5 +35,10 @@ namespace KrishiLink.Models.ViewModels
         public DateTime? EndDate { get; set; }
         public double RequestedCapacityTons { get; set; } = 5;
         public string? BookingNotes { get; set; }
+
+        // Ratings & Reviews
+        public double AverageRating { get; set; }
+        public int ReviewCount { get; set; }
+        public ReviewsListViewModel Reviews { get; set; } = new();
     }
 }
