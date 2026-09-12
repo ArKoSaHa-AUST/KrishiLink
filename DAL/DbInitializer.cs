@@ -1,3 +1,4 @@
+using KrishiLink.BLL.Helpers;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
@@ -55,6 +56,31 @@ namespace KrishiLink.DAL
                     demoGd.VerificationReviewedAt = DateTime.UtcNow.AddMonths(-6);
                     demoGd.VerificationNotes = "Verified owner account.";
                     await userManager.UpdateAsync(demoGd);
+                }
+
+                // Backfill map coordinates for any listings that have null coordinates
+                var unmappedEquipments = await db.Equipment.Where(e => e.Latitude == null || e.Longitude == null).ToListAsync();
+                if (unmappedEquipments.Any())
+                {
+                    foreach (var eq in unmappedEquipments)
+                    {
+                        var (lat, lng) = GeoLocationHelper.GetDistrictCoordinates(eq.Location);
+                        eq.Latitude = lat;
+                        eq.Longitude = lng;
+                    }
+                    await db.SaveChangesAsync();
+                }
+
+                var unmappedGodowns = await db.Godowns.Where(g => g.Latitude == null || g.Longitude == null).ToListAsync();
+                if (unmappedGodowns.Any())
+                {
+                    foreach (var gd in unmappedGodowns)
+                    {
+                        var (lat, lng) = GeoLocationHelper.GetDistrictCoordinates(gd.Location);
+                        gd.Latitude = lat;
+                        gd.Longitude = lng;
+                    }
+                    await db.SaveChangesAsync();
                 }
             }
         }
@@ -345,32 +371,42 @@ namespace KrishiLink.DAL
             return user;
         }
 
-        private static Equipment Machine(string name, string category, decimal daily, decimal hourly, string location, string description, string image, int createdDaysAgo) =>
-            new()
+        private static Equipment Machine(string name, string category, decimal daily, decimal hourly, string location, string description, string image, int createdDaysAgo, double? lat = null, double? lng = null)
+        {
+            var (defaultLat, defaultLng) = GeoLocationHelper.GetDistrictCoordinates(location);
+            return new()
             {
                 Name = name,
                 Category = category,
                 DailyRate = daily,
                 HourlyRate = hourly,
                 Location = location,
+                Latitude = lat ?? defaultLat,
+                Longitude = lng ?? defaultLng,
                 Description = description,
                 ImageUrls = image,
                 CreatedAt = DateTime.UtcNow.AddDays(createdDaysAgo)
             };
+        }
 
-        private static Godown Storage(string name, string type, double tons, decimal price, string location, string description, string facilities, string image, int createdDaysAgo) =>
-            new()
+        private static Godown Storage(string name, string type, double tons, decimal price, string location, string description, string facilities, string image, int createdDaysAgo, double? lat = null, double? lng = null)
+        {
+            var (defaultLat, defaultLng) = GeoLocationHelper.GetDistrictCoordinates(location);
+            return new()
             {
                 Name = name,
                 StorageType = type,
                 CapacityInTons = tons,
                 PricePerTonPerMonth = price,
                 Location = location,
+                Latitude = lat ?? defaultLat,
+                Longitude = lng ?? defaultLng,
                 Description = description,
                 Facilities = facilities,
                 ImageUrls = image,
                 CreatedAt = DateTime.UtcNow.AddDays(createdDaysAgo)
             };
+        }
 
         private static EquipmentBooking Rental(Equipment e, ApplicationUser farmer, int startOffset, int endOffset, string status, int requestedOffset, string? note = null, string? reject = null) =>
             new()
