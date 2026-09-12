@@ -34,5 +34,6 @@ namespace KrishiLink.Models.Entities
         public ICollection<EquipmentBooking> Bookings { get; set; } = new List<EquipmentBooking>();
         public ICollection<EquipmentBlockedDate> BlockedDates { get; set; } = new List<EquipmentBlockedDate>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
+        public ICollection<EquipmentMaintenanceRecord> MaintenanceRecords { get; set; } = new List<EquipmentMaintenanceRecord>();
     }
 }
