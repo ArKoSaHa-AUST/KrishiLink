@@ -356,6 +356,14 @@ namespace KrishiLink.BLL.Services
                 var existing = await _equipment.QueryTracked().FirstOrDefaultAsync(x => x.Id == model.Id && x.OwnerId == ownerId);
                 if (existing is null) return false;
                 entity = existing;
+
+                // Delete any removed images from disk
+                var previousImages = ListingFormat.Split(entity.ImageUrls);
+                var retainedExisting = model.ExistingImageUrls ?? new List<string>();
+                foreach (var removed in previousImages.Where(img => !retainedExisting.Contains(img, StringComparer.OrdinalIgnoreCase)))
+                {
+                    _files.DeleteImage(removed);
+                }
             }
             else
             {
@@ -363,7 +371,9 @@ namespace KrishiLink.BLL.Services
                 await _equipment.AddAsync(entity);
             }
 
-            var images = model.ExistingImageUrls.Concat(await _files.SaveImagesAsync(model.ImageFiles, UploadFolder));
+            var savedNewImages = await _files.SaveImagesAsync(model.ImageFiles, UploadFolder);
+            var retainedUrls = model.ExistingImageUrls ?? new List<string>();
+            var orderedImages = ArrangeImagesWithPrimary(retainedUrls, savedNewImages, model.PrimaryImageKey);
 
             entity.Name = model.Name.Trim();
             entity.Category = model.Category.Trim();
@@ -372,11 +382,48 @@ namespace KrishiLink.BLL.Services
             entity.DailyRate = model.DailyRate;
             entity.HourlyRate = model.HourlyRate is > 0 ? model.HourlyRate : null;
             entity.IsAvailable = model.IsAvailable;
-            entity.ImageUrls = ListingFormat.Join(images);
+            entity.ImageUrls = ListingFormat.Join(orderedImages);
 
             await _equipment.SaveChangesAsync();
             model.Id = entity.Id;
             return true;
+        }
+
+        private static List<string> ArrangeImagesWithPrimary(List<string> existingUrls, List<string> newUrls, string? primaryKey)
+        {
+            var all = new List<string>(existingUrls);
+            all.AddRange(newUrls);
+
+            if (all.Count == 0) return all;
+
+            string? primaryUrl = null;
+
+            if (!string.IsNullOrWhiteSpace(primaryKey))
+            {
+                if (primaryKey.StartsWith("new_", StringComparison.OrdinalIgnoreCase)
+                    && int.TryParse(primaryKey[4..], out var newIndex)
+                    && newIndex >= 0 && newIndex < newUrls.Count)
+                {
+                    primaryUrl = newUrls[newIndex];
+                }
+                else if (all.Contains(primaryKey, StringComparer.OrdinalIgnoreCase))
+                {
+                    primaryUrl = all.First(x => string.Equals(x, primaryKey, StringComparison.OrdinalIgnoreCase));
+                }
+            }
+
+            primaryUrl ??= all[0];
+
+            var result = new List<string> { primaryUrl };
+            foreach (var img in all)
+            {
+                if (!string.Equals(img, primaryUrl, StringComparison.OrdinalIgnoreCase))
+                {
+                    result.Add(img);
+                }
+            }
+
+            return result;
         }
 
         public async Task<ManageAvailabilityViewModel?> GetAvailabilityAsync(string ownerId, int equipmentId, DateTime? month)

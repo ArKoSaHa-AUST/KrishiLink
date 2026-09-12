@@ -11,11 +11,17 @@ namespace KrishiLink.Controllers
     public class GodownOwnerController : OwnerRevenueControllerBase
     {
         private readonly IGodownService _godowns;
+        private readonly IFileStorageService _files;
 
-        public GodownOwnerController(IGodownService godowns, IGodownRevenueService revenueService, UserManager<ApplicationUser> userManager)
+        public GodownOwnerController(
+            IGodownService godowns,
+            IFileStorageService files,
+            IGodownRevenueService revenueService,
+            UserManager<ApplicationUser> userManager)
             : base(revenueService, userManager)
         {
             _godowns = godowns;
+            _files = files;
         }
 
         /// <summary>GET: /GodownOwner — dashboard with godowns, capacity utilisation and pending requests.</summary>
@@ -74,15 +80,31 @@ namespace KrishiLink.Controllers
             return model is null ? NotFound() : View("Create", model);
         }
 
-        /// <summary>POST: /GodownOwner/Save — create or update a storage listing (with optional image uploads).</summary>
+        /// <summary>POST: /GodownOwner/Save — create or update a storage listing (with robust server-side image validation).</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Save(GodownListingViewModel model, List<IFormFile>? imageFiles)
         {
+            model.ImageFiles = imageFiles;
+
+            if (imageFiles is not null && imageFiles.Count > 0)
+            {
+                var fileErrors = _files.ValidateFiles(imageFiles);
+                foreach (var err in fileErrors)
+                {
+                    ModelState.AddModelError("ImageFiles", err);
+                }
+            }
+
+            var totalImagesCount = (model.ExistingImageUrls?.Count ?? 0) + (imageFiles?.Count(f => f.Length > 0) ?? 0);
+            if (totalImagesCount == 0)
+            {
+                ModelState.AddModelError("ImageFiles", "At least one photograph of the storage facility is required.");
+            }
+
             if (!ModelState.IsValid)
                 return View("Create", model);
 
-            model.ImageFiles = imageFiles;
             var isEdit = model.IsEditMode;
             if (!await _godowns.SaveListingAsync(OwnerId, model))
                 return NotFound();
