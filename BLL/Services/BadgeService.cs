@@ -38,11 +38,11 @@ namespace KrishiLink.BLL.Services
 
             // Calculate raw owner activity metrics
             var eqCompletedBookings = await _db.EquipmentBookings
-                .Where(b => b.Equipment != null && b.Equipment.OwnerId == ownerId && b.Status == "Completed")
+                .Where(b => b.Equipment != null && b.Equipment.OwnerId == ownerId && b.Status == BookingStatus.Completed)
                 .CountAsync();
 
             var gdCompletedBookings = await _db.GodownBookings
-                .Where(b => b.Godown != null && b.Godown.OwnerId == ownerId && b.Status == "Completed")
+                .Where(b => b.Godown != null && b.Godown.OwnerId == ownerId && b.Status == BookingStatus.Completed)
                 .CountAsync();
 
             var totalCompletedBookings = eqCompletedBookings + gdCompletedBookings;
@@ -58,11 +58,11 @@ namespace KrishiLink.BLL.Services
             var totalRequests = eqTotalRequests + gdTotalRequests;
 
             var eqConfirmedOrCompleted = await _db.EquipmentBookings
-                .Where(b => b.Equipment != null && b.Equipment.OwnerId == ownerId && (b.Status == "Completed" || b.Status == "Confirmed"))
+                .Where(b => b.Equipment != null && b.Equipment.OwnerId == ownerId && (b.Status == BookingStatus.Completed || BookingStatus.Confirmed.Contains(b.Status)))
                 .CountAsync();
 
             var gdAcceptedOrCompleted = await _db.GodownBookings
-                .Where(b => b.Godown != null && b.Godown.OwnerId == ownerId && (b.Status == "Completed" || b.Status == "Accepted"))
+                .Where(b => b.Godown != null && b.Godown.OwnerId == ownerId && (b.Status == BookingStatus.Completed || BookingStatus.Confirmed.Contains(b.Status)))
                 .CountAsync();
 
             var totalAcceptedOrCompleted = eqConfirmedOrCompleted + gdAcceptedOrCompleted;

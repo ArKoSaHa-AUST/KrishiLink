@@ -3395,4 +3395,211 @@
   <data name="Your owner account is already verified." xml:space="preserve">
     <value>আপনার মালিক অ্যাকাউন্ট ইতিমধ্যে যাচাইকৃত।</value>
   </data>
+  <data name="Pay for your booking" xml:space="preserve">
+    <value>আপনার বুকিংয়ের জন্য পেমেন্ট করুন</value>
+  </data>
+  <data name="Your payment is held safely by KrishiLink and released to the owner only after the service is completed." xml:space="preserve">
+    <value>আপনার পেমেন্ট কৃষিলিংক নিরাপদে সংরক্ষণ করে এবং সেবা সম্পন্ন হওয়ার পরই মালিককে প্রদান করে।</value>
+  </data>
+  <data name="Back to Bookings" xml:space="preserve">
+    <value>বুকিংয়ে ফিরে যান</value>
+  </data>
+  <data name="Your last attempt failed: {0}. You can try again below." xml:space="preserve">
+    <value>আপনার শেষ চেষ্টা ব্যর্থ হয়েছে: {0}। নিচে আবার চেষ্টা করতে পারেন।</value>
+  </data>
+  <data name="Booking summary" xml:space="preserve">
+    <value>বুকিং সারসংক্ষেপ</value>
+  </data>
+  <data name="Reference" xml:space="preserve">
+    <value>রেফারেন্স</value>
+  </data>
+  <data name="Quantity" xml:space="preserve">
+    <value>পরিমাণ</value>
+  </data>
+  <data name="Rate" xml:space="preserve">
+    <value>দর</value>
+  </data>
+  <data name="Amount to pay" xml:space="preserve">
+    <value>পরিশোধযোগ্য পরিমাণ</value>
+  </data>
+  <data name="Held in escrow. Cancel before the start date for a full refund." xml:space="preserve">
+    <value>এসক্রোতে সংরক্ষিত। শুরুর তারিখের আগে বাতিল করলে সম্পূর্ণ ফেরত পাবেন।</value>
+  </data>
+  <data name="Payment method" xml:space="preserve">
+    <value>পেমেন্ট পদ্ধতি</value>
+  </data>
+  <data name="Wallet / card number" xml:space="preserve">
+    <value>ওয়ালেট / কার্ড নম্বর</value>
+  </data>
+  <data name="Sandbox: a number ending in 0000 will be declined." xml:space="preserve">
+    <value>স্যান্ডবক্স: 0000 দিয়ে শেষ হওয়া নম্বর প্রত্যাখ্যাত হবে।</value>
+  </data>
+  <data name="Pay {0} securely" xml:space="preserve">
+    <value>নিরাপদে {0} পরিশোধ করুন</value>
+  </data>
+  <data name="SANDBOX — no real money" xml:space="preserve">
+    <value>স্যান্ডবক্স — প্রকৃত অর্থ নয়</value>
+  </data>
+  <data name="Secure checkout (simulated)" xml:space="preserve">
+    <value>নিরাপদ চেকআউট (সিমুলেটেড)</value>
+  </data>
+  <data name="Merchant" xml:space="preserve">
+    <value>মার্চেন্ট</value>
+  </data>
+  <data name="Payment reference" xml:space="preserve">
+    <value>পেমেন্ট রেফারেন্স</value>
+  </data>
+  <data name="Transaction ID" xml:space="preserve">
+    <value>লেনদেন আইডি</value>
+  </data>
+  <data name="Paying from" xml:space="preserve">
+    <value>যেখান থেকে পরিশোধ</value>
+  </data>
+  <data name="Confirm payment" xml:space="preserve">
+    <value>পেমেন্ট নিশ্চিত করুন</value>
+  </data>
+  <data name="Simulate failure" xml:space="preserve">
+    <value>ব্যর্থতা সিমুলেট করুন</value>
+  </data>
+  <data name="This page stands in for the bank or wallet app. A real provider would redirect here and post the result back." xml:space="preserve">
+    <value>এই পৃষ্ঠাটি ব্যাংক বা ওয়ালেট অ্যাপের প্রতিনিধিত্ব করে। প্রকৃত প্রদানকারী এখানে রিডাইরেক্ট করে ফলাফল ফেরত পাঠাত।</value>
+  </data>
+  <data name="Accepted / Awaiting Payment ({0})" xml:space="preserve">
+    <value>গৃহীত / পেমেন্টের অপেক্ষায় ({0})</value>
+  </data>
+  <data name="Paid / Confirmed ({0})" xml:space="preserve">
+    <value>পরিশোধিত / নিশ্চিত ({0})</value>
+  </data>
+  <data name="Pay now {0}" xml:space="preserve">
+    <value>এখনই পরিশোধ করুন {0}</value>
+  </data>
+  <data name="Cancel this booking? Your payment will be refunded and the dates released." xml:space="preserve">
+    <value>এই বুকিং বাতিল করবেন? আপনার পেমেন্ট ফেরত দেওয়া হবে এবং তারিখগুলো মুক্ত হবে।</value>
+  </data>
+  <data name="Cancel &amp; Refund" xml:space="preserve">
+    <value>বাতিল ও ফেরত</value>
+  </data>
+  <data name="Paid {0}" xml:space="preserve">
+    <value>পরিশোধিত {0}</value>
+  </data>
+  <data name="Unpaid" xml:space="preserve">
+    <value>অপরিশোধিত</value>
+  </data>
+  <data name="Awaiting farmer payment" xml:space="preserve">
+    <value>কৃষকের পেমেন্টের অপেক্ষায়</value>
+  </data>
+  <data name="Total" xml:space="preserve">
+    <value>মোট</value>
+  </data>
+  <data name="Upcoming Revenue (accepted &amp; paid)" xml:space="preserve">
+    <value>আসন্ন আয় (গৃহীত ও পরিশোধিত)</value>
+  </data>
+  <data name="In escrow (paid, awaiting completion)" xml:space="preserve">
+    <value>এসক্রোতে (পরিশোধিত, সমাপ্তির অপেক্ষায়)</value>
+  </data>
+  <data name="Farmer payments KrishiLink is holding for your paid bookings; released to your balance when you mark them completed." xml:space="preserve">
+    <value>আপনার পরিশোধিত বুকিংয়ের জন্য কৃষিলিংকে সংরক্ষিত কৃষকের পেমেন্ট; সম্পন্ন চিহ্নিত করলে আপনার ব্যালেন্সে যোগ হবে।</value>
+  </data>
+  <data name="Failed on {0}" xml:space="preserve">
+    <value>{0} তারিখে ব্যর্থ</value>
+  </data>
+  <data name="Paid out" xml:space="preserve">
+    <value>পরিশোধ করা হয়েছে</value>
+  </data>
+  <data name="Owed to you" xml:space="preserve">
+    <value>আপনার পাওনা</value>
+  </data>
+  <data name="In escrow" xml:space="preserve">
+    <value>এসক্রোতে</value>
+  </data>
+  <data name="Settling automatically within ~{0}" xml:space="preserve">
+    <value>প্রায় {0}-এর মধ্যে স্বয়ংক্রিয়ভাবে নিষ্পত্তি হবে</value>
+  </data>
+  <data name="Farmer payments held for bookings you haven&apos;t completed yet" xml:space="preserve">
+    <value>এখনও সম্পন্ন না হওয়া বুকিংয়ের জন্য সংরক্ষিত কৃষকের পেমেন্ট</value>
+  </data>
+  <data name="A payout of {0} is being processed. It settles automatically within ~{1}; you can request another once it completes." xml:space="preserve">
+    <value>{0} পেআউট প্রক্রিয়াধীন। প্রায় {1}-এর মধ্যে স্বয়ংক্রিয়ভাবে নিষ্পত্তি হবে; সম্পন্ন হলে আবার অনুরোধ করতে পারবেন।</value>
+  </data>
+  <data name="Payouts settle automatically within ~{0}. Sandbox: an account ending in 0000 will be rejected." xml:space="preserve">
+    <value>পেআউট প্রায় {0}-এর মধ্যে স্বয়ংক্রিয়ভাবে নিষ্পত্তি হয়। স্যান্ডবক্স: 0000 দিয়ে শেষ হওয়া অ্যাকাউন্ট প্রত্যাখ্যাত হবে।</value>
+  </data>
+  <data name="Settling… (auto)" xml:space="preserve">
+    <value>নিষ্পত্তি হচ্ছে… (স্বয়ংক্রিয়)</value>
+  </data>
+  <data name="by {0}" xml:space="preserve">
+    <value>{0}-এর মধ্যে</value>
+  </data>
+  <data name="excluding failed" xml:space="preserve">
+    <value>ব্যর্থগুলো বাদে</value>
+  </data>
+  <data name="Paid by farmer via {0} on {1}, ref {2}" xml:space="preserve">
+    <value>কৃষক {0}-এর মাধ্যমে {1} তারিখে পরিশোধ করেছেন, রেফ {2}</value>
+  </data>
+  <data name="Charged at the rate agreed at acceptance for the booked period. Collected into KrishiLink escrow and settled to the provider net of commission; keep this receipt for your records." xml:space="preserve">
+    <value>গ্রহণের সময় সম্মত দরে বুকিং সময়কালের জন্য ধার্য। কৃষিলিংক এসক্রোতে সংগৃহীত এবং কমিশন বাদে সেবাদাতাকে নিষ্পত্তি করা হয়েছে; এই রসিদটি সংরক্ষণ করুন।</value>
+  </data>
+  <data name="Paid" xml:space="preserve">
+    <value>পরিশোধিত</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>ব্যর্থ</value>
+  </data>
+  <data name="Processing" xml:space="preserve">
+    <value>প্রক্রিয়াধীন</value>
+  </data>
+  <data name="Succeeded" xml:space="preserve">
+    <value>সফল</value>
+  </data>
+  <data name="Refunded" xml:space="preserve">
+    <value>ফেরত দেওয়া হয়েছে</value>
+  </data>
+  <data name="Payment required" xml:space="preserve">
+    <value>পেমেন্ট প্রয়োজন</value>
+  </data>
+  <data name="Payment in progress" xml:space="preserve">
+    <value>পেমেন্ট চলছে</value>
+  </data>
+  <data name="Awaiting owner confirmation" xml:space="preserve">
+    <value>মালিকের নিশ্চিতকরণের অপেক্ষায়</value>
+  </data>
+  <data name="Paid &amp; settled" xml:space="preserve">
+    <value>পরিশোধিত ও নিষ্পত্তিকৃত</value>
+  </data>
+  <data name="Not applicable" xml:space="preserve">
+    <value>প্রযোজ্য নয়</value>
+  </data>
+  <data name="Payment" xml:space="preserve">
+    <value>পেমেন্ট</value>
+  </data>
+  <data name="Pay into KrishiLink escrow once accepted" xml:space="preserve">
+    <value>গৃহীত হলে কৃষিলিংক এসক্রোতে পরিশোধ করুন</value>
+  </data>
+  <data name="Held in KrishiLink escrow until completion" xml:space="preserve">
+    <value>সমাপ্তি পর্যন্ত কৃষিলিংক এসক্রোতে সংরক্ষিত</value>
+  </data>
+  <data name="Pay now to confirm your booking" xml:space="preserve">
+    <value>বুকিং নিশ্চিত করতে এখনই পরিশোধ করুন</value>
+  </data>
+  <data name="Final handover; owner is paid from escrow" xml:space="preserve">
+    <value>চূড়ান্ত হস্তান্তর; মালিককে এসক্রো থেকে পরিশোধ</value>
+  </data>
+  <data name="Payment Received" xml:space="preserve">
+    <value>পেমেন্ট গৃহীত</value>
+  </data>
+  <data name="Farmer paid ৳{0} for {1}. Mark the booking completed once the service is done." xml:space="preserve">
+    <value>কৃষক {1}-এর জন্য ৳{0} পরিশোধ করেছেন। সেবা শেষ হলে বুকিংটি সম্পন্ন চিহ্নিত করুন।</value>
+  </data>
+  <data name="Payout Failed" xml:space="preserve">
+    <value>পেআউট ব্যর্থ</value>
+  </data>
+  <data name="Your payout of ৳{0} via {1} ({2}) failed: {3}. The bookings are back in your pending balance." xml:space="preserve">
+    <value>{1} ({2})-এর মাধ্যমে আপনার ৳{0} পেআউট ব্যর্থ হয়েছে: {3}। বুকিংগুলো আপনার অপেক্ষমাণ ব্যালেন্সে ফিরে এসেছে।</value>
+  </data>
+  <data name="Your rental request for {0} ({1} - {2}) was accepted. Please pay ৳{3} to confirm the booking." xml:space="preserve">
+    <value>{0} ({1} - {2})-এর জন্য আপনার ভাড়ার অনুরোধ গৃহীত হয়েছে। বুকিং নিশ্চিত করতে অনুগ্রহ করে ৳{3} পরিশোধ করুন।</value>
+  </data>
+  <data name="Your storage request for {0} tons in {1} ({2} - {3}) was accepted. Please pay ৳{4} to confirm." xml:space="preserve">
+    <value>{1}-এ {0} টন সংরক্ষণের অনুরোধ ({2} - {3}) গৃহীত হয়েছে। নিশ্চিত করতে অনুগ্রহ করে ৳{4} পরিশোধ করুন।</value>
+  </data>
 </root>

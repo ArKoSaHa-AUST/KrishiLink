@@ -12,8 +12,9 @@
     {
         "pending" => "krishi-badge-pending",
         "accepted" or "available" or "approved" => "krishi-badge-available",
+        "paid" or "succeeded" => "krishi-badge-paid",
         "completed" or "done" => "krishi-badge-completed",
-        "rejected" or "unavailable" or "cancelled" or "canceled" => "krishi-badge-unavailable",
+        "rejected" or "unavailable" or "cancelled" or "canceled" or "failed" => "krishi-badge-unavailable",
         _ => "krishi-badge-completed"
     };
 }

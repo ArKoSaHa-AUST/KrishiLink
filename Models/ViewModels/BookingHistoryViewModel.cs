@@ -33,8 +33,18 @@ namespace KrishiLink.Models.ViewModels
         public string RateDescription { get; set; } = string.Empty;
         public string QuantityDisplay { get; set; } = string.Empty;
 
-        public string Status { get; set; } = "Pending"; // Pending, Accepted, Completed, Rejected
-        public string PaymentStatus { get; set; } = "Pending on Service"; // Paid, Pending on Service, Refunded
+        public string Status { get; set; } = "Pending"; // Pending, Accepted, Paid, Completed, Rejected, Cancelled
+        public string PaymentStatus { get; set; } = "Payment required";
+
+        // Escrow payment (null until the farmer has paid)
+        public string? PaymentReference { get; set; }
+        public string? PaymentMethod { get; set; }
+        public DateTime? PaidOn { get; set; }
+        public DateTime? RefundedOn { get; set; }
+
+        /// <summary>True while the booking is Accepted and awaiting the farmer's payment.</summary>
+        public bool CanPay { get; set; }
+        public string PayUrl { get; set; } = "#";
 
         public DateTime RequestedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
@@ -73,6 +83,7 @@ namespace KrishiLink.Models.ViewModels
         public int GodownCount { get; set; }
         public int PendingCount { get; set; }
         public int AcceptedCount { get; set; }
+        public int PaidCount { get; set; }
         public int CompletedCount { get; set; }
         public int RejectedCount { get; set; }
         public int CancelledCount { get; set; }

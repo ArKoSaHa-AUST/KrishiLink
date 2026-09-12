@@ -28,6 +28,8 @@ namespace KrishiLink.DAL
         public DbSet<EquipmentMaintenanceRecord> EquipmentMaintenanceRecords { get; set; } = null!;
         public DbSet<LoyaltyPointTransaction> LoyaltyPointTransactions { get; set; } = null!;
         public DbSet<CropCalendarEntry> CropCalendarEntries { get; set; } = null!;
+        public DbSet<Payment> Payments { get; set; } = null!;
+        public DbSet<LedgerEntry> LedgerEntries { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -71,10 +73,14 @@ namespace KrishiLink.DAL
                 b.Property(x => x.Status).HasMaxLength(20);
                 b.Property(x => x.DiscountAmount).HasPrecision(18, 2);
                 b.Property(x => x.AppliedPromoCode).HasMaxLength(50);
+                b.Property(x => x.AgreedRate).HasPrecision(18, 2);
+                b.Property(x => x.AgreedGross).HasPrecision(18, 2);
+                b.Property(x => x.CommissionRate).HasPrecision(5, 4);
                 b.HasIndex(x => new { x.EquipmentId, x.Status });
                 b.HasOne(x => x.Equipment).WithMany(x => x.Bookings).HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Cascade);
                 b.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);
                 b.HasOne(x => x.Payout).WithMany().HasForeignKey(x => x.PayoutId).OnDelete(DeleteBehavior.NoAction);
+                b.HasOne(x => x.Payment).WithMany().HasForeignKey(x => x.PaymentId).OnDelete(DeleteBehavior.NoAction);
             });
 
             builder.Entity<EquipmentBlockedDate>(d =>
@@ -103,10 +109,14 @@ namespace KrishiLink.DAL
                 b.Property(x => x.Status).HasMaxLength(20);
                 b.Property(x => x.DiscountAmount).HasPrecision(18, 2);
                 b.Property(x => x.AppliedPromoCode).HasMaxLength(50);
+                b.Property(x => x.AgreedRate).HasPrecision(18, 2);
+                b.Property(x => x.AgreedGross).HasPrecision(18, 2);
+                b.Property(x => x.CommissionRate).HasPrecision(5, 4);
                 b.HasIndex(x => new { x.GodownId, x.Status });
                 b.HasOne(x => x.Godown).WithMany(x => x.Bookings).HasForeignKey(x => x.GodownId).OnDelete(DeleteBehavior.Cascade);
                 b.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);
                 b.HasOne(x => x.Payout).WithMany().HasForeignKey(x => x.PayoutId).OnDelete(DeleteBehavior.NoAction);
+                b.HasOne(x => x.Payment).WithMany().HasForeignKey(x => x.PaymentId).OnDelete(DeleteBehavior.NoAction);
             });
 
             builder.Entity<GodownBlockedDate>(d =>
@@ -130,12 +140,45 @@ namespace KrishiLink.DAL
                 t.Property(x => x.PaymentMethod).HasMaxLength(30);
                 t.Property(x => x.PayoutAccount).HasMaxLength(40);
                 t.Property(x => x.Status).HasMaxLength(20);
+                t.Property(x => x.FailureReason).HasMaxLength(200);
                 t.Property(x => x.GrossAmount).HasPrecision(18, 2);
                 t.Property(x => x.Commission).HasPrecision(18, 2);
                 t.Property(x => x.Amount).HasPrecision(18, 2);
                 t.HasIndex(x => x.UserId);
                 t.HasIndex(x => x.Reference).IsUnique();
                 t.HasIndex(x => new { x.Status, x.TransactionDate });
+            });
+
+            builder.Entity<Payment>(p =>
+            {
+                p.Property(x => x.BookingType).HasMaxLength(20);
+                p.Property(x => x.Method).HasMaxLength(20);
+                p.Property(x => x.PayerAccount).HasMaxLength(40);
+                p.Property(x => x.Reference).HasMaxLength(30);
+                p.Property(x => x.GatewayReference).HasMaxLength(40);
+                p.Property(x => x.Status).HasMaxLength(20);
+                p.Property(x => x.FailureReason).HasMaxLength(200);
+                p.Property(x => x.Amount).HasPrecision(18, 2);
+                p.HasIndex(x => x.Reference).IsUnique();
+                p.HasIndex(x => x.GatewayReference);
+                p.HasIndex(x => new { x.BookingType, x.BookingId });
+                p.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            builder.Entity<LedgerEntry>(l =>
+            {
+                l.Property(x => x.DebitAccount).HasMaxLength(30);
+                l.Property(x => x.CreditAccount).HasMaxLength(30);
+                l.Property(x => x.Type).HasMaxLength(30);
+                l.Property(x => x.BookingType).HasMaxLength(20);
+                l.Property(x => x.UserId).HasMaxLength(450);
+                l.Property(x => x.Note).HasMaxLength(200);
+                l.Property(x => x.Amount).HasPrecision(18, 2);
+                l.HasIndex(x => x.DebitAccount);
+                l.HasIndex(x => x.CreditAccount);
+                l.HasIndex(x => new { x.BookingType, x.BookingId });
+                l.HasIndex(x => x.PaymentId);
+                l.HasIndex(x => x.PayoutId);
             });
 
             builder.Entity<Review>(r =>

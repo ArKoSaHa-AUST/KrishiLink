@@ -64,8 +64,32 @@
 - **Background Email Dispatch Queue**: Non-blocking channel queue (`EmailDispatchService : BackgroundService`) using `System.Threading.Channels.Channel<EmailJob>`.
 - **Real-Email Hygiene**: Filters out simulated development emails (`@krishilink.local`) to ensure clean delivery in production.
 
-### 7. 💳 Automated Payout Settlements & Financial Reports
-- **Settlement Scheduler (`PayoutSettlementScheduler`)**: Background service that marks eligible owner payouts as settled after 24 hours, notifying owners with masked account details.
+### 7. 💳 Money Flow (Simulated Escrow, Commission & Payouts)
+Farmers pay into **platform escrow** through a simulated gateway; owners are paid out of escrow net of commission. Every movement is written to an append-only, double-entry ledger, and no step needs a human on the platform side.
+
+**Booking state machine** (`BookingWorkflow.Next`, guards in `BookingWorkflow.Guard`):
+
+```
+Pending ──accept──▶ Accepted ──paid (IPaymentService only)──▶ Paid ──complete──▶ Completed
+   ▲                   │ undo (only if not paid)                ▲ undo (only if PayoutId == null)
+   └───────────────────┘                                        │
+Pending ──reject──▶ Rejected ──undo──▶ Pending                  └── farmer can cancel Paid before start → refund
+```
+
+- Accepting snapshots `AgreedRate` / `AgreedGross` / `CommissionRate` on the booking (`BookingPricing` is the single pricing function); later rate edits never change history.
+- Only a **Paid** booking can be completed; completing posts `CommissionEarned`, undo posts `CommissionReversed`.
+- `RequestPayout` refuses any Completed booking without a succeeded payment; the payout starts `Processing` and the `PayoutSettlementScheduler` settles it automatically to `Completed` (ledger `PayoutOut`) or `Failed` (bookings return to the owed balance).
+
+**Ledger accounts**: `FarmerExternal`, `PlatformEscrow`, `PlatformCommission`, `OwnerExternal`. Conservation invariant, checked at startup and via `GET /Home/LedgerCheck` (Development only):
+
+```
+Σ PaymentIn − Σ Refund = EscrowBalance + Σ CommissionEarned − Σ CommissionReversed + Σ PayoutOut
+```
+
+**Sandbox failure hooks**: a farmer wallet ending in `0000` is declined by the gateway; a payout account ending in `0000` fails at settlement.
+
+**Swapping in a real gateway**: implement `IPaymentGateway` (initiate → redirect URL, verify outcome, refund), register it for its name in `Program.cs`, and set `Payments:Provider`. `PaymentService`, the ledger and the UI stay unchanged.
+
 - **Monthly PDF Statements**: Automated QuestPDF statements sent via email on month rollover.
 - **Development Settlement Trigger**: Instant manual settlement trigger available in Development environments.
 
@@ -156,8 +180,13 @@ The application is configured through `appsettings.json` and environment variabl
     "PublicBaseUrl": "https://localhost:7276"
   },
   "Revenue": {
-    "CommissionPercentage": 5.0,
-    "PayoutSettlementHours": 24
+    "PlatformCommissionRate": 0.05
+  },
+  "Payments": {
+    "Provider": "Simulated",
+    "SettlementDelay": "00:02:00",
+    "SettlementPollSeconds": 15,
+    "FailAccountSuffix": "0000"
   },
   "Upload": {
     "MaxImagesPerListing": 8,
@@ -203,7 +232,7 @@ The application is configured through `appsettings.json` and environment variabl
    ```bash
    dotnet run
    ```
-   On startup in `Development` mode, `DbInitializer` automatically applies pending EF Core migrations, seeds all application roles, inserts the 23 DAE crop calendars, and provisions demo seed data.
+   On startup in `Development` mode, `DbInitializer` automatically applies pending EF Core migrations, seeds all application roles, inserts the 23 DAE crop calendars, and provisions demo seed data (including escrow payments, a failed payment attempt, and completed / processing / failed payouts with a balanced ledger). `Payments:SettlementDelay` defaults to 2 minutes in Development (30 minutes otherwise).
 
 5. **Access the Portal**:
    Open your browser at `https://localhost:7276` or `http://localhost:5141`.

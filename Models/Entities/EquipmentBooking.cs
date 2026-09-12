@@ -1,6 +1,6 @@
 namespace KrishiLink.Models.Entities
 {
-    public class EquipmentBooking
+    public class EquipmentBooking : IPayableBooking
     {
         public int Id { get; set; }
         public int EquipmentId { get; set; }
@@ -23,6 +23,17 @@ namespace KrishiLink.Models.Entities
         /// <summary>The payout that settled this booking's revenue; null while still unpaid.</summary>
         public int? PayoutId { get; set; }
         public Transaction? Payout { get; set; }
+
+        // Price snapshot taken when the owner accepts, so later rate edits never change what was agreed.
+        public decimal? AgreedRate { get; set; }
+        public decimal? AgreedGross { get; set; }
+        public decimal? CommissionRate { get; set; }
+        public DateTime? CompletedOn { get; set; }
+
+        /// <summary>The farmer's current (pending or succeeded) payment; cleared when an attempt fails so a retry can be made.</summary>
+        public int? PaymentId { get; set; }
+        public Payment? Payment { get; set; }
+        public DateTime? PaidOn { get; set; }
 
         /// <summary>The farmer's review for this completed booking; null if not yet reviewed.</summary>
         public Review? Review { get; set; }

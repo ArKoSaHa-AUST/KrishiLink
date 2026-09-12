@@ -1,3 +1,4 @@
+using KrishiLink.BLL.Services;
 using KrishiLink.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -63,7 +64,7 @@ namespace KrishiLink.DAL.Repositories
         }
     }
 
-    /// <summary>Pricing: storage tons × price per ton per month × pro-rata 30-day months.</summary>
+    /// <summary>Pricing comes from the acceptance snapshot; legacy rows fall back to <see cref="BookingPricing.GodownGross"/>.</summary>
     public class GodownRevenueRepository : OwnerRevenueRepositoryBase, IGodownRevenueRepository
     {
         public GodownRevenueRepository(ApplicationDbContext db) : base(db, "Godown") { }
@@ -92,20 +93,33 @@ namespace KrishiLink.DAL.Repositories
                     b.EndDate,
                     b.Status,
                     b.PayoutId,
-                    PayoutReference = b.Payout != null ? b.Payout.Reference : null
+                    PayoutReference = b.Payout != null ? b.Payout.Reference : null,
+                    b.AgreedRate,
+                    b.AgreedGross,
+                    b.CommissionRate,
+                    b.PaidOn,
+                    PaymentStatus = b.Payment != null ? b.Payment.Status : null,
+                    PaymentReference = b.Payment != null ? b.Payment.Reference : null,
+                    PaymentMethod = b.Payment != null ? b.Payment.Method : null
                 })
                 .AsEnumerable()
                 .Select(b =>
                 {
-                    var months = (b.EndDate - b.StartDate).TotalDays / 30.0;
+                    var rate = b.AgreedRate ?? b.PricePerTonPerMonth;
+                    var months = ListingFormat.Months(b.StartDate, b.EndDate);
                     return new RevenueBooking(b.Id, b.GodownId, b.Name, b.Location, b.FarmerId, b.FarmerName, b.FarmerLocation,
                         b.StartDate, b.EndDate, b.Status,
-                        Gross: decimal.Round((decimal)b.StorageTons * b.PricePerTonPerMonth * (decimal)months, 0),
+                        Gross: b.AgreedGross ?? BookingPricing.GodownGross(b.StartDate, b.EndDate, b.StorageTons, rate),
                         CapacityUsed: b.StorageTons,
                         QuantityText: $"{b.StorageTons:N0} t × {months:0.##} mo",
-                        RateText: $"৳{b.PricePerTonPerMonth:N0} / t / mo",
+                        RateText: $"৳{rate:N0} / t / mo",
                         PayoutId: b.PayoutId,
-                        PayoutReference: b.PayoutReference);
+                        PayoutReference: b.PayoutReference,
+                        IsPaid: b.PaymentStatus == PaymentStatus.Succeeded,
+                        PaidOn: b.PaidOn,
+                        PaymentReference: b.PaymentStatus == PaymentStatus.Succeeded ? b.PaymentReference : null,
+                        PaymentMethod: b.PaymentStatus == PaymentStatus.Succeeded ? b.PaymentMethod : null,
+                        CommissionRateSnapshot: b.CommissionRate ?? 0m);
                 })
                 .ToList();
 
@@ -117,7 +131,7 @@ namespace KrishiLink.DAL.Repositories
         }
     }
 
-    /// <summary>Pricing: inclusive rental days × daily rate; each machine is one unit of capacity.</summary>
+    /// <summary>Pricing comes from the acceptance snapshot; legacy rows fall back to <see cref="BookingPricing.EquipmentGross"/>.</summary>
     public class EquipmentRevenueRepository : OwnerRevenueRepositoryBase, IEquipmentRevenueRepository
     {
         public EquipmentRevenueRepository(ApplicationDbContext db) : base(db, "Equipment") { }
@@ -145,20 +159,33 @@ namespace KrishiLink.DAL.Repositories
                     b.EndDate,
                     b.Status,
                     b.PayoutId,
-                    PayoutReference = b.Payout != null ? b.Payout.Reference : null
+                    PayoutReference = b.Payout != null ? b.Payout.Reference : null,
+                    b.AgreedRate,
+                    b.AgreedGross,
+                    b.CommissionRate,
+                    b.PaidOn,
+                    PaymentStatus = b.Payment != null ? b.Payment.Status : null,
+                    PaymentReference = b.Payment != null ? b.Payment.Reference : null,
+                    PaymentMethod = b.Payment != null ? b.Payment.Method : null
                 })
                 .AsEnumerable()
                 .Select(b =>
                 {
-                    var days = (b.EndDate - b.StartDate).Days + 1;
+                    var rate = b.AgreedRate ?? b.DailyRate;
+                    var days = ListingFormat.InclusiveDays(b.StartDate, b.EndDate);
                     return new RevenueBooking(b.Id, b.EquipmentId, b.Name, b.Location, b.FarmerId, b.FarmerName, b.FarmerLocation,
                         b.StartDate, b.EndDate, b.Status,
-                        Gross: days * b.DailyRate,
+                        Gross: b.AgreedGross ?? BookingPricing.EquipmentGross(b.StartDate, b.EndDate, rate),
                         CapacityUsed: 1,
                         QuantityText: days == 1 ? "1 day" : $"{days} days",
-                        RateText: $"৳{b.DailyRate:N0} / day",
+                        RateText: $"৳{rate:N0} / day",
                         PayoutId: b.PayoutId,
-                        PayoutReference: b.PayoutReference);
+                        PayoutReference: b.PayoutReference,
+                        IsPaid: b.PaymentStatus == PaymentStatus.Succeeded,
+                        PaidOn: b.PaidOn,
+                        PaymentReference: b.PaymentStatus == PaymentStatus.Succeeded ? b.PaymentReference : null,
+                        PaymentMethod: b.PaymentStatus == PaymentStatus.Succeeded ? b.PaymentMethod : null,
+                        CommissionRateSnapshot: b.CommissionRate ?? 0m);
                 })
                 .ToList();
 

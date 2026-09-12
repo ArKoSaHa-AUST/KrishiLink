@@ -26,9 +26,12 @@ namespace KrishiLink.Models.Entities
         /// <summary>Destination wallet / account number the payout is sent to.</summary>
         public string? PayoutAccount { get; set; }
 
-        /// <summary>"Processing" while the platform is transferring, then "Completed".</summary>
-        public string Status { get; set; } = "Completed";
+        /// <summary>"Processing" while the platform is transferring, then "Completed" or "Failed".</summary>
+        public string Status { get; set; } = PayoutStatus.Completed;
         public DateTime TransactionDate { get; set; } = DateTime.UtcNow;
         public DateTime? SettledOn { get; set; }
+
+        /// <summary>Why the transfer was rejected; only set when <see cref="Status"/> is "Failed".</summary>
+        public string? FailureReason { get; set; }
     }
 }

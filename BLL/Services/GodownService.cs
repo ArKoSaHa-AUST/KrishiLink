@@ -3,6 +3,7 @@ using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace KrishiLink.BLL.Services
 {
@@ -46,6 +47,8 @@ namespace KrishiLink.BLL.Services
         private readonly IBadgeService _badges;
         private readonly ILeaderboardService _leaderboard;
         private readonly ILoyaltyService _loyalty;
+        private readonly ILedgerRepository _ledger;
+        private readonly RevenueOptions _revenue;
 
         public GodownService(
             IRepository<Godown> godowns,
@@ -57,7 +60,9 @@ namespace KrishiLink.BLL.Services
             INotificationService notifications,
             IBadgeService badges,
             ILeaderboardService leaderboard,
-            ILoyaltyService loyalty)
+            ILoyaltyService loyalty,
+            ILedgerRepository ledger,
+            IOptions<RevenueOptions> revenue)
         {
             _godowns = godowns;
             _bookings = bookings;
@@ -69,6 +74,8 @@ namespace KrishiLink.BLL.Services
             _badges = badges;
             _leaderboard = leaderboard;
             _loyalty = loyalty;
+            _ledger = ledger;
+            _revenue = revenue.Value;
         }
 
         // ---------------------------------------------------------------- Browse & details
@@ -122,14 +129,14 @@ namespace KrishiLink.BLL.Services
             {
                 var minCap = c.SelectedMinCapacity.Value;
                 query = query.Where(g => (g.CapacityInTons - (g.Bookings
-                    .Where(b => b.Status == BookingStatus.Accepted && b.StartDate <= windowEnd && windowStart <= b.EndDate)
+                    .Where(b => BookingStatus.Confirmed.Contains(b.Status) && b.StartDate <= windowEnd && windowStart <= b.EndDate)
                     .Sum(b => (double?)b.StorageTons) ?? 0)) >= minCap);
             }
 
             if (c.AvailableStartDate.HasValue || c.AvailableEndDate.HasValue)
             {
                 query = query.Where(g => (g.CapacityInTons - (g.Bookings
-                    .Where(b => b.Status == BookingStatus.Accepted && b.StartDate <= windowEnd && windowStart <= b.EndDate)
+                    .Where(b => BookingStatus.Confirmed.Contains(b.Status) && b.StartDate <= windowEnd && windowStart <= b.EndDate)
                     .Sum(b => (double?)b.StorageTons) ?? 0)) > 0);
             }
 
@@ -139,7 +146,7 @@ namespace KrishiLink.BLL.Services
                 "price_asc" => query.OrderBy(g => g.PricePerTonPerMonth),
                 "price_desc" => query.OrderByDescending(g => g.PricePerTonPerMonth),
                 "capacity_desc" => query.OrderByDescending(g => g.CapacityInTons - (g.Bookings
-                    .Where(b => b.Status == BookingStatus.Accepted && b.StartDate <= windowEnd && windowStart <= b.EndDate)
+                    .Where(b => BookingStatus.Confirmed.Contains(b.Status) && b.StartDate <= windowEnd && windowStart <= b.EndDate)
                     .Sum(b => (double?)b.StorageTons) ?? 0)),
                 "location" or "distance" => query.OrderBy(g => g.District).ThenBy(g => g.Location).ThenByDescending(g => g.CreatedAt),
                 "rating_desc" => query.OrderByDescending(g => g.AverageRating).ThenByDescending(g => g.ReviewCount),
@@ -175,7 +182,7 @@ namespace KrishiLink.BLL.Services
                     OwnerRating = g.Owner.OwnerAverageRating,
                     OwnerReviewCount = g.Owner.OwnerReviewCount,
                     Occupied = g.Bookings
-                        .Where(b => b.Status == BookingStatus.Accepted && b.StartDate <= windowEnd && windowStart <= b.EndDate)
+                        .Where(b => BookingStatus.Confirmed.Contains(b.Status) && b.StartDate <= windowEnd && windowStart <= b.EndDate)
                         .Sum(b => (double?)b.StorageTons) ?? 0
                 }).ToListAsync();
 
@@ -259,7 +266,7 @@ namespace KrishiLink.BLL.Services
             var from = DateTime.Today;
             var to = from.AddMonths(CalendarHorizonMonths);
             var accepted = await _bookings.Query()
-                .Where(b => b.GodownId == id && b.Status == BookingStatus.Accepted && b.EndDate >= from && b.StartDate <= to)
+                .Where(b => b.GodownId == id && BookingStatus.Confirmed.Contains(b.Status) && b.EndDate >= from && b.StartDate <= to)
                 .Select(b => new { b.StartDate, b.EndDate, b.StorageTons })
                 .ToListAsync();
             var blocked = await _blockedDates.Query()
@@ -470,12 +477,13 @@ namespace KrishiLink.BLL.Services
 
         public async Task<DecisionResult> RespondAsync(string ownerId, int bookingId, string decision, string? reason)
         {
-            var booking = await _bookings.QueryTracked().Include(b => b.Godown)
+            var booking = await _bookings.QueryTracked().Include(b => b.Godown).Include(b => b.Payment)
                 .FirstOrDefaultAsync(b => b.Id == bookingId && b.Godown!.OwnerId == ownerId);
             if (booking is null) return DecisionResult.Fail("This booking request could not be found.");
 
             var next = BookingWorkflow.Next(booking.Status, decision);
-            if (next is null) return DecisionResult.Fail($"A {booking.Status.ToLowerInvariant()} request cannot be {decision.ToLowerInvariant()}ed.");
+            var guard = BookingWorkflow.Guard(booking, decision, next);
+            if (guard is not null) return DecisionResult.Fail(guard);
 
             if (string.Equals(decision, "undo", StringComparison.OrdinalIgnoreCase) && booking.Status == BookingStatus.Completed)
             {
@@ -530,7 +538,10 @@ namespace KrishiLink.BLL.Services
                 }
             }
 
-            booking.Status = next;
+            var listing = booking.Godown!;
+            BookingWorkflow.ApplyMoney(booking, next!, "Godown", ownerId, _ledger,
+                listing.PricePerTonPerMonth, BookingPricing.GodownGross(booking.StartDate, booking.EndDate, booking.StorageTons, listing.PricePerTonPerMonth), _revenue.PlatformCommissionRate);
+            booking.Status = next!;
             booking.RejectReason = next == BookingStatus.Rejected && !string.IsNullOrWhiteSpace(reason) ? reason.Trim() : null;
             booking.UpdatedOn = DateTime.Now;
             await _bookings.SaveChangesAsync();
@@ -544,8 +555,8 @@ namespace KrishiLink.BLL.Services
                     UserId = booking.FarmerId,
                     Type = NotificationTypes.BookingAccepted,
                     TitleKey = "Storage Request Accepted",
-                    MessageKey = "Your storage request for {0} tons in {1} ({2} - {3}) was accepted by the owner.",
-                    Args = new object[] { booking.StorageTons, booking.Godown!.Name, $"{booking.StartDate:dd MMM yyyy}", $"{booking.EndDate:dd MMM yyyy}" },
+                    MessageKey = "Your storage request for {0} tons in {1} ({2} - {3}) was accepted. Please pay ৳{4} to confirm.",
+                    Args = new object[] { booking.StorageTons, booking.Godown!.Name, $"{booking.StartDate:dd MMM yyyy}", $"{booking.EndDate:dd MMM yyyy}", $"{booking.AgreedGross ?? 0:N0}" },
                     LinkUrl = AppLinks.FarmerBookings("godown", booking.Id),
                     DedupeKey = $"booking:godown:{booking.Id}:Accepted",
                     SendEmail = true,
@@ -592,11 +603,8 @@ namespace KrishiLink.BLL.Services
                     SendEmail = false
                 });
 
-                // Award loyalty points for completed storage
-                var days = (booking.EndDate - booking.StartDate).Days + 1;
-                var months = Math.Max(1.0, (double)days / 30.0);
-                decimal gross = decimal.Round((decimal)booking.StorageTons * booking.Godown!.PricePerTonPerMonth * (decimal)months, 0);
-                decimal netSpent = Math.Max(0m, gross - booking.DiscountAmount);
+                // Award loyalty points on what the farmer actually paid (snapshot), net of discounts
+                decimal netSpent = Math.Max(0m, (booking.AgreedGross ?? 0) - booking.DiscountAmount);
                 await _loyalty.AwardPointsForCompletedBookingAsync(
                     booking.FarmerId,
                     "Godown",
@@ -815,7 +823,7 @@ namespace KrishiLink.BLL.Services
         private async Task<HashSet<DateTime>> StoredDaysAsync(int godownId, DateTime from, DateTime to)
         {
             var accepted = await _bookings.Query()
-                .Where(b => b.GodownId == godownId && b.Status == BookingStatus.Accepted && b.EndDate >= from && b.StartDate <= to)
+                .Where(b => b.GodownId == godownId && BookingStatus.Confirmed.Contains(b.Status) && b.EndDate >= from && b.StartDate <= to)
                 .Select(b => new { b.StartDate, b.EndDate })
                 .ToListAsync();
             return accepted.SelectMany(b => EachDay(b.StartDate, b.EndDate)).Where(d => d >= from && d <= to).ToHashSet();
@@ -836,7 +844,7 @@ namespace KrishiLink.BLL.Services
 
         private async Task<double> OccupiedTonsAsync(int godownId, DateTime from, DateTime to, int? excludeBookingId = null) =>
             await _bookings.Query()
-                .Where(b => b.GodownId == godownId && b.Id != excludeBookingId && b.Status == BookingStatus.Accepted && b.StartDate <= to && from <= b.EndDate)
+                .Where(b => b.GodownId == godownId && b.Id != excludeBookingId && BookingStatus.Confirmed.Contains(b.Status) && b.StartDate <= to && from <= b.EndDate)
                 .SumAsync(b => (double?)b.StorageTons) ?? 0;
 
         private async Task<List<OwnerGodownItem>> OwnerGodownsAsync(string ownerId)
@@ -852,7 +860,7 @@ namespace KrishiLink.BLL.Services
                     g.StorageType,
                     g.CapacityInTons,
                     g.IsActive,
-                    Occupied = g.Bookings.Where(b => b.Status == BookingStatus.Accepted && b.StartDate <= today && today <= b.EndDate)
+                    Occupied = g.Bookings.Where(b => BookingStatus.Confirmed.Contains(b.Status) && b.StartDate <= today && today <= b.EndDate)
                         .Sum(b => (double?)b.StorageTons) ?? 0
                 })
                 .ToListAsync();
@@ -876,6 +884,7 @@ namespace KrishiLink.BLL.Services
             _bookings.Query()
                 .Include(b => b.Godown)
                 .Include(b => b.Farmer)
+                .Include(b => b.Payment)
                 .Where(b => b.Godown!.OwnerId == ownerId);
 
         private static GodownBookingRequestItem ToRequestItem(GodownBooking b) => new()
@@ -889,7 +898,9 @@ namespace KrishiLink.BLL.Services
             Note = b.Note,
             Status = b.Status,
             RejectReason = b.RejectReason,
-            RequestedOn = b.RequestedOn
+            RequestedOn = b.RequestedOn,
+            AgreedGross = b.AgreedGross ?? (b.Godown is null ? 0 : BookingPricing.GodownGross(b.StartDate, b.EndDate, b.StorageTons, b.Godown.PricePerTonPerMonth)),
+            PaymentReference = b.Payment?.Status == PaymentStatus.Succeeded ? b.Payment.Reference : null
         };
     }
 }

@@ -5,6 +5,7 @@ using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace KrishiLink.Controllers
 {
@@ -98,24 +99,29 @@ namespace KrishiLink.Controllers
 
         /// <summary>GET: /{Owner}/Payouts — pending payout balance, commission breakdown and full settlement history.</summary>
         [HttpGet]
-        public IActionResult Payouts()
+        public IActionResult Payouts([FromServices] IOptions<PaymentsOptions> payments)
         {
-            return View("Payouts", _revenueService.GetPayoutHistory(OwnerId));
+            var model = _revenueService.GetPayoutHistory(OwnerId);
+            model.SettlementDelay = payments.Value.SettlementDelay ?? TimeSpan.FromMinutes(30);
+            return View("Payouts", model);
         }
 
         /// <summary>POST: /{Owner}/RequestPayout — asks the platform to settle the pending balance to the given wallet/account.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RequestPayout(string method, string? account)
+        public async Task<IActionResult> RequestPayout(string method, string? account, [FromServices] IOptions<PaymentsOptions> payments)
         {
             var error = await _revenueService.RequestPayoutAsync(OwnerId, method ?? string.Empty, account);
             if (error is null)
-                TempData["SuccessMessage"] = "Payout requested. It will show as Completed once the platform has transferred the funds.";
+                TempData["SuccessMessage"] = $"Payout requested. It will settle automatically in about {DelayText(payments.Value.SettlementDelay ?? TimeSpan.FromMinutes(30))}.";
             else
                 TempData["ErrorMessage"] = error;
 
             return RedirectToAction(nameof(Payouts));
         }
+
+        public static string DelayText(TimeSpan delay) =>
+            delay.TotalHours >= 1 ? $"{delay.TotalHours:0.#} hours" : $"{Math.Max(1, (int)delay.TotalMinutes)} minutes";
 
         /// <summary>POST: /{Owner}/SettlePayoutsNow — Dev-only action to immediately settle processing payouts.</summary>
         [HttpPost]
@@ -129,7 +135,7 @@ namespace KrishiLink.Controllers
                 return NotFound();
             }
 
-            var count = await settlementService.SettleDuePayoutsAsync(maxHours: 0, ownerId: OwnerId);
+            var count = await settlementService.SettleDuePayoutsAsync(ignoreDelay: true, ownerId: OwnerId);
             TempData["SuccessMessage"] = count > 0
                 ? $"[Dev] Successfully settled {count} pending payout(s)."
                 : "[Dev] No processing payouts found to settle.";

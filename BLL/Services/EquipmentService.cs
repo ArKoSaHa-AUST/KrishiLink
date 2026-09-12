@@ -3,6 +3,7 @@ using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace KrishiLink.BLL.Services
 {
@@ -51,6 +52,8 @@ namespace KrishiLink.BLL.Services
         private readonly IBadgeService _badges;
         private readonly ILeaderboardService _leaderboard;
         private readonly ILoyaltyService _loyalty;
+        private readonly ILedgerRepository _ledger;
+        private readonly RevenueOptions _revenue;
 
         public EquipmentService(
             IRepository<Equipment> equipment,
@@ -63,7 +66,9 @@ namespace KrishiLink.BLL.Services
             INotificationService notifications,
             IBadgeService badges,
             ILeaderboardService leaderboard,
-            ILoyaltyService loyalty)
+            ILoyaltyService loyalty,
+            ILedgerRepository ledger,
+            IOptions<RevenueOptions> revenue)
         {
             _equipment = equipment;
             _bookings = bookings;
@@ -76,6 +81,8 @@ namespace KrishiLink.BLL.Services
             _badges = badges;
             _leaderboard = leaderboard;
             _loyalty = loyalty;
+            _ledger = ledger;
+            _revenue = revenue.Value;
         }
 
         // ---------------------------------------------------------------- Browse & details
@@ -125,7 +132,7 @@ namespace KrishiLink.BLL.Services
 
                 query = query.Where(e => e.IsAvailable
                     && !e.BlockedDates.Any(d => d.Date >= start && d.Date <= end)
-                    && !e.Bookings.Any(b => b.Status == BookingStatus.Accepted && b.StartDate <= end && start <= b.EndDate));
+                    && !e.Bookings.Any(b => BookingStatus.Confirmed.Contains(b.Status) && b.StartDate <= end && start <= b.EndDate));
             }
 
             var sort = (c.SortBy ?? "newest").ToLowerInvariant();
@@ -263,7 +270,7 @@ namespace KrishiLink.BLL.Services
             var from = DateTime.Today;
             var to = from.AddMonths(3);
             var accepted = await _bookings.Query()
-                .Where(b => b.EquipmentId == id && b.Status == BookingStatus.Accepted && b.EndDate >= from && b.StartDate <= to)
+                .Where(b => b.EquipmentId == id && BookingStatus.Confirmed.Contains(b.Status) && b.EndDate >= from && b.StartDate <= to)
                 .Select(b => new { b.StartDate, b.EndDate })
                 .ToListAsync();
             var blocked = await _blockedDates.Query()
@@ -485,7 +492,7 @@ namespace KrishiLink.BLL.Services
                     e.DailyRate,
                     e.ImageUrls,
                     e.IsAvailable,
-                    RentedToday = e.Bookings.Any(b => b.Status == BookingStatus.Accepted && b.StartDate <= today && today <= b.EndDate),
+                    RentedToday = e.Bookings.Any(b => BookingStatus.Confirmed.Contains(b.Status) && b.StartDate <= today && today <= b.EndDate),
                     LatestServiceDate = e.MaintenanceRecords.OrderByDescending(m => m.ServiceDate).Select(m => (DateTime?)m.ServiceDate).FirstOrDefault()
                 })
                 .ToListAsync();
@@ -537,7 +544,7 @@ namespace KrishiLink.BLL.Services
         {
             var bookings = await OwnerBookingsQuery(ownerId).ToListAsync();
             var items = bookings.Select(ToRequestItem).ToList();
-            var accepted = bookings.Where(b => b.Status == BookingStatus.Accepted).ToList();
+            var accepted = bookings.Where(b => BookingStatus.Confirmed.Contains(b.Status)).ToList();
 
             foreach (var pending in items.Where(i => i.Status == BookingStatus.Pending))
             {
@@ -557,12 +564,13 @@ namespace KrishiLink.BLL.Services
 
         public async Task<DecisionResult> RespondAsync(string ownerId, int bookingId, string decision, string? reason)
         {
-            var booking = await _bookings.QueryTracked().Include(b => b.Equipment)
+            var booking = await _bookings.QueryTracked().Include(b => b.Equipment).Include(b => b.Payment)
                 .FirstOrDefaultAsync(b => b.Id == bookingId && b.Equipment!.OwnerId == ownerId);
             if (booking is null) return DecisionResult.Fail("This request could not be found.");
 
             var next = BookingWorkflow.Next(booking.Status, decision);
-            if (next is null) return DecisionResult.Fail($"A {booking.Status.ToLowerInvariant()} request cannot be {decision.ToLowerInvariant()}ed.");
+            var guard = BookingWorkflow.Guard(booking, decision, next);
+            if (guard is not null) return DecisionResult.Fail(guard);
 
             if (string.Equals(decision, "undo", StringComparison.OrdinalIgnoreCase) && booking.Status == BookingStatus.Completed)
             {
@@ -608,7 +616,10 @@ namespace KrishiLink.BLL.Services
                 }
             }
 
-            booking.Status = next;
+            var equipment = booking.Equipment!;
+            BookingWorkflow.ApplyMoney(booking, next!, "Equipment", ownerId, _ledger,
+                equipment.DailyRate, BookingPricing.EquipmentGross(booking.StartDate, booking.EndDate, equipment.DailyRate), _revenue.PlatformCommissionRate);
+            booking.Status = next!;
             booking.RejectReason = next == BookingStatus.Rejected && !string.IsNullOrWhiteSpace(reason) ? reason.Trim() : null;
             booking.UpdatedOn = DateTime.Now;
             await _bookings.SaveChangesAsync();
@@ -622,8 +633,8 @@ namespace KrishiLink.BLL.Services
                     UserId = booking.FarmerId,
                     Type = NotificationTypes.BookingAccepted,
                     TitleKey = "Rental Request Accepted",
-                    MessageKey = "Your rental request for {0} ({1} - {2}) was accepted by the owner.",
-                    Args = new object[] { booking.Equipment!.Name, $"{booking.StartDate:dd MMM yyyy}", $"{booking.EndDate:dd MMM yyyy}" },
+                    MessageKey = "Your rental request for {0} ({1} - {2}) was accepted. Please pay ৳{3} to confirm the booking.",
+                    Args = new object[] { booking.Equipment!.Name, $"{booking.StartDate:dd MMM yyyy}", $"{booking.EndDate:dd MMM yyyy}", $"{booking.AgreedGross ?? 0:N0}" },
                     LinkUrl = AppLinks.FarmerBookings("equipment", booking.Id),
                     DedupeKey = $"booking:equipment:{booking.Id}:Accepted",
                     SendEmail = true,
@@ -670,9 +681,8 @@ namespace KrishiLink.BLL.Services
                     SendEmail = false
                 });
 
-                // Award loyalty points for completed rental
-                int days = (booking.EndDate - booking.StartDate).Days + 1;
-                decimal grossSpent = (days * booking.Equipment!.DailyRate) - booking.DiscountAmount;
+                // Award loyalty points on what the farmer actually paid (snapshot), net of discounts
+                decimal grossSpent = (booking.AgreedGross ?? 0) - booking.DiscountAmount;
                 await _loyalty.AwardPointsForCompletedBookingAsync(
                     booking.FarmerId,
                     "Equipment",
@@ -824,7 +834,7 @@ namespace KrishiLink.BLL.Services
             var last = first.AddMonths(1).AddDays(-1);
 
             var accepted = await _bookings.Query()
-                .Where(b => b.EquipmentId == equipmentId && b.Status == BookingStatus.Accepted && b.EndDate >= first && b.StartDate <= last)
+                .Where(b => b.EquipmentId == equipmentId && BookingStatus.Confirmed.Contains(b.Status) && b.EndDate >= first && b.StartDate <= last)
                 .Select(b => new { b.StartDate, b.EndDate })
                 .ToListAsync();
             var blocked = await _blockedDates.Query()
@@ -860,7 +870,7 @@ namespace KrishiLink.BLL.Services
             _blockedDates.RemoveRange(current);
 
             var farmerBooked = (await _bookings.Query()
-                    .Where(b => b.EquipmentId == equipmentId && b.Status == BookingStatus.Accepted && b.EndDate >= first && b.StartDate <= last)
+                    .Where(b => b.EquipmentId == equipmentId && BookingStatus.Confirmed.Contains(b.Status) && b.EndDate >= first && b.StartDate <= last)
                     .Select(b => new { b.StartDate, b.EndDate })
                     .ToListAsync())
                 .SelectMany(b => EachDay(b.StartDate, b.EndDate))
@@ -979,7 +989,7 @@ namespace KrishiLink.BLL.Services
         private async Task<string?> FindConflictAsync(int equipmentId, DateTime start, DateTime end, int? excludeBookingId = null)
         {
             var accepted = await _bookings.Query()
-                .Where(b => b.EquipmentId == equipmentId && b.Id != excludeBookingId && b.Status == BookingStatus.Accepted
+                .Where(b => b.EquipmentId == equipmentId && b.Id != excludeBookingId && BookingStatus.Confirmed.Contains(b.Status)
                     && b.StartDate <= end && start <= b.EndDate)
                 .OrderBy(b => b.StartDate)
                 .Select(b => new { b.StartDate, b.EndDate })
@@ -999,6 +1009,7 @@ namespace KrishiLink.BLL.Services
             _bookings.Query()
                 .Include(b => b.Equipment)
                 .Include(b => b.Farmer)
+                .Include(b => b.Payment)
                 .Where(b => b.Equipment!.OwnerId == ownerId);
 
         private static RentalRequestItem ToRequestItem(EquipmentBooking b) => new()
@@ -1007,7 +1018,7 @@ namespace KrishiLink.BLL.Services
             FarmerName = string.IsNullOrWhiteSpace(b.Farmer?.FullName) ? "Farmer" : b.Farmer!.FullName,
             EquipmentName = b.Equipment?.Name ?? string.Empty,
             EquipmentCategory = b.Equipment?.Category ?? string.Empty,
-            DailyRate = $"{ListingFormat.Taka(b.Equipment?.DailyRate ?? 0)} / Day",
+            DailyRate = $"{ListingFormat.Taka(b.AgreedRate ?? b.Equipment?.DailyRate ?? 0)} / Day",
             Location = b.Equipment?.Location ?? string.Empty,
             DateRange = ListingFormat.DateRange(b.StartDate, b.EndDate),
             StartDate = b.StartDate,
@@ -1015,7 +1026,9 @@ namespace KrishiLink.BLL.Services
             Note = b.Note,
             Status = b.Status,
             RejectReason = b.RejectReason,
-            RequestedOn = b.RequestedOn
+            RequestedOn = b.RequestedOn,
+            AgreedGross = b.AgreedGross ?? (b.Equipment is null ? 0 : BookingPricing.EquipmentGross(b.StartDate, b.EndDate, b.Equipment.DailyRate)),
+            PaymentReference = b.Payment?.Status == PaymentStatus.Succeeded ? b.Payment.Reference : null
         };
 
         private static IEnumerable<DateTime> EachDay(DateTime start, DateTime end)

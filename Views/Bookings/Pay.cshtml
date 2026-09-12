@@ -1,0 +1,82 @@
+@model KrishiLink.Models.ViewModels.PaymentCheckoutViewModel
+@{
+    ViewData["Title"] = L["Pay for your booking"];
+    ViewData["BodyClass"] = "krishi-body-gradient";
+    string Money(decimal v) => "৳" + v.ToString("N0");
+}
+
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4 pb-3 border-bottom" style="border-color: var(--krishi-border-color) !important;">
+    <div>
+        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);"><i class="bi bi-credit-card-2-front-fill text-success me-2"></i>@L["Pay for your booking"]</h2>
+        <p class="mb-0" style="color: var(--krishi-text-muted);">@L["Your payment is held safely by KrishiLink and released to the owner only after the service is completed."]</p>
+    </div>
+    <a asp-action="Index" asp-route-tab="@Model.BookingType.ToLowerInvariant()" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold flex-shrink-0"><i class="bi bi-arrow-left me-1"></i>@L["Back to Bookings"]</a>
+</div>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2"><i class="bi bi-exclamation-triangle-fill"></i><span class="small">@TempData["ErrorMessage"]</span></div>
+}
+else if (Model.LastFailureReason is not null)
+{
+    <div class="alert alert-warning border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2"><i class="bi bi-arrow-repeat"></i><span class="small">@L["Your last attempt failed: {0}. You can try again below.", Model.LastFailureReason]</span></div>
+}
+
+<div class="row g-4 justify-content-center">
+    <div class="col-12 col-lg-5">
+        <div class="card border-0 shadow-sm h-100 p-3 p-md-4" style="border-radius: var(--krishi-radius-lg);">
+            <h5 class="fw-bold mb-3" style="color: var(--krishi-text-primary);"><i class="bi bi-receipt me-2 text-success"></i>@L["Booking summary"]</h5>
+            <dl class="row small mb-0 gy-2">
+                <dt class="col-5 fw-normal" style="color: var(--krishi-text-muted);">@L["Reference"]</dt>
+                <dd class="col-7 mb-0 fw-semibold">@Model.BookingCode</dd>
+                <dt class="col-5 fw-normal" style="color: var(--krishi-text-muted);">@L[Model.BookingType]</dt>
+                <dd class="col-7 mb-0 fw-semibold">@Model.ItemName</dd>
+                <dt class="col-5 fw-normal" style="color: var(--krishi-text-muted);">@L["Owner"]</dt>
+                <dd class="col-7 mb-0">@Model.OwnerName</dd>
+                <dt class="col-5 fw-normal" style="color: var(--krishi-text-muted);">@L["Dates"]</dt>
+                <dd class="col-7 mb-0">@Model.DateRange</dd>
+                <dt class="col-5 fw-normal" style="color: var(--krishi-text-muted);">@L["Quantity"]</dt>
+                <dd class="col-7 mb-0">@Model.QuantityText</dd>
+                <dt class="col-5 fw-normal" style="color: var(--krishi-text-muted);">@L["Rate"]</dt>
+                <dd class="col-7 mb-0">@Model.RateText</dd>
+                <dt class="col-5 fw-semibold border-top pt-2 fs-6" style="color: var(--krishi-primary);">@L["Amount to pay"]</dt>
+                <dd class="col-7 mb-0 fw-bold border-top pt-2 fs-5" style="color: var(--krishi-primary);">@Money(Model.Amount)</dd>
+            </dl>
+            <p class="small mt-3 mb-0" style="color: var(--krishi-text-muted);"><i class="bi bi-shield-lock-fill text-success me-1"></i>@L["Held in escrow. Cancel before the start date for a full refund."]</p>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-5">
+        <div class="card border-0 shadow-sm h-100 p-3 p-md-4" style="border-radius: var(--krishi-radius-lg);">
+            <h5 class="fw-bold mb-3" style="color: var(--krishi-text-primary);"><i class="bi bi-wallet2 me-2 text-success"></i>@L["Payment method"]</h5>
+            <form asp-action="Pay" method="post">
+                <input type="hidden" name="type" value="@Model.BookingType" />
+                <input type="hidden" name="id" value="@Model.BookingId" />
+                <div class="d-flex flex-column gap-2 mb-3">
+                    @foreach (var m in Model.Methods)
+                    {
+                        var isFirst = m == Model.Methods[0];
+                        <label class="d-flex align-items-center gap-3 p-3 rounded-3 border krishi-pay-method" for="method-@m">
+                            <input class="form-check-input mt-0" type="radio" name="method" id="method-@m" value="@m" checked="@(isFirst ? "checked" : null)" required />
+                            <span class="fw-semibold flex-grow-1">@m</span>
+                            <i class="bi @(m == "Card" ? "bi-credit-card" : "bi-phone") text-success"></i>
+                        </label>
+                    }
+                </div>
+                <div class="mb-3">
+                    <label for="payAccount" class="form-label small fw-semibold">@L["Wallet / card number"]</label>
+                    <input id="payAccount" name="account" class="form-control" required minlength="6" maxlength="40" value="@Model.Account" placeholder="01XXXXXXXXX" autocomplete="off" />
+                    <div class="form-text">@L["Sandbox: a number ending in 0000 will be declined."]</div>
+                </div>
+                <button type="submit" class="btn btn-krishi-primary w-100 rounded-pill fw-bold py-2">
+                    <i class="bi bi-lock-fill me-1"></i>@L["Pay {0} securely", Money(Model.Amount)]
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .krishi-pay-method { cursor: pointer; transition: border-color .15s, background-color .15s; }
+    .krishi-pay-method:has(input:checked) { border-color: var(--krishi-primary) !important; background-color: var(--krishi-primary-light); }
+</style>
