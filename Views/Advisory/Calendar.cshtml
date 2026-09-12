@@ -1,0 +1,603 @@
+@model KrishiLink.Models.ViewModels.CropCalendarIndexViewModel
+@{
+    ViewData["Title"] = L["Crop Planting & Harvesting Calendar"].Value;
+    var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+}
+
+<!-- ADVISORY SECTION TAB NAVIGATION -->
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4 pb-2 border-bottom" style="border-color: var(--krishi-border-color) !important;">
+    <div>
+        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">
+            <i class="bi bi-calendar3-range text-success me-2"></i>@L["Agricultural Crop Calendar"]
+        </h2>
+        <p class="mb-0 text-muted">
+            @L["Official Bangladesh DAE, BARI & BRRI sowing, vegetative growth, and harvesting schedules across 12 months."]
+        </p>
+    </div>
+
+    <!-- Top Tab Bar -->
+    <div class="nav nav-pills bg-light p-1.5 rounded-pill border shadow-sm" role="tablist">
+        <a asp-controller="Advisory" asp-action="Index" class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-muted d-flex align-items-center gap-1.5">
+            <i class="bi bi-cpu"></i>
+            <span>@L["Smart Advisor"]</span>
+        </a>
+        <a asp-controller="Advisory" asp-action="Calendar" class="nav-link active bg-success text-white rounded-pill px-3.5 py-1.5 fw-bold d-flex align-items-center gap-1.5 shadow-sm">
+            <i class="bi bi-calendar-week-fill"></i>
+            <span>@L["Crop Calendar"]</span>
+        </a>
+    </div>
+</div>
+
+<!-- CURRENT MONTH HERO & LIVE STATUS BAR -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);">
+    <div class="card-body p-4 text-white">
+        <div class="row align-items-center gy-3">
+            <div class="col-12 col-lg-7">
+                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                    <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                        <i class="bi bi-clock-history me-1"></i>@L["Current Agricultural Window"]
+                    </span>
+                    <span class="badge bg-white bg-opacity-25 text-white px-2.5 py-1 rounded-pill small">
+                        @Model.CurrentSeason
+                    </span>
+                </div>
+                <h3 class="fw-bold text-white mb-1">
+                    @(isBangla ? Model.CurrentBanglaMonth : Model.CurrentMonthName)
+                </h3>
+                <p class="text-white-50 small mb-0" style="max-width: 580px;">
+                    @L["Real-time planting guide for Bangladesh farmers. Discover which crops are optimal for seedbed preparation, active tillering, or ready for harvest right now."]
+                </p>
+            </div>
+
+            <div class="col-12 col-lg-5">
+                <div class="row g-2 text-center">
+                    <div class="col-4">
+                        <a href="@Url.Action("Calendar", "Advisory", new { stage = "Sowing", category = Model.SelectedCategory, season = Model.SelectedSeason, division = Model.SelectedDivision })"
+                           class="card h-100 border-0 bg-white bg-opacity-10 text-decoration-none rounded-3 p-2.5 text-white hover-card-translucent transition">
+                            <div class="text-success-subtle mb-1 fs-5">🌱</div>
+                            <div class="fw-bold fs-4 mb-0 text-white">@Model.SowingNowCount</div>
+                            <div class="text-white-50" style="font-size: 0.75rem;">@L["Sowing Now"]</div>
+                        </a>
+                    </div>
+                    <div class="col-4">
+                        <a href="@Url.Action("Calendar", "Advisory", new { stage = "Harvesting", category = Model.SelectedCategory, season = Model.SelectedSeason, division = Model.SelectedDivision })"
+                           class="card h-100 border-0 bg-white bg-opacity-10 text-decoration-none rounded-3 p-2.5 text-white hover-card-translucent transition">
+                            <div class="text-warning-subtle mb-1 fs-5">🌾</div>
+                            <div class="fw-bold fs-4 mb-0 text-white">@Model.HarvestingNowCount</div>
+                            <div class="text-white-50" style="font-size: 0.75rem;">@L["Harvesting"]</div>
+                        </a>
+                    </div>
+                    <div class="col-4">
+                        <a href="@Url.Action("Calendar", "Advisory", new { stage = "Growing", category = Model.SelectedCategory, season = Model.SelectedSeason, division = Model.SelectedDivision })"
+                           class="card h-100 border-0 bg-white bg-opacity-10 text-decoration-none rounded-3 p-2.5 text-white hover-card-translucent transition">
+                            <div class="text-info-subtle mb-1 fs-5">🌿</div>
+                            <div class="fw-bold fs-4 mb-0 text-white">@Model.GrowingNowCount</div>
+                            <div class="text-white-50" style="font-size: 0.75rem;">@L["In-Field"]</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SEARCH & FILTER TOOLBAR -->
+<div class="card krishi-card border-0 shadow-sm rounded-4 p-3.5 mb-4">
+    <form asp-controller="Advisory" asp-action="Calendar" method="get" id="calendarFilterForm">
+        <div class="row g-2.5 align-items-center">
+            
+            <!-- Keyword Search -->
+            <div class="col-12 col-md-4 col-lg-3">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" value="@Model.SearchQuery" class="form-control border-start-0 bg-light"
+                           placeholder='@L["Search crop, variety, district..."]' />
+                </div>
+            </div>
+
+            <!-- Category Filter -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <select name="category" class="form-select bg-light" onchange="this.form.submit()">
+                    @foreach (var cat in Model.Categories)
+                    {
+                        <option value="@cat.Value" selected="@(Model.SelectedCategory == cat.Value)">
+                            @(isBangla ? cat.BanglaText : cat.Text)
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <!-- Season Filter -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <select name="season" class="form-select bg-light" onchange="this.form.submit()">
+                    @foreach (var sea in Model.Seasons)
+                    {
+                        <option value="@sea.Value" selected="@(Model.SelectedSeason == sea.Value)">
+                            @(isBangla ? sea.BanglaText : sea.Text)
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <!-- Regional Division Filter -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <select name="division" class="form-select bg-light" onchange="this.form.submit()">
+                    @foreach (var div in Model.Divisions)
+                    {
+                        <option value="@div.Value" selected="@(Model.SelectedDivision == div.Value)">
+                            @(isBangla ? div.BanglaText : div.Text)
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <!-- Active Stage Filter -->
+            <div class="col-6 col-md-4 col-lg-2">
+                <select name="stage" class="form-select bg-light" onchange="this.form.submit()">
+                    <option value="All" selected="@(Model.SelectedStage == "All")">@L["All Growth Stages"]</option>
+                    <option value="Sowing" selected="@(Model.SelectedStage == "Sowing")">🌱 @L["Sowing Stage"]</option>
+                    <option value="Growing" selected="@(Model.SelectedStage == "Growing")">🌿 @L["Growing Stage"]</option>
+                    <option value="Harvesting" selected="@(Model.SelectedStage == "Harvesting")">🌾 @L["Harvesting Stage"]</option>
+                </select>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="col-12 col-md-4 col-lg-1 d-flex gap-2">
+                <button type="submit" class="btn btn-krishi-primary w-100 fw-semibold px-2 py-2" title='@L["Filter"]'>
+                    <i class="bi bi-funnel-fill"></i>
+                </button>
+                <a asp-controller="Advisory" asp-action="Calendar" class="btn btn-outline-secondary w-100 fw-semibold px-2 py-2" title='@L["Reset"]'>
+                    <i class="bi bi-arrow-clockwise"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Stage Filter Pills -->
+        <div class="d-flex align-items-center gap-1.5 flex-wrap mt-3 pt-2.5 border-top">
+            <span class="text-muted small fw-bold me-1">@L["Quick Filter:"]</span>
+            <a href="@Url.Action("Calendar", "Advisory", new { stage = "All", category = Model.SelectedCategory, season = Model.SelectedSeason, division = Model.SelectedDivision })"
+               class="badge rounded-pill text-decoration-none px-3 py-1.5 @(Model.SelectedStage == "All" ? "bg-success text-white" : "bg-light text-dark border")">
+                @L["All Crops ({0})", Model.TotalCropsCount]
+            </a>
+            <a href="@Url.Action("Calendar", "Advisory", new { stage = "Sowing", category = Model.SelectedCategory, season = Model.SelectedSeason, division = Model.SelectedDivision })"
+               class="badge rounded-pill text-decoration-none px-3 py-1.5 @(Model.SelectedStage == "Sowing" ? "bg-success text-white" : "bg-light text-dark border")">
+                🌱 @L["Sowing Now"]
+            </a>
+            <a href="@Url.Action("Calendar", "Advisory", new { stage = "Harvesting", category = Model.SelectedCategory, season = Model.SelectedSeason, division = Model.SelectedDivision })"
+               class="badge rounded-pill text-decoration-none px-3 py-1.5 @(Model.SelectedStage == "Harvesting" ? "bg-success text-white" : "bg-light text-dark border")">
+                🌾 @L["Harvesting Now"]
+            </a>
+            <a href="@Url.Action("Calendar", "Advisory", new { season = "Rabi" })"
+               class="badge rounded-pill text-decoration-none px-3 py-1.5 @(Model.SelectedSeason == "Rabi" ? "bg-warning text-dark fw-bold" : "bg-light text-dark border")">
+                @L["Rabi (Winter)"]
+            </a>
+            <a href="@Url.Action("Calendar", "Advisory", new { season = "Kharif-1" })"
+               class="badge rounded-pill text-decoration-none px-3 py-1.5 @(Model.SelectedSeason == "Kharif-1" ? "bg-warning text-dark fw-bold" : "bg-light text-dark border")">
+                @L["Kharif-1 (Summer)"]
+            </a>
+            <a href="@Url.Action("Calendar", "Advisory", new { season = "Kharif-2" })"
+               class="badge rounded-pill text-decoration-none px-3 py-1.5 @(Model.SelectedSeason == "Kharif-2" ? "bg-warning text-dark fw-bold" : "bg-light text-dark border")">
+                @L["Kharif-2 (Monsoon)"]
+            </a>
+
+            <!-- View Switcher -->
+            <div class="ms-auto btn-group btn-group-sm" role="group" aria-label="View toggle">
+                <button type="button" class="btn btn-outline-success active" id="tableViewBtn" onclick="switchView('table')">
+                    <i class="bi bi-table me-1"></i>@L["Timeline Matrix"]
+                </button>
+                <button type="button" class="btn btn-outline-success" id="cardViewBtn" onclick="switchView('card')">
+                    <i class="bi bi-grid-fill me-1"></i>@L["Crop Cards"]
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- LEGEND GUIDE BAR -->
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 px-2">
+    <div class="d-flex align-items-center gap-3 flex-wrap small">
+        <span class="fw-bold text-dark">@L["Timeline Legend:"]</span>
+        <span class="d-inline-flex align-items-center gap-1.5">
+            <span class="badge bg-success rounded-circle p-1" style="width: 14px; height: 14px; display: inline-block;"></span>
+            <span class="text-secondary fw-semibold">@L["🌱 Sowing / Transplanting"]</span>
+        </span>
+        <span class="d-inline-flex align-items-center gap-1.5">
+            <span class="badge bg-info bg-opacity-75 rounded-circle p-1" style="width: 14px; height: 14px; display: inline-block;"></span>
+            <span class="text-secondary fw-semibold">@L["🌿 Growing / Vegetative"]</span>
+        </span>
+        <span class="d-inline-flex align-items-center gap-1.5">
+            <span class="badge bg-warning rounded-circle p-1" style="width: 14px; height: 14px; display: inline-block;"></span>
+            <span class="text-secondary fw-semibold">@L["🌾 Harvesting / Reaping"]</span>
+        </span>
+    </div>
+    <div class="text-muted small">
+        @L["Showing {0} crops matching criteria", Model.Crops.Count]
+    </div>
+</div>
+
+@if (!Model.Crops.Any())
+{
+    <div class="card krishi-card border-0 shadow-sm rounded-4 text-center py-5 px-3">
+        <i class="bi bi-emoji-neutral text-muted" style="font-size: 3rem;"></i>
+        <h5 class="fw-bold text-dark mt-3 mb-1">@L["No Crops Found"]</h5>
+        <p class="text-muted small mb-3">@L["No crops match the selected category, season, or regional filter criteria."]</p>
+        <div>
+            <a asp-controller="Advisory" asp-action="Calendar" class="btn btn-krishi-outline rounded-pill px-4 py-2">
+                @L["Reset All Filters"]
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <!-- 1. TIMELINE MATRIX VIEW -->
+    <div id="calendarTableView" class="card krishi-card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 crop-calendar-table">
+                <thead class="bg-light text-center border-bottom">
+                    <tr>
+                        <th class="text-start py-3 px-3" style="min-width: 220px; width: 25%;">
+                            <span class="fw-bold text-dark">@L["Crop & Category"]</span>
+                        </th>
+                        @foreach (var m in Model.Months)
+                        {
+                            <th class="py-2.5 px-1 @(m.IsCurrent ? "current-month-col bg-success bg-opacity-10 border-start border-end border-success" : "")" style="min-width: 58px; width: 6.25%;">
+                                <div class="small fw-bold @(m.IsCurrent ? "text-success" : "text-dark")">@m.EnglishShort</div>
+                                <div class="text-muted" style="font-size: 0.68rem;">@m.BanglaName</div>
+                                @if (m.IsCurrent)
+                                {
+                                    <span class="badge bg-success text-white rounded-pill px-1.5 py-0.5 mt-0.5" style="font-size: 0.6rem;">@L["NOW"]</span>
+                                }
+                            </th>
+                        }
+                        <th class="text-center py-3 px-2" style="min-width: 90px;">@L["Details"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var crop in Model.Crops)
+                    {
+                        var isCurrentActive = crop.IsSowingInMonth(Model.CurrentMonth) || crop.IsHarvestingInMonth(Model.CurrentMonth);
+                        <tr class="@(isCurrentActive ? "table-row-active" : "")">
+                            
+                            <!-- Crop Info -->
+                            <td class="py-3 px-3">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="d-flex align-items-center justify-content-center rounded-3 text-success bg-success bg-opacity-10 flex-shrink-0" style="width: 38px; height: 38px;">
+                                        <i class="bi @crop.IconClass fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark leading-tight">
+                                            @(isBangla ? crop.BanglaName : crop.Name)
+                                        </div>
+                                        <div class="text-muted small">
+                                            <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.68rem;">@crop.Category</span>
+                                            <span class="badge bg-light text-secondary border px-1.5 py-0.5" style="font-size: 0.68rem;">@crop.Season</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- 12 Month Cells -->
+                            @for (int monthNum = 1; monthNum <= 12; monthNum++)
+                            {
+                                var phase = crop.GetPhaseForMonth(monthNum);
+                                var isCurrent = monthNum == Model.CurrentMonth;
+                                var cellClass = isCurrent ? "current-month-col bg-success bg-opacity-10 border-start border-end border-success" : "";
+
+                                <td class="text-center p-1 @cellClass">
+                                    @if (phase == "sowing")
+                                    {
+                                        <div class="crop-phase-pill bg-success text-white fw-bold shadow-sm"
+                                             data-bs-toggle="tooltip" data-bs-title='@L["Sowing & Seedbed: {0}", crop.Name]'>
+                                            🌱
+                                        </div>
+                                    }
+                                    else if (phase == "harvesting")
+                                    {
+                                        <div class="crop-phase-pill bg-warning text-dark fw-bold shadow-sm"
+                                             data-bs-toggle="tooltip" data-bs-title='@L["Harvesting & Reaping: {0}", crop.Name]'>
+                                            🌾
+                                        </div>
+                                    }
+                                    else if (phase == "growing")
+                                    {
+                                        <div class="crop-phase-pill bg-info bg-opacity-75 text-white fw-semibold"
+                                             data-bs-toggle="tooltip" data-bs-title='@L["Growing & Tillering: {0}", crop.Name]'>
+                                            🌿
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted-light opacity-25">•</span>
+                                    }
+                                </td>
+                            }
+
+                            <!-- Details Modal Trigger -->
+                            <td class="text-center px-2">
+                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-1 fw-semibold"
+                                        onclick="showCropModal(@crop.Id)">
+                                    <i class="bi bi-info-circle me-1"></i>@L["Guide"]
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 2. CROP CARDS GRID VIEW -->
+    <div id="calendarCardView" class="d-none mb-5">
+        <div class="row g-4">
+            @foreach (var crop in Model.Crops)
+            {
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card krishi-card border-0 shadow-sm rounded-4 h-100 overflow-hidden d-flex flex-column">
+                        <div class="card-header bg-white border-bottom p-3.5 pb-3">
+                            <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+                                <div>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-0.5 small fw-semibold">
+                                        @crop.Category
+                                    </span>
+                                    <span class="badge bg-light text-dark border rounded-pill px-2 py-0.5 small">
+                                        @crop.Season
+                                    </span>
+                                </div>
+                                <span class="badge @(crop.IsSowingInMonth(Model.CurrentMonth) ? "bg-success" : (crop.IsHarvestingInMonth(Model.CurrentMonth) ? "bg-warning text-dark" : "bg-light text-muted border")) rounded-pill px-2.5 py-1 small">
+                                    @(isBangla ? crop.GetCurrentMonthBanglaStatus(Model.CurrentMonth) : crop.GetCurrentMonthStatus(Model.CurrentMonth))
+                                </span>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-0 mt-2">
+                                @(isBangla ? crop.BanglaName : crop.Name)
+                            </h5>
+                            <span class="text-muted small fst-italic">@crop.ScientificName</span>
+                        </div>
+
+                        <div class="card-body p-3.5 flex-grow-1">
+                            <!-- Sowing & Harvesting Badges -->
+                            <div class="d-flex flex-column gap-2 mb-3">
+                                <div class="p-2.5 rounded-3 bg-success bg-opacity-10 border border-success-subtle">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="text-success small fw-bold"><i class="bi bi-arrow-down-circle-fill me-1"></i>@L["Sowing Months:"]</span>
+                                        <span class="small fw-semibold text-dark">
+                                            @string.Join(", ", crop.SowingMonths.Select(m => Model.Months.FirstOrDefault(x => x.MonthNumber == m)?.EnglishShort ?? m.ToString()))
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="p-2.5 rounded-3 bg-warning bg-opacity-10 border border-warning-subtle">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="text-warning-emphasis small fw-bold"><i class="bi bi-arrow-up-circle-fill me-1"></i>@L["Harvesting Months:"]</span>
+                                        <span class="small fw-semibold text-dark">
+                                            @string.Join(", ", crop.HarvestingMonths.Select(m => Model.Months.FirstOrDefault(x => x.MonthNumber == m)?.EnglishShort ?? m.ToString()))
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Duration & Soil -->
+                            <ul class="list-unstyled small text-secondary mb-3 d-flex flex-column gap-1.5">
+                                <li><strong>@L["Duration:"]</strong> @crop.DurationDays</li>
+                                <li><strong>@L["Optimal Temp:"]</strong> @crop.OptimalTemperature</li>
+                                <li><strong>@L["Soil:"]</strong> @crop.SoilTypes</li>
+                                <li><strong>@L["Varieties:"]</strong> <span class="text-dark">@crop.PopularVarieties</span></li>
+                            </ul>
+
+                            <p class="small text-muted mb-0 bg-light p-2.5 rounded-3 border">
+                                <i class="bi bi-lightbulb-fill text-warning me-1"></i>@crop.KeyTips
+                            </p>
+                        </div>
+
+                        <div class="card-footer bg-white border-top p-3 text-end">
+                            <button type="button" class="btn btn-sm btn-krishi-outline rounded-pill px-3 py-1.5 fw-semibold"
+                                    onclick="showCropModal(@crop.Id)">
+                                <i class="bi bi-journal-text me-1"></i>@L["Full Cultivation Guide"]
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<!-- DETAILED CROP PROFILE MODAL -->
+<div class="modal fade" id="cropDetailModal" tabindex="-1" aria-labelledby="cropDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-success text-white py-3 px-4">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-calendar2-check-fill fs-5"></i>
+                    <h5 class="modal-title fw-bold" id="cropDetailModalLabel">@L["Crop Cultivation Profile"]</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="cropModalContent">
+                <!-- Dynamic Ajax Content Loaded Here -->
+                <div class="text-center py-5">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">@L["Loading..."]</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light px-4 py-2.5">
+                <button type="button" class="btn btn-secondary rounded-pill px-4 py-2 small fw-semibold" data-bs-dismiss="modal">
+                    @L["Close"]
+                </button>
+                <a asp-controller="Advisory" asp-action="Index" class="btn btn-krishi-primary rounded-pill px-4 py-2 small fw-semibold">
+                    <i class="bi bi-cpu me-1"></i>@L["Get Custom Advisory for this Crop"]
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .crop-calendar-table {
+        table-layout: fixed;
+    }
+    .crop-calendar-table th, .crop-calendar-table td {
+        vertical-align: middle;
+    }
+    .current-month-col {
+        background-color: rgba(46, 125, 50, 0.08) !important;
+    }
+    .crop-phase-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .crop-phase-pill:hover {
+        transform: scale(1.18);
+        z-index: 5;
+    }
+    .table-row-active {
+        background-color: rgba(46, 125, 50, 0.02);
+    }
+    .hover-card-translucent:hover {
+        background-color: rgba(255, 255, 255, 0.22) !important;
+        transform: translateY(-2px);
+    }
+    .transition {
+        transition: all 0.2s ease-in-out;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // Initialize tooltips
+        document.addEventListener('DOMContentLoaded', function () {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+
+        // Switch between Table Matrix View and Card View
+        function switchView(view) {
+            const table = document.getElementById('calendarTableView');
+            const card = document.getElementById('calendarCardView');
+            const tableBtn = document.getElementById('tableViewBtn');
+            const cardBtn = document.getElementById('cardViewBtn');
+
+            if (view === 'card') {
+                if (table) table.classList.add('d-none');
+                if (card) card.classList.remove('d-none');
+                if (cardBtn) cardBtn.classList.add('active');
+                if (tableBtn) tableBtn.classList.remove('active');
+            } else {
+                if (card) card.classList.add('d-none');
+                if (table) table.classList.remove('d-none');
+                if (tableBtn) tableBtn.classList.add('active');
+                if (cardBtn) cardBtn.classList.remove('active');
+            }
+        }
+
+        // Fetch and show crop details modal
+        function showCropModal(id) {
+            const modalEl = document.getElementById('cropDetailModal');
+            const contentEl = document.getElementById('cropModalContent');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+
+            contentEl.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            `;
+
+            fetch(`@Url.Action("CropDetail", "Advisory")/${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.success && data.data) {
+                        const crop = data.data;
+                        const isBangla = @(isBangla.ToString().ToLower());
+                        const monthNames = ["", "Jan (পৌষ/মাঘ)", "Feb (মাঘ/ফাল্গুন)", "Mar (ফাল্গুন/চৈত্র)", "Apr (চৈত্র/বৈশাখ)", "May (বৈশাখ/জ্যৈষ্ঠ)", "Jun (জ্যৈষ্ঠ/আষাঢ়)", "Jul (আষাঢ়/শ্রাবণ)", "Aug (শ্রাবণ/ভাদ্র)", "Sep (ভাদ্র/আশ্বিন)", "Oct (আশ্বিন/কার্তিক)", "Nov (কার্তিক/অগ্রহায়ণ)", "Dec (অগ্রহায়ণ/পৌষ)"];
+                        
+                        const sowingList = (crop.sowingMonths || []).map(m => monthNames[m] || m).join(", ");
+                        const harvestingList = (crop.harvestingMonths || []).map(m => monthNames[m] || m).join(", ");
+
+                        contentEl.innerHTML = `
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-2 border-bottom">
+                                <div>
+                                    <h4 class="fw-bold text-dark mb-0">${isBangla ? crop.banglaName : crop.name}</h4>
+                                    <span class="text-muted small fst-italic">(${crop.scientificName})</span>
+                                </div>
+                                <div>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1 fw-semibold">${crop.category}</span>
+                                    <span class="badge bg-light text-dark border rounded-pill px-3 py-1 fw-semibold">${crop.season}</span>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-12 col-md-6">
+                                    <div class="p-3 bg-success bg-opacity-10 rounded-3 border border-success-subtle h-100">
+                                        <div class="fw-bold text-success mb-1 small text-uppercase">🌱 @L["Sowing & Transplanting Window"]</div>
+                                        <p class="mb-0 text-dark fw-semibold">${sowingList}</p>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="p-3 bg-warning bg-opacity-10 rounded-3 border border-warning-subtle h-100">
+                                        <div class="fw-bold text-warning-emphasis mb-1 small text-uppercase">🌾 @L["Harvesting & Reaping Window"]</div>
+                                        <p class="mb-0 text-dark fw-semibold">${harvestingList}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <div class="p-3 bg-light rounded-3 border h-100">
+                                        <span class="text-muted small fw-bold d-block mb-1 text-uppercase">@L["Field Duration"]</span>
+                                        <p class="mb-0 text-dark small leading-relaxed">${crop.durationDays}</p>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="p-3 bg-light rounded-3 border h-100">
+                                        <span class="text-muted small fw-bold d-block mb-1 text-uppercase">@L["Optimal Temperature & Climate"]</span>
+                                        <p class="mb-0 text-dark small leading-relaxed">${crop.optimalTemperature}</p>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="p-3 bg-light rounded-3 border h-100">
+                                        <span class="text-muted small fw-bold d-block mb-1 text-uppercase">@L["Suitable Soil Types"]</span>
+                                        <p class="mb-0 text-dark small leading-relaxed">${crop.soilTypes}</p>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="p-3 bg-light rounded-3 border h-100">
+                                        <span class="text-muted small fw-bold d-block mb-1 text-uppercase">@L["Water & Irrigation Needs"]</span>
+                                        <p class="mb-0 text-dark small leading-relaxed">${crop.waterRequirement}</p>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="p-3 bg-light rounded-3 border">
+                                        <span class="text-muted small fw-bold d-block mb-1 text-uppercase">@L["Popular HYV & Hybrid Varieties"]</span>
+                                        <p class="mb-0 text-dark small fw-semibold">${crop.popularVarieties}</p>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="p-3 bg-light rounded-3 border">
+                                        <span class="text-muted small fw-bold d-block mb-1 text-uppercase">@L["Key Agronomic Tips & Precautions"]</span>
+                                        <p class="mb-0 text-dark small leading-relaxed">${crop.keyTips}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        contentEl.innerHTML = `<div class="alert alert-danger mb-0">Failed to load crop details.</div>`;
+                    }
+                })
+                .catch(err => {
+                    contentEl.innerHTML = `<div class="alert alert-danger mb-0">Error connecting to server.</div>`;
+                });
+        }
+    </script>
+}

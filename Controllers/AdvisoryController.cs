@@ -1,3 +1,4 @@
+using KrishiLink.BLL.Services;
 using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -5,6 +6,13 @@ namespace KrishiLink.Controllers
 {
     public class AdvisoryController : Controller
     {
+        private readonly ICropCalendarService _cropCalendarService;
+
+        public AdvisoryController(ICropCalendarService cropCalendarService)
+        {
+            _cropCalendarService = cropCalendarService;
+        }
+
         /// <summary>
         /// GET: /Advisory
         /// Renders the Crop Advisory form and recommendations.
@@ -20,6 +28,38 @@ namespace KrishiLink.Controllers
             }
 
             return View(model);
+        }
+
+        /// <summary>
+        /// GET: /Advisory/Calendar
+        /// Interactive Crop Planting & Harvesting Calendar reference across Bangladesh's agricultural zones.
+        /// </summary>
+        public async Task<IActionResult> Calendar(
+            string? search = null,
+            string? category = null,
+            string? season = null,
+            string? division = null,
+            int? month = null,
+            string? stage = null)
+        {
+            var model = await _cropCalendarService.GetCalendarModelAsync(search, category, season, division, month, stage);
+            return View(model);
+        }
+
+        /// <summary>
+        /// GET: /Advisory/CropDetail/{id}
+        /// Returns detailed crop profile JSON for quick modal views or dynamic inspection.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> CropDetail(int id)
+        {
+            var crop = await _cropCalendarService.GetCropByIdAsync(id);
+            if (crop == null)
+            {
+                return NotFound(new { success = false, message = "Crop entry not found." });
+            }
+
+            return Json(new { success = true, data = crop });
         }
 
         /// <summary>
