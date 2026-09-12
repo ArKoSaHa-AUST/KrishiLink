@@ -407,8 +407,8 @@ namespace KrishiLink.BLL.Services
 
                     // Check if a WeatherSuggestion notification was already sent to this farmer recently
                     var hasRecent = await _notifications.Query()
-                        .AnyAsync(n => n.UserId == farmer.Id 
-                                    && n.Type == NotificationTypes.WeatherSuggestion 
+                        .AnyAsync(n => n.UserId == farmer.Id
+                                    && n.Type == NotificationTypes.WeatherSuggestion
                                     && n.CreatedAt >= recentCutoff);
 
                     if (!hasRecent)

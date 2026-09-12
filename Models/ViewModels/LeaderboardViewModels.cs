@@ -39,7 +39,7 @@ namespace KrishiLink.Models.ViewModels
         public string Location { get; set; } = string.Empty;
         public string UserRole { get; set; } = "EquipmentOwner"; // "EquipmentOwner", "GodownOwner", "Both"
         public string RoleDisplay => UserRole == "EquipmentOwner" ? "Equipment Owner" : (UserRole == "GodownOwner" ? "Godown Owner" : "Equipment & Godown Host");
-        
+
         public bool IsVerified { get; set; } = false;
         public string VerificationStatus { get; set; } = "Unverified";
 

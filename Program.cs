@@ -38,6 +38,11 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "RequestVerificationToken";
+});
+
 // Localization: shared .resx resources (English is the default/fallback, Bangla via SharedResource.bn.resx)
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 

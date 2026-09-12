@@ -38,7 +38,7 @@ namespace KrishiLink.Models.ViewModels
         public string BanglaCrop { get; set; } = "বোরো ধান";
         public string CropStage { get; set; } = "Growing"; // Sowing, Growing, Harvesting, OffSeason
         public string BanglaCropStage { get; set; } = "বাড়ন্ত পর্যায়";
-        
+
         public int CurrentMonth { get; set; } = DateTime.Today.Month;
         public string CurrentMonthName { get; set; } = DateTime.Today.ToString("MMMM");
 

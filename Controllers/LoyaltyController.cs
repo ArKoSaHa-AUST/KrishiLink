@@ -34,6 +34,7 @@ namespace KrishiLink.Controllers
         /// Accepts JSON body with PromoCode, PointsToRedeem, and GrossAmount.
         /// </summary>
         [HttpPost("Loyalty/ValidatePromo")]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ValidatePromo([FromBody] ApplyPromoRequestViewModel req)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;

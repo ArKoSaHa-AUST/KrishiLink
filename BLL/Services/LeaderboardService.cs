@@ -49,22 +49,32 @@ namespace KrishiLink.BLL.Services
             string? district = null,
             bool forceRefresh = false)
         {
-            var cleanCategory = string.IsNullOrWhiteSpace(category) ? "All" : category.Trim();
-            var cleanSortBy = string.IsNullOrWhiteSpace(sortBy) ? "trust" : sortBy.Trim().ToLowerInvariant();
-            var cleanDistrict = string.IsNullOrWhiteSpace(district) || district.Equals("all", StringComparison.OrdinalIgnoreCase)
-                ? null
-                : district.Trim();
+            var safeCategory = category switch
+            {
+                "Equipment" => "Equipment",
+                "Godown" => "Godown",
+                _ => "All"
+            };
+            var safeSortBy = sortBy?.ToLowerInvariant() switch
+            {
+                "bookings" => "bookings",
+                "rating" => "rating",
+                _ => "trust"
+            };
+            var safeDistrict = string.IsNullOrWhiteSpace(district) || district.Equals("all", StringComparison.OrdinalIgnoreCase)
+                ? "all"
+                : System.Text.RegularExpressions.Regex.Replace(district.Trim(), @"[^a-zA-Z0-9_\-]", string.Empty);
 
-            var cacheKey = $"{CacheKeyPrefix}{cleanCategory.ToLowerInvariant()}_{cleanSortBy}_{cleanDistrict?.ToLowerInvariant() ?? "all"}";
+            var cacheKey = $"{CacheKeyPrefix}{safeCategory.ToLowerInvariant()}_{safeSortBy}_{safeDistrict.ToLowerInvariant()}";
 
             if (!forceRefresh && _cache.TryGetValue(cacheKey, out LeaderboardPageViewModel? cachedModel) && cachedModel != null)
             {
-                _logger.LogInformation("Leaderboard served from MemoryCache (Key: {CacheKey})", cacheKey);
+                _logger.LogInformation("Leaderboard served from MemoryCache (Category: {Category}, Sort: {Sort}, District: {District})", safeCategory, safeSortBy, safeDistrict);
                 cachedModel.IsCached = true;
                 return cachedModel;
             }
 
-            _logger.LogInformation("Recalculating Leaderboard (Key: {CacheKey}, Force: {Force})", cacheKey, forceRefresh);
+            _logger.LogInformation("Recalculating Leaderboard (Category: {Category}, Sort: {Sort}, District: {District}, Force: {Force})", safeCategory, safeSortBy, safeDistrict, forceRefresh);
 
             // 1. Fetch all owners (users with role EquipmentOwner / GodownOwner or who have listings)
             var ownerUsers = await _db.Users
