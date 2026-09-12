@@ -61,5 +61,8 @@ namespace KrishiLink.Models.ViewModels
         public List<string> ExistingImageUrls { get; set; } = new();
 
         public List<IFormFile>? ImageFiles { get; set; }
+
+        [Display(Name = "Primary Listing Photo")]
+        public string? PrimaryImageKey { get; set; }
     }
 }
