@@ -66,6 +66,10 @@ namespace KrishiLink.Models.ViewModels
         /// <summary>When the farmer submitted the request (drives sorting and "time ago").</summary>
         public DateTime RequestedOn { get; set; }
 
+        /// <summary>Set when a pending request's dates overlap an accepted booking or blocked date.</summary>
+        public bool HasConflict { get; set; }
+        public string? ConflictHint { get; set; }
+
         /// <summary>Compact relative timestamp, e.g. "2h ago". Empty when RequestedOn is unset.</summary>
         public string TimeAgo => TimeAgoFormatter.Format(RequestedOn);
     }

@@ -3761,4 +3761,112 @@
   <data name="Cannot reduce quantity below {0} because {1} units are already booked on {2}." xml:space="preserve">
     <value>যন্ত্রপাতির সংখ্যা {0} এর নিচে নামানো যাবে না কারণ {2} তারিখে ইতোমধ্যে {1}টি ইউনিট বুক করা আছে।</value>
   </data>
+  <data name="Blocked {0} day(s). Skipped {1} day(s) already booked by farmers." xml:space="preserve">
+    <value>{0} দিন ব্লক করা হয়েছে। কৃষকদের বুক করা {1} দিন বাদ দেওয়া হয়েছে।</value>
+  </data>
+  <data name="Blocked {0} day(s)." xml:space="preserve">
+    <value>{0} দিন সফলভাবে ব্লক করা হয়েছে।</value>
+  </data>
+  <data name="Unblocked {0} day(s)." xml:space="preserve">
+    <value>{0} দিন সফলভাবে আনব্লক করা হয়েছে।</value>
+  </data>
+  <data name="The end date must be on or after the start date." xml:space="preserve">
+    <value>শেষের তারিখ অবশ্যই শুরুর তারিখের সমান বা পরবর্তী হতে হবে।</value>
+  </data>
+  <data name="You can block at most 366 days at a time." xml:space="preserve">
+    <value>একবারে সর্বোচ্চ ৩৬৬ দিন ব্লক করা যাবে।</value>
+  </data>
+  <data name="Overlaps a date you blocked ({0})" xml:space="preserve">
+    <value>আপনার ব্লক করা তারিখের সাথে সাংঘর্ষিক ({0})</value>
+  </data>
+  <data name="Block a Period" xml:space="preserve">
+    <value>একটি নির্দিষ্ট সময়কাল ব্লক করুন</value>
+  </data>
+  <data name="Block or unblock a range of dates or recurring weekdays." xml:space="preserve">
+    <value>একটি নির্দিষ্ট তারিখের পরিসর বা পুনরাবৃত্তিমূলক বার ব্লক বা আনব্লক করুন।</value>
+  </data>
+  <data name="Quick Range:" xml:space="preserve">
+    <value>দ্রুত নির্বাচন:</value>
+  </data>
+  <data name="Next 7 days" xml:space="preserve">
+    <value>পরবর্তী ৭ দিন</value>
+  </data>
+  <data name="Next 30 days" xml:space="preserve">
+    <value>পরবর্তী ৩০ দিন</value>
+  </data>
+  <data name="Rest of this month" xml:space="preserve">
+    <value>চলতি মাসের বাকি দিনগুলো</value>
+  </data>
+  <data name="Recurring Weekdays (Optional)" xml:space="preserve">
+    <value>নির্দিষ্ট বারসমূহ (ঐচ্ছিক)</value>
+  </data>
+  <data name="If none checked, applies to every day in range" xml:space="preserve">
+    <value>কোনোটি নির্বাচন না করলে পরিসরের সকল দিন গণ্য হবে</value>
+  </data>
+  <data name="Every Friday" xml:space="preserve">
+    <value>প্রতি শুক্রবার</value>
+  </data>
+  <data name="Fri + Sat" xml:space="preserve">
+    <value>শুক্র + শনি</value>
+  </data>
+  <data name="All weekdays (Sun-Thu)" xml:space="preserve">
+    <value>সকল কার্যদিবস (রবি-বৃহস্পতি)</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>মুছুন</value>
+  </data>
+  <data name="Reason (Optional)" xml:space="preserve">
+    <value>কারণ (ঐচ্ছিক)</value>
+  </data>
+  <data name="max 100 characters" xml:space="preserve">
+    <value>সর্বোচ্চ ১০০ অক্ষর</value>
+  </data>
+  <data name="e.g. Harvest festival, Annual maintenance, Personal holiday" xml:space="preserve">
+    <value>যেমন: ফসল তোলার উৎসব, বার্ষিক রক্ষণাবেক্ষণ, ব্যক্তিগত ছুটি</value>
+  </data>
+  <data name="Helps you remember why these dates were blocked. Visible on your calendar." xml:space="preserve">
+    <value>কেন এই তারিখগুলো ব্লক করা হয়েছিল তা মনে রাখতে সাহায্য করে। আপনার ক্যালেন্ডারে প্রদর্শিত হবে।</value>
+  </data>
+  <data name="Block Period" xml:space="preserve">
+    <value>সময়কাল ব্লক করুন</value>
+  </data>
+  <data name="Unblock instead" xml:space="preserve">
+    <value>পরিবর্তে আনব্লক করুন</value>
+  </data>
+  <data name="Upcoming Blocked Periods" xml:space="preserve">
+    <value>আসন্ন ব্লককৃত সময়কাল</value>
+  </data>
+  <data name="Next 12 months" xml:space="preserve">
+    <value>পরবর্তী ১২ মাস</value>
+  </data>
+  <data name="No upcoming blocked dates" xml:space="preserve">
+    <value>কোনো আসন্ন ব্লককৃত তারিখ নেই</value>
+  </data>
+  <data name="Your listing is open for bookings. Use the form on the left to block dates if needed." xml:space="preserve">
+    <value>আপনার লিস্টিং বুকিংয়ের জন্য উন্মুক্ত। প্রয়োজনে তারিখ ব্লক করতে বাম দিকের ফর্মটি ব্যবহার করুন।</value>
+  </data>
+  <data name="1 day" xml:space="preserve">
+    <value>১ দিন</value>
+  </data>
+  <data name="Unblock" xml:space="preserve">
+    <value>আনব্লক</value>
+  </data>
+  <data name="Unblock Date Range?" xml:space="preserve">
+    <value>তারিখের পরিসর আনব্লক করবেন?</value>
+  </data>
+  <data name="Are you sure you want to unblock {0}? Farmers will be able to book these dates again." xml:space="preserve">
+    <value>আপনি কি নিশ্চিতভাবে {0} আনব্লক করতে চান? কৃষকরা পুনরায় এই তারিখগুলোতে বুক করতে পারবেন।</value>
+  </data>
+  <data name="Unblock Dates" xml:space="preserve">
+    <value>তারিখ আনব্লক করুন</value>
+  </data>
+  <data name="Blocked:" xml:space="preserve">
+    <value>ব্লককৃত:</value>
+  </data>
+  <data name="Unavailable:" xml:space="preserve">
+    <value>অনুপলব্ধ:</value>
+  </data>
+  <data name="Overlaps a date you blocked" xml:space="preserve">
+    <value>আপনার ব্লক করা তারিখের সাথে সাংঘর্ষিক</value>
+  </data>
 </root>

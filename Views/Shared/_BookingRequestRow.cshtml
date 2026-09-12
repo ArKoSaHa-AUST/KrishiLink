@@ -22,6 +22,7 @@
 }
 <div class="request-row border-bottom pending-request-row" data-request-id="@Model.Id"
      data-farmer-name="@Model.FarmerName" data-godown-id="@Model.GodownId" data-capacity="@Model.RequestedCapacityTons"
+     data-conflict="@(Model.HasConflict ? "true" : "false")"
      data-search="@(($"{Model.FarmerName} {Model.GodownName}").ToLowerInvariant())">
     <div class="p-3 px-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 request-row-header"
          role="@(expandable ? "button" : null)" tabindex="@(expandable ? "0" : null)"
@@ -48,6 +49,12 @@
                 @if (!expandable && !string.IsNullOrEmpty(Model.Note))
                 {
                     <span class="small fst-italic" style="color: var(--krishi-text-muted);">"@Model.Note"</span>
+                }
+                @if (Model.HasConflict)
+                {
+                    <span class="small d-block fw-semibold" style="color: var(--krishi-status-pending-text);">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>@Model.ConflictHint
+                    </span>
                 }
                 @if (Model.Status == "Pending")
                 {
@@ -120,6 +127,10 @@
                             <li><i class="bi bi-box-seam text-success me-1"></i> @L["Requested:"] @L["{0} Tons", Model.RequestedCapacityTons.ToString("N0")] <span style="color: var(--krishi-text-muted);">· @L["Total"] @gross</span></li>
                             <li><i class="bi bi-building text-success me-1"></i> <span class="detail-availability">—</span></li>
                             <li><i class="bi bi-calendar-range text-success me-1"></i> @Model.DateRange</li>
+                            @if (Model.HasConflict)
+                            {
+                                <li><i class="bi bi-exclamation-triangle-fill text-warning me-1"></i> <span class="fw-semibold text-danger">@Model.ConflictHint</span></li>
+                            }
                         </ul>
                     </div>
                     <div class="col-12 reject-reason-block @(string.IsNullOrEmpty(Model.RejectReason) ? "d-none" : "")">

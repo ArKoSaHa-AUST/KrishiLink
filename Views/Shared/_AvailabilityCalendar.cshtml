@@ -7,6 +7,7 @@
 @{
     var partialDates = (ViewData["PartiallyBookedDates"] as IEnumerable<DateTime>)?.Select(d => d.Date).ToHashSet() ?? new HashSet<DateTime>();
     var totalQuantity = ViewData["Quantity"] as int? ?? 1;
+    var blockedReasons = ViewData["BlockedReasonsByDate"] as IReadOnlyDictionary<string, string>;
 }
 <div class="card krishi-card p-4 mb-4 border-0 shadow-sm">
     <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
@@ -68,7 +69,9 @@
 
                     if (isPast || unavailable.Contains(currentDate))
                     {
-                        <div class="col p-2 rounded bg-secondary-subtle text-secondary text-decoration-line-through fw-medium" title="@(isPast ? L["Past Date"] : L["Already Booked"])">
+                        var reason = blockedReasons != null && blockedReasons.TryGetValue(currentDate.ToString("yyyy-MM-dd"), out var rStr) && !string.IsNullOrWhiteSpace(rStr) ? rStr : null;
+                        var titleText = isPast ? L["Past Date"].Value : (reason != null ? $"{L["Unavailable:"]} {reason}" : L["Already Booked"].Value);
+                        <div class="col p-2 rounded bg-secondary-subtle text-secondary text-decoration-line-through fw-medium" title="@titleText">
                             @day
                         </div>
                     }

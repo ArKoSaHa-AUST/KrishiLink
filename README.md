@@ -107,6 +107,14 @@ Pending ──reject──▶ Rejected ──undo──▶ Pending              
 - **Capacity-Aware Auto-Rejection**: When an owner accepts a rental request, overlapping pending requests are evaluated chronologically and automatically rejected only if remaining free capacity on any overlapping day cannot accommodate their requested units.
 - **Backward Compatible**: Listings with `Quantity = 1` retain legacy single-unit behavior, visual styles, and exact conflict messaging.
 
+### 10. 🗓️ Bulk Availability Tools & Date Range Blocking
+- **Bulk Date Range Block/Unblock**: Equipment and godown owners can block or unblock full date ranges (up to 366 days) with optional recurring weekday filters (Saturday through Friday, respecting the Bangladesh work week) and quick presets (`Every Friday`, `Fri + Sat`, `All weekdays`, `Next 7 days`, `Next 30 days`, `Rest of this month`).
+- **Farmer-Booked Date Protection**: Days already booked or stored by farmers are completely protected and automatically skipped during bulk blocking.
+- **Audit & Reason Tracking**: Optional reasons (up to 100 characters, e.g. "Annual Maintenance", "Harvest Festival") are persisted on `EquipmentBlockedDate` and `GodownBlockedDate`, displayed as tooltips and badges on calendar days.
+- **Diff-Based Calendar Persistence**: Single-month calendar updates use diffs (`Except` set operations) to preserve existing blocked date reasons when toggling availability.
+- **Upcoming Blocked Periods (12-Month Horizon)**: Contiguous blocked dates sharing identical reasons are automatically grouped (`DateRanges.Group`) and displayed in an upcoming blocked periods widget with quick inline unblock modals.
+- **Pending Conflict Badges**: Pending rental and storage booking requests that overlap any owner-blocked date display clear warning indicators with the conflicting date.
+
 ---
 
 ## 🏗️ Architecture & Project Structure

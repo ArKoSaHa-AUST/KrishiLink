@@ -44,6 +44,22 @@
     </div>
 </div>
 
+<!-- Flash Message Alerts -->
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2">
+        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+        <span class="small fw-semibold text-success-emphasis">@TempData["SuccessMessage"]</span>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2">
+        <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+        <span class="small fw-semibold text-danger-emphasis">@TempData["ErrorMessage"]</span>
+    </div>
+}
+
 <!-- Success Alert Banner -->
 <div id="saveSuccessAlert" class="alert alert-success border-0 shadow-sm rounded-3 mb-4 @(Model.IsSaved ? "d-flex" : "d-none") align-items-center gap-3">
     <div>
@@ -158,11 +174,13 @@
                     }
                     else if (isBlockedByOwner)
                     {
+                        var blockReason = Model.BlockedReasonsByDate.TryGetValue(dateStr, out var rStr) && !string.IsNullOrWhiteSpace(rStr) ? rStr : null;
+                        var blockTitle = !string.IsNullOrEmpty(blockReason) ? $"{L["Blocked:"]} {blockReason}" : L["Blocked"].Value;
                         <div class="col p-2 p-sm-3 rounded-3 bg-secondary-subtle border border-secondary text-secondary fw-semibold calendar-day-cell cursor-pointer owner-date-cell blocked"
-                             data-date="@dateStr" onclick="toggleDateSelection(this)" title="@L["Click to select date"]">
+                             data-date="@dateStr" onclick="toggleDateSelection(this)" title="@blockTitle">
                             <div class="small">@day</div>
-                            <span class="badge bg-secondary text-white rounded-pill date-status-tag" style="font-size: 0.65rem;">
-                                @L["Blocked"]
+                            <span class="badge bg-secondary text-white rounded-pill date-status-tag text-truncate mw-100" style="font-size: 0.65rem;" title="@(blockReason ?? L["Blocked"].Value)">
+                                @(blockReason != null ? (blockReason.Length > 10 ? blockReason.Substring(0, 9) + "…" : blockReason) : L["Blocked"].Value)
                             </span>
                         </div>
                     }
@@ -187,6 +205,176 @@
         <button type="button" id="saveAvailabilityBtn" class="btn btn-krishi-primary rounded-pill px-5 py-3 fw-bold fs-6 shadow-sm d-inline-flex align-items-center gap-2" onclick="confirmSaveAvailability()">
             @L["Save Changes"]
         </button>
+    </div>
+</div>
+
+<!-- BULK AVAILABILITY TOOLS -->
+<div class="row g-4 mb-4">
+    <!-- LEFT COLUMN: Block a Period Form -->
+    <div class="col-12 col-lg-6">
+        <div class="card krishi-card border-0 shadow-sm p-4 h-100" style="border-radius: var(--krishi-radius-lg);">
+            <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                <div class="rounded-circle bg-success-subtle text-success p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                    <i class="bi bi-calendar-range fs-5"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold text-dark mb-0">@L["Block a Period"]</h5>
+                    <p class="text-muted small mb-0">@L["Block or unblock a range of dates or recurring weekdays."]</p>
+                </div>
+            </div>
+
+            <form id="bulkAvailabilityForm" asp-action="BlockRange" method="post">
+                <input type="hidden" name="ListingId" value="@Model.ListingId" />
+
+                <!-- Date Range (From / To) -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-sm-6">
+                        <label for="bulkFromDate" class="form-label fw-semibold small text-dark">@L["From Date"]</label>
+                        <input type="date" id="bulkFromDate" name="From" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                    </div>
+                    <div class="col-12 col-sm-6">
+                        <label for="bulkToDate" class="form-label fw-semibold small text-dark">@L["To Date"]</label>
+                        <input type="date" id="bulkToDate" name="To" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" value="@DateTime.Today.AddDays(6).ToString("yyyy-MM-dd")" required />
+                    </div>
+                </div>
+
+                <!-- Quick Range Presets -->
+                <div class="mb-3">
+                    <span class="small text-muted fw-semibold d-block mb-1.5">@L["Quick Range:"]</span>
+                    <div class="d-flex flex-wrap gap-1.5">
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-0.5 px-2.5" style="font-size: 0.78rem;" onclick="setQuickRange(7)">@L["Next 7 days"]</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-0.5 px-2.5" style="font-size: 0.78rem;" onclick="setQuickRange(30)">@L["Next 30 days"]</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-0.5 px-2.5" style="font-size: 0.78rem;" onclick="setQuickRangeMonth()">@L["Rest of this month"]</button>
+                    </div>
+                </div>
+
+                <!-- Recurring Weekdays -->
+                <div class="mb-3">
+                    <div class="d-flex align-items-center justify-content-between mb-1.5 flex-wrap gap-1">
+                        <label class="form-label fw-semibold small text-dark mb-0">@L["Recurring Weekdays (Optional)"]</label>
+                        <span class="text-muted small" style="font-size: 0.75rem;">@L["If none checked, applies to every day in range"]</span>
+                    </div>
+
+                    <!-- 7 Checkboxes starting Saturday for Bangladesh work week -->
+                    <div class="d-flex flex-wrap gap-2 p-2.5 bg-light rounded-3 border mb-2">
+                        @{
+                            var weekdays = new[]
+                            {
+                                (DayOfWeek.Saturday, L["Sat"].Value),
+                                (DayOfWeek.Sunday, L["Sun"].Value),
+                                (DayOfWeek.Monday, L["Mon"].Value),
+                                (DayOfWeek.Tuesday, L["Tue"].Value),
+                                (DayOfWeek.Wednesday, L["Wed"].Value),
+                                (DayOfWeek.Thursday, L["Thu"].Value),
+                                (DayOfWeek.Friday, L["Fri"].Value)
+                            };
+                        }
+                        @foreach (var (day, label) in weekdays)
+                        {
+                            <div class="form-check form-check-inline m-0">
+                                <input class="form-check-input weekday-checkbox" type="checkbox" name="DaysOfWeek" id="day_@day" value="@day">
+                                <label class="form-check-label small fw-semibold" for="day_@day">@label</label>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Weekday Presets -->
+                    <div class="d-flex flex-wrap gap-1.5">
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-0.5 px-2.5" style="font-size: 0.78rem;" onclick="setWeekdayPreset('friday')">@L["Every Friday"]</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-0.5 px-2.5" style="font-size: 0.78rem;" onclick="setWeekdayPreset('weekend')">@L["Fri + Sat"]</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-0.5 px-2.5" style="font-size: 0.78rem;" onclick="setWeekdayPreset('workdays')">@L["All weekdays (Sun-Thu)"]</button>
+                        <button type="button" class="btn btn-link text-muted btn-sm p-0 ms-1" style="font-size: 0.78rem; text-decoration: none;" onclick="clearWeekdayPresets()">@L["Clear"]</button>
+                    </div>
+                </div>
+
+                <!-- Reason (optional, max 100) -->
+                <div class="mb-4">
+                    <label for="bulkReason" class="form-label fw-semibold small text-dark">
+                        @L["Reason (Optional)"]
+                        <span class="text-muted fw-normal">(@L["max 100 characters"])</span>
+                    </label>
+                    <input type="text" id="bulkReason" name="Reason" class="form-control" maxlength="100" placeholder="@L["e.g. Harvest festival, Annual maintenance, Personal holiday"]" />
+                    <div class="form-text small">@L["Helps you remember why these dates were blocked. Visible on your calendar."]</div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="d-flex align-items-center gap-2 flex-wrap pt-2 border-top">
+                    <button type="submit" asp-action="BlockRange" class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-semibold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-slash-circle"></i> @L["Block Period"]
+                    </button>
+                    <button type="submit" asp-action="UnblockRange" class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-semibold d-inline-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle"></i> @L["Unblock instead"]
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Upcoming Blocked Periods -->
+    <div class="col-12 col-lg-6">
+        <div class="card krishi-card border-0 shadow-sm p-4 h-100 d-flex flex-column" style="border-radius: var(--krishi-radius-lg);">
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-secondary-subtle text-secondary p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                        <i class="bi bi-lock fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0">@L["Upcoming Blocked Periods"]</h5>
+                        <p class="text-muted small mb-0">@L["Next 12 months"]</p>
+                    </div>
+                </div>
+                <span class="badge bg-secondary rounded-pill px-2.5 py-1">@Model.UpcomingBlockedPeriods.Count</span>
+            </div>
+
+            @if (Model.UpcomingBlockedPeriods == null || !Model.UpcomingBlockedPeriods.Any())
+            {
+                <div class="text-center py-5 my-auto">
+                    <i class="bi bi-calendar-check text-success display-4 d-block mb-3 opacity-75"></i>
+                    <h6 class="fw-bold text-dark mb-1">@L["No upcoming blocked dates"]</h6>
+                    <p class="text-muted small mb-0">@L["Your listing is open for bookings. Use the form on the left to block dates if needed."]</p>
+                </div>
+            }
+            else
+            {
+                <div class="overflow-auto pe-1 flex-grow-1" style="max-height: 480px;">
+                    <div class="d-flex flex-column gap-2.5">
+                        @foreach (var period in Model.UpcomingBlockedPeriods)
+                        {
+                            var rangeText = period.Start == period.End
+                                ? period.Start.ToString("dd MMM yyyy")
+                                : $"{period.Start:dd MMM yyyy} - {period.End:dd MMM yyyy}";
+                            var daysText = period.DayCount == 1 ? L["1 day"].Value : L["{0} days", period.DayCount].Value;
+
+                            <div class="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                                <div class="me-2">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                        <span class="fw-bold text-dark small">@rangeText</span>
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill font-monospace" style="font-size: 0.7rem;">
+                                            @daysText
+                                        </span>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(period.Reason))
+                                    {
+                                        <div class="small text-muted fst-italic d-flex align-items-center gap-1">
+                                            <i class="bi bi-info-circle text-secondary" style="font-size: 0.8rem;"></i>
+                                            <span>@period.Reason</span>
+                                        </div>
+                                    }
+                                </div>
+                                <form asp-action="UnblockRange" method="post" class="m-0" onsubmit="return confirmUnblockPeriod(event, this, '@rangeText')">
+                                    <input type="hidden" name="ListingId" value="@Model.ListingId" />
+                                    <input type="hidden" name="From" value="@period.Start.ToString("yyyy-MM-dd")" />
+                                    <input type="hidden" name="To" value="@period.End.ToString("yyyy-MM-dd")" />
+                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-semibold text-nowrap" style="font-size: 0.8rem;">
+                                        <i class="bi bi-unlock me-1"></i>@L["Unblock"]
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
     </div>
 </div>
 
@@ -296,6 +484,69 @@
                     form.submit();
                 }
             });
+        }
+
+        function setQuickRange(days) {
+            const today = new Date();
+            const fromInput = document.getElementById('bulkFromDate');
+            let fromDate = fromInput && fromInput.value ? new Date(fromInput.value) : today;
+            if (isNaN(fromDate.getTime()) || fromDate < today) fromDate = today;
+
+            const toDate = new Date(fromDate);
+            toDate.setDate(fromDate.getDate() + (days - 1));
+
+            document.getElementById('bulkFromDate').value = fromDate.toISOString().split('T')[0];
+            document.getElementById('bulkToDate').value = toDate.toISOString().split('T')[0];
+        }
+
+        function setQuickRangeMonth() {
+            const today = new Date();
+            const fromInput = document.getElementById('bulkFromDate');
+            let fromDate = fromInput && fromInput.value ? new Date(fromInput.value) : today;
+            if (isNaN(fromDate.getTime()) || fromDate < today) fromDate = today;
+
+            const toDate = new Date(fromDate.getFullYear(), fromDate.getMonth() + 1, 0);
+
+            document.getElementById('bulkFromDate').value = fromDate.toISOString().split('T')[0];
+            document.getElementById('bulkToDate').value = toDate.toISOString().split('T')[0];
+        }
+
+        function setWeekdayPreset(preset) {
+            clearWeekdayPresets();
+            if (preset === 'friday') {
+                const el = document.getElementById('day_Friday');
+                if (el) el.checked = true;
+            } else if (preset === 'weekend') {
+                const fri = document.getElementById('day_Friday');
+                const sat = document.getElementById('day_Saturday');
+                if (fri) fri.checked = true;
+                if (sat) sat.checked = true;
+            } else if (preset === 'workdays') {
+                ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'].forEach(d => {
+                    const el = document.getElementById('day_' + d);
+                    if (el) el.checked = true;
+                });
+            }
+        }
+
+        function clearWeekdayPresets() {
+            document.querySelectorAll('.weekday-checkbox').forEach(cb => cb.checked = false);
+        }
+
+        function confirmUnblockPeriod(e, form, rangeStr) {
+            e.preventDefault();
+            const msgTemplate = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(L["Are you sure you want to unblock {0}? Farmers will be able to book these dates again.", "{0}"].Value));
+            window.KrishiModal.confirm({
+                title: '@L["Unblock Date Range?"]',
+                body: msgTemplate.replace('{0}', rangeStr),
+                confirmText: '@L["Unblock Dates"]',
+                cancelText: '@L["Cancel"]',
+                confirmClass: 'btn-danger',
+                onConfirm: function () {
+                    form.submit();
+                }
+            });
+            return false;
         }
     </script>
 }

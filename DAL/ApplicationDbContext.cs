@@ -91,6 +91,7 @@ namespace KrishiLink.DAL
 
             builder.Entity<EquipmentBlockedDate>(d =>
             {
+                d.Property(x => x.Reason).HasMaxLength(100);
                 d.HasIndex(x => new { x.EquipmentId, x.Date }).IsUnique();
                 d.HasOne(x => x.Equipment).WithMany(x => x.BlockedDates).HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Cascade);
             });
@@ -136,6 +137,7 @@ namespace KrishiLink.DAL
 
             builder.Entity<GodownBlockedDate>(d =>
             {
+                d.Property(x => x.Reason).HasMaxLength(100);
                 d.HasIndex(x => new { x.GodownId, x.Date }).IsUnique();
                 d.HasOne(x => x.Godown).WithMany(x => x.BlockedDates).HasForeignKey(x => x.GodownId).OnDelete(DeleteBehavior.Cascade);
             });

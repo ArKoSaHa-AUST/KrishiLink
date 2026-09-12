@@ -35,6 +35,8 @@ namespace KrishiLink.BLL.Services
         Task<bool> SaveListingAsync(string ownerId, EquipmentListingViewModel model);
         Task<ManageAvailabilityViewModel?> GetAvailabilityAsync(string ownerId, int equipmentId, DateTime? month);
         Task<bool> SaveAvailabilityAsync(string ownerId, int equipmentId, DateTime month, IEnumerable<DateTime> blockedDates);
+        Task<BulkAvailabilityResult> BlockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek, string? reason);
+        Task<BulkAvailabilityResult> UnblockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek);
 
         // Dynamic Pricing & Seasonal Rules
         Task<EquipmentPricingViewModel?> GetPricingAsync(string ownerId, int equipmentId);
@@ -653,9 +655,20 @@ namespace KrishiLink.BLL.Services
                     }
                     else
                     {
-                        pending.ConflictHint = pending.Quantity > 1
-                            ? $"Only {free} of {pending.Quantity} units free for these dates."
-                            : "Dates are not available.";
+                        var blocked = await _blockedDates.Query()
+                            .Where(d => d.EquipmentId == source.EquipmentId && d.Date >= source.StartDate && d.Date <= source.EndDate)
+                            .OrderBy(d => d.Date)
+                            .FirstOrDefaultAsync();
+                        if (blocked != null)
+                        {
+                            pending.ConflictHint = $"Overlaps a date you blocked ({blocked.Date:dd MMM yyyy})";
+                        }
+                        else
+                        {
+                            pending.ConflictHint = pending.Quantity > 1
+                                ? $"Only {free} of {pending.Quantity} units free for these dates."
+                                : "Dates are not available.";
+                        }
                     }
                 }
             }
@@ -998,9 +1011,9 @@ namespace KrishiLink.BLL.Services
                 .Where(b => b.EquipmentId == equipmentId && BookingStatus.Confirmed.Contains(b.Status) && b.EndDate >= first && b.StartDate <= last)
                 .Select(b => new { b.StartDate, b.EndDate, b.Units })
                 .ToListAsync();
-            var blocked = await _blockedDates.Query()
+            var blockedRows = await _blockedDates.Query()
                 .Where(d => d.EquipmentId == equipmentId && d.Date >= first && d.Date <= last)
-                .Select(d => d.Date)
+                .Select(d => new { d.Date, d.Reason })
                 .ToListAsync();
 
             var bookedUnitsMap = new Dictionary<string, int>();
@@ -1016,6 +1029,23 @@ namespace KrishiLink.BLL.Services
                 }
             }
 
+            var today = DateTime.Today;
+            var horizonEnd = today.AddMonths(12);
+            var upcomingBlocked = await _blockedDates.Query()
+                .Where(d => d.EquipmentId == equipmentId && d.Date >= today && d.Date <= horizonEnd)
+                .OrderBy(d => d.Date)
+                .Select(d => new { d.Date, d.Reason })
+                .ToListAsync();
+
+            var upcomingPeriods = DateRanges.Group(upcomingBlocked.Select(d => (d.Date, d.Reason)))
+                .Select(g => new BlockedPeriodItem
+                {
+                    From = g.From,
+                    To = g.To,
+                    Reason = g.Reason
+                })
+                .ToList();
+
             return new ManageAvailabilityViewModel
             {
                 ListingId = e.Id,
@@ -1029,7 +1059,9 @@ namespace KrishiLink.BLL.Services
                 Quantity = e.Quantity,
                 BookedUnitsByDate = bookedUnitsMap,
                 FarmerBookedDates = farmerBooked,
-                OwnerBlockedDates = blocked
+                OwnerBlockedDates = blockedRows.Select(d => d.Date).ToList(),
+                BlockedReasonsByDate = blockedRows.ToDictionary(d => d.Date.ToString("yyyy-MM-dd"), d => d.Reason),
+                UpcomingBlockedPeriods = upcomingPeriods
             };
         }
 
@@ -1043,7 +1075,6 @@ namespace KrishiLink.BLL.Services
             var current = await _blockedDates.QueryTracked()
                 .Where(d => d.EquipmentId == equipmentId && d.Date >= first && d.Date <= last)
                 .ToListAsync();
-            _blockedDates.RemoveRange(current);
 
             var farmerBooked = (await _bookings.Query()
                     .Where(b => b.EquipmentId == equipmentId && BookingStatus.Confirmed.Contains(b.Status) && b.EndDate >= first && b.StartDate <= last)
@@ -1052,11 +1083,132 @@ namespace KrishiLink.BLL.Services
                 .SelectMany(b => EachDay(b.StartDate, b.EndDate))
                 .ToHashSet();
 
-            foreach (var date in blockedDates.Select(d => d.Date).Distinct().Where(d => d >= first && d <= last && !farmerBooked.Contains(d)))
+            var targetDates = blockedDates
+                .Select(d => d.Date)
+                .Distinct()
+                .Where(d => d >= first && d <= last && !farmerBooked.Contains(d))
+                .ToHashSet();
+
+            var toRemove = current.Where(c => !targetDates.Contains(c.Date)).ToList();
+            _blockedDates.RemoveRange(toRemove);
+
+            var currentDates = current.Select(c => c.Date).ToHashSet();
+            foreach (var date in targetDates.Where(d => !currentDates.Contains(d)))
+            {
                 await _blockedDates.AddAsync(new EquipmentBlockedDate { EquipmentId = equipmentId, Date = date });
+            }
 
             await _blockedDates.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<BulkAvailabilityResult> BlockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek, string? reason)
+        {
+            var f = from.Date;
+            if (f < DateTime.Today) f = DateTime.Today;
+            var t = to.Date;
+
+            if (t < f)
+                return new BulkAvailabilityResult(true, 0, 0, 0, "The end date must be on or after the start date.");
+
+            if ((t - f).TotalDays + 1 > DateRanges.MaxBulkDays)
+                return new BulkAvailabilityResult(true, 0, 0, 0, "You can block at most 366 days at a time.");
+
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == listingId && x.OwnerId == ownerId);
+            if (e is null)
+                return new BulkAvailabilityResult(false, 0, 0, 0, null);
+
+            var existingBlocked = (await _blockedDates.Query()
+                .Where(d => d.EquipmentId == listingId && d.Date >= f && d.Date <= t)
+                .Select(d => d.Date)
+                .ToListAsync())
+                .ToHashSet();
+
+            var farmerBooked = (await _bookings.Query()
+                    .Where(b => b.EquipmentId == listingId && BookingStatus.Confirmed.Contains(b.Status) && b.EndDate >= f && b.StartDate <= t)
+                    .Select(b => new { b.StartDate, b.EndDate })
+                    .ToListAsync())
+                .SelectMany(b => EachDay(b.StartDate, b.EndDate))
+                .Where(d => d >= f && d <= t)
+                .ToHashSet();
+
+            var days = DateRanges.Expand(f, t, daysOfWeek).ToList();
+            int changed = 0, skippedBooked = 0, alreadyInState = 0;
+
+            var cleanReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+            if (cleanReason?.Length > 100) cleanReason = cleanReason[..100];
+
+            foreach (var d in days)
+            {
+                if (farmerBooked.Contains(d))
+                {
+                    skippedBooked++;
+                }
+                else if (existingBlocked.Contains(d))
+                {
+                    alreadyInState++;
+                }
+                else
+                {
+                    await _blockedDates.AddAsync(new EquipmentBlockedDate
+                    {
+                        EquipmentId = listingId,
+                        Date = d,
+                        Reason = cleanReason
+                    });
+                    changed++;
+                }
+            }
+
+            if (changed > 0)
+            {
+                try
+                {
+                    await _blockedDates.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex) when (DbErrors.IsUniqueViolation(ex))
+                {
+                    return new BulkAvailabilityResult(true, 0, skippedBooked, alreadyInState, "A conflicting operation already modified blocked dates for these days. Please refresh and try again.");
+                }
+            }
+
+            return new BulkAvailabilityResult(true, changed, skippedBooked, alreadyInState, null);
+        }
+
+        public async Task<BulkAvailabilityResult> UnblockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek)
+        {
+            var f = from.Date;
+            if (f < DateTime.Today) f = DateTime.Today;
+            var t = to.Date;
+
+            if (t < f)
+                return new BulkAvailabilityResult(true, 0, 0, 0, "The end date must be on or after the start date.");
+
+            if ((t - f).TotalDays + 1 > DateRanges.MaxBulkDays)
+                return new BulkAvailabilityResult(true, 0, 0, 0, "You can block at most 366 days at a time.");
+
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == listingId && x.OwnerId == ownerId);
+            if (e is null)
+                return new BulkAvailabilityResult(false, 0, 0, 0, null);
+
+            var query = _blockedDates.QueryTracked()
+                .Where(d => d.EquipmentId == listingId && d.Date >= f && d.Date <= t);
+
+            var rows = await query.ToListAsync();
+            var filterDays = daysOfWeek != null && daysOfWeek.Count > 0;
+            if (filterDays)
+            {
+                rows = rows.Where(r => daysOfWeek!.Contains(r.Date.DayOfWeek)).ToList();
+            }
+
+            int count = rows.Count;
+            if (count > 0)
+            {
+                _blockedDates.RemoveRange(rows);
+                await _blockedDates.SaveChangesAsync();
+            }
+
+            return new BulkAvailabilityResult(true, count, 0, 0, null);
         }
 
         // ---------------------------------------------------------------- Equipment Health Tracker

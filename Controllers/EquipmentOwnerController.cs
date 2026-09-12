@@ -4,6 +4,7 @@ using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace KrishiLink.Controllers
 {
@@ -12,16 +13,19 @@ namespace KrishiLink.Controllers
     {
         private readonly IEquipmentService _equipment;
         private readonly IFileStorageService _files;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
         public EquipmentOwnerController(
             IEquipmentService equipment,
             IFileStorageService files,
             IEquipmentRevenueService revenueService,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IStringLocalizer<SharedResource> localizer)
             : base(revenueService, userManager)
         {
             _equipment = equipment;
             _files = files;
+            _localizer = localizer;
         }
 
         /// <summary>GET: /EquipmentOwner — dashboard with listings, pending requests and revenue KPI.</summary>
@@ -155,6 +159,55 @@ namespace KrishiLink.Controllers
                 return NotFound();
 
             return RedirectToAction(nameof(Availability), new { id = listingId, month = month.ToString("yyyy-MM-dd"), saved = true });
+        }
+
+        /// <summary>POST: /EquipmentOwner/BlockRange — bulk blocks a date range and optional recurring weekdays.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BlockRange(BulkAvailabilityInputModel m)
+        {
+            var res = await _equipment.BlockRangeAsync(OwnerId, m.ListingId, m.From, m.To, m.DaysOfWeek, m.Reason);
+            if (!res.Found) return NotFound();
+
+            if (!string.IsNullOrEmpty(res.Error))
+            {
+                TempData["ErrorMessage"] = _localizer[res.Error].Value;
+            }
+            else
+            {
+                if (res.SkippedBooked > 0)
+                {
+                    TempData["SuccessMessage"] = _localizer["Blocked {0} day(s). Skipped {1} day(s) already booked by farmers.", res.Changed, res.SkippedBooked].Value;
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = _localizer["Blocked {0} day(s).", res.Changed].Value;
+                }
+            }
+
+            var targetMonth = m.Month == default ? m.From : m.Month;
+            return RedirectToAction(nameof(Availability), new { id = m.ListingId, month = targetMonth.ToString("yyyy-MM-dd") });
+        }
+
+        /// <summary>POST: /EquipmentOwner/UnblockRange — bulk unblocks a date range and optional recurring weekdays.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UnblockRange(BulkAvailabilityInputModel m)
+        {
+            var res = await _equipment.UnblockRangeAsync(OwnerId, m.ListingId, m.From, m.To, m.DaysOfWeek);
+            if (!res.Found) return NotFound();
+
+            if (!string.IsNullOrEmpty(res.Error))
+            {
+                TempData["ErrorMessage"] = _localizer[res.Error].Value;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = _localizer["Unblocked {0} day(s).", res.Changed].Value;
+            }
+
+            var targetMonth = m.Month == default ? m.From : m.Month;
+            return RedirectToAction(nameof(Availability), new { id = m.ListingId, month = targetMonth.ToString("yyyy-MM-dd") });
         }
 
         /// <summary>GET: /EquipmentOwner/Maintenance/5 — Equipment Health Tracker dashboard.</summary>
