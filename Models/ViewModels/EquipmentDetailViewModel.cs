@@ -54,5 +54,11 @@ namespace KrishiLink.Models.ViewModels
         public double AverageRating { get; set; }
         public int ReviewCount { get; set; }
         public ReviewsListViewModel Reviews { get; set; } = new();
+
+        // Equipment Health Tracker & Maintenance History
+        public DateTime? LastServicedDate { get; set; }
+        public int? LastServicedDaysAgo { get; set; }
+        public string? LastServicedText { get; set; }
+        public List<EquipmentMaintenanceItemViewModel> MaintenanceHistory { get; set; } = new();
     }
 }

@@ -25,6 +25,8 @@ namespace KrishiLink.Models.ViewModels
         public string OwnerVerificationStatus { get; set; } = "Unverified";
         public double Rating { get; set; }
         public int ReviewCount { get; set; }
+        public int? LastServicedDaysAgo { get; set; }
+        public string? LastServicedText { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 

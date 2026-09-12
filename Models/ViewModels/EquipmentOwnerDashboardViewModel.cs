@@ -31,5 +31,8 @@ namespace KrishiLink.Models.ViewModels
 
         /// <summary>Available | Rented | Unavailable</summary>
         public string Status { get; set; } = "Available";
+
+        public int? LastServicedDaysAgo { get; set; }
+        public string? LastServicedText { get; set; }
     }
 }
