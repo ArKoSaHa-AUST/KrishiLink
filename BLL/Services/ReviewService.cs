@@ -29,19 +29,25 @@ namespace KrishiLink.BLL.Services
         private readonly IRepository<GodownBooking> _godownBookings;
         private readonly IRepository<Equipment> _equipment;
         private readonly IRepository<Godown> _godowns;
+        private readonly IRepository<ApplicationUser> _users;
+        private readonly INotificationService _notifications;
 
         public ReviewService(
             IRepository<Review> reviews,
             IRepository<EquipmentBooking> equipmentBookings,
             IRepository<GodownBooking> godownBookings,
             IRepository<Equipment> equipment,
-            IRepository<Godown> godowns)
+            IRepository<Godown> godowns,
+            IRepository<ApplicationUser> users,
+            INotificationService notifications)
         {
             _reviews = reviews;
             _equipmentBookings = equipmentBookings;
             _godownBookings = godownBookings;
             _equipment = equipment;
             _godowns = godowns;
+            _users = users;
+            _notifications = notifications;
         }
 
         public async Task<ReviewSubmissionResult> SubmitReviewAsync(string farmerId, SubmitReviewViewModel model)
@@ -108,13 +114,26 @@ namespace KrishiLink.BLL.Services
                 var count = allEquipmentReviews.Count;
                 var avg = count > 0 ? Math.Round(allEquipmentReviews.Average(), 1) : 0.0;
 
-                var eq = booking.Equipment ?? await _equipment.GetByIdAsync(booking.EquipmentId);
+                var eq = await _equipment.QueryTracked().FirstOrDefaultAsync(e => e.Id == booking.EquipmentId);
                 if (eq != null)
                 {
                     eq.AverageRating = avg;
                     eq.ReviewCount = count;
-                    _equipment.Update(eq);
                     await _equipment.SaveChangesAsync();
+
+                    // Notify equipment owner of new review
+                    var farmer = await _users.FirstOrDefaultAsync(u => u.Id == farmerId);
+                    var farmerName = farmer?.FullName ?? "A farmer";
+                    if (!string.IsNullOrEmpty(eq.OwnerId))
+                    {
+                        await _notifications.CreateAsync(
+                            eq.OwnerId,
+                            NotificationTypes.ReviewReceived,
+                            "New Review Received",
+                            $"{farmerName} left a {model.Rating}★ review for {eq.Name}.",
+                            $"/Equipment/Details/{eq.Id}#reviews"
+                        );
+                    }
                 }
 
                 return new ReviewSubmissionResult
@@ -176,13 +195,26 @@ namespace KrishiLink.BLL.Services
                 var count = allGodownReviews.Count;
                 var avg = count > 0 ? Math.Round(allGodownReviews.Average(), 1) : 0.0;
 
-                var gd = booking.Godown ?? await _godowns.GetByIdAsync(booking.GodownId);
+                var gd = await _godowns.QueryTracked().FirstOrDefaultAsync(g => g.Id == booking.GodownId);
                 if (gd != null)
                 {
                     gd.AverageRating = avg;
                     gd.ReviewCount = count;
-                    _godowns.Update(gd);
                     await _godowns.SaveChangesAsync();
+
+                    // Notify godown owner of new review
+                    var farmer = await _users.FirstOrDefaultAsync(u => u.Id == farmerId);
+                    var farmerName = farmer?.FullName ?? "A farmer";
+                    if (!string.IsNullOrEmpty(gd.OwnerId))
+                    {
+                        await _notifications.CreateAsync(
+                            gd.OwnerId,
+                            NotificationTypes.ReviewReceived,
+                            "New Review Received",
+                            $"{farmerName} left a {model.Rating}★ review for {gd.Name}.",
+                            $"/Godown/Details/{gd.Id}#reviews"
+                        );
+                    }
                 }
 
                 return new ReviewSubmissionResult

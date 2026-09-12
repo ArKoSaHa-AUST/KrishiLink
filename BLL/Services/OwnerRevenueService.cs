@@ -52,14 +52,14 @@ namespace KrishiLink.BLL.Services
 
     public class GodownRevenueService : OwnerRevenueService, IGodownRevenueService
     {
-        public GodownRevenueService(IGodownRevenueRepository repo, IOptions<RevenueOptions> options)
-            : base(repo, options, new RevenueProfile("Godown", "at full capacity (ton-days)", "KL-GB", "Godown Storage Receipt")) { }
+        public GodownRevenueService(IGodownRevenueRepository repo, IOptions<RevenueOptions> options, INotificationService notifications)
+            : base(repo, options, new RevenueProfile("Godown", "at full capacity (ton-days)", "KL-GB", "Godown Storage Receipt"), notifications) { }
     }
 
     public class EquipmentRevenueService : OwnerRevenueService, IEquipmentRevenueService
     {
-        public EquipmentRevenueService(IEquipmentRevenueRepository repo, IOptions<RevenueOptions> options)
-            : base(repo, options, new RevenueProfile("Equipment", "rented", "KL-EQ", "Equipment Rental Receipt")) { }
+        public EquipmentRevenueService(IEquipmentRevenueRepository repo, IOptions<RevenueOptions> options, INotificationService notifications)
+            : base(repo, options, new RevenueProfile("Equipment", "rented", "KL-EQ", "Equipment Rental Receipt"), notifications) { }
     }
 
     /// <summary>
@@ -76,13 +76,15 @@ namespace KrishiLink.BLL.Services
         private readonly IOwnerRevenueRepository _repo;
         private readonly RevenueProfile _profile;
         private readonly RevenueOptions _options;
+        private readonly INotificationService _notifications;
         private decimal CommissionRate => _options.PlatformCommissionRate;
 
-        public OwnerRevenueService(IOwnerRevenueRepository repo, IOptions<RevenueOptions> options, RevenueProfile profile)
+        public OwnerRevenueService(IOwnerRevenueRepository repo, IOptions<RevenueOptions> options, RevenueProfile profile, INotificationService notifications)
         {
             _repo = repo;
             _profile = profile;
             _options = options.Value;
+            _notifications = notifications;
         }
 
         public OwnerRevenueViewModel GetReport(string ownerId, RevenueFilter filter)
@@ -260,19 +262,33 @@ namespace KrishiLink.BLL.Services
 
             var gross = unpaid.Sum(b => b.Gross);
             var commission = unpaid.Sum(b => Commission(b.Gross));
+            var netAmount = gross - commission;
             var payoutId = _repo.AddPayout(new Transaction
             {
                 UserId = ownerId,
                 Reference = $"KL-PO-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
                 GrossAmount = gross,
                 Commission = commission,
-                Amount = gross - commission,
+                Amount = netAmount,
                 PaymentMethod = method,
                 PayoutAccount = account.Trim(),
                 Status = "Processing",
                 TransactionDate = DateTime.Now
             });
             _repo.MarkBookingsPaid(unpaid.Select(b => b.Id), payoutId);
+
+            var payoutLink = _profile.ListingLabel.Equals("Godown", StringComparison.OrdinalIgnoreCase)
+                ? "/GodownRevenue/Payouts"
+                : "/EquipmentRevenue/Payouts";
+
+            _notifications.CreateAsync(
+                ownerId,
+                NotificationTypes.PayoutProcessed,
+                "Payout Requested",
+                $"Your payout request of ৳{netAmount:N0} via {method} is being processed.",
+                payoutLink
+            ).GetAwaiter().GetResult();
+
             return null;
         }
 

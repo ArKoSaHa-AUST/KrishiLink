@@ -36,17 +36,27 @@ namespace KrishiLink.BLL.Services
         private readonly IRepository<Equipment> _equipment;
         private readonly IRepository<EquipmentBooking> _bookings;
         private readonly IRepository<EquipmentBlockedDate> _blockedDates;
+        private readonly IRepository<ApplicationUser> _users;
         private readonly IFileStorageService _files;
         private readonly IReviewService _reviews;
+        private readonly INotificationService _notifications;
 
-        public EquipmentService(IRepository<Equipment> equipment, IRepository<EquipmentBooking> bookings,
-            IRepository<EquipmentBlockedDate> blockedDates, IFileStorageService files, IReviewService reviews)
+        public EquipmentService(
+            IRepository<Equipment> equipment,
+            IRepository<EquipmentBooking> bookings,
+            IRepository<EquipmentBlockedDate> blockedDates,
+            IRepository<ApplicationUser> users,
+            IFileStorageService files,
+            IReviewService reviews,
+            INotificationService notifications)
         {
             _equipment = equipment;
             _bookings = bookings;
             _blockedDates = blockedDates;
+            _users = users;
             _files = files;
             _reviews = reviews;
+            _notifications = notifications;
         }
 
         // ---------------------------------------------------------------- Browse & details
@@ -229,6 +239,18 @@ namespace KrishiLink.BLL.Services
                 RequestedOn = DateTime.Now
             });
             await _bookings.SaveChangesAsync();
+
+            // Notify equipment owner of new pending rental request
+            var farmer = await _users.FirstOrDefaultAsync(u => u.Id == farmerId);
+            var farmerName = farmer?.FullName ?? "A farmer";
+            await _notifications.CreateAsync(
+                e.OwnerId,
+                NotificationTypes.BookingRequest,
+                "New Equipment Booking Request",
+                $"{farmerName} requested to rent {e.Name} from {s:dd MMM yyyy} to {t:dd MMM yyyy}.",
+                "/Equipment/OwnerDashboard#rental-requests"
+            );
+
             return null;
         }
 
@@ -319,6 +341,25 @@ namespace KrishiLink.BLL.Services
                     loser.RejectReason = BookingWorkflow.AutoRejectReason;
                     loser.UpdatedOn = DateTime.Now;
                     autoRejected.Add(loser.Id);
+
+                    // Notify conflicting farmer of auto-rejection
+                    var loserUser = await _users.FirstOrDefaultAsync(u => u.Id == loser.FarmerId);
+                    await _notifications.CreateAsync(
+                        loser.FarmerId,
+                        NotificationTypes.BookingRejected,
+                        "Rental Request Declined",
+                        $"Your rental request for {booking.Equipment!.Name} ({loser.StartDate:dd MMM yyyy} - {loser.EndDate:dd MMM yyyy}) was declined due to an overlapping confirmed booking.",
+                        "/Farmer/EquipmentBookings"
+                    );
+
+                    if (!string.IsNullOrEmpty(loserUser?.Email))
+                    {
+                        await _notifications.SendEmailNotificationAsync(
+                            loserUser.Email,
+                            "Rental Request Update - KrishiLink",
+                            $"<h3>Hello, {loserUser.FullName}</h3><p>Your rental request for <strong>{booking.Equipment!.Name}</strong> from {loser.StartDate:dd MMM yyyy} to {loser.EndDate:dd MMM yyyy} could not be confirmed because another booking was accepted for overlapping dates.</p><p><a href=\"https://krishilink.com/Equipment/Browse\">Explore alternative equipment listings on KrishiLink</a></p>"
+                        );
+                    }
                 }
             }
 
@@ -326,6 +367,59 @@ namespace KrishiLink.BLL.Services
             booking.RejectReason = next == BookingStatus.Rejected && !string.IsNullOrWhiteSpace(reason) ? reason.Trim() : null;
             booking.UpdatedOn = DateTime.Now;
             await _bookings.SaveChangesAsync();
+
+            // Notify farmer of owner decision
+            var farmer = await _users.FirstOrDefaultAsync(u => u.Id == booking.FarmerId);
+            if (next == BookingStatus.Accepted)
+            {
+                await _notifications.CreateAsync(
+                    booking.FarmerId,
+                    NotificationTypes.BookingAccepted,
+                    "Rental Request Accepted",
+                    $"Your rental request for {booking.Equipment!.Name} ({booking.StartDate:dd MMM yyyy} - {booking.EndDate:dd MMM yyyy}) was accepted by the owner.",
+                    "/Farmer/EquipmentBookings"
+                );
+
+                if (!string.IsNullOrEmpty(farmer?.Email))
+                {
+                    await _notifications.SendEmailNotificationAsync(
+                        farmer.Email,
+                        "Rental Request Accepted - KrishiLink",
+                        $"<h3>Good news, {farmer.FullName}!</h3><p>Your rental request for <strong>{booking.Equipment!.Name}</strong> from {booking.StartDate:dd MMM yyyy} to {booking.EndDate:dd MMM yyyy} has been <strong>accepted</strong> by the owner.</p><p><a href=\"https://krishilink.com/Farmer/EquipmentBookings\">View your bookings on KrishiLink</a></p>"
+                    );
+                }
+            }
+            else if (next == BookingStatus.Rejected)
+            {
+                var reasonText = !string.IsNullOrWhiteSpace(booking.RejectReason) ? $" Reason: {booking.RejectReason}" : string.Empty;
+                await _notifications.CreateAsync(
+                    booking.FarmerId,
+                    NotificationTypes.BookingRejected,
+                    "Rental Request Declined",
+                    $"Your rental request for {booking.Equipment!.Name} ({booking.StartDate:dd MMM yyyy} - {booking.EndDate:dd MMM yyyy}) was declined.{reasonText}",
+                    "/Farmer/EquipmentBookings"
+                );
+
+                if (!string.IsNullOrEmpty(farmer?.Email))
+                {
+                    await _notifications.SendEmailNotificationAsync(
+                        farmer.Email,
+                        "Rental Request Declined - KrishiLink",
+                        $"<h3>Hello, {farmer.FullName}</h3><p>Your rental request for <strong>{booking.Equipment!.Name}</strong> from {booking.StartDate:dd MMM yyyy} to {booking.EndDate:dd MMM yyyy} was declined by the owner.{(!string.IsNullOrWhiteSpace(booking.RejectReason) ? $"<br/><strong>Reason:</strong> {booking.RejectReason}" : "")}</p><p><a href=\"https://krishilink.com/Equipment/Browse\">Browse other listings on KrishiLink</a></p>"
+                    );
+                }
+            }
+            else if (next == BookingStatus.Completed)
+            {
+                await _notifications.CreateAsync(
+                    booking.FarmerId,
+                    NotificationTypes.BookingCompleted,
+                    "Rental Completed",
+                    $"Your rental of {booking.Equipment!.Name} is completed. Please take a moment to rate and review your experience!",
+                    "/Farmer/EquipmentBookings"
+                );
+            }
+
             return DecisionResult.Ok(autoRejected);
         }
 

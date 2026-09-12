@@ -37,17 +37,27 @@ namespace KrishiLink.BLL.Services
         private readonly IRepository<Godown> _godowns;
         private readonly IRepository<GodownBooking> _bookings;
         private readonly IRepository<GodownBlockedDate> _blockedDates;
+        private readonly IRepository<ApplicationUser> _users;
         private readonly IFileStorageService _files;
         private readonly IReviewService _reviews;
+        private readonly INotificationService _notifications;
 
-        public GodownService(IRepository<Godown> godowns, IRepository<GodownBooking> bookings,
-            IRepository<GodownBlockedDate> blockedDates, IFileStorageService files, IReviewService reviews)
+        public GodownService(
+            IRepository<Godown> godowns,
+            IRepository<GodownBooking> bookings,
+            IRepository<GodownBlockedDate> blockedDates,
+            IRepository<ApplicationUser> users,
+            IFileStorageService files,
+            IReviewService reviews,
+            INotificationService notifications)
         {
             _godowns = godowns;
             _bookings = bookings;
             _blockedDates = blockedDates;
+            _users = users;
             _files = files;
             _reviews = reviews;
+            _notifications = notifications;
         }
 
         // ---------------------------------------------------------------- Browse & details
@@ -261,6 +271,18 @@ namespace KrishiLink.BLL.Services
                 RequestedOn = DateTime.Now
             });
             await _bookings.SaveChangesAsync();
+
+            // Notify godown owner of new pending storage request
+            var farmer = await _users.FirstOrDefaultAsync(u => u.Id == farmerId);
+            var farmerName = farmer?.FullName ?? "A farmer";
+            await _notifications.CreateAsync(
+                g.OwnerId,
+                NotificationTypes.BookingRequest,
+                "New Godown Storage Request",
+                $"{farmerName} requested storage for {r.RequestedCapacityTons} tons in {g.Name} from {s:dd MMM yyyy} to {t:dd MMM yyyy}.",
+                "/Godown/OwnerDashboard#booking-requests"
+            );
+
             return null;
         }
 
@@ -323,6 +345,25 @@ namespace KrishiLink.BLL.Services
                     other.RejectReason = BookingWorkflow.AutoRejectReason;
                     other.UpdatedOn = DateTime.Now;
                     autoRejected.Add(other.Id);
+
+                    // Notify auto-rejected farmer
+                    var otherUser = await _users.FirstOrDefaultAsync(u => u.Id == other.FarmerId);
+                    await _notifications.CreateAsync(
+                        other.FarmerId,
+                        NotificationTypes.BookingRejected,
+                        "Storage Request Declined",
+                        $"Your storage request for {other.StorageTons} tons in {godown.Name} ({other.StartDate:dd MMM yyyy} - {other.EndDate:dd MMM yyyy}) was declined due to capacity constraints.",
+                        "/Farmer/GodownBookings"
+                    );
+
+                    if (!string.IsNullOrEmpty(otherUser?.Email))
+                    {
+                        await _notifications.SendEmailNotificationAsync(
+                            otherUser.Email,
+                            "Storage Request Update - KrishiLink",
+                            $"<h3>Hello, {otherUser.FullName}</h3><p>Your storage request for <strong>{other.StorageTons} tons</strong> in <strong>{godown.Name}</strong> from {other.StartDate:dd MMM yyyy} to {other.EndDate:dd MMM yyyy} could not be confirmed due to storage capacity limits.</p><p><a href=\"https://krishilink.com/Godown/Browse\">Explore other storage facilities on KrishiLink</a></p>"
+                        );
+                    }
                 }
             }
 
@@ -330,6 +371,59 @@ namespace KrishiLink.BLL.Services
             booking.RejectReason = next == BookingStatus.Rejected && !string.IsNullOrWhiteSpace(reason) ? reason.Trim() : null;
             booking.UpdatedOn = DateTime.Now;
             await _bookings.SaveChangesAsync();
+
+            // Notify farmer of owner decision
+            var farmer = await _users.FirstOrDefaultAsync(u => u.Id == booking.FarmerId);
+            if (next == BookingStatus.Accepted)
+            {
+                await _notifications.CreateAsync(
+                    booking.FarmerId,
+                    NotificationTypes.BookingAccepted,
+                    "Storage Request Accepted",
+                    $"Your storage request for {booking.StorageTons} tons in {booking.Godown!.Name} ({booking.StartDate:dd MMM yyyy} - {booking.EndDate:dd MMM yyyy}) was accepted by the owner.",
+                    "/Farmer/GodownBookings"
+                );
+
+                if (!string.IsNullOrEmpty(farmer?.Email))
+                {
+                    await _notifications.SendEmailNotificationAsync(
+                        farmer.Email,
+                        "Storage Request Accepted - KrishiLink",
+                        $"<h3>Good news, {farmer.FullName}!</h3><p>Your storage request for <strong>{booking.StorageTons} tons</strong> in <strong>{booking.Godown!.Name}</strong> from {booking.StartDate:dd MMM yyyy} to {booking.EndDate:dd MMM yyyy} has been <strong>accepted</strong> by the owner.</p><p><a href=\"https://krishilink.com/Farmer/GodownBookings\">View your storage bookings on KrishiLink</a></p>"
+                    );
+                }
+            }
+            else if (next == BookingStatus.Rejected)
+            {
+                var reasonText = !string.IsNullOrWhiteSpace(booking.RejectReason) ? $" Reason: {booking.RejectReason}" : string.Empty;
+                await _notifications.CreateAsync(
+                    booking.FarmerId,
+                    NotificationTypes.BookingRejected,
+                    "Storage Request Declined",
+                    $"Your storage request for {booking.StorageTons} tons in {booking.Godown!.Name} ({booking.StartDate:dd MMM yyyy} - {booking.EndDate:dd MMM yyyy}) was declined.{reasonText}",
+                    "/Farmer/GodownBookings"
+                );
+
+                if (!string.IsNullOrEmpty(farmer?.Email))
+                {
+                    await _notifications.SendEmailNotificationAsync(
+                        farmer.Email,
+                        "Storage Request Declined - KrishiLink",
+                        $"<h3>Hello, {farmer.FullName}</h3><p>Your storage request for <strong>{booking.StorageTons} tons</strong> in <strong>{booking.Godown!.Name}</strong> from {booking.StartDate:dd MMM yyyy} to {booking.EndDate:dd MMM yyyy} was declined by the owner.{(!string.IsNullOrWhiteSpace(booking.RejectReason) ? $"<br/><strong>Reason:</strong> {booking.RejectReason}" : "")}</p><p><a href=\"https://krishilink.com/Godown/Browse\">Browse other storage options on KrishiLink</a></p>"
+                    );
+                }
+            }
+            else if (next == BookingStatus.Completed)
+            {
+                await _notifications.CreateAsync(
+                    booking.FarmerId,
+                    NotificationTypes.BookingCompleted,
+                    "Storage Booking Completed",
+                    $"Your storage booking at {booking.Godown!.Name} is completed. Please take a moment to rate and review your experience!",
+                    "/Farmer/GodownBookings"
+                );
+            }
+
             return DecisionResult.Ok(autoRejected);
         }
 
