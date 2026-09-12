@@ -4,22 +4,24 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace KrishiLink.BLL.Services
 {
     /// <summary>
-    /// Background service that checks for processing payout transactions exceeding the settlement window
-    /// and completes them, sending email and in-app notifications.
+    /// Background loop that settles "Processing" payouts once their delay has elapsed — the automatic exit
+    /// for every payout, so no manual step is ever needed. Poll interval comes from Payments:SettlementPollSeconds.
     /// </summary>
     public class PayoutSettlementScheduler : BackgroundService
     {
-        private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(5);
         private readonly IServiceScopeFactory _scopes;
+        private readonly TimeSpan _interval;
         private readonly ILogger<PayoutSettlementScheduler> _logger;
 
-        public PayoutSettlementScheduler(IServiceScopeFactory scopes, ILogger<PayoutSettlementScheduler> logger)
+        public PayoutSettlementScheduler(IServiceScopeFactory scopes, IOptions<PaymentsOptions> options, ILogger<PayoutSettlementScheduler> logger)
         {
             _scopes = scopes;
+            _interval = TimeSpan.FromSeconds(Math.Max(5, options.Value.SettlementPollSeconds));
             _logger = logger;
         }
 
@@ -41,7 +43,7 @@ namespace KrishiLink.BLL.Services
                     _logger.LogError(ex, "Payout settlement background run failed; will retry in next cycle.");
                 }
 
-                await Task.Delay(CheckInterval, stoppingToken);
+                await Task.Delay(_interval, stoppingToken);
             }
         }
     }

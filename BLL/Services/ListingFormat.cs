@@ -1,4 +1,5 @@
 using System.Globalization;
+using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 
 namespace KrishiLink.BLL.Services
@@ -31,6 +32,24 @@ namespace KrishiLink.BLL.Services
         public static double Months(DateTime start, DateTime end) => Math.Max(1, (end.Date - start.Date).TotalDays) / 30.0;
     }
 
+    /// <summary>
+    /// The single source of truth for what a booking costs. Used by the farmer views, the owner revenue
+    /// repositories, the acceptance snapshot and the demo seed so every side sees the same number.
+    /// </summary>
+    public static class BookingPricing
+    {
+        public static decimal EquipmentGross(DateTime start, DateTime end, decimal dailyRate) =>
+            ListingFormat.InclusiveDays(start, end) * dailyRate;
+
+        public static decimal GodownGross(DateTime start, DateTime end, double tons, decimal pricePerTonPerMonth) =>
+            decimal.Round((decimal)tons * pricePerTonPerMonth * (decimal)ListingFormat.Months(start, end), 0);
+
+        public static decimal Commission(decimal gross, decimal rate) => decimal.Round(gross * rate, 0);
+
+        /// <summary>Commission owed on a booking from its snapshot (0 for rows accepted before snapshots existed).</summary>
+        public static decimal Commission(IPayableBooking b) => Commission(b.AgreedGross ?? 0, b.CommissionRate ?? 0);
+    }
+
     /// <summary>Outcome of an owner decision. <see cref="AutoRejectedIds"/> lists pending requests that were declined as a side effect.</summary>
     public record DecisionResult(bool Success, string? Error = null, IReadOnlyList<int>? AutoRejectedIds = null)
     {
@@ -44,17 +63,65 @@ namespace KrishiLink.BLL.Services
         /// <summary>Reason stored on pending requests that lose out when the owner accepts an overlapping one.</summary>
         public const string AutoRejectReason = "Automatically declined: the owner accepted another booking for overlapping dates.";
 
+        /// <summary>Decision the payment service uses to move an accepted booking to Paid; never accepted from the owner UI.</summary>
+        public const string PaidDecision = "paid";
+
         /// <summary>Returns the new status for <paramref name="decision"/>, or null when the transition is not allowed.</summary>
         public static string? Next(string current, string decision) => (current, decision.ToLowerInvariant()) switch
         {
             (BookingStatus.Pending, "accept") => BookingStatus.Accepted,
             (BookingStatus.Pending, "reject") => BookingStatus.Rejected,
-            (BookingStatus.Accepted, "complete") => BookingStatus.Completed,
             (BookingStatus.Accepted, "undo") => BookingStatus.Pending,
             (BookingStatus.Rejected, "undo") => BookingStatus.Pending,
-            (BookingStatus.Completed, "undo") => BookingStatus.Accepted,
+            (BookingStatus.Accepted, PaidDecision) => BookingStatus.Paid,
+            (BookingStatus.Paid, "complete") => BookingStatus.Completed,
+            (BookingStatus.Completed, "undo") => BookingStatus.Paid,
             _ => null
         };
+
+        /// <summary>
+        /// Data-dependent guards that the pure <see cref="Next"/> cannot see (payment and payout state).
+        /// Returns an error message for the owner, or null when the decision may proceed.
+        /// </summary>
+        public static string? Guard(IPayableBooking b, string decision, string? next)
+        {
+            var d = decision.ToLowerInvariant();
+            if (next is null)
+                return b.Status == BookingStatus.Accepted && d == "complete"
+                    ? "This booking can't be completed until the farmer has paid."
+                    : $"A {b.Status.ToLowerInvariant()} request cannot be {(d == "undo" ? "undone" : d + "ed")}.";
+            if (d == PaidDecision) return "Payment is confirmed by the farmer's checkout, not by the owner.";
+            if (b.Status == BookingStatus.Completed && b.PayoutId is not null)
+                return "This booking has already been paid out and can no longer be changed.";
+            if (b.Status == BookingStatus.Accepted && next == BookingStatus.Pending && b.Payment?.Status == PaymentStatus.Succeeded)
+                return "This booking has been paid by the farmer; cancel and refund it instead of undoing.";
+            return null;
+        }
+
+        /// <summary>
+        /// Money side-effects of a transition, applied before <c>Status</c> changes: the price snapshot on accept,
+        /// and the commission ledger row on complete (or its reversal on undo). The caller's SaveChanges commits both.
+        /// </summary>
+        public static void ApplyMoney(IPayableBooking b, string next, string bookingType, string ownerId, ILedgerRepository ledger,
+            decimal listingRate, decimal gross, decimal commissionRate)
+        {
+            if (next == BookingStatus.Accepted)
+            {
+                b.AgreedRate = listingRate;
+                b.AgreedGross = gross;
+                b.CommissionRate = commissionRate;
+            }
+            else if (next == BookingStatus.Completed)
+            {
+                b.CompletedOn = DateTime.UtcNow;
+                if (BookingPricing.Commission(b) > 0) ledger.Add(LedgerPostings.CommissionEarned(bookingType, b, ownerId));
+            }
+            else if (b.Status == BookingStatus.Completed && next == BookingStatus.Paid)
+            {
+                b.CompletedOn = null;
+                if (BookingPricing.Commission(b) > 0) ledger.Add(LedgerPostings.CommissionReversed(bookingType, b, ownerId));
+            }
+        }
 
         public static bool Overlaps(DateTime aStart, DateTime aEnd, DateTime bStart, DateTime bEnd) =>
             aStart.Date <= bEnd.Date && bStart.Date <= aEnd.Date;

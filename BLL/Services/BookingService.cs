@@ -12,8 +12,8 @@ namespace KrishiLink.BLL.Services
         Task<BookingHistoryViewModel> GetHistoryAsync(string farmerId, string tab, string status, DateTime? from, DateTime? to, string? search);
         Task<FarmerDashboardViewModel> GetDashboardAsync(string farmerId);
 
-        /// <summary>Farmer cancels their own pending or not-yet-started accepted booking. Returns an error message, or null on success.</summary>
-        Task<string?> CancelAsync(string farmerId, string bookingType, int bookingId);
+        /// <summary>Farmer cancels their own pending, unpaid-accepted, or paid-but-not-started booking. Paid bookings are refunded in the same operation.</summary>
+        Task<(string? Error, decimal? Refunded)> CancelAsync(string farmerId, string bookingType, int bookingId);
 
         // QR Code Booking Confirmation & Verification
         Task<BookingConfirmationViewModel?> GetConfirmationAsync(string? userId, string bookingType, int bookingId, string requestHost, bool justCreated = false);
@@ -29,19 +29,28 @@ namespace KrishiLink.BLL.Services
         private readonly IQrCodeService _qrCode;
         private readonly ILoyaltyService _loyalty;
         private readonly INotificationService _notifications;
+        private readonly IPaymentService _payments;
+        private readonly IEquipmentService _equipmentService;
+        private readonly IGodownService _godownService;
 
         public BookingService(
             IRepository<EquipmentBooking> rentals,
             IRepository<GodownBooking> storage,
             IQrCodeService qrCode,
             ILoyaltyService loyalty,
-            INotificationService notifications)
+            INotificationService notifications,
+            IPaymentService payments,
+            IEquipmentService equipmentService,
+            IGodownService godownService)
         {
             _rentals = rentals;
             _storage = storage;
             _qrCode = qrCode;
             _loyalty = loyalty;
             _notifications = notifications;
+            _payments = payments;
+            _equipmentService = equipmentService;
+            _godownService = godownService;
         }
 
         public async Task<BookingHistoryViewModel> GetHistoryAsync(string farmerId, string tab, string status, DateTime? from, DateTime? to, string? search)
@@ -79,6 +88,7 @@ namespace KrishiLink.BLL.Services
                 GodownCount = all.Count(b => b.BookingType == "Godown"),
                 PendingCount = all.Count(b => b.Status == BookingStatus.Pending),
                 AcceptedCount = all.Count(b => b.Status == BookingStatus.Accepted),
+                PaidCount = all.Count(b => b.Status == BookingStatus.Paid),
                 CompletedCount = all.Count(b => b.Status == BookingStatus.Completed),
                 RejectedCount = all.Count(b => b.Status == BookingStatus.Rejected),
                 CancelledCount = all.Count(b => b.Status == BookingStatus.Cancelled)
@@ -95,10 +105,16 @@ namespace KrishiLink.BLL.Services
                 var noun = b.BookingType == "Equipment" ? "Equipment request" : "Godown booking request";
                 activity.Add((b.RequestedAt, Feed($"{noun} sent for {b.ItemName}.", b.BookingType == "Equipment" ? "bi-tools" : "bi-building", "text-warning", b.RequestedAt)));
 
+                if (b.PaidOn is not null)
+                    activity.Add((b.PaidOn.Value, Feed($"Payment confirmed for {b.ItemName}.", "bi-credit-card-fill", "text-success", b.PaidOn.Value)));
+                if (b.RefundedOn is not null)
+                    activity.Add((b.RefundedOn.Value, Feed($"Refund issued for {b.ItemName}.", "bi-arrow-counterclockwise", "text-info", b.RefundedOn.Value)));
+
                 if (b.UpdatedAt is null || b.Status == BookingStatus.Pending) continue;
                 var (text, icon, color) = b.Status switch
                 {
                     BookingStatus.Accepted => ($"{b.BookingType} request for {b.ItemName} was accepted by the owner.", "bi-check-circle-fill", "text-success"),
+                    BookingStatus.Paid => ($"{b.BookingType} booking for {b.ItemName} is confirmed and paid.", "bi-shield-check", "text-success"),
                     BookingStatus.Rejected => ($"{b.BookingType} request for {b.ItemName} was rejected by the owner.", "bi-x-circle-fill", "text-danger"),
                     BookingStatus.Completed => ($"{b.ItemName} booking completed.", "bi-flag-fill", "text-secondary"),
                     _ => ($"{b.ItemName} booking was {b.Status.ToLowerInvariant()}.", "bi-info-circle-fill", "text-secondary")
@@ -109,7 +125,7 @@ namespace KrishiLink.BLL.Services
             return new FarmerDashboardViewModel
             {
                 ActiveBookings = all
-                    .Where(b => b.Status is BookingStatus.Pending or BookingStatus.Accepted)
+                    .Where(b => b.Status is BookingStatus.Pending or BookingStatus.Accepted or BookingStatus.Paid)
                     .OrderBy(b => b.StartDate)
                     .Take(6)
                     .Select(b => new BookingSummaryItem
@@ -126,21 +142,21 @@ namespace KrishiLink.BLL.Services
             };
         }
 
-        public async Task<string?> CancelAsync(string farmerId, string bookingType, int bookingId)
+        public async Task<(string? Error, decimal? Refunded)> CancelAsync(string farmerId, string bookingType, int bookingId)
         {
             if (bookingType.Equals("Equipment", StringComparison.OrdinalIgnoreCase))
             {
                 var b = await _rentals.QueryTracked()
                     .Include(x => x.Equipment)
                     .Include(x => x.Farmer)
+                    .Include(x => x.Payment)
                     .FirstOrDefaultAsync(x => x.Id == bookingId && x.FarmerId == farmerId);
-                var error = ValidateCancel(b?.Status, b?.StartDate);
-                if (error is not null) return error;
-                b!.Status = BookingStatus.Cancelled;
-                b.CancelledOn = b.UpdatedOn = DateTime.Now;
+                var error = ValidateCancel(b);
+                if (error is not null) return (error, null);
+                var refunded = await CancelCoreAsync(b!);
                 await _rentals.SaveChangesAsync();
 
-                if (b.PointsUsed > 0 || b.DiscountAmount > 0)
+                if (b!.PointsUsed > 0 || b.DiscountAmount > 0)
                 {
                     await _loyalty.RefundPointsForCancelledBookingAsync(farmerId, "Equipment", b.Id, $"#EQ-{b.Id:D4}");
                 }
@@ -161,20 +177,20 @@ namespace KrishiLink.BLL.Services
                     });
                 }
 
-                return null;
+                return (null, refunded);
             }
 
             var g = await _storage.QueryTracked()
                 .Include(x => x.Godown)
                 .Include(x => x.Farmer)
+                .Include(x => x.Payment)
                 .FirstOrDefaultAsync(x => x.Id == bookingId && x.FarmerId == farmerId);
-            var err = ValidateCancel(g?.Status, g?.StartDate);
-            if (err is not null) return err;
-            g!.Status = BookingStatus.Cancelled;
-            g.CancelledOn = g.UpdatedOn = DateTime.Now;
+            var err = ValidateCancel(g);
+            if (err is not null) return (err, null);
+            var refundedTons = await CancelCoreAsync(g!);
             await _storage.SaveChangesAsync();
 
-            if (g.PointsUsed > 0 || g.DiscountAmount > 0)
+            if (g!.PointsUsed > 0 || g.DiscountAmount > 0)
             {
                 await _loyalty.RefundPointsForCancelledBookingAsync(farmerId, "Godown", g.Id, $"#GD-{g.Id:D4}");
             }
@@ -195,18 +211,37 @@ namespace KrishiLink.BLL.Services
                 });
             }
 
-            return null;
+            return (null, refundedTons);
         }
 
-        /// <summary>Only requests still awaiting a decision, or accepted bookings that have not started, can be cancelled.</summary>
-        private static string? ValidateCancel(string? status, DateTime? start) => status switch
+        /// <summary>Flips the booking to Cancelled and, when the farmer had paid, refunds in the same unit of work. Returns the refunded amount.</summary>
+        private async Task<decimal?> CancelCoreAsync(IPayableBooking b)
+        {
+            decimal? refunded = null;
+            if (b.Payment?.Status == PaymentStatus.Succeeded)
+            {
+                await _payments.RefundAsync(b.Payment);
+                refunded = b.Payment.Amount;
+            }
+            b.Status = BookingStatus.Cancelled;
+            b.CancelledOn = b.UpdatedOn = DateTime.Now;
+            return refunded;
+        }
+
+        /// <summary>
+        /// Pending requests can always be withdrawn. Accepted (unpaid) and Paid bookings can be cancelled until they start;
+        /// a paid booking is refunded. Once started, completed, rejected or cancelled, nothing can be undone by the farmer.
+        /// </summary>
+        private static string? ValidateCancel(IPayableBooking? b) => b?.Status switch
         {
             null => "This booking could not be found.",
             BookingStatus.Pending => null,
-            BookingStatus.Accepted when start > DateTime.Today => null,
-            BookingStatus.Accepted => "This booking has already started and can no longer be cancelled. Please contact the owner.",
-            _ => $"A {status.ToLowerInvariant()} booking cannot be cancelled."
+            BookingStatus.Accepted or BookingStatus.Paid when b.StartDate > DateTime.Today => null,
+            BookingStatus.Accepted or BookingStatus.Paid => "This booking has already started and can no longer be cancelled. Please contact the owner.",
+            _ => $"A {b.Status.ToLowerInvariant()} booking cannot be cancelled."
         };
+
+        private static bool CanCancel(IPayableBooking b) => ValidateCancel(b) is null;
 
         // ---------------------------------------------------------------- QR Code & Confirmation Voucher
 
@@ -217,6 +252,7 @@ namespace KrishiLink.BLL.Services
                 var b = await _rentals.Query()
                     .Include(x => x.Equipment!).ThenInclude(e => e.Owner)
                     .Include(x => x.Farmer)
+                    .Include(x => x.Payment)
                     .FirstOrDefaultAsync(x => x.Id == bookingId);
 
                 if (b == null || b.Equipment == null) return null;
@@ -227,6 +263,7 @@ namespace KrishiLink.BLL.Services
                 var g = await _storage.Query()
                     .Include(x => x.Godown!).ThenInclude(god => god.Owner)
                     .Include(x => x.Farmer)
+                    .Include(x => x.Payment)
                     .FirstOrDefaultAsync(x => x.Id == bookingId);
 
                 if (g == null || g.Godown == null) return null;
@@ -260,6 +297,7 @@ namespace KrishiLink.BLL.Services
                 var b = await _rentals.Query()
                     .Include(x => x.Equipment!).ThenInclude(e => e.Owner)
                     .Include(x => x.Farmer)
+                    .Include(x => x.Payment)
                     .FirstOrDefaultAsync(x => x.Id == id);
 
                 if (b == null || b.Equipment == null)
@@ -293,14 +331,14 @@ namespace KrishiLink.BLL.Services
                     StartDate = b.StartDate,
                     EndDate = b.EndDate,
                     DurationDisplay = days == 1 ? "1 Day" : $"{days} Days",
-                    TotalCost = days * b.Equipment.DailyRate,
+                    TotalCost = b.AgreedGross ?? BookingPricing.EquipmentGross(b.StartDate, b.EndDate, b.Equipment.DailyRate),
                     DiscountAmount = b.DiscountAmount,
                     AppliedPromoCode = b.AppliedPromoCode,
                     PointsUsed = b.PointsUsed,
                     RateDescription = $"{ListingFormat.Taka(b.Equipment.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
                     QuantityDisplay = $"1 {b.Equipment.Category}",
                     Status = b.Status,
-                    PaymentStatus = GetPaymentStatus(b.Status),
+                    PaymentStatus = GetPaymentStatus(b),
                     RequestedAt = b.RequestedOn,
                     UpdatedAt = b.UpdatedOn,
                     FarmerId = b.FarmerId,
@@ -314,21 +352,22 @@ namespace KrishiLink.BLL.Services
                     IsCurrentOwner = isOwner,
                     CanAccept = isOwner && b.Status == BookingStatus.Pending,
                     CanReject = isOwner && b.Status == BookingStatus.Pending,
-                    CanConfirmPickup = isOwner && b.Status == BookingStatus.Accepted,
-                    CanComplete = isOwner && b.Status == BookingStatus.Accepted,
+                    CanConfirmPickup = isOwner && b.Status == BookingStatus.Paid,
+                    CanComplete = isOwner && b.Status == BookingStatus.Paid,
                     VerificationUrl = verUrl,
                     QrCodeSvg = _qrCode.GenerateSvg(verUrl, 8),
                     QrCodeBase64 = _qrCode.GenerateBase64Png(verUrl, 8),
                     SecurityBadgeClass = b.Status switch
                     {
-                        BookingStatus.Accepted => "bg-success",
+                        BookingStatus.Accepted or BookingStatus.Paid => "bg-success",
                         BookingStatus.Completed => "bg-primary",
                         BookingStatus.Pending => "bg-warning text-dark",
                         _ => "bg-danger"
                     },
                     VerificationStatusMessage = b.Status switch
                     {
-                        BookingStatus.Accepted => "Authentic & Verified Booking — Confirmed & Active",
+                        BookingStatus.Accepted => "Authentic Booking — Accepted, Awaiting Farmer Payment",
+                        BookingStatus.Paid => "Authentic & Verified Booking — Paid, Confirmed & Active",
                         BookingStatus.Pending => "Pending Owner Review — Not Yet Confirmed",
                         BookingStatus.Completed => "Completed Booking — Service Finished & Handover Settled",
                         BookingStatus.Cancelled => "Booking Cancelled by Farmer",
@@ -344,6 +383,7 @@ namespace KrishiLink.BLL.Services
                 var g = await _storage.Query()
                     .Include(x => x.Godown!).ThenInclude(god => god.Owner)
                     .Include(x => x.Farmer)
+                    .Include(x => x.Payment)
                     .FirstOrDefaultAsync(x => x.Id == id);
 
                 if (g == null || g.Godown == null)
@@ -377,14 +417,14 @@ namespace KrishiLink.BLL.Services
                     StartDate = g.StartDate,
                     EndDate = g.EndDate,
                     DurationDisplay = $"{months:0.#} Months ({g.StorageTons:N0} Tons)",
-                    TotalCost = decimal.Round((decimal)g.StorageTons * g.Godown.PricePerTonPerMonth * (decimal)months, 0),
+                    TotalCost = g.AgreedGross ?? BookingPricing.GodownGross(g.StartDate, g.EndDate, g.StorageTons, g.Godown.PricePerTonPerMonth),
                     DiscountAmount = g.DiscountAmount,
                     AppliedPromoCode = g.AppliedPromoCode,
                     PointsUsed = g.PointsUsed,
                     RateDescription = $"{ListingFormat.Taka(g.Godown.PricePerTonPerMonth)} / ton / mo × {g.StorageTons:N0} Tons",
                     QuantityDisplay = $"{g.StorageTons:N0} Tons Capacity",
                     Status = g.Status,
-                    PaymentStatus = GetPaymentStatus(g.Status),
+                    PaymentStatus = GetPaymentStatus(g),
                     RequestedAt = g.RequestedOn,
                     UpdatedAt = g.UpdatedOn,
                     FarmerId = g.FarmerId,
@@ -398,21 +438,22 @@ namespace KrishiLink.BLL.Services
                     IsCurrentOwner = isOwner,
                     CanAccept = isOwner && g.Status == BookingStatus.Pending,
                     CanReject = isOwner && g.Status == BookingStatus.Pending,
-                    CanConfirmPickup = isOwner && g.Status == BookingStatus.Accepted,
-                    CanComplete = isOwner && g.Status == BookingStatus.Accepted,
+                    CanConfirmPickup = isOwner && g.Status == BookingStatus.Paid,
+                    CanComplete = isOwner && g.Status == BookingStatus.Paid,
                     VerificationUrl = verUrl,
                     QrCodeSvg = _qrCode.GenerateSvg(verUrl, 8),
                     QrCodeBase64 = _qrCode.GenerateBase64Png(verUrl, 8),
                     SecurityBadgeClass = g.Status switch
                     {
-                        BookingStatus.Accepted => "bg-success",
+                        BookingStatus.Accepted or BookingStatus.Paid => "bg-success",
                         BookingStatus.Completed => "bg-primary",
                         BookingStatus.Pending => "bg-warning text-dark",
                         _ => "bg-danger"
                     },
                     VerificationStatusMessage = g.Status switch
                     {
-                        BookingStatus.Accepted => "Authentic & Verified Storage Booking — Space Allocated & Active",
+                        BookingStatus.Accepted => "Authentic Storage Booking — Accepted, Awaiting Farmer Payment",
+                        BookingStatus.Paid => "Authentic & Verified Storage Booking — Paid, Space Allocated & Active",
                         BookingStatus.Pending => "Pending Owner Review — Not Yet Confirmed",
                         BookingStatus.Completed => "Completed Storage — Storage Period Ended & Handover Settled",
                         BookingStatus.Cancelled => "Booking Cancelled by Farmer",
@@ -425,97 +466,28 @@ namespace KrishiLink.BLL.Services
             }
         }
 
+        /// <summary>
+        /// QR quick actions go through the same owner decision pipeline as the Requests page, so the price snapshot,
+        /// payment gate, conflict checks and ledger rows apply identically however the owner reaches the decision.
+        /// </summary>
         public async Task<string?> QuickVerifyActionAsync(string ownerId, string bookingCode, string action)
         {
             var (type, id) = ParseBookingCode(bookingCode);
             if (id <= 0) return "Invalid booking reference code.";
 
-            action = action.ToLowerInvariant().Trim();
-
-            if (type.Equals("Equipment", StringComparison.OrdinalIgnoreCase))
+            var decision = action.ToLowerInvariant().Trim() switch
             {
-                var b = await _rentals.QueryTracked()
-                    .Include(x => x.Equipment)
-                    .FirstOrDefaultAsync(x => x.Id == id);
+                "accept" => "accept",
+                "reject" => "reject",
+                "confirm-pickup" or "complete" => "complete",
+                _ => null
+            };
+            if (decision is null) return "Unknown action.";
 
-                if (b == null || b.Equipment == null) return "Booking not found.";
-                if (b.Equipment.OwnerId != ownerId) return "You are not authorized to perform actions on this booking.";
-
-                switch (action)
-                {
-                    case "accept":
-                        if (b.Status != BookingStatus.Pending) return "Only pending requests can be accepted.";
-                        b.Status = BookingStatus.Accepted;
-                        b.UpdatedOn = DateTime.Now;
-                        break;
-                    case "reject":
-                        if (b.Status != BookingStatus.Pending) return "Only pending requests can be rejected.";
-                        b.Status = BookingStatus.Rejected;
-                        b.UpdatedOn = DateTime.Now;
-                        if (b.PointsUsed > 0 || b.DiscountAmount > 0)
-                        {
-                            await _loyalty.RefundPointsForCancelledBookingAsync(b.FarmerId, "Equipment", b.Id, $"#EQ-{b.Id:D4}");
-                        }
-                        break;
-                    case "confirm-pickup":
-                    case "complete":
-                        if (b.Status != BookingStatus.Accepted) return "Only accepted bookings can be confirmed / completed.";
-                        b.Status = BookingStatus.Completed;
-                        b.UpdatedOn = DateTime.Now;
-                        var days = (b.EndDate - b.StartDate).Days + 1;
-                        decimal grossSpent = Math.Max(0m, (days * b.Equipment.DailyRate) - b.DiscountAmount);
-                        await _loyalty.AwardPointsForCompletedBookingAsync(b.FarmerId, "Equipment", b.Id, grossSpent, $"#EQ-{b.Id:D4}");
-                        break;
-                    default:
-                        return "Unknown action.";
-                }
-
-                await _rentals.SaveChangesAsync();
-                return null;
-            }
-            else
-            {
-                var g = await _storage.QueryTracked()
-                    .Include(x => x.Godown)
-                    .FirstOrDefaultAsync(x => x.Id == id);
-
-                if (g == null || g.Godown == null) return "Storage booking not found.";
-                if (g.Godown.OwnerId != ownerId) return "You are not authorized to perform actions on this booking.";
-
-                switch (action)
-                {
-                    case "accept":
-                        if (g.Status != BookingStatus.Pending) return "Only pending requests can be accepted.";
-                        g.Status = BookingStatus.Accepted;
-                        g.UpdatedOn = DateTime.Now;
-                        break;
-                    case "reject":
-                        if (g.Status != BookingStatus.Pending) return "Only pending requests can be rejected.";
-                        g.Status = BookingStatus.Rejected;
-                        g.UpdatedOn = DateTime.Now;
-                        if (g.PointsUsed > 0 || g.DiscountAmount > 0)
-                        {
-                            await _loyalty.RefundPointsForCancelledBookingAsync(g.FarmerId, "Godown", g.Id, $"#GD-{g.Id:D4}");
-                        }
-                        break;
-                    case "confirm-pickup":
-                    case "complete":
-                        if (g.Status != BookingStatus.Accepted) return "Only accepted bookings can be confirmed / completed.";
-                        g.Status = BookingStatus.Completed;
-                        g.UpdatedOn = DateTime.Now;
-                        var days = (g.EndDate - g.StartDate).Days + 1;
-                        var months = Math.Max(1.0, (double)days / 30.0);
-                        decimal gross = decimal.Round((decimal)g.StorageTons * g.Godown.PricePerTonPerMonth * (decimal)months, 0);
-                        decimal netSpent = Math.Max(0m, gross - g.DiscountAmount);
-                        await _loyalty.AwardPointsForCompletedBookingAsync(g.FarmerId, "Godown", g.Id, netSpent, $"#GD-{g.Id:D4}");
-                        break;
-                    default:
-                        return "Unknown action.";
-                }
-
-                await _storage.SaveChangesAsync();
-                return null;
-            }
+            var result = type.Equals("Equipment", StringComparison.OrdinalIgnoreCase)
+                ? await _equipmentService.RespondAsync(ownerId, id, decision, null)
+                : await _godownService.RespondAsync(ownerId, id, decision, null);
+            return result.Success ? null : result.Error;
         }
 
         // ---------------------------------------------------------------- Mapping & Helpers
@@ -544,7 +516,7 @@ namespace KrishiLink.BLL.Services
             var days = ListingFormat.InclusiveDays(b.StartDate, b.EndDate);
             var code = $"KL-EQ-{b.RequestedOn.Year}-{b.Id:D3}";
             var verUrl = $"{requestHost.TrimEnd('/')}/Verify/{code}";
-            var grossCost = days * e.DailyRate;
+            var grossCost = b.AgreedGross ?? BookingPricing.EquipmentGross(b.StartDate, b.EndDate, e.DailyRate);
             var netCost = Math.Max(0m, grossCost - b.DiscountAmount);
 
             var vm = new BookingConfirmationViewModel
@@ -568,7 +540,7 @@ namespace KrishiLink.BLL.Services
                 PointsEarned = _loyalty.CalculatePointsEarned(netCost),
                 RateDescription = $"{ListingFormat.Taka(e.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
                 QuantityDisplay = $"1 {e.Category}",
-                PaymentStatus = GetPaymentStatus(b.Status),
+                PaymentStatus = GetPaymentStatus(b),
                 Status = b.Status,
                 RequestedAt = b.RequestedOn,
                 UpdatedAt = b.UpdatedOn,
@@ -589,8 +561,8 @@ namespace KrishiLink.BLL.Services
                 QrCodeSvg = _qrCode.GenerateSvg(verUrl, 8),
                 QrCodeBase64 = _qrCode.GenerateBase64Png(verUrl, 8),
                 JustCreated = justCreated,
-                CanCancel = b.Status == BookingStatus.Pending || (b.Status == BookingStatus.Accepted && b.StartDate > DateTime.Today),
-                Timeline = GenerateTimeline(b.Status, b.RequestedOn, b.UpdatedOn, e.Owner?.FullName ?? "Owner", b.StartDate, b.EndDate, "Rental Requested", "Active in Field", "Equipment in use", "Completed & Handover")
+                CanCancel = CanCancel(b),
+                Timeline = GenerateTimeline(b.Status, b.RequestedOn, b.UpdatedOn, b.PaidOn, e.Owner?.FullName ?? "Owner", b.StartDate, b.EndDate, "Rental Requested", "Active in Field", "Equipment in use", "Completed & Handover")
             };
 
             return vm;
@@ -602,7 +574,7 @@ namespace KrishiLink.BLL.Services
             var months = ListingFormat.Months(b.StartDate, b.EndDate);
             var code = $"KL-GD-{b.RequestedOn.Year}-{b.Id:D3}";
             var verUrl = $"{requestHost.TrimEnd('/')}/Verify/{code}";
-            var grossCost = decimal.Round((decimal)b.StorageTons * g.PricePerTonPerMonth * (decimal)months, 0);
+            var grossCost = b.AgreedGross ?? BookingPricing.GodownGross(b.StartDate, b.EndDate, b.StorageTons, g.PricePerTonPerMonth);
             var netCost = Math.Max(0m, grossCost - b.DiscountAmount);
 
             var vm = new BookingConfirmationViewModel
@@ -626,7 +598,7 @@ namespace KrishiLink.BLL.Services
                 PointsEarned = _loyalty.CalculatePointsEarned(netCost),
                 RateDescription = $"{ListingFormat.Taka(g.PricePerTonPerMonth)} / ton / mo × {b.StorageTons:N0} Tons × {months:0.#} Months",
                 QuantityDisplay = $"{b.StorageTons:N0} Tons Capacity",
-                PaymentStatus = GetPaymentStatus(b.Status),
+                PaymentStatus = GetPaymentStatus(b),
                 Status = b.Status,
                 RequestedAt = b.RequestedOn,
                 UpdatedAt = b.UpdatedOn,
@@ -647,22 +619,26 @@ namespace KrishiLink.BLL.Services
                 QrCodeSvg = _qrCode.GenerateSvg(verUrl, 8),
                 QrCodeBase64 = _qrCode.GenerateBase64Png(verUrl, 8),
                 JustCreated = justCreated,
-                CanCancel = b.Status == BookingStatus.Pending || (b.Status == BookingStatus.Accepted && b.StartDate > DateTime.Today),
-                Timeline = GenerateTimeline(b.Status, b.RequestedOn, b.UpdatedOn, g.Owner?.FullName ?? "Owner", b.StartDate, b.EndDate, "Storage Requested", "Produce Stored", "Goods in storage", "Storage Period Ended")
+                CanCancel = CanCancel(b),
+                Timeline = GenerateTimeline(b.Status, b.RequestedOn, b.UpdatedOn, b.PaidOn, g.Owner?.FullName ?? "Owner", b.StartDate, b.EndDate, "Storage Requested", "Produce Stored", "Goods in storage", "Storage Period Ended")
             };
 
             return vm;
         }
 
-        private static string GetPaymentStatus(string status) => status switch
+        /// <summary>Farmer-facing payment label derived from the actual Payment row, never from the booking status alone.</summary>
+        private static string GetPaymentStatus(IPayableBooking b) => (b.Status, b.Payment?.Status) switch
         {
-            BookingStatus.Completed => "Paid on Service",
-            BookingStatus.Accepted => "Pending on Delivery",
-            BookingStatus.Pending => "Unpaid (Awaiting Confirmation)",
-            _ => "Not Applicable"
+            (BookingStatus.Completed, _) => "Paid & settled",
+            (_, PaymentStatus.Succeeded) => $"Paid ৳{b.Payment!.Amount:N0} via {b.Payment.Method} on {b.Payment.PaidOn:dd MMM yyyy}",
+            (_, PaymentStatus.Refunded) => "Refunded",
+            (BookingStatus.Accepted, PaymentStatus.Pending) => "Payment in progress",
+            (BookingStatus.Accepted, _) => "Payment required",
+            (BookingStatus.Pending, _) => "Awaiting owner confirmation",
+            _ => "Not applicable"
         };
 
-        private static List<BookingTimelineStep> GenerateTimeline(string status, DateTime requestedOn, DateTime? updatedOn, string ownerName, DateTime start, DateTime end, string requestedTitle, string activeTitle, string activeDesc, string completedTitle)
+        private static List<BookingTimelineStep> GenerateTimeline(string status, DateTime requestedOn, DateTime? updatedOn, DateTime? paidOn, string ownerName, DateTime start, DateTime end, string requestedTitle, string activeTitle, string activeDesc, string completedTitle)
         {
             var range = ListingFormat.DateRange(start, end);
             var decided = updatedOn?.ToString("dd MMM yyyy, hh:mm tt");
@@ -675,6 +651,7 @@ namespace KrishiLink.BLL.Services
             {
                 case BookingStatus.Pending:
                     timeline.Add(new() { Title = "Owner Review", Description = $"{ownerName} is reviewing your request", DateDisplay = "In Progress", IsCurrent = true, State = "active" });
+                    timeline.Add(new() { Title = "Payment", Description = "Pay into KrishiLink escrow once accepted", State = "pending" });
                     timeline.Add(new() { Title = activeTitle, Description = activeDesc, DateDisplay = range, State = "pending" });
                     timeline.Add(new() { Title = completedTitle, Description = "Final handover and payment", DateDisplay = $"Expected {end:dd MMM yyyy}", State = "pending" });
                     break;
@@ -683,11 +660,13 @@ namespace KrishiLink.BLL.Services
                     timeline.Add(new() { Title = status, Description = status == BookingStatus.Cancelled ? "Cancelled by you" : "Request rejected", DateDisplay = decided, IsCompleted = true, IsCurrent = true, State = "rejected" });
                     break;
                 default:
-                    var inField = status == BookingStatus.Accepted && start <= DateTime.Today;
+                    var paid = status is BookingStatus.Paid or BookingStatus.Completed;
+                    var inField = paid && start <= DateTime.Today;
                     var completed = status == BookingStatus.Completed;
-                    timeline.Add(new() { Title = "Owner Accepted", Description = $"Accepted by {ownerName}", DateDisplay = decided, IsCompleted = true, State = "done" });
+                    timeline.Add(new() { Title = "Owner Accepted", Description = $"Accepted by {ownerName}", DateDisplay = paid ? null : decided, IsCompleted = true, State = "done" });
+                    timeline.Add(new() { Title = "Payment", Description = paid ? "Held in KrishiLink escrow until completion" : "Pay now to confirm your booking", DateDisplay = paidOn?.ToString("dd MMM yyyy, hh:mm tt") ?? "Payment required", IsCompleted = paid, IsCurrent = !paid, State = paid ? "done" : "active" });
                     timeline.Add(new() { Title = activeTitle, Description = activeDesc, DateDisplay = range, IsCompleted = completed, IsCurrent = inField && !completed, State = completed ? "done" : inField ? "active" : "pending" });
-                    timeline.Add(new() { Title = completedTitle, Description = "Final handover and payment", DateDisplay = completed ? decided : $"Expected {end:dd MMM yyyy}", IsCompleted = completed, IsCurrent = completed, State = completed ? "done" : "pending" });
+                    timeline.Add(new() { Title = completedTitle, Description = "Final handover; owner is paid from escrow", DateDisplay = completed ? decided : $"Expected {end:dd MMM yyyy}", IsCompleted = completed, IsCurrent = completed, State = completed ? "done" : "pending" });
                     break;
             }
 
@@ -699,11 +678,13 @@ namespace KrishiLink.BLL.Services
             var rentals = await _rentals.Query()
                 .Include(b => b.Equipment!).ThenInclude(e => e.Owner)
                 .Include(b => b.Review)
+                .Include(b => b.Payment)
                 .Where(b => b.FarmerId == farmerId)
                 .ToListAsync();
             var storage = await _storage.Query()
                 .Include(b => b.Godown!).ThenInclude(g => g.Owner)
                 .Include(b => b.Review)
+                .Include(b => b.Payment)
                 .Where(b => b.FarmerId == farmerId)
                 .ToListAsync();
 
@@ -725,8 +706,8 @@ namespace KrishiLink.BLL.Services
                 Location = e.Location,
                 StartDate = b.StartDate,
                 EndDate = b.EndDate,
-                TotalCost = days * e.DailyRate,
-                RateDescription = $"{ListingFormat.Taka(e.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
+                TotalCost = b.AgreedGross ?? BookingPricing.EquipmentGross(b.StartDate, b.EndDate, e.DailyRate),
+                RateDescription = $"{ListingFormat.Taka(b.AgreedRate ?? e.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
                 QuantityDisplay = $"1 {e.Category}",
                 ListingDetailUrl = $"/Equipment/Details/{e.Id}",
                 ListingId = e.Id,
@@ -735,7 +716,7 @@ namespace KrishiLink.BLL.Services
                 ReviewComment = b.Review?.Comment,
                 ReviewedAt = b.Review?.CreatedAt
             };
-            return Finish(item, b.Status, b.Note, b.RejectReason, b.RequestedOn, b.UpdatedOn, e.Owner, "Rental Requested", "Active in Field", "Equipment in use", "Completed & Handover");
+            return Finish(item, b, b.Note, b.RejectReason, b.RequestedOn, b.UpdatedOn, e.Owner, "Rental Requested", "Active in Field", "Equipment in use", "Completed & Handover");
         }
 
         private static BookingHistoryItemViewModel ToItem(GodownBooking b)
@@ -753,8 +734,8 @@ namespace KrishiLink.BLL.Services
                 Location = g.Location,
                 StartDate = b.StartDate,
                 EndDate = b.EndDate,
-                TotalCost = decimal.Round((decimal)b.StorageTons * g.PricePerTonPerMonth * (decimal)months, 0),
-                RateDescription = $"{ListingFormat.Taka(g.PricePerTonPerMonth)} / ton / mo × {b.StorageTons:N0} Tons × {months:0.#} Months",
+                TotalCost = b.AgreedGross ?? BookingPricing.GodownGross(b.StartDate, b.EndDate, b.StorageTons, g.PricePerTonPerMonth),
+                RateDescription = $"{ListingFormat.Taka(b.AgreedRate ?? g.PricePerTonPerMonth)} / ton / mo × {b.StorageTons:N0} Tons × {months:0.#} Months",
                 QuantityDisplay = $"{b.StorageTons:N0} Tons Capacity",
                 ListingDetailUrl = $"/Godown/Details/{g.Id}",
                 ListingId = g.Id,
@@ -763,12 +744,13 @@ namespace KrishiLink.BLL.Services
                 ReviewComment = b.Review?.Comment,
                 ReviewedAt = b.Review?.CreatedAt
             };
-            return Finish(item, b.Status, b.Note, b.RejectReason, b.RequestedOn, b.UpdatedOn, g.Owner, "Booking Requested", "Produce Stored", "Goods in storage", "Storage Period Ended");
+            return Finish(item, b, b.Note, b.RejectReason, b.RequestedOn, b.UpdatedOn, g.Owner, "Booking Requested", "Produce Stored", "Goods in storage", "Storage Period Ended");
         }
 
-        private static BookingHistoryItemViewModel Finish(BookingHistoryItemViewModel item, string status, string? note, string? rejectReason,
+        private static BookingHistoryItemViewModel Finish(BookingHistoryItemViewModel item, IPayableBooking b, string? note, string? rejectReason,
             DateTime requestedOn, DateTime? updatedOn, ApplicationUser? owner, string requestedTitle, string activeTitle, string activeDesc, string completedTitle)
         {
+            var status = b.Status;
             item.Status = status;
             item.RequestedAt = requestedOn;
             item.UpdatedAt = updatedOn;
@@ -776,9 +758,15 @@ namespace KrishiLink.BLL.Services
             item.OwnerPhone = owner?.PhoneNumber ?? string.Empty;
             item.FarmerNotes = note ?? string.Empty;
             item.OwnerRemarks = rejectReason;
-            item.CanCancel = status == BookingStatus.Pending || (status == BookingStatus.Accepted && item.StartDate > DateTime.Today);
-            item.PaymentStatus = GetPaymentStatus(status);
-            item.Timeline = GenerateTimeline(status, requestedOn, updatedOn, item.OwnerName, item.StartDate, item.EndDate, requestedTitle, activeTitle, activeDesc, completedTitle);
+            item.CanCancel = CanCancel(b);
+            item.CanPay = status == BookingStatus.Accepted && b.AgreedGross > 0;
+            item.PayUrl = $"/Bookings/Pay?type={item.BookingType}&id={b.Id}";
+            item.PaymentStatus = GetPaymentStatus(b);
+            item.PaymentReference = b.Payment?.Status is PaymentStatus.Succeeded or PaymentStatus.Refunded ? b.Payment.Reference : null;
+            item.PaymentMethod = b.Payment?.Method;
+            item.PaidOn = b.PaidOn ?? b.Payment?.PaidOn;
+            item.RefundedOn = b.Payment?.RefundedOn;
+            item.Timeline = GenerateTimeline(status, requestedOn, updatedOn, b.PaidOn, item.OwnerName, item.StartDate, item.EndDate, requestedTitle, activeTitle, activeDesc, completedTitle);
 
             return item;
         }

@@ -23,9 +23,6 @@ namespace KrishiLink.BLL.Services
 
         /// <summary>Rows per page in the revenue transactions table.</summary>
         public int TransactionsPageSize { get; set; } = 25;
-
-        /// <summary>Hours after request before a payout is automatically settled by the scheduler (default: 24).</summary>
-        public int PayoutSettlementHours { get; set; } = 24;
     }
 
     public interface IOwnerRevenueService
@@ -75,12 +72,14 @@ namespace KrishiLink.BLL.Services
     {
         private const int MaxMonthBuckets = 24;
         private const int MaxTrendBuckets = 16;
-        private static readonly string[] ConfirmedStatuses = { "Accepted", "Completed" };
+        private static readonly string[] ConfirmedStatuses = { BookingStatus.Accepted, BookingStatus.Paid, BookingStatus.Completed };
 
         private readonly IOwnerRevenueRepository _repo;
         private readonly RevenueProfile _profile;
         private readonly RevenueOptions _options;
         private readonly INotificationService _notifications;
+
+        /// <summary>Current rate for display and for rows that pre-date snapshots (e.g. still-pending requests).</summary>
         private decimal CommissionRate => _options.PlatformCommissionRate;
 
         public OwnerRevenueService(IOwnerRevenueRepository repo, IOptions<RevenueOptions> options, RevenueProfile profile, INotificationService notifications)
@@ -107,7 +106,7 @@ namespace KrishiLink.BLL.Services
                 .ToList();
             var scopedListings = listings.Where(l => filter.ListingId is null || l.Id == filter.ListingId).ToList();
 
-            var completedLifetime = allBookings.Where(b => b.Status == "Completed").ToList();
+            var completedLifetime = allBookings.Where(b => b.Status == BookingStatus.Completed).ToList();
             var totalRevenue = completedLifetime.Sum(b => b.Gross);
             var lastMonth = new DateTime(today.Year, today.Month, 1).AddMonths(-1);
 
@@ -134,10 +133,10 @@ namespace KrishiLink.BLL.Services
                 LastMonthRevenue = completedLifetime
                     .Where(b => b.EndDate.Year == lastMonth.Year && b.EndDate.Month == lastMonth.Month)
                     .Sum(b => b.Gross),
-                UpcomingRevenue = allBookings.Where(b => b.Status == "Accepted").Sum(b => b.Gross),
+                UpcomingRevenue = allBookings.Where(b => BookingStatus.Confirmed.Contains(b.Status)).Sum(b => b.Gross),
                 CompletedBookings = completedLifetime.Count,
 
-                Settlement = BuildSettlement(completedLifetime, expenses, payouts),
+                Settlement = BuildSettlement(allBookings, expenses, payouts),
                 Trend = trend,
                 TrendBucketDays = bucketDays,
                 TrendNote = trendNote,
@@ -148,7 +147,7 @@ namespace KrishiLink.BLL.Services
                 PageCount = pageCount,
                 Insights = BuildInsights(inRange, allBookings),
                 RecentPayout = payouts
-                    .Where(p => p.Status == "Completed" && p.TransactionDate >= today.AddDays(-7))
+                    .Where(p => p.Status == PayoutStatus.Completed && p.TransactionDate >= today.AddDays(-7))
                     .OrderByDescending(p => p.TransactionDate)
                     .Select(p => ToPayoutItem(p, allBookings))
                     .FirstOrDefault()
@@ -172,7 +171,7 @@ namespace KrishiLink.BLL.Services
 
         public BookingInvoiceViewModel? GetInvoice(string ownerId, int bookingId)
         {
-            var b = _repo.GetBookings(ownerId).FirstOrDefault(x => x.Id == bookingId && x.Status == "Completed");
+            var b = _repo.GetBookings(ownerId).FirstOrDefault(x => x.Id == bookingId && x.Status == BookingStatus.Completed);
             if (b is null) return null;
 
             return new BookingInvoiceViewModel
@@ -189,9 +188,12 @@ namespace KrishiLink.BLL.Services
                 QuantityText = b.QuantityText,
                 RateText = b.RateText,
                 Gross = b.Gross,
-                CommissionRate = CommissionRate,
-                Commission = Commission(b.Gross),
-                Status = b.Status
+                CommissionRate = RateFor(b),
+                Commission = Commission(b),
+                Status = b.Status,
+                PaymentMethod = b.PaymentMethod,
+                PaymentReference = b.PaymentReference,
+                PaidOn = b.PaidOn
             };
         }
 
@@ -243,12 +245,11 @@ namespace KrishiLink.BLL.Services
         public PayoutHistoryViewModel GetPayoutHistory(string ownerId)
         {
             var bookings = _repo.GetBookings(ownerId);
-            var completed = bookings.Where(b => b.Status == "Completed").ToList();
             return new PayoutHistoryViewModel
             {
                 ListingLabel = _profile.ListingLabel,
-                CompletedBookings = completed.Count,
-                Settlement = BuildSettlement(completed, _repo.GetExpenses(ownerId), _repo.GetPayouts(ownerId))
+                CompletedBookings = bookings.Count(b => b.Status == BookingStatus.Completed),
+                Settlement = BuildSettlement(bookings, _repo.GetExpenses(ownerId), _repo.GetPayouts(ownerId))
             };
         }
 
@@ -260,26 +261,33 @@ namespace KrishiLink.BLL.Services
             if (!PayoutHistoryViewModel.PayoutMethods.Contains(method)) return "Please choose a valid payout method.";
             if (string.IsNullOrWhiteSpace(account) || account.Trim().Length < 6) return "Please enter the account or wallet number the payout should go to.";
 
-            if (_repo.GetPayouts(ownerId).Any(p => p.Status == "Processing"))
+            // Only an in-flight transfer blocks a new request; a Failed one has already released its bookings.
+            if (_repo.GetPayouts(ownerId).Any(p => p.Status == PayoutStatus.Processing))
                 return "A payout is already being processed. Please wait for it to complete.";
 
             // Settle exactly the completed bookings that no earlier payout has covered
-            var unpaid = _repo.GetBookings(ownerId).Where(b => b.Status == "Completed" && b.PayoutId is null).ToList();
+            var unpaid = _repo.GetBookings(ownerId).Where(b => b.Status == BookingStatus.Completed && b.PayoutId is null).ToList();
             if (unpaid.Count == 0) return "There is no pending balance to pay out yet.";
 
+            // Escrow can only pay out what the farmer actually put in: every booking needs a matching succeeded payment.
+            var unfunded = unpaid.FirstOrDefault(b => !b.IsPaid);
+            if (unfunded is not null)
+                return $"Booking #{unfunded.Id} has no confirmed farmer payment, so it cannot be paid out yet. Please contact support.";
+
             var gross = unpaid.Sum(b => b.Gross);
-            var commission = unpaid.Sum(b => Commission(b.Gross));
+            var commission = unpaid.Sum(Commission);
             var netAmount = gross - commission;
             var payoutId = _repo.AddPayout(new Transaction
             {
                 UserId = ownerId,
                 Reference = $"KL-PO-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
+                ListingType = _profile.ListingLabel,
                 GrossAmount = gross,
                 Commission = commission,
                 Amount = netAmount,
                 PaymentMethod = method,
                 PayoutAccount = account.Trim(),
-                Status = "Processing",
+                Status = PayoutStatus.Processing,
                 TransactionDate = DateTime.Now
             });
             _repo.MarkBookingsPaid(unpaid.Select(b => b.Id), payoutId);
@@ -303,7 +311,10 @@ namespace KrishiLink.BLL.Services
 
         // ---- Helpers -------------------------------------------------------------------------
 
-        private decimal Commission(decimal gross) => decimal.Round(gross * CommissionRate, 0);
+        private decimal RateFor(RevenueBooking b) => b.CommissionRateSnapshot > 0 ? b.CommissionRateSnapshot : CommissionRate;
+
+        /// <summary>Commission from the booking's own snapshot, so a later change to the platform rate never rewrites history.</summary>
+        private decimal Commission(RevenueBooking b) => BookingPricing.Commission(b.Gross, RateFor(b));
 
         private static bool Overlaps(RevenueBooking b, DateTime from, DateTime to) =>
             b.StartDate.Date <= to && b.EndDate.Date >= from;
@@ -325,19 +336,21 @@ namespace KrishiLink.BLL.Services
             return (from, to);
         }
 
-        private RevenueSettlement BuildSettlement(List<RevenueBooking> completed, IReadOnlyList<BookingExpense> expenses, IReadOnlyList<Transaction> payouts)
+        private RevenueSettlement BuildSettlement(IReadOnlyList<RevenueBooking> all, IReadOnlyList<BookingExpense> expenses, IReadOnlyList<Transaction> payouts)
         {
+            var completed = all.Where(b => b.Status == BookingStatus.Completed).ToList();
             var gross = completed.Sum(b => b.Gross);
             var unpaid = completed.Where(b => b.PayoutId is null).ToList();
             return new RevenueSettlement
             {
                 Gross = gross,
                 CommissionRate = CommissionRate,
-                Commission = Commission(gross),
+                Commission = completed.Sum(Commission),
                 Expenses = expenses.Sum(e => e.Amount),
-                PaidOut = payouts.Where(p => p.Status == "Completed").Sum(p => p.Amount),
-                Processing = payouts.Where(p => p.Status == "Processing").Sum(p => p.Amount),
-                Owed = unpaid.Sum(b => b.Gross - Commission(b.Gross)),
+                InEscrow = all.Where(b => b.Status == BookingStatus.Paid).Sum(b => b.Gross),
+                PaidOut = payouts.Where(p => p.Status == PayoutStatus.Completed).Sum(p => p.Amount),
+                Processing = payouts.Where(p => p.Status == PayoutStatus.Processing).Sum(p => p.Amount),
+                Owed = unpaid.Sum(b => b.Gross - Commission(b)),
                 UnpaidBookings = unpaid.Count,
                 Payouts = payouts.OrderByDescending(p => p.TransactionDate).Select(p => ToPayoutItem(p, completed)).ToList()
             };
@@ -354,6 +367,8 @@ namespace KrishiLink.BLL.Services
             Method = p.PaymentMethod,
             Account = p.PayoutAccount,
             Status = p.Status,
+            SettledOn = p.SettledOn,
+            FailureReason = p.FailureReason,
             BookingCount = bookings.Count(b => b.PayoutId == p.Id)
         };
 
@@ -363,7 +378,7 @@ namespace KrishiLink.BLL.Services
         /// </summary>
         private static (List<RevenueTrendPoint> Points, int BucketDays, string? Note) BuildTrend(List<RevenueBooking> inRange, DateTime from, DateTime to, bool weekly)
         {
-            var completed = inRange.Where(b => b.Status == "Completed").ToList();
+            var completed = inRange.Where(b => b.Status == BookingStatus.Completed).ToList();
             var points = new List<RevenueTrendPoint>();
 
             if (weekly)
@@ -427,7 +442,7 @@ namespace KrishiLink.BLL.Services
 
             var items = listings.Select(l =>
             {
-                var completed = inRange.Where(b => b.ListingId == l.Id && b.Status == "Completed").ToList();
+                var completed = inRange.Where(b => b.ListingId == l.Id && b.Status == BookingStatus.Completed).ToList();
                 var bookedCapacityDays = inRange
                     .Where(b => b.ListingId == l.Id && ConfirmedStatuses.Contains(b.Status))
                     .Sum(b => b.CapacityUsed * OverlapDays(b, from, usageEnd));
@@ -462,11 +477,12 @@ namespace KrishiLink.BLL.Services
         private static BookingFunnel BuildFunnel(List<RevenueBooking> inRange, DateTime today) => new()
         {
             Requested = inRange.Count,
-            Accepted = inRange.Count(b => b.Status == "Accepted"),
-            Ongoing = inRange.Count(b => b.Status == "Accepted" && b.StartDate.Date <= today && b.EndDate.Date >= today),
-            Completed = inRange.Count(b => b.Status == "Completed"),
-            Cancelled = inRange.Count(b => b.Status == "Cancelled"),
-            Rejected = inRange.Count(b => b.Status == "Rejected")
+            Accepted = inRange.Count(b => b.Status == BookingStatus.Accepted),
+            Paid = inRange.Count(b => b.Status == BookingStatus.Paid),
+            Ongoing = inRange.Count(b => BookingStatus.Confirmed.Contains(b.Status) && b.StartDate.Date <= today && b.EndDate.Date >= today),
+            Completed = inRange.Count(b => b.Status == BookingStatus.Completed),
+            Cancelled = inRange.Count(b => b.Status == BookingStatus.Cancelled),
+            Rejected = inRange.Count(b => b.Status == BookingStatus.Rejected)
         };
 
         private List<RevenueTransactionItem> BuildTransactions(List<RevenueBooking> inRange, IReadOnlyList<RevenueBooking> allBookings,
@@ -490,10 +506,12 @@ namespace KrishiLink.BLL.Services
                     ListingName = b.ListingName,
                     QuantityText = b.QuantityText,
                     Gross = b.Gross,
-                    Commission = Commission(b.Gross),
+                    Commission = Commission(b),
                     ExpenseLines = expensesByBooking.GetValueOrDefault(b.Id) ?? new List<ExpenseLine>(),
                     Status = b.Status,
                     PayoutReference = b.PayoutReference,
+                    IsPaid = b.IsPaid,
+                    PaymentReference = b.PaymentReference,
                     IsRepeatCustomer = confirmed.Any(o => o.CustomerId == b.CustomerId && o.Id != b.Id && o.StartDate < b.StartDate)
                 })
                 .ToList();

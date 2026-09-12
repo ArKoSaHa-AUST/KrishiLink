@@ -120,12 +120,12 @@ namespace KrishiLink.BLL.Services
                 var userEqBookings = eqBookings.Where(b => b.OwnerId == user.Id).ToList();
                 var userGdBookings = gdBookings.Where(b => b.OwnerId == user.Id).ToList();
 
-                var completedEq = userEqBookings.Count(b => b.Status == "Completed");
-                var completedGd = userGdBookings.Count(b => b.Status == "Completed");
+                var completedEq = userEqBookings.Count(b => b.Status == BookingStatus.Completed);
+                var completedGd = userGdBookings.Count(b => b.Status == BookingStatus.Completed);
                 var totalCompleted = completedEq + completedGd;
 
-                var activeEq = userEqBookings.Count(b => b.Status == "Confirmed");
-                var activeGd = userGdBookings.Count(b => b.Status == "Accepted");
+                var activeEq = userEqBookings.Count(b => BookingStatus.Confirmed.Contains(b.Status));
+                var activeGd = userGdBookings.Count(b => BookingStatus.Confirmed.Contains(b.Status));
                 var totalActive = activeEq + activeGd;
 
                 var userEqListings = eqListings.Where(e => e.OwnerId == user.Id).ToList();

@@ -1,4 +1,5 @@
 using System.Globalization;
+using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -32,7 +33,7 @@ namespace KrishiLink.BLL.Services
             _report = report;
             _owner = owner;
             _month = month;
-            _completed = report.Transactions.Where(t => t.Status == "Completed").ToList();
+            _completed = report.Transactions.Where(t => t.Status == BookingStatus.Completed).ToList();
             _payouts = report.Settlement.Payouts
                 .Where(p => p.Date.Year == month.Year && p.Date.Month == month.Month)
                 .OrderBy(p => p.Date)
@@ -69,8 +70,8 @@ namespace KrishiLink.BLL.Services
                     col.Item().Element(ComposeTransactions);
                     if (_payouts.Count > 0) col.Item().Element(ComposePayouts);
                     col.Item().PaddingTop(6).Text(
-                        "Revenue is recognised when a booking completes (its end date). Utilization counts elapsed days only. " +
-                        "Platform commission is deducted before payout. This statement is generated from KrishiLink booking records.")
+                        "Farmers pay into KrishiLink escrow when a booking is accepted; revenue is recognised when the owner marks it completed. " +
+                        "Utilization counts elapsed days only. Platform commission is deducted before payout. This statement is generated from KrishiLink booking and ledger records.")
                         .FontSize(7.5f).FontColor(Muted);
                 });
                 page.Footer().Row(row =>
@@ -114,8 +115,8 @@ namespace KrishiLink.BLL.Services
             var gross = _completed.Sum(t => t.Gross);
             var commission = _completed.Sum(t => t.Commission);
             var expenses = _report.Transactions.Sum(t => t.Expenses);
-            var upcoming = _report.Transactions.Where(t => t.Status == "Accepted").Sum(t => t.Gross);
-            var paid = _payouts.Where(p => p.Status == "Completed").Sum(p => p.Amount);
+            var upcoming = _report.Transactions.Where(t => BookingStatus.Confirmed.Contains(t.Status)).Sum(t => t.Gross);
+            var paid = _payouts.Where(p => p.Status == PayoutStatus.Completed).Sum(p => p.Amount);
 
             container.Background(BrandLight).Padding(12).Row(row =>
             {
@@ -133,7 +134,8 @@ namespace KrishiLink.BLL.Services
                 {
                     col.Spacing(3);
                     Line(col, "Bookings completed", _completed.Count.ToString());
-                    Line(col, "Bookings accepted (upcoming)", Money(upcoming));
+                    Line(col, "Bookings accepted/paid (upcoming)", Money(upcoming));
+                    Line(col, "Held in escrow (paid, not completed)", Money(_report.Settlement.InEscrow));
                     Line(col, "Payouts received this month", Money(paid));
                     Line(col, "Owed to you (to date)", Money(_report.Settlement.Owed), bold: true);
                     Line(col, "Lifetime revenue", Money(_report.TotalRevenue));
@@ -209,6 +211,7 @@ namespace KrishiLink.BLL.Services
                         c.ConstantColumn(66);
                         c.ConstantColumn(66);
                         c.ConstantColumn(52);
+                        c.RelativeColumn(2);
                     });
                     table.Header(h =>
                     {
@@ -220,6 +223,7 @@ namespace KrishiLink.BLL.Services
                         h.Cell().Element(Th).AlignRight().Text("Gross");
                         h.Cell().Element(Th).AlignRight().Text("Net");
                         h.Cell().Element(Th).Text("Status");
+                        h.Cell().Element(Th).Text("Farmer payment");
                     });
                     foreach (var t in _report.Transactions.OrderBy(t => t.StartDate))
                     {
@@ -231,6 +235,7 @@ namespace KrishiLink.BLL.Services
                         table.Cell().Element(Td).AlignRight().Text(Money(t.Gross));
                         table.Cell().Element(Td).AlignRight().Text(Money(t.Net));
                         table.Cell().Element(Td).Text(t.Status);
+                        table.Cell().Element(Td).Text(t.PaymentReference ?? (BookingStatus.Confirmed.Contains(t.Status) || t.Status == BookingStatus.Completed ? "unpaid" : "—")).FontSize(7.5f);
                     }
                 });
             });
