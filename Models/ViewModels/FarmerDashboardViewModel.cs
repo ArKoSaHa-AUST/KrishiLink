@@ -17,6 +17,9 @@ namespace KrishiLink.Models.ViewModels
         /// <summary>Active real-time agrometeorological disease/weather warning for the farmer's district.</summary>
         public WeatherNoteItem? WeatherAlert { get; set; }
 
+        /// <summary>Proactive weather-triggered crop & machinery suggestion for farmer.</summary>
+        public WeatherSuggestionViewModel? WeatherSuggestion { get; set; }
+
         /// <summary>Recent activity feed entries, newest first.</summary>
         public List<ActivityFeedItem> RecentActivity { get; set; } = new();
     }
