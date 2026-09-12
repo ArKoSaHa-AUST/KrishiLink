@@ -13,6 +13,7 @@ namespace KrishiLink.BLL.Services
         Task<EquipmentBrowseViewModel> BrowseAsync(EquipmentSearchCriteria criteria);
         Task<EquipmentDetailViewModel?> GetDetailsAsync(int id, string? currentUserId = null);
         Task<EquipmentQuote?> QuoteAsync(int equipmentId, DateTime? start, DateTime? end, int units = 1);
+        Task<(decimal Gross, string? PricingNote)> QuoteGrossAsync(int equipmentId, DateTime start, DateTime end, int units = 1);
         Task<string?> CheckAvailabilityAsync(int equipmentId, DateTime start, DateTime end, int units = 1, int? excludeBookingId = null);
         Task<int> FreeUnitsAsync(int equipmentId, DateTime start, DateTime end, int? excludeBookingId = null);
         Task<string?> ValidateQuantityAsync(string ownerId, int equipmentId, int newQuantity);
@@ -1475,6 +1476,21 @@ namespace KrishiLink.BLL.Services
             };
         }
 
+        public async Task<(decimal Gross, string? PricingNote)> QuoteGrossAsync(int equipmentId, DateTime start, DateTime end, int units = 1)
+        {
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == equipmentId);
+            if (e == null) return (0m, null);
+
+            var s = start.Date;
+            var t = end.Date;
+            units = Math.Clamp(units, 1, e.Quantity);
+
+            var activeRules = await ActiveRulesAsync(equipmentId);
+            var (gross, segments) = BookingPricing.EquipmentGross(s, t, e.DailyRate, activeRules, _pricingOptions.WeekendDaySet(), units);
+            var pricingNote = BookingPricing.Describe(segments, units);
+            return (gross, pricingNote);
+        }
+
         public async Task<EquipmentPricingViewModel?> GetPricingAsync(string ownerId, int equipmentId)
         {
             var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == equipmentId && x.OwnerId == ownerId);
@@ -1723,7 +1739,9 @@ namespace KrishiLink.BLL.Services
             RequestedOn = b.RequestedOn,
             AgreedGross = BookingPricing.EquipmentGrossOf(b, b.Equipment?.DailyRate ?? 0),
             PricingNote = b.PricingNote,
-            PaymentReference = b.Payment?.Status == PaymentStatus.Succeeded ? b.Payment.Reference : null
+            PaymentReference = b.Payment?.Status == PaymentStatus.Succeeded ? b.Payment.Reference : null,
+            ModificationCount = b.ModificationCount,
+            PreviousDetails = b.PreviousDetails
         };
 
         private static IEnumerable<DateTime> EachDay(DateTime start, DateTime end)

@@ -56,6 +56,8 @@ namespace KrishiLink.Models.ViewModels
 
         public int Units { get; set; } = 1;
         public int Quantity { get; set; } = 1;
+        public int ModificationCount { get; set; } = 0;
+        public string? PreviousDetails { get; set; }
 
         /// <summary>Owner's reason shown on rejected requests.</summary>
         public string? RejectReason { get; set; }

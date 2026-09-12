@@ -11,6 +11,7 @@ namespace KrishiLink.Models.Entities
         public const string BookingRejected = "BookingRejected";
         public const string BookingCompleted = "BookingCompleted";
         public const string BookingCancelled = "BookingCancelled";
+        public const string BookingModified = "BookingModified";
         public const string PayoutProcessed = "PayoutProcessed";
         public const string PaymentReceived = "PaymentReceived";
         public const string PayoutCompleted = "PayoutCompleted";

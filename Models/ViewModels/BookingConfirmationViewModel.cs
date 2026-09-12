@@ -73,6 +73,9 @@ namespace KrishiLink.Models.ViewModels
         // UI Helpers
         public bool JustCreated { get; set; }
         public bool CanCancel { get; set; }
+        public bool CanModify { get; set; }
+        public int ModificationCount { get; set; } = 0;
+        public string? PreviousDetails { get; set; }
         public List<BookingTimelineStep> Timeline { get; set; } = new();
     }
 

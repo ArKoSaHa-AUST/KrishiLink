@@ -82,6 +82,8 @@ namespace KrishiLink.DAL
                 b.Property(x => x.AgreedRate).HasPrecision(18, 2);
                 b.Property(x => x.AgreedGross).HasPrecision(18, 2);
                 b.Property(x => x.CommissionRate).HasPrecision(5, 4);
+                b.Property(x => x.ModificationCount).HasDefaultValue(0);
+                b.Property(x => x.PreviousDetails).HasMaxLength(200);
                 b.HasIndex(x => new { x.EquipmentId, x.Status });
                 b.HasOne(x => x.Equipment).WithMany(x => x.Bookings).HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Cascade);
                 b.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);
@@ -128,6 +130,8 @@ namespace KrishiLink.DAL
                 b.Property(x => x.AgreedRate).HasPrecision(18, 2);
                 b.Property(x => x.AgreedGross).HasPrecision(18, 2);
                 b.Property(x => x.CommissionRate).HasPrecision(5, 4);
+                b.Property(x => x.ModificationCount).HasDefaultValue(0);
+                b.Property(x => x.PreviousDetails).HasMaxLength(200);
                 b.HasIndex(x => new { x.GodownId, x.Status });
                 b.HasOne(x => x.Godown).WithMany(x => x.Bookings).HasForeignKey(x => x.GodownId).OnDelete(DeleteBehavior.Cascade);
                 b.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);

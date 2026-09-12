@@ -129,9 +129,17 @@
                 <!-- Right: Asset & Rental Summary -->
                 <div class="col-12 col-md-7">
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <span class="badge bg-light text-dark border px-3 py-1.5 rounded-pill fw-semibold">
-                            <i class="bi @(Model.BookingType == "Equipment" ? "bi-truck" : "bi-building") text-success me-1"></i> @L[Model.BookingType]
-                        </span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-light text-dark border px-3 py-1.5 rounded-pill fw-semibold">
+                                <i class="bi @(Model.BookingType == "Equipment" ? "bi-truck" : "bi-building") text-success me-1"></i> @L[Model.BookingType]
+                            </span>
+                            @if (Model.ModificationCount > 0)
+                            {
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1 rounded-pill fw-semibold" title="@Model.PreviousDetails">
+                                    <i class="bi bi-pencil-square me-1"></i>@L["Changed ×{0}", Model.ModificationCount]
+                                </span>
+                            }
+                        </div>
                         <partial name="_StatusBadge" model="@Model.Status" />
                     </div>
 
@@ -143,6 +151,12 @@
                         <div class="row g-2 small">
                             <div class="col-5 text-muted">@L["Rental Period:"]</div>
                             <div class="col-7 fw-bold text-dark">@Model.DateRangeDisplay</div>
+
+                            @if (Model.ModificationCount > 0 && !string.IsNullOrWhiteSpace(Model.PreviousDetails))
+                            {
+                                <div class="col-5 text-muted">@L["Previously:"]</div>
+                                <div class="col-7 text-muted fst-italic">@Model.PreviousDetails</div>
+                            }
 
                             <div class="col-5 text-muted">@L["Duration:"]</div>
                             <div class="col-7 fw-semibold text-dark">@Model.DurationDisplay</div>

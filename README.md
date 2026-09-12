@@ -115,6 +115,14 @@ Pending ──reject──▶ Rejected ──undo──▶ Pending              
 - **Upcoming Blocked Periods (12-Month Horizon)**: Contiguous blocked dates sharing identical reasons are automatically grouped (`DateRanges.Group`) and displayed in an upcoming blocked periods widget with quick inline unblock modals.
 - **Pending Conflict Badges**: Pending rental and storage booking requests that overlap any owner-blocked date display clear warning indicators with the conflicting date.
 
+### 11. 🔄 Booking Modification Lifecycle (Dates, Units & Capacity)
+- **Pre-Payment Flexibility**: Farmers can modify dates and requested quantity (equipment units / godown tonnage) on **Pending** and unpaid **Accepted** bookings prior to the booking start date.
+- **Re-Approval Safety**: Modifying an **Accepted** booking returns it to **Pending**, resets owner rejection reasons, and clears the financial snapshot (`AgreedRate`, `AgreedGross`, `CommissionRate`) to prevent stale pricing or bypass of owner consent. The payment button is disabled until the owner re-approves.
+- **Modification Guardrails**: Enforces a strict limit of 3 modifications per booking (`MaxModifications = 3`) and preserves audit history (`ModificationCount`, `ModifiedOn`, `PreviousDetails`). Paid bookings are locked in escrow and cannot be modified (farmers are prompted to cancel and refund instead).
+- **Self-Excluding Conflict Checks**: Availability validation excludes the booking's own ID (`excludeBookingId`), allowing farmers to safely shrink, shift, or expand their reservation within their reserved window.
+- **Automated Loyalty Re-pricing**: Prior loyalty points redemption and promo code discounts are safely refunded and re-calculated against the newly quoted gross amount.
+- **Owner Visibility & Notifications**: Triggers `NotificationTypes.BookingModified` alerts to owners and displays `"Changed ×N"` indicator badges with previous booking summaries on all owner dashboards and request rows.
+
 ---
 
 ## 🏗️ Architecture & Project Structure

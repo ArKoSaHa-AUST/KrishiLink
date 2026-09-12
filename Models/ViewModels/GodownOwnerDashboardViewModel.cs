@@ -69,6 +69,8 @@ namespace KrishiLink.Models.ViewModels
         /// <summary>Set when a pending request's dates overlap an accepted booking or blocked date.</summary>
         public bool HasConflict { get; set; }
         public string? ConflictHint { get; set; }
+        public int ModificationCount { get; set; } = 0;
+        public string? PreviousDetails { get; set; }
 
         /// <summary>Compact relative timestamp, e.g. "2h ago". Empty when RequestedOn is unset.</summary>
         public string TimeAgo => TimeAgoFormatter.Format(RequestedOn);

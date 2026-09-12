@@ -21,6 +21,15 @@ namespace KrishiLink.Models.Entities
         /// <summary>Set when the farmer cancels the request.</summary>
         public DateTime? CancelledOn { get; set; }
 
+        /// <summary>When the farmer last changed the booking dates / tonnage.</summary>
+        public DateTime? ModifiedOn { get; set; }
+
+        /// <summary>Number of times this booking has been modified (max 3).</summary>
+        public int ModificationCount { get; set; } = 0;
+
+        /// <summary>Summary of previous booking parameters before the last change.</summary>
+        public string? PreviousDetails { get; set; }
+
         /// <summary>The payout that settled this booking's revenue; null while still unpaid.</summary>
         public int? PayoutId { get; set; }
         public Transaction? Payout { get; set; }

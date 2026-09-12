@@ -159,7 +159,10 @@ namespace KrishiLink.BLL.Services
         public static DecisionResult Fail(string error) => new(false, error, Array.Empty<int>());
     }
 
-    /// <summary>Owner decision state machine shared by equipment rentals and godown storage bookings.</summary>
+    /// <summary>
+    /// Owner decision state machine shared by equipment rentals and godown storage bookings.
+    /// Note: <c>BookingService.ModifyAsync</c> is the only other path transitioning Accepted → Pending (farmer-initiated modification).
+    /// </summary>
     internal static class BookingWorkflow
     {
         /// <summary>Reason stored on pending requests that lose out when the owner accepts an overlapping one.</summary>

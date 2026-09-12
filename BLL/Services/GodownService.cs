@@ -33,6 +33,7 @@ namespace KrishiLink.BLL.Services
         Task<bool> SaveAvailabilityAsync(string ownerId, int godownId, DateTime month, IEnumerable<DateTime> blockedDates);
         Task<BulkAvailabilityResult> BlockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek, string? reason);
         Task<BulkAvailabilityResult> UnblockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek);
+        Task<string?> CheckAvailabilityAsync(int godownId, double tons, DateTime start, DateTime end, int? excludeBookingId = null);
     }
 
     public class GodownService : IGodownService
@@ -973,6 +974,13 @@ namespace KrishiLink.BLL.Services
 
         // ---------------------------------------------------------------- Helpers
 
+        public async Task<string?> CheckAvailabilityAsync(int godownId, double tons, DateTime start, DateTime end, int? excludeBookingId = null)
+        {
+            var godown = await _godowns.GetByIdAsync(godownId);
+            if (godown is null) return "Godown not found.";
+            return await FindConflictAsync(godown, tons, start, end, excludeBookingId);
+        }
+
         /// <summary>
         /// The single source of truth for godown over-booking: a blocked date inside [start, end], or requested tons
         /// exceeding the capacity left after accepted bookings in that window. Returns a message, or null when it fits.
@@ -1073,7 +1081,9 @@ namespace KrishiLink.BLL.Services
             RejectReason = b.RejectReason,
             RequestedOn = b.RequestedOn,
             AgreedGross = b.AgreedGross ?? (b.Godown is null ? 0 : BookingPricing.GodownGross(b.StartDate, b.EndDate, b.StorageTons, b.Godown.PricePerTonPerMonth)),
-            PaymentReference = b.Payment?.Status == PaymentStatus.Succeeded ? b.Payment.Reference : null
+            PaymentReference = b.Payment?.Status == PaymentStatus.Succeeded ? b.Payment.Reference : null,
+            ModificationCount = b.ModificationCount,
+            PreviousDetails = b.PreviousDetails
         };
     }
 }

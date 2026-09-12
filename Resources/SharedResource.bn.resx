@@ -3869,4 +3869,46 @@
   <data name="Overlaps a date you blocked" xml:space="preserve">
     <value>আপনার ব্লক করা তারিখের সাথে সাংঘর্ষিক</value>
   </data>
+  <data name="Change dates" xml:space="preserve">
+    <value>তারিখ পরিবর্তন করুন</value>
+  </data>
+  <data name="Change Booking Dates &amp; Details" xml:space="preserve">
+    <value>বুকিংয়ের তারিখ ও বিবরণ পরিবর্তন করুন</value>
+  </data>
+  <data name="Number of Units" xml:space="preserve">
+    <value>যন্ত্রপাতির ইউনিট সংখ্যা</value>
+  </data>
+  <data name="Storage Capacity (Tons)" xml:space="preserve">
+    <value>সংরক্ষণের পরিমাণ (টন)</value>
+  </data>
+  <data name="You can change dates and quantity up to 3 times. If previously accepted, the booking returns to pending for owner re-approval." xml:space="preserve">
+    <value>আপনি সর্বোচ্চ ৩ বার তারিখ ও পরিমাণ পরিবর্তন করতে পারবেন। পূর্বে অনুমোদিত হয়ে থাকলে পুনরায় মালিকের অনুমোদনের জন্য বুকিংটি অপেক্ষমাণ অবস্থায় ফিরে যাবে।</value>
+  </data>
+  <data name="Paid bookings cannot be modified (escrow payment is locked). Cancel and refund instead." xml:space="preserve">
+    <value>পরিশোধিত বুকিং পরিবর্তন করা সম্ভব নয় (পেমেন্ট লক করা থাকে)। পরিবর্তে বাতিল করে রিফান্ড নিন।</value>
+  </data>
+  <data name="Changed ×{0}" xml:space="preserve">
+    <value>পরিবর্তিত ×{0}</value>
+  </data>
+  <data name="Previously:" xml:space="preserve">
+    <value>পূর্বে:</value>
+  </data>
+  <data name="Booking Modified" xml:space="preserve">
+    <value>বুকিং পরিবর্তিত হয়েছে</value>
+  </data>
+  <data name="{0} updated the equipment booking for {1} to {2} - {3} ({4} units)." xml:space="preserve">
+    <value>{0} {1}-এর বুকিং আপডেট করেছেন: {2} - {3} ({4} ইউনিট)।</value>
+  </data>
+  <data name="{0} updated the storage booking for {1} to {2} tons ({3} - {4})." xml:space="preserve">
+    <value>{0} {1}-এর গুদাম বুকিং আপডেট করেছেন: {2} টন ({3} - {4})।</value>
+  </data>
+  <data name="Booking updated. Because this request was previously accepted, it has returned to pending for owner re-approval." xml:space="preserve">
+    <value>বুকিং সফলভাবে আপডেট হয়েছে। যেহেতু এটি পূর্বে অনুমোদিত ছিল, তাই মালিকের পুনরায় অনুমোদনের জন্য অপেক্ষমাণ অবস্থায় ফিরে গেছে।</value>
+  </data>
+  <data name="Booking details updated successfully." xml:space="preserve">
+    <value>বুকিংয়ের বিবরণ সফলভাবে আপডেট করা হয়েছে।</value>
+  </data>
+  <data name="Please provide both start and end dates." xml:space="preserve">
+    <value>অনুগ্রহ করে শুরুর এবং শেষের উভয় তারিখ প্রদান করুন।</value>
+  </data>
 </root>

@@ -107,6 +107,35 @@ namespace KrishiLink.Controllers
             return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Index));
         }
 
+        /// <summary>POST: /Bookings/Modify — farmer changes dates, units, or tons on a pending or accepted-unpaid booking.</summary>
+        [HttpPost]
+        [Authorize(Roles = AppRoles.Farmer)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Modify(string type, int id, DateTime? startDate, DateTime? endDate, int? units, double? tons, string? returnUrl)
+        {
+            if (startDate is null || endDate is null)
+            {
+                TempData["ErrorMessage"] = "Please provide both start and end dates.";
+                return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Index));
+            }
+
+            var farmerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var (error, needsReapproval) = await _bookings.ModifyAsync(farmerId, type ?? string.Empty, id, startDate.Value, endDate.Value, units, tons);
+
+            if (error is not null)
+            {
+                TempData["ErrorMessage"] = error;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = needsReapproval
+                    ? "Booking updated. Because this request was previously accepted, it has returned to pending for owner re-approval."
+                    : "Booking details updated successfully.";
+            }
+
+            return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Index));
+        }
+
         // ---------------------------------------------------------------- Escrow payment (simulated gateway)
 
         /// <summary>GET: /Bookings/Pay?type=Equipment&id=1 — checkout for an accepted, unpaid booking.</summary>
