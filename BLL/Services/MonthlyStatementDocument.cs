@@ -17,10 +17,10 @@ namespace KrishiLink.BLL.Services
     /// </summary>
     public class MonthlyStatementDocument : IDocument
     {
-        private const string Brand = "#2d6a4f";
-        private const string BrandLight = "#eef7f2";
-        private const string Muted = "#5e6e61";
-        private const string Border = "#e2e8df";
+        private const string Brand = PdfStyle.Brand;
+        private const string BrandLight = PdfStyle.BrandLight;
+        private const string Muted = PdfStyle.Muted;
+        private const string Border = PdfStyle.Border;
 
         private readonly OwnerRevenueViewModel _report;
         private readonly StatementOwner _owner;
@@ -44,7 +44,7 @@ namespace KrishiLink.BLL.Services
 
         private string Period => _month.ToString("MMMM yyyy", CultureInfo.InvariantCulture);
 
-        private static string Money(decimal v) => "BDT " + v.ToString("N0", CultureInfo.InvariantCulture);
+        private static string Money(decimal v) => PdfStyle.Money(v);
 
         public DocumentMetadata GetMetadata() => new()
         {
@@ -66,6 +66,7 @@ namespace KrishiLink.BLL.Services
                 {
                     col.Spacing(16);
                     col.Item().Element(ComposeSummary);
+                    col.Item().Element(ComposeProfitAndLoss);
                     col.Item().Element(ComposeBreakdown);
                     col.Item().Element(ComposeTransactions);
                     if (_payouts.Count > 0) col.Item().Element(ComposePayouts);
@@ -151,6 +152,41 @@ namespace KrishiLink.BLL.Services
                 var text = row.ConstantItem(110).AlignRight().Text(value);
                 if (bold) text.SemiBold();
                 if (color is not null) text.FontColor(color);
+            });
+        }
+
+        private void ComposeProfitAndLoss(IContainer container)
+        {
+            var pnl = _report.ProfitAndLoss;
+            if (pnl.ExpensesByCategory.Count == 0 && pnl.Gross == 0) return;
+
+            container.Column(col =>
+            {
+                col.Item().Element(SectionTitle).Text("Profit & Loss / Expense Categories");
+                col.Item().Table(table =>
+                {
+                    table.ColumnsDefinition(c =>
+                    {
+                        c.RelativeColumn(3);
+                        c.ConstantColumn(80);
+                        c.ConstantColumn(90);
+                        c.ConstantColumn(90);
+                    });
+                    table.Header(h =>
+                    {
+                        h.Cell().Element(Th).Text("Category");
+                        h.Cell().Element(Th).AlignRight().Text("Scope");
+                        h.Cell().Element(Th).AlignRight().Text("Amount");
+                        h.Cell().Element(Th).AlignRight().Text("Share");
+                    });
+                    foreach (var cat in pnl.ExpensesByCategory)
+                    {
+                        table.Cell().Element(Td).Text(cat.Category);
+                        table.Cell().Element(Td).AlignRight().Text(cat.HasGeneralExpenses ? "General" : "Booking").FontColor(Muted);
+                        table.Cell().Element(Td).AlignRight().Text(Money(cat.Amount));
+                        table.Cell().Element(Td).AlignRight().Text($"{cat.PercentageOfExpenses:0.#}%");
+                    }
+                });
             });
         }
 

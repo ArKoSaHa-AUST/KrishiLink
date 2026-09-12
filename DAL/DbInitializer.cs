@@ -190,6 +190,9 @@ namespace KrishiLink.DAL
 
                 // Seed demo storage intake lots and warehouse receipts
                 await SeedDemoIntakeLotsAsync(db);
+
+                // Seed demo expense categories and general operating expenses
+                await SeedDemoExpenseCategoriesAndGeneralExpensesAsync(db, userManager);
             }
         }
 
@@ -572,8 +575,8 @@ namespace KrishiLink.DAL
             var completedRental = await db.EquipmentBookings.FirstAsync(b => b.EquipmentId == equipment[1].Id && b.Status == BookingStatus.Completed);
             var completedStorage = await db.GodownBookings.FirstAsync(b => b.GodownId == godowns[1].Id && b.Status == BookingStatus.Completed);
             db.BookingExpenses.AddRange(
-                new BookingExpense { BookingType = "Equipment", BookingId = completedRental.Id, OwnerId = eqOwner.Id, Amount = 2500, Note = "Diesel for harvester", RecordedOn = today.AddDays(-113) },
-                new BookingExpense { BookingType = "Godown", BookingId = completedStorage.Id, OwnerId = gdOwner.Id, Amount = 4500, Note = "Fumigation before intake", RecordedOn = today.AddDays(-149) });
+                new BookingExpense { BookingType = "Equipment", BookingId = completedRental.Id, OwnerId = eqOwner.Id, Amount = 2500, Note = "Diesel for harvester", Category = ExpenseCategories.Fuel, ExpenseDate = today.AddDays(-113), RecordedOn = today.AddDays(-113) },
+                new BookingExpense { BookingType = "Godown", BookingId = completedStorage.Id, OwnerId = gdOwner.Id, Amount = 4500, Note = "Fumigation before intake", Category = ExpenseCategories.Fumigation, ExpenseDate = today.AddDays(-149), RecordedOn = today.AddDays(-149) });
             await db.SaveChangesAsync();
 
             await SeedDemoPaymentsAndLedgerAsync(db);
@@ -1682,6 +1685,98 @@ namespace KrishiLink.DAL
 
             db.StorageIntakeLots.AddRange(lot1, lot2);
             await db.SaveChangesAsync();
+        }
+
+        private static async Task SeedDemoExpenseCategoriesAndGeneralExpensesAsync(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+        {
+            // Backfill categories and expense dates on existing demo booking expenses if unassigned
+            var existingExpenses = await db.BookingExpenses.ToListAsync();
+            foreach (var exp in existingExpenses)
+            {
+                if (string.IsNullOrEmpty(exp.Category) || exp.Category == ExpenseCategories.Other)
+                {
+                    if (exp.Note?.Contains("Diesel", StringComparison.OrdinalIgnoreCase) == true)
+                        exp.Category = ExpenseCategories.Fuel;
+                    else if (exp.Note?.Contains("Fumigation", StringComparison.OrdinalIgnoreCase) == true)
+                        exp.Category = ExpenseCategories.Fumigation;
+                }
+                if (exp.ExpenseDate == default)
+                {
+                    exp.ExpenseDate = exp.RecordedOn != default ? exp.RecordedOn : DateTime.UtcNow;
+                }
+            }
+            await db.SaveChangesAsync();
+
+            if (await db.BookingExpenses.AnyAsync(e => e.BookingId == null))
+                return;
+
+            var eqOwner = await userManager.FindByEmailAsync("equipment@krishilink.com");
+            var gdOwner = await userManager.FindByEmailAsync("godown@krishilink.com");
+            var today = DateTime.UtcNow.Date;
+
+            var generalExpenses = new List<BookingExpense>();
+
+            if (eqOwner != null)
+            {
+                generalExpenses.Add(new BookingExpense
+                {
+                    BookingType = "Equipment",
+                    BookingId = null,
+                    ListingId = null,
+                    OwnerId = eqOwner.Id,
+                    Category = ExpenseCategories.Repair,
+                    Amount = 3200m,
+                    Note = "Generator servicing & oil change",
+                    ExpenseDate = today.AddDays(-20),
+                    RecordedOn = today.AddDays(-20)
+                });
+                generalExpenses.Add(new BookingExpense
+                {
+                    BookingType = "Equipment",
+                    BookingId = null,
+                    ListingId = null,
+                    OwnerId = eqOwner.Id,
+                    Category = ExpenseCategories.Other,
+                    Amount = 6500m,
+                    Note = "Commercial vehicle insurance & fitness renewal",
+                    ExpenseDate = today.AddDays(-55),
+                    RecordedOn = today.AddDays(-55)
+                });
+            }
+
+            if (gdOwner != null)
+            {
+                generalExpenses.Add(new BookingExpense
+                {
+                    BookingType = "Godown",
+                    BookingId = null,
+                    ListingId = null,
+                    OwnerId = gdOwner.Id,
+                    Category = ExpenseCategories.Repair,
+                    Amount = 4500m,
+                    Note = "Roof waterproofing repair & gutter clearing",
+                    ExpenseDate = today.AddDays(-35),
+                    RecordedOn = today.AddDays(-35)
+                });
+                generalExpenses.Add(new BookingExpense
+                {
+                    BookingType = "Godown",
+                    BookingId = null,
+                    ListingId = null,
+                    OwnerId = gdOwner.Id,
+                    Category = ExpenseCategories.Utilities,
+                    Amount = 5800m,
+                    Note = "Warehouse electricity & ventilation fans",
+                    ExpenseDate = today.AddDays(-15),
+                    RecordedOn = today.AddDays(-15)
+                });
+            }
+
+            if (generalExpenses.Any())
+            {
+                db.BookingExpenses.AddRange(generalExpenses);
+                await db.SaveChangesAsync();
+            }
         }
     }
 }

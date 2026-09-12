@@ -70,16 +70,31 @@ namespace KrishiLink.Controllers
             return View(model);
         }
 
-        /// <summary>POST: /{Owner}/SaveExpense — adds (no expenseId) or edits a cost against a booking so the revenue page can show net profit.</summary>
+        /// <summary>GET: /{Owner}/ProfitAndLoss?from=&to=&range= — downloads standalone P&L PDF.</summary>
+        [HttpGet]
+        public async Task<IActionResult> ProfitAndLoss(RevenueFilter filter)
+        {
+            var owner = await _userManager.GetUserAsync(User);
+            var pnl = _revenueService.GenerateProfitAndLoss(OwnerId, filter,
+                new StatementOwner(owner?.FullName ?? User.Identity?.Name ?? "Owner", owner?.BusinessOrFarmName, owner?.Location));
+            return File(pnl.Content, "application/pdf", pnl.FileName);
+        }
+
+        /// <summary>POST: /{Owner}/SaveExpense — adds (no expenseId) or edits a cost against a booking or as general operating expense.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult SaveExpense(int? expenseId, int bookingId, decimal amount, string? note, string? returnUrl)
+        public IActionResult SaveExpense(int? expenseId, int? bookingId, int? listingId, decimal amount, string category, string? note, DateTime? expenseDate, string? returnUrl)
         {
-            var error = _revenueService.SaveExpense(OwnerId, expenseId, bookingId, amount, note);
+            var error = _revenueService.SaveExpense(OwnerId, expenseId, bookingId, listingId, amount, category ?? ExpenseCategories.Other, note, expenseDate);
             if (error is null)
-                TempData["SuccessMessage"] = $"Expense of ৳{amount:N0} {(expenseId is null ? "recorded against" : "updated on")} booking #{bookingId}.";
+            {
+                var target = bookingId.HasValue ? $"booking #{bookingId.Value}" : "general operating expenses";
+                TempData["SuccessMessage"] = $"Expense of ৳{amount:N0} ({category ?? ExpenseCategories.Other}) {(expenseId is null ? "recorded to" : "updated on")} {target}.";
+            }
             else
+            {
                 TempData["ErrorMessage"] = error;
+            }
 
             return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Revenue));
         }

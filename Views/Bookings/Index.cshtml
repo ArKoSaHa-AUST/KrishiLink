@@ -371,6 +371,13 @@
                                                     <i class="bi bi-ticket-perforated-fill text-success"></i>
                                                     <span>@L["View Pass & Voucher"]</span>
                                                 </a>
+                                                @if (b.Status == "Paid" || b.Status == "Completed" || b.RefundedOn != null || b.PaymentReference != null)
+                                                {
+                                                    <a href="@AppLinks.BookingReceipt(b.BookingType, b.Id)" target="_blank" class="btn btn-outline-success btn-sm rounded-pill px-3.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
+                                                        <i class="bi bi-receipt"></i>
+                                                        <span>@L["Payment Receipt"]</span>
+                                                    </a>
+                                                }
                                                 @if (b.CanModify)
                                                 {
                                                     <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5"
@@ -646,6 +653,13 @@
                                 <i class="bi bi-ticket-perforated-fill text-success"></i>
                                 <span>@L["View Full Voucher Pass"]</span>
                             </a>
+                            @if (b.Status == "Paid" || b.Status == "Completed" || b.RefundedOn != null || b.PaymentReference != null)
+                            {
+                                <a href="@AppLinks.BookingReceipt(b.BookingType, b.Id)" target="_blank" class="btn btn-outline-success btn-sm rounded-pill py-2 fw-semibold d-flex align-items-center justify-content-center gap-1.5">
+                                    <i class="bi bi-receipt"></i>
+                                    <span>@L["Payment Receipt"]</span>
+                                </a>
+                            }
                             @if (b.CanModify)
                             {
                                 <button type="button" class="btn btn-outline-warning btn-sm rounded-pill py-2 fw-semibold d-flex align-items-center justify-content-center gap-1.5"

@@ -38,6 +38,18 @@ namespace KrishiLink.BLL.Services
             return "/EquipmentOwner/Payouts";
         }
 
+        public static string OwnerProfitAndLoss(string? role)
+        {
+            if (string.Equals(role, AppRoles.GodownOwner, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(role, "Godown", StringComparison.OrdinalIgnoreCase))
+            {
+                return "/GodownOwner/ProfitAndLoss";
+            }
+            return "/EquipmentOwner/ProfitAndLoss";
+        }
+
+        public static string BookingReceipt(string type, int id) => $"/Bookings/Receipt?type={type}&id={id}";
+
         public static string EquipmentDetails(int id) => $"/Equipment/Details/{id}";
         public static string EquipmentPricing(int id) => $"/EquipmentOwner/Pricing/{id}";
         public static string GodownDetails(int id) => $"/Godown/Details/{id}";

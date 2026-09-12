@@ -2,6 +2,7 @@ using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace KrishiLink.BLL.Services
 {
@@ -35,6 +36,10 @@ namespace KrishiLink.BLL.Services
         private readonly ILedgerRepository _ledger;
         private readonly IPaymentGateway _gateway;
         private readonly INotificationService _notifications;
+        private readonly IReceiptDocumentService _receipts;
+        private readonly IEmailQueue _emailQueue;
+        private readonly ILogger<PaymentService> _logger;
+        private readonly AppOptions _appOptions;
 
         public PaymentService(
             IRepository<EquipmentBooking> rentals,
@@ -43,7 +48,11 @@ namespace KrishiLink.BLL.Services
             IRepository<ApplicationUser> users,
             ILedgerRepository ledger,
             IPaymentGateway gateway,
-            INotificationService notifications)
+            INotificationService notifications,
+            IReceiptDocumentService receipts,
+            IEmailQueue emailQueue,
+            ILogger<PaymentService> logger,
+            IOptions<AppOptions> appOptions)
         {
             _rentals = rentals;
             _storage = storage;
@@ -52,6 +61,10 @@ namespace KrishiLink.BLL.Services
             _ledger = ledger;
             _gateway = gateway;
             _notifications = notifications;
+            _receipts = receipts;
+            _emailQueue = emailQueue;
+            _logger = logger;
+            _appOptions = appOptions.Value;
         }
 
         public async Task<PaymentCheckoutViewModel?> GetCheckoutAsync(string farmerId, string bookingType, int bookingId)
@@ -179,6 +192,55 @@ namespace KrishiLink.BLL.Services
                     DedupeKey = $"payment:{payment.Id}:Succeeded",
                     SendEmail = false
                 });
+
+                // In-app notification to farmer
+                await _notifications.NotifyAsync(new NotificationRequest
+                {
+                    UserId = payment.FarmerId,
+                    Type = NotificationTypes.PaymentReceived,
+                    TitleKey = "Payment confirmed",
+                    MessageKey = "Your payment of ৳{0} for {1} is confirmed (ref {2}). Your receipt is available in My Bookings.",
+                    Args = new object[] { $"{payment.Amount:N0}", itemName, payment.Reference },
+                    LinkUrl = AppLinks.FarmerBookings(b.Type, payment.BookingId),
+                    DedupeKey = $"payment:{payment.Id}:FarmerReceipt",
+                    SendEmail = false
+                });
+
+                // Auto-email receipt PDF on success when farmer has a real email
+                try
+                {
+                    var farmer = await _users.Query().FirstOrDefaultAsync(u => u.Id == payment.FarmerId);
+                    if (farmer != null && ApplicationUser.HasRealEmail(farmer.Email))
+                    {
+                        var receipt = await _receipts.BuildAsync(payment.BookingType, payment.BookingId, _appOptions.PublicBaseUrl);
+                        if (receipt != null)
+                        {
+                            var emailSubject = $"[KrishiLink] Payment receipt {payment.Reference}";
+                            var emailHtml = $@"<div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+                                <h2 style='color: #2d6a4f;'>KrishiLink Payment Receipt</h2>
+                                <p>Dear {farmer.FullName ?? "Farmer"},</p>
+                                <p>Your payment of <strong>BDT {payment.Amount:N0}</strong> for <strong>{itemName}</strong> has been confirmed and placed into secure escrow.</p>
+                                <p><strong>Payment Reference:</strong> <code>{payment.Reference}</code><br/>
+                                <strong>Method:</strong> {payment.Method}<br/>
+                                <strong>Date:</strong> {payment.PaidOn:dd MMM yyyy HH:mm} UTC</p>
+                                <p>Your official payment receipt PDF is attached to this email. You can also view and download it at any time from your KrishiLink dashboard.</p>
+                                <hr style='border: none; border-top: 1px solid #e2e8df; margin: 20px 0;' />
+                                <p style='font-size: 12px; color: #666;'>KrishiLink Platform · Bangladesh Agricultural Asset & Storage Sharing</p>
+                            </div>";
+
+                            await _emailQueue.EnqueueAsync(new EmailJob(
+                                farmer.Email!,
+                                emailSubject,
+                                emailHtml,
+                                new EmailAttachment(receipt.Value.FileName, receipt.Value.Content, "application/pdf")
+                            ));
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to build or email receipt PDF for payment {PaymentId} ({Reference})", payment.Id, payment.Reference);
+                }
             }
 
             return (result.Succeeded ? null : result.FailureReason, ToSummary(payment, itemName));

@@ -23,6 +23,12 @@ namespace KrishiLink.BLL.Services
         Task<BookingConfirmationViewModel?> GetConfirmationByCodeAsync(string? userId, string bookingCode, string requestHost);
         Task<BookingVerificationViewModel> GetVerificationByCodeAsync(string bookingCode, string? currentUserId, string requestHost);
         Task<string?> QuickVerifyActionAsync(string ownerId, string bookingCode, string action);
+
+        /// <summary>
+        /// Generates the official payment receipt PDF if requester is the booking farmer or listing owner,
+        /// and the booking has a succeeded or refunded payment.
+        /// </summary>
+        Task<(byte[] Content, string FileName)?> GetReceiptPdfAsync(string requesterId, bool requesterIsOwner, string bookingType, int bookingId, string requestHost);
     }
 
     public class BookingService : IBookingService
@@ -38,6 +44,7 @@ namespace KrishiLink.BLL.Services
         private readonly IGodownService _godownService;
         private readonly IRepository<Favorite> _favorites;
         private readonly IRepository<SavedSearch> _savedSearches;
+        private readonly IReceiptDocumentService _receipts;
 
         public BookingService(
             IRepository<EquipmentBooking> rentals,
@@ -50,7 +57,8 @@ namespace KrishiLink.BLL.Services
             IEquipmentService equipmentService,
             IGodownService godownService,
             IRepository<Favorite> favorites,
-            IRepository<SavedSearch> savedSearches)
+            IRepository<SavedSearch> savedSearches,
+            IReceiptDocumentService receipts)
         {
             _rentals = rentals;
             _storage = storage;
@@ -63,6 +71,7 @@ namespace KrishiLink.BLL.Services
             _godownService = godownService;
             _favorites = favorites;
             _savedSearches = savedSearches;
+            _receipts = receipts;
         }
 
         public async Task<BookingHistoryViewModel> GetHistoryAsync(string farmerId, string tab, string status, DateTime? from, DateTime? to, string? search)
@@ -1100,5 +1109,46 @@ namespace KrishiLink.BLL.Services
             UpdatedAt = l.UpdatedAt,
             ReceiptPdfUrl = AppLinks.WarehouseReceipt(l.Id)
         };
+
+        public async Task<(byte[] Content, string FileName)?> GetReceiptPdfAsync(string requesterId, bool requesterIsOwner, string bookingType, int bookingId, string requestHost)
+        {
+            if (string.Equals(bookingType, "Equipment", StringComparison.OrdinalIgnoreCase))
+            {
+                var b = await _rentals.Query().Include(x => x.Equipment).Include(x => x.Payment).FirstOrDefaultAsync(x => x.Id == bookingId);
+                if (b is null || b.Payment is null) return null;
+
+                var isFarmer = b.FarmerId == requesterId;
+                var isOwner = b.Equipment != null && b.Equipment.OwnerId == requesterId;
+                if (!isFarmer && !isOwner) return null;
+
+                var isEligible = b.Payment.Status == PaymentStatus.Succeeded ||
+                                 b.Payment.Status == PaymentStatus.Refunded ||
+                                 b.Status == BookingStatus.Completed ||
+                                 b.Status == BookingStatus.Paid;
+                if (!isEligible) return null;
+
+                return await _receipts.BuildAsync(bookingType, bookingId, requestHost);
+            }
+
+            if (string.Equals(bookingType, "Godown", StringComparison.OrdinalIgnoreCase))
+            {
+                var g = await _storage.Query().Include(x => x.Godown).Include(x => x.Payment).FirstOrDefaultAsync(x => x.Id == bookingId);
+                if (g is null || g.Payment is null) return null;
+
+                var isFarmer = g.FarmerId == requesterId;
+                var isOwner = g.Godown != null && g.Godown.OwnerId == requesterId;
+                if (!isFarmer && !isOwner) return null;
+
+                var isEligible = g.Payment.Status == PaymentStatus.Succeeded ||
+                                 g.Payment.Status == PaymentStatus.Refunded ||
+                                 g.Status == BookingStatus.Completed ||
+                                 g.Status == BookingStatus.Paid;
+                if (!isEligible) return null;
+
+                return await _receipts.BuildAsync(bookingType, bookingId, requestHost);
+            }
+
+            return null;
+        }
     }
 }

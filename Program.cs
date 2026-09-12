@@ -82,6 +82,7 @@ builder.Services.AddScoped<ISavedSearchService, SavedSearchService>();
 builder.Services.AddScoped<IEquipmentService, EquipmentService>();
 builder.Services.AddScoped<IGodownService, GodownService>();
 builder.Services.AddScoped<IStorageIntakeService, StorageIntakeService>();
+builder.Services.AddScoped<IReceiptDocumentService, ReceiptDocumentService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IHarvestPlanService, HarvestPlanService>();
 builder.Services.AddScoped<IFarmerProfileService, FarmerProfileService>();

@@ -157,6 +157,16 @@ Pending ──reject──▶ Rejected ──undo──▶ Pending              
 - **Produce Release Workflow**: Godown owners can release stored lots to the farmer or an authorized representative (recording release timestamp, recipient name/ID, and gate pass remarks). Releasing permanently stamps the lot and its receipt as `RELEASED` and renders it immutable against further edits or deletions.
 - **Comprehensive Lifecycle Notifications**: Farmers receive instant notifications when produce is accepted into the warehouse and when lots are released at pickup.
 
+### 16. 🧾 Farmer Payment Receipts & Profit-and-Loss / Tax Summary Reporting
+- **Farmer Payment Receipt (QuestPDF)**: Downloadable, print-ready A4 PDF payment receipt generated for all `Paid`, `Completed`, or `Refunded` equipment and godown bookings. Accessible via `GET /Bookings/Receipt?type={type}&id={id}` (authorized to the booking farmer or listing owner), with direct download buttons in *My Bookings*, *Booking Confirmation*, and the shared invoice view.
+- **Automated Email Delivery & In-App Alerts**: On successful payment completion (`PaymentService.CompleteAsync`), the receipt PDF is automatically attached and emailed to the farmer via `IEmailQueue`, alongside an in-app `PaymentReceived` confirmation notification linking directly to the booking receipt.
+- **Financial Invariants & Loyalty Clarity**: Strict separation between the legally agreed gross amount (`Payment.Amount == AgreedGross`) and platform loyalty point redemptions. Discounts are presented as an informational savings note without tampering with contractual gross amounts, escrow records, or refund amounts.
+- **Tamper-Evident Verification**: Includes escrow trust notices, payment method references, platform contact details, and a scannable QR code resolving to the booking verification endpoint (`/Verify/{code}`). Refunded bookings feature a prominent `REFUNDED` watermark and refund ledger breakdown.
+- **Categorized & General Operating Expenses**: `BookingExpense` extended with standard agricultural accounting categories (`Fuel`, `Labour`, `Repair`, `Transport`, `Fumigation`, `Utilities`, `Other`), optional listing associations, explicit expense dates, and support for general facility operating expenses (`BookingId == null`).
+- **Owner Profit-and-Loss & Tax Summary (`/{Owner}/ProfitAndLoss`)**: Dedicated single-page A4 P&L report PDF designed for owners' tax advisers, presenting gross receipts, tax-deductible platform commission, categorical operating expense breakdowns, net operating profit, and operating margin.
+- **Bangladesh Fiscal Year & Range Presets**: Range filters support Bangladesh fiscal year cycles (`1 Jul – 30 Jun`, preset `fy`), previous fiscal year (`lastfy`), year-to-date (`ytd`), rolling 12 months (`12m`), and current month (`month`), with automatic header dates and tax disclaimer notices.
+- **Unified Statements & Interactive Dashboard**: Integrated P&L summary into the monthly PDF statement (`MonthlyStatementDocument`) with shared styling (`PdfStyle`), alongside interactive dashboard range bars, category chips, general expense tables, and modal inputs in `Views/Shared/Revenue.cshtml`.
+
 ---
 
 ## 🏗️ Architecture & Project Structure

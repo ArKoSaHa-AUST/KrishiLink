@@ -217,5 +217,20 @@ namespace KrishiLink.Controllers
 
             return File(result.Value.Content, "application/pdf", result.Value.FileName);
         }
+
+        /// <summary>GET: /Bookings/Receipt?type=Equipment&id=1 — download official payment receipt PDF.</summary>
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> Receipt(string type, int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var isOwner = User.IsInRole(AppRoles.EquipmentOwner) || User.IsInRole(AppRoles.GodownOwner);
+            var host = $"{Request.Scheme}://{Request.Host}";
+            var result = await _bookings.GetReceiptPdfAsync(userId, isOwner, type, id, host);
+            if (result is null)
+                return NotFound();
+
+            return File(result.Value.Content, "application/pdf", result.Value.FileName);
+        }
     }
 }

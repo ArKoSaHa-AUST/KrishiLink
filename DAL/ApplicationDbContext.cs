@@ -158,9 +158,11 @@ namespace KrishiLink.DAL
             builder.Entity<BookingExpense>(x =>
             {
                 x.Property(e => e.BookingType).HasMaxLength(20);
+                x.Property(e => e.Category).HasMaxLength(30).HasDefaultValue(ExpenseCategories.Other);
                 x.Property(e => e.Note).HasMaxLength(200);
                 x.Property(e => e.Amount).HasPrecision(18, 2);
-                x.HasIndex(e => new { e.OwnerId, e.BookingType });
+                x.Property(e => e.ExpenseDate).HasDefaultValueSql("GETUTCDATE()");
+                x.HasIndex(e => new { e.OwnerId, e.BookingType, e.ExpenseDate });
             });
 
             builder.Entity<Transaction>(t =>
