@@ -2062,7 +2062,142 @@
   <data name="৳650 / ton × 10 Tons" xml:space="preserve">
     <value>৳৬৫০ / টন × ১০ টন</value>
   </data>
-  <data name="৳900 / day × 5 days" xml:space="preserve">
-    <value>৳৯০০ / দিন × ৫ দিন</value>
+  <data name="Crop Planting &amp; Harvesting Calendar" xml:space="preserve">
+    <value>ফসল রোপণ ও তোলার পঞ্জিকা</value>
+  </data>
+  <data name="Agricultural Crop Calendar" xml:space="preserve">
+    <value>কৃষি ফসলের পঞ্জিকা</value>
+  </data>
+  <data name="Official Bangladesh DAE, BARI &amp; BRRI sowing, vegetative growth, and harvesting schedules across 12 months." xml:space="preserve">
+    <value>বাংলাদেশ কৃষি সম্প্রসারণ অধিদপ্তর (DAE), বারি ও ব্রি নির্দেশিত ১২ মাসের ফসল রোপণ, বৃদ্ধি ও ফসল তোলার সময়সূচি।</value>
+  </data>
+  <data name="Smart Advisor" xml:space="preserve">
+    <value>স্মার্ট পরামর্শদাতা</value>
+  </data>
+  <data name="Crop Calendar" xml:space="preserve">
+    <value>ফসল পঞ্জিকা</value>
+  </data>
+  <data name="Current Agricultural Window" xml:space="preserve">
+    <value>বর্তমান কৃষি মৌসুম উইন্ডো</value>
+  </data>
+  <data name="Real-time planting guide for Bangladesh farmers. Discover which crops are optimal for seedbed preparation, active tillering, or ready for harvest right now." xml:space="preserve">
+    <value>বাংলাদেশের কৃষকদের জন্য রিয়েল-টাইম চাষের নির্দেশিকা। এখনই কোন ফসল বীজতলা প্রস্তুতি, বাড়ন্ত অবস্থা বা তোলার জন্য উপযুক্ত তা জানুন।</value>
+  </data>
+  <data name="Sowing Now" xml:space="preserve">
+    <value>এখন রোপণের সময়</value>
+  </data>
+  <data name="In-Field" xml:space="preserve">
+    <value>মাঠে বাড়ন্ত</value>
+  </data>
+  <data name="Search crop, variety, district..." xml:space="preserve">
+    <value>ফসল, জাত, জেলা দিয়ে খুঁজুন...</value>
+  </data>
+  <data name="All Growth Stages" xml:space="preserve">
+    <value>সকল বৃদ্ধির ধাপ</value>
+  </data>
+  <data name="Sowing Stage" xml:space="preserve">
+    <value>বীজবপন/রোপণ ধাপ</value>
+  </data>
+  <data name="Growing Stage" xml:space="preserve">
+    <value>বাড়ন্ত ধাপ</value>
+  </data>
+  <data name="Harvesting Stage" xml:space="preserve">
+    <value>ফসল কাটার ধাপ</value>
+  </data>
+  <data name="All Crops ({0})" xml:space="preserve">
+    <value>সকল ফসল ({0})</value>
+  </data>
+  <data name="Harvesting Now" xml:space="preserve">
+    <value>এখন ফসল তোলা</value>
+  </data>
+  <data name="Kharif-1 (Summer)" xml:space="preserve">
+    <value>খরিফ-১ (গ্রীষ্মকাল)</value>
+  </data>
+  <data name="Timeline Matrix" xml:space="preserve">
+    <value>সময়রেখা ম্যাট্রিক্স</value>
+  </data>
+  <data name="Crop Cards" xml:space="preserve">
+    <value>কার্ড ভিউ</value>
+  </data>
+  <data name="Timeline Legend:" xml:space="preserve">
+    <value>সময়রেখার সংকেত:</value>
+  </data>
+  <data name="🌱 Sowing / Transplanting" xml:space="preserve">
+    <value>🌱 বীজবপন / রোপণ</value>
+  </data>
+  <data name="🌿 Growing / Vegetative" xml:space="preserve">
+    <value>🌿 বাড়ন্ত অবস্থা</value>
+  </data>
+  <data name="🌾 Harvesting / Reaping" xml:space="preserve">
+    <value>🌾 ফসল কাটা / সংগ্রহ</value>
+  </data>
+  <data name="Showing {0} crops matching criteria" xml:space="preserve">
+    <value>মানদণ্ড অনুযায়ী {0}টি ফসল প্রদর্শিত</value>
+  </data>
+  <data name="No Crops Found" xml:space="preserve">
+    <value>কোনো ফসল পাওয়া যায়নি</value>
+  </data>
+  <data name="No crops match the selected category, season, or regional filter criteria." xml:space="preserve">
+    <value>নির্বাচিত ক্যাটাগরি, মৌসুম বা অঞ্চলের সাথে কোনো ফসল মেলেনি।</value>
+  </data>
+  <data name="Reset All Filters" xml:space="preserve">
+    <value>ফিল্টার রিসেট করুন</value>
+  </data>
+  <data name="Crop &amp; Category" xml:space="preserve">
+    <value>ফসল ও শ্রেণি</value>
+  </data>
+  <data name="NOW" xml:space="preserve">
+    <value>চলতি</value>
+  </data>
+  <data name="Guide" xml:space="preserve">
+    <value>গাইড</value>
+  </data>
+  <data name="Sowing Months:" xml:space="preserve">
+    <value>রোপণের মাস:</value>
+  </data>
+  <data name="Harvesting Months:" xml:space="preserve">
+    <value>তোলার মাস:</value>
+  </data>
+  <data name="Optimal Temp:" xml:space="preserve">
+    <value>অনুকূল তাপমাত্রা:</value>
+  </data>
+  <data name="Soil:" xml:space="preserve">
+    <value>মাটি:</value>
+  </data>
+  <data name="Varieties:" xml:space="preserve">
+    <value>জাতসমূহ:</value>
+  </data>
+  <data name="Full Cultivation Guide" xml:space="preserve">
+    <value>সম্পূর্ণ চাষ নির্দেশিকা</value>
+  </data>
+  <data name="Crop Cultivation Profile" xml:space="preserve">
+    <value>ফসলের চাষ প্রোফাইল</value>
+  </data>
+  <data name="Sowing &amp; Transplanting Window" xml:space="preserve">
+    <value>বীজবপন ও রোপণের সময়সীমা</value>
+  </data>
+  <data name="Harvesting &amp; Reaping Window" xml:space="preserve">
+    <value>ফসল কাটা ও তোলার সময়সীমা</value>
+  </data>
+  <data name="Field Duration" xml:space="preserve">
+    <value>মাঠে থাকার সময়কাল</value>
+  </data>
+  <data name="Optimal Temperature &amp; Climate" xml:space="preserve">
+    <value>অনুকূল তাপমাত্রা ও আবহাওয়া</value>
+  </data>
+  <data name="Suitable Soil Types" xml:space="preserve">
+    <value>উপযুক্ত মাটির ধরন</value>
+  </data>
+  <data name="Water &amp; Irrigation Needs" xml:space="preserve">
+    <value>পানি ও সেচ চাহিদা</value>
+  </data>
+  <data name="Popular HYV &amp; Hybrid Varieties" xml:space="preserve">
+    <value>জনপ্রিয় উফশী ও হাইব্রিড জাতসমূহ</value>
+  </data>
+  <data name="Key Agronomic Tips &amp; Precautions" xml:space="preserve">
+    <value>মূল কৃষি পরামর্শ ও সতর্কতা</value>
+  </data>
+  <data name="Get Custom Advisory for this Crop" xml:space="preserve">
+    <value>এই ফসলের জন্য পরামর্শ নিন</value>
   </data>
 </root>
