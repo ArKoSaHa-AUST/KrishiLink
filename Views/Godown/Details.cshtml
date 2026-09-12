@@ -176,19 +176,35 @@
                         </div>
                     </div>
                 </div>
-                @if (Model.OwnerIsVerified)
-                {
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill small fw-semibold shadow-xs">
-                        <i class="bi bi-patch-check-fill text-success me-1"></i> @L["Verified Owner"]
-                    </span>
-                }
-                else
-                {
-                    <span class="badge bg-light text-muted border px-3 py-2 rounded-pill small">
-                        <i class="bi bi-shield text-muted me-1"></i> @L["Unverified"]
-                    </span>
-                }
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    @if (!string.IsNullOrWhiteSpace(Model.OwnerRankText))
+                    {
+                        <a asp-controller="Leaderboard" asp-action="Index" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 rounded-pill small fw-bold text-decoration-none">
+                            <i class="bi bi-trophy-fill text-warning me-1"></i> @Model.OwnerRankText
+                        </a>
+                    }
+                    @if (Model.OwnerIsVerified)
+                    {
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill small fw-semibold shadow-xs">
+                            <i class="bi bi-patch-check-fill text-success me-1"></i> @L["Verified Owner"]
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-light text-muted border px-3 py-2 rounded-pill small">
+                            <i class="bi bi-shield text-muted me-1"></i> @L["Unverified"]
+                        </span>
+                    }
+                </div>
             </div>
+
+            @if (Model.OwnerBadges != null && Model.OwnerBadges.Any())
+            {
+                <div class="mt-2.5 pt-2.5 border-top d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-muted small fw-medium me-1"><i class="bi bi-award"></i> @L["Badges"]:</span>
+                    <partial name="_OwnerBadgeList" model="Model.OwnerBadges" />
+                </div>
+            }
 
             <!-- Storage Facility Location & Map Directions Card -->
             <div class="card p-3.5 mt-4 border rounded-4 bg-light shadow-xs">

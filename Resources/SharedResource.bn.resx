@@ -2870,4 +2870,277 @@
   <data name="Completed Storage — Storage Period Ended &amp; Handover Settled" xml:space="preserve">
     <value>সম্পন্ন সংরক্ষণ — সংরক্ষণের মেয়াদ শেষ ও নিষ্পত্তি হয়েছে</value>
   </data>
+  <data name="Leaderboard" xml:space="preserve">
+    <value>লিডারবোর্ড</value>
+  </data>
+  <data name="Host Leaderboard &amp; Recognition" xml:space="preserve">
+    <value>হোস্ট লিডারবোর্ড ও স্বীকৃতি</value>
+  </data>
+  <data name="KrishiLink Trust &amp; Recognition Awards" xml:space="preserve">
+    <value>কৃষিলিংক আস্থা ও স্বীকৃতি পুরস্কার</value>
+  </data>
+  <data name="Host Leaderboard &amp; Rankings" xml:space="preserve">
+    <value>হোস্ট লিডারবোর্ড ও র‍্যাংকিং</value>
+  </data>
+  <data name="Celebrating top-performing equipment and godown owners across Bangladesh delivering certified reliability, peak machine maintenance, and 5-star agricultural service." xml:space="preserve">
+    <value>সারা বাংলাদেশে শীর্ষ পারফর্মিং যন্ত্রপাতি ও গুদাম মালিকদের স্বীকৃতি যারা নির্ভরযোগ্যতা, নিয়মিত রক্ষণাবেক্ষণ এবং ৫-স্টার কৃষি সেবা প্রদান করেন।</value>
+  </data>
+  <data name="Cached rankings • 15m update cycle" xml:space="preserve">
+    <value>ক্যাশ করা র‍্যাংকিং • প্রতি ১৫ মিনিটে আপডেট</value>
+  </data>
+  <data name="Refresh Rankings" xml:space="preserve">
+    <value>র‍্যাংকিং রিফ্রেশ করুন</value>
+  </data>
+  <data name="All Hosts" xml:space="preserve">
+    <value>সকল হোস্ট</value>
+  </data>
+  <data name="All Bangladesh (64)" xml:space="preserve">
+    <value>সারা বাংলাদেশ (৬৪)</value>
+  </data>
+  <data name="Sort By" xml:space="preserve">
+    <value>সাজানোর ক্রম</value>
+  </data>
+  <data name="Trust Score" xml:space="preserve">
+    <value>আস্থা স্কোর</value>
+  </data>
+  <data name="Most Bookings" xml:space="preserve">
+    <value>সর্বাধিক বুকিং</value>
+  </data>
+  <data name="Highest Rating" xml:space="preserve">
+    <value>সর্বোচ্চ রেটিং</value>
+  </data>
+  <data name="Top Ranked Hosts Podium" xml:space="preserve">
+    <value>শীর্ষ র‍্যাঙ্কড হোস্ট পডিয়াম</value>
+  </data>
+  <data name="{0} Verified Providers" xml:space="preserve">
+    <value>{0} জন যাচাইকৃত প্রদানকারী</value>
+  </data>
+  <data name="Gold Champion" xml:space="preserve">
+    <value>গোল্ড চ্যাম্পিয়ন</value>
+  </data>
+  <data name="Silver Host" xml:space="preserve">
+    <value>সিলভার হোস্ট</value>
+  </data>
+  <data name="Bronze Host" xml:space="preserve">
+    <value>ব্রোঞ্জ হোস্ট</value>
+  </data>
+  <data name="Completed Bookings" xml:space="preserve">
+    <value>সম্পন্ন বুকিং</value>
+  </data>
+  <data name="View Machinery" xml:space="preserve">
+    <value>যন্ত্রপাতি দেখুন</value>
+  </data>
+  <data name="View Storage" xml:space="preserve">
+    <value>গুদাম দেখুন</value>
+  </data>
+  <data name="View Top Listings" xml:space="preserve">
+    <value>শীর্ষ তালিকা দেখুন</value>
+  </data>
+  <data name="Full Provider Rankings" xml:space="preserve">
+    <value>সম্পূর্ণ প্রদানকারী র‍্যাংকিং</value>
+  </data>
+  <data name="Showing {0} rated owners" xml:space="preserve">
+    <value>{0} জন মূল্যায়িত মালিক দেখানো হচ্ছে</value>
+  </data>
+  <data name="Rank" xml:space="preserve">
+    <value>র‍্যাঙ্ক</value>
+  </data>
+  <data name="Host / Farm" xml:space="preserve">
+    <value>হোস্ট / খামার</value>
+  </data>
+  <data name="Badges Earned" xml:space="preserve">
+    <value>অর্জিত ব্যাজ</value>
+  </data>
+  <data name="Badges" xml:space="preserve">
+    <value>ব্যাজসমূহ</value>
+  </data>
+  <data name="Identity and official credentials authenticated by KrishiLink." xml:space="preserve">
+    <value>কৃষিলিংক দ্বারা পরিচয় ও অফিসিয়াল তথ্য যাচাইকৃত।</value>
+  </data>
+  <data name="Submit NID or Trade License and receive approval." xml:space="preserve">
+    <value>এনআইডি বা ট্রেড লাইসেন্স জমা দিয়ে অনুমোদন পান।</value>
+  </data>
+  <data name="Century Host" xml:space="preserve">
+    <value>সেঞ্চুরি হোস্ট</value>
+  </data>
+  <data name="Completed 100 or more successful rental and storage bookings." xml:space="preserve">
+    <value>১০০ বা ততোধিক সফল ভাড়া ও সংরক্ষণ বুকিং সম্পন্ন করেছেন।</value>
+  </data>
+  <data name="Complete 100 successful bookings on KrishiLink." xml:space="preserve">
+    <value>কৃষিলিংকে ১০০টি সফল বুকিং সম্পন্ন করুন।</value>
+  </data>
+  <data name="Pro Host" xml:space="preserve">
+    <value>প্রো হোস্ট</value>
+  </data>
+  <data name="Completed 50 or more successful bookings." xml:space="preserve">
+    <value>৫০ বা ততোধিক সফল বুকিং সম্পন্ন করেছেন।</value>
+  </data>
+  <data name="Complete 50 successful bookings." xml:space="preserve">
+    <value>৫০টি সফল বুকিং সম্পন্ন করুন।</value>
+  </data>
+  <data name="Active Host" xml:space="preserve">
+    <value>সক্রিয় হোস্ট</value>
+  </data>
+  <data name="Completed 10 or more successful bookings." xml:space="preserve">
+    <value>১০ বা ততোধিক সফল বুকিং সম্পন্ন করেছেন।</value>
+  </data>
+  <data name="Complete 10 successful bookings." xml:space="preserve">
+    <value>১০টি সফল বুকিং সম্পন্ন করুন।</value>
+  </data>
+  <data name="Top Rated Host" xml:space="preserve">
+    <value>শীর্ষ রেটেড হোস্ট</value>
+  </data>
+  <data name="Maintains an average rating of 4.7★ or higher with trusted farmer reviews." xml:space="preserve">
+    <value>কৃষকদের বিশ্বস্ত মূল্যায়নের মাধ্যমে ৪.৭★ বা ততোধিক গড় রেটিং বজায় রেখেছেন।</value>
+  </data>
+  <data name="Achieve 4.7+ star rating with at least 3 customer reviews." xml:space="preserve">
+    <value>কমপক্ষে ৩টি রিভিউ সহ ৪.৭+ স্টার রেটিং অর্জন করুন।</value>
+  </data>
+  <data name="Quick Responder" xml:space="preserve">
+    <value>দ্রুত সাড়া প্রদানকারী</value>
+  </data>
+  <data name="Demonstrates exceptional reliability with 80%+ request acceptance rate." xml:space="preserve">
+    <value>৮০%+ অনুরোধ গ্রহণ ও সম্পন্ন করার মাধ্যমে অনন্য নির্ভরযোগ্যতা প্রদর্শন।</value>
+  </data>
+  <data name="Maintain an 80%+ booking acceptance rate across at least 3 requests." xml:space="preserve">
+    <value>কমপক্ষে ৩টি অনুরোধের মধ্যে ৮০%+ বুকিং গ্রহণের হার বজায় রাখুন।</value>
+  </data>
+  <data name="Machinery Master" xml:space="preserve">
+    <value>মেশিনারিজ মাস্টার</value>
+  </data>
+  <data name="Maintains peak equipment health with verified service records." xml:space="preserve">
+    <value>যাচাইকৃত সার্ভিস রেকর্ডের মাধ্যমে যন্ত্রপাতির সেরা স্বাস্থ্য বজায় রাখেন।</value>
+  </data>
+  <data name="Log at least 1 verified maintenance service event." xml:space="preserve">
+    <value>কমপক্ষে ১টি যাচাইকৃত রক্ষণাবেক্ষণ সার্ভিস রেকর্ড করুন।</value>
+  </data>
+  <data name="Rising Star" xml:space="preserve">
+    <value>উদীয়মান তারকা</value>
+  </data>
+  <data name="Newly registered host achieving outstanding farmer satisfaction within 90 days." xml:space="preserve">
+    <value>৯০ দিনের মধ্যে অসাধারণ কৃষক সন্তুষ্টি অর্জনকারী নতুন নিবন্ধিত হোস্ট।</value>
+  </data>
+  <data name="Joined within 90 days with 2+ bookings and 4.5+ star rating." xml:space="preserve">
+    <value>২+ বুকিং এবং ৪.৫+ স্টার রেটিং সহ ৯০ দিনের মধ্যে যোগদান করেছেন।</value>
+  </data>
+  <data name="Host Recognition &amp; Badges" xml:space="preserve">
+    <value>হোস্ট স্বীকৃতি ও ব্যাজসমূহ</value>
+  </data>
+  <data name="Unlock trust badges to boost visibility, build farmer confidence, and climb the KrishiLink Leaderboard." xml:space="preserve">
+    <value>আস্থা ব্যাজ আনলক করে দৃশ্যমানতা বাড়ান, কৃষকের আস্থা অর্জন করুন এবং লিডারবোর্ডে এগিয়ে যান।</value>
+  </data>
+  <data name="Unlocked Badges ({0})" xml:space="preserve">
+    <value>আনলককৃত ব্যাজসমূহ ({0})</value>
+  </data>
+  <data name="Badges in Progress ({0})" xml:space="preserve">
+    <value>অগ্রগতিতে থাকা ব্যাজসমূহ ({0})</value>
+  </data>
+  <data name="Unranked" xml:space="preserve">
+    <value>র‍্যাঙ্কহীন</value>
+  </data>
+  <data name="out of {0} hosts" xml:space="preserve">
+    <value>{0} জন হোস্টের মধ্যে</value>
+  </data>
+  <data name="Based on ratings &amp; activity" xml:space="preserve">
+    <value>রেটিং ও কার্যক্রমের উপর ভিত্তি করে</value>
+  </data>
+  <data name="Unlocked Badges" xml:space="preserve">
+    <value>আনলককৃত ব্যাজসমূহ</value>
+  </data>
+  <data name="Progress" xml:space="preserve">
+    <value>অগ্রগতি</value>
+  </data>
+  <data name="Fulfillment" xml:space="preserve">
+    <value>সম্পূর্ণকরণ</value>
+  </data>
+  <data name="Service Records" xml:space="preserve">
+    <value>সার্ভিস রেকর্ড</value>
+  </data>
+  <data name="Expired (>90d)" xml:space="preserve">
+    <value>মেয়াদোত্তীর্ণ (>৯০ দিন)</value>
+  </data>
+  <data name="No badges unlocked yet. Complete bookings and maintain high ratings to earn recognition!" xml:space="preserve">
+    <value>এখনও কোনো ব্যাজ আনলক হয়নি। বুকিং সম্পন্ন করুন এবং উচ্চ রেটিং বজায় রেখে স্বীকৃতি অর্জন করুন!</value>
+  </data>
+  <data name="View Public Leaderboard" xml:space="preserve">
+    <value>পাবলিক লিডারবোর্ড দেখুন</value>
+  </data>
+  <data name="Badge Progress" xml:space="preserve">
+    <value>ব্যাজ অগ্রগতি</value>
+  </data>
+  <data name="Leaderboard Rank" xml:space="preserve">
+    <value>লিডারবোর্ড র‍্যাঙ্ক</value>
+  </data>
+  <data name="Machinery Hosts" xml:space="preserve">
+    <value>যন্ত্রপাতি হোস্ট</value>
+  </data>
+  <data name="Godown Hosts" xml:space="preserve">
+    <value>গুদাম হোস্ট</value>
+  </data>
+  <data name="Sort by Trust Score" xml:space="preserve">
+    <value>ট্রাস্ট স্কোর অনুযায়ী সাজান</value>
+  </data>
+  <data name="Sort by Completed Bookings" xml:space="preserve">
+    <value>সম্পন্ন বুকিং অনুযায়ী সাজান</value>
+  </data>
+  <data name="Sort by Highest Rating" xml:space="preserve">
+    <value>সর্বোচ্চ রেটিং অনুযায়ী সাজান</value>
+  </data>
+  <data name="All Districts" xml:space="preserve">
+    <value>সকল জেলা</value>
+  </data>
+  <data name="KrishiLink Trust Score" xml:space="preserve">
+    <value>কৃষিলিংক ট্রাস্ট স্কোর</value>
+  </data>
+  <data name="Rankings refreshed successfully from real-time database records." xml:space="preserve">
+    <value>ডাটাবেজ রেকর্ড থেকে র‍্যাংকিং সফলভাবে রিফ্রেশ করা হয়েছে।</value>
+  </data>
+  <data name="Champion" xml:space="preserve">
+    <value>চ্যাম্পিয়ন</value>
+  </data>
+  <data name="Runner Up" xml:space="preserve">
+    <value>রানার আপ</value>
+  </data>
+  <data name="2nd Runner Up" xml:space="preserve">
+    <value>২য় রানার আপ</value>
+  </data>
+  <data name="Host Recognition &amp; Badge Progression" xml:space="preserve">
+    <value>হোস্ট স্বীকৃতি ও ব্যাজ অগ্রগতি</value>
+  </data>
+  <data name="Track your milestone badges, unlock new host tiers, and climb the public KrishiLink leaderboard." xml:space="preserve">
+    <value>আপনার মাইলফলক ব্যাজ ট্র্যাক করুন, নতুন হোস্ট স্তর আনলক করুন এবং পাবলিক কৃষিলিংক লিডারবোর্ডে এগিয়ে যান।</value>
+  </data>
+  <data name="Your Trust Score" xml:space="preserve">
+    <value>আপনার ট্রাস্ট স্কোর</value>
+  </data>
+  <data name="Leaderboard Standings" xml:space="preserve">
+    <value>লিডারবোর্ড অবস্থান</value>
+  </data>
+  <data name="Full Leaderboard Standings" xml:space="preserve">
+    <value>সম্পূর্ণ লিডারবোর্ড অবস্থান</value>
+  </data>
+  <data name="Host / Organization" xml:space="preserve">
+    <value>হোস্ট / প্রতিষ্ঠান</value>
+  </data>
+  <data name="Badges &amp; Accreditations" xml:space="preserve">
+    <value>ব্যাজ ও স্বীকৃতি</value>
+  </data>
+  <data name="Activity &amp; Fulfillment" xml:space="preserve">
+    <value>কার্যক্রম ও সম্পূর্ণকরণ</value>
+  </data>
+  <data name="View Profile" xml:space="preserve">
+    <value>প্রোফাইল দেখুন</value>
+  </data>
+  <data name="View Listings" xml:space="preserve">
+    <value>তালিকা দেখুন</value>
+  </data>
+  <data name="Ranked #" xml:space="preserve">
+    <value>র‍্যাঙ্ক #</value>
+  </data>
+  <data name="Top Host Podium" xml:space="preserve">
+    <value>শীর্ষ হোস্ট পোডিয়াম</value>
+  </data>
+  <data name="Top 3 hosts based on trust score, bookings, and verified customer reviews" xml:space="preserve">
+    <value>ট্রাস্ট স্কোর, বুকিং ও যাচাইকৃত গ্রাহক পর্যালোচনার ভিত্তিতে শীর্ষ ৩ হোস্ট</value>
+  </data>
 </root>
