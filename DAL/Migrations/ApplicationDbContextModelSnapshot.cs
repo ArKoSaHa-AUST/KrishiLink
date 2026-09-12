@@ -70,6 +70,9 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<int>("LoyaltyPoints")
+                        .HasColumnType("int");
+
                     b.Property<string>("NidBackImagePath")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
@@ -291,10 +294,16 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("bit");
 
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("float");
+
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("float");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -313,6 +322,8 @@ namespace KrishiLink.DAL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OwnerId");
+
+                    b.HasIndex("Latitude", "Longitude");
 
                     b.ToTable("Equipment");
                 });
@@ -347,8 +358,16 @@ namespace KrishiLink.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AppliedPromoCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<DateTime?>("CancelledOn")
                         .HasColumnType("datetime2");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
@@ -364,6 +383,15 @@ namespace KrishiLink.DAL.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("PayoutId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("PointsAwarded")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PointsEarned")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PointsUsed")
                         .HasColumnType("int");
 
                     b.Property<string>("RejectReason")
@@ -392,6 +420,50 @@ namespace KrishiLink.DAL.Migrations
                     b.HasIndex("EquipmentId", "Status");
 
                     b.ToTable("EquipmentBookings");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.EquipmentMaintenanceRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Cost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("EquipmentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ServiceDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ServiceType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("ServicedBy")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EquipmentId");
+
+                    b.HasIndex("EquipmentId", "ServiceDate");
+
+                    b.ToTable("EquipmentMaintenanceRecords");
                 });
 
             modelBuilder.Entity("KrishiLink.Models.Entities.Godown", b =>
@@ -428,10 +500,16 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("float");
+
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("float");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -459,6 +537,8 @@ namespace KrishiLink.DAL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OwnerId");
+
+                    b.HasIndex("Latitude", "Longitude");
 
                     b.ToTable("Godowns");
                 });
@@ -493,8 +573,16 @@ namespace KrishiLink.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AppliedPromoCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<DateTime?>("CancelledOn")
                         .HasColumnType("datetime2");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
@@ -510,6 +598,15 @@ namespace KrishiLink.DAL.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("PayoutId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("PointsAwarded")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PointsEarned")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PointsUsed")
                         .HasColumnType("int");
 
                     b.Property<string>("RejectReason")
@@ -541,6 +638,68 @@ namespace KrishiLink.DAL.Migrations
                     b.HasIndex("GodownId", "Status");
 
                     b.ToTable("GodownBookings");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.LoyaltyPointTransaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal?>("AmountSpent")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("BookingCode")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int?>("BookingId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("BookingType")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<decimal?>("DiscountAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PromoCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PromoCode");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("LoyaltyPointTransactions");
                 });
 
             modelBuilder.Entity("KrishiLink.Models.Entities.Notification", b =>
@@ -976,6 +1135,17 @@ namespace KrishiLink.DAL.Migrations
                     b.Navigation("Payout");
                 });
 
+            modelBuilder.Entity("KrishiLink.Models.Entities.EquipmentMaintenanceRecord", b =>
+                {
+                    b.HasOne("KrishiLink.Models.Entities.Equipment", "Equipment")
+                        .WithMany("MaintenanceRecords")
+                        .HasForeignKey("EquipmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Equipment");
+                });
+
             modelBuilder.Entity("KrishiLink.Models.Entities.Godown", b =>
                 {
                     b.HasOne("KrishiLink.Models.Entities.ApplicationUser", "Owner")
@@ -1022,6 +1192,17 @@ namespace KrishiLink.DAL.Migrations
                     b.Navigation("Godown");
 
                     b.Navigation("Payout");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.LoyaltyPointTransaction", b =>
+                {
+                    b.HasOne("KrishiLink.Models.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("KrishiLink.Models.Entities.Notification", b =>
@@ -1152,6 +1333,8 @@ namespace KrishiLink.DAL.Migrations
                     b.Navigation("BlockedDates");
 
                     b.Navigation("Bookings");
+
+                    b.Navigation("MaintenanceRecords");
 
                     b.Navigation("Reviews");
                 });

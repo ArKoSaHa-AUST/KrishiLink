@@ -141,5 +141,57 @@ namespace KrishiLink.Controllers
 
             return RedirectToAction(nameof(Availability), new { id = listingId, month = month.ToString("yyyy-MM-dd"), saved = true });
         }
+
+        /// <summary>GET: /EquipmentOwner/Maintenance/5 — Equipment Health Tracker dashboard.</summary>
+        [HttpGet]
+        public async Task<IActionResult> Maintenance(int id)
+        {
+            var model = await _equipment.GetMaintenanceDashboardAsync(OwnerId, id);
+            if (model is null) return NotFound();
+
+            return View(model);
+        }
+
+        /// <summary>POST: /EquipmentOwner/AddMaintenance — Log a new maintenance or servicing event.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddMaintenance(int equipmentId, EquipmentMaintenanceRecordInputModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                var dashboard = await _equipment.GetMaintenanceDashboardAsync(OwnerId, equipmentId);
+                if (dashboard is null) return NotFound();
+                dashboard.NewRecord = model;
+                return View("Maintenance", dashboard);
+            }
+
+            var (success, error) = await _equipment.AddMaintenanceRecordAsync(OwnerId, equipmentId, model);
+            if (!success)
+            {
+                TempData["ErrorMessage"] = error ?? "Failed to save maintenance record.";
+                return RedirectToAction(nameof(Maintenance), new { id = equipmentId });
+            }
+
+            TempData["SuccessMessage"] = "Maintenance event successfully logged!";
+            return RedirectToAction(nameof(Maintenance), new { id = equipmentId });
+        }
+
+        /// <summary>POST: /EquipmentOwner/DeleteMaintenance — Delete a logged maintenance record.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteMaintenance(int recordId, int equipmentId)
+        {
+            var success = await _equipment.DeleteMaintenanceRecordAsync(OwnerId, recordId);
+            if (!success)
+            {
+                TempData["ErrorMessage"] = "Could not delete the maintenance record.";
+            }
+            else
+            {
+                TempData["SuccessMessage"] = "Maintenance record removed.";
+            }
+
+            return RedirectToAction(nameof(Maintenance), new { id = equipmentId });
+        }
     }
 }

@@ -25,6 +25,8 @@ namespace KrishiLink.DAL
         public DbSet<Review> Reviews { get; set; } = null!;
         public DbSet<Notification> Notifications { get; set; } = null!;
         public DbSet<OwnerVerificationRequest> VerificationRequests { get; set; } = null!;
+        public DbSet<EquipmentMaintenanceRecord> EquipmentMaintenanceRecords { get; set; } = null!;
+        public DbSet<LoyaltyPointTransaction> LoyaltyPointTransactions { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -55,12 +57,15 @@ namespace KrishiLink.DAL
                 e.Property(x => x.AverageRating).HasDefaultValue(0.0);
                 e.Property(x => x.ReviewCount).HasDefaultValue(0);
                 e.HasIndex(x => x.OwnerId);
+                e.HasIndex(x => new { x.Latitude, x.Longitude });
                 e.HasOne(x => x.Owner).WithMany().HasForeignKey(x => x.OwnerId).OnDelete(DeleteBehavior.Cascade);
             });
 
             builder.Entity<EquipmentBooking>(b =>
             {
                 b.Property(x => x.Status).HasMaxLength(20);
+                b.Property(x => x.DiscountAmount).HasPrecision(18, 2);
+                b.Property(x => x.AppliedPromoCode).HasMaxLength(50);
                 b.HasIndex(x => new { x.EquipmentId, x.Status });
                 b.HasOne(x => x.Equipment).WithMany(x => x.Bookings).HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Cascade);
                 b.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);
@@ -82,12 +87,15 @@ namespace KrishiLink.DAL
                 g.Property(x => x.AverageRating).HasDefaultValue(0.0);
                 g.Property(x => x.ReviewCount).HasDefaultValue(0);
                 g.HasIndex(x => x.OwnerId);
+                g.HasIndex(x => new { x.Latitude, x.Longitude });
                 g.HasOne(x => x.Owner).WithMany().HasForeignKey(x => x.OwnerId).OnDelete(DeleteBehavior.Cascade);
             });
 
             builder.Entity<GodownBooking>(b =>
             {
                 b.Property(x => x.Status).HasMaxLength(20);
+                b.Property(x => x.DiscountAmount).HasPrecision(18, 2);
+                b.Property(x => x.AppliedPromoCode).HasMaxLength(50);
                 b.HasIndex(x => new { x.GodownId, x.Status });
                 b.HasOne(x => x.Godown).WithMany(x => x.Bookings).HasForeignKey(x => x.GodownId).OnDelete(DeleteBehavior.Cascade);
                 b.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);
@@ -163,6 +171,37 @@ namespace KrishiLink.DAL
                 v.HasIndex(x => new { x.UserId, x.Status });
                 v.HasIndex(x => x.SubmittedAt);
                 v.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<EquipmentMaintenanceRecord>(m =>
+            {
+                m.Property(x => x.ServiceType).HasMaxLength(80);
+                m.Property(x => x.Description).HasMaxLength(1000);
+                m.Property(x => x.ServicedBy).HasMaxLength(150);
+                m.Property(x => x.Cost).HasPrecision(18, 2);
+
+                m.HasIndex(x => x.EquipmentId);
+                m.HasIndex(x => new { x.EquipmentId, x.ServiceDate });
+                m.HasOne(x => x.Equipment)
+                    .WithMany(e => e.MaintenanceRecords)
+                    .HasForeignKey(x => x.EquipmentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<LoyaltyPointTransaction>(l =>
+            {
+                l.Property(x => x.Type).HasMaxLength(30);
+                l.Property(x => x.Description).HasMaxLength(500);
+                l.Property(x => x.BookingType).HasMaxLength(20);
+                l.Property(x => x.BookingCode).HasMaxLength(30);
+                l.Property(x => x.PromoCode).HasMaxLength(50);
+                l.Property(x => x.DiscountAmount).HasPrecision(18, 2);
+                l.Property(x => x.AmountSpent).HasPrecision(18, 2);
+
+                l.HasIndex(x => x.UserId);
+                l.HasIndex(x => new { x.UserId, x.CreatedAt });
+                l.HasIndex(x => x.PromoCode);
+                l.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

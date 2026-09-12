@@ -5,6 +5,30 @@
     var bookedDatesJson = System.Text.Json.JsonSerializer.Serialize(Model.BookedDates.Select(d => d.ToString("yyyy-MM-dd")).ToList());
 }
 
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+        .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+        .custom-map-pin {
+            background-color: #198754;
+            color: white;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .custom-map-pin i {
+            transform: rotate(45deg);
+            font-size: 15px;
+        }
+    </style>
+}
+
 <!-- Breadcrumb Navigation -->
 <nav aria-label="@L["breadcrumb"]" class="mb-3">
     <ol class="breadcrumb small">
@@ -61,9 +85,35 @@
         <!-- Details Panel -->
         <div class="card krishi-card p-4 mb-4 border-0 shadow-sm">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold">
-                    @L[Model.Category]
-                </span>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold">
+                        @L[Model.Category]
+                    </span>
+                    @if (Model.LastServicedDaysAgo.HasValue)
+                    {
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs" title="@L["Verified Maintenance Log Available"]">
+                            <i class="bi bi-wrench-adjustable text-success"></i>
+                            @if (Model.LastServicedDaysAgo.Value == 0)
+                            {
+                                @L["Last serviced: Today"]
+                            }
+                            else if (Model.LastServicedDaysAgo.Value == 1)
+                            {
+                                @L["Last serviced: Yesterday"]
+                            }
+                            else
+                            {
+                                @L["Last serviced: {0} days ago", Model.LastServicedDaysAgo.Value]
+                            }
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-light text-muted border rounded-pill px-2.5 py-1.5 small">
+                            <i class="bi bi-info-circle me-1"></i>@L["No recent service logged"]
+                        </span>
+                    }
+                </div>
                 <span class="text-muted small d-flex align-items-center gap-1">
                     @L[Model.Location]
                 </span>
@@ -121,23 +171,158 @@
                         </div>
                     </div>
                 </div>
-                @if (Model.OwnerIsVerified)
-                {
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill small fw-semibold shadow-xs">
-                        <i class="bi bi-patch-check-fill text-success me-1"></i> @L["Verified Owner"]
-                    </span>
-                }
-                else
-                {
-                    <span class="badge bg-light text-muted border px-3 py-2 rounded-pill small">
-                        <i class="bi bi-shield text-muted me-1"></i> @L["Unverified"]
-                    </span>
-                }
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    @if (!string.IsNullOrWhiteSpace(Model.OwnerRankText))
+                    {
+                        <a asp-controller="Leaderboard" asp-action="Index" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 rounded-pill small fw-bold text-decoration-none">
+                            <i class="bi bi-trophy-fill text-warning me-1"></i> @Model.OwnerRankText
+                        </a>
+                    }
+                    @if (Model.OwnerIsVerified)
+                    {
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill small fw-semibold shadow-xs">
+                            <i class="bi bi-patch-check-fill text-success me-1"></i> @L["Verified Owner"]
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-light text-muted border px-3 py-2 rounded-pill small">
+                            <i class="bi bi-shield text-muted me-1"></i> @L["Unverified"]
+                        </span>
+                    }
+                </div>
+            </div>
+
+            @if (Model.OwnerBadges != null && Model.OwnerBadges.Any())
+            {
+                <div class="mt-2.5 pt-2.5 border-top d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-muted small fw-medium me-1"><i class="bi bi-award"></i> @L["Badges"]:</span>
+                    <partial name="_OwnerBadgeList" model="Model.OwnerBadges" />
+                </div>
+            }
+
+            <!-- Machinery Location & Map Directions Card -->
+            <div class="card p-3.5 mt-4 border rounded-4 bg-light shadow-xs">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-2 border-bottom">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                            <i class="bi bi-geo-alt-fill text-success"></i>
+                            <span>@L["Location & Map Directions"]</span>
+                        </h6>
+                        <div class="text-muted small d-flex align-items-center flex-wrap gap-2">
+                            <span class="fw-semibold text-dark"><i class="bi bi-pin-map text-success me-1"></i>@Model.Location</span>
+                            @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+                            {
+                                <span class="badge bg-white text-muted border font-monospace">@Model.FormattedCoordinates</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+                        {
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold shadow-xs" onclick="copyCoordinates('@Model.Latitude.Value.ToString("F6")', '@Model.Longitude.Value.ToString("F6")')">
+                                <i class="bi bi-clipboard me-1"></i> @L["Copy GPS"]
+                            </button>
+                            <a href="@Model.GoogleMapsUrl" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm rounded-pill px-3 fw-semibold shadow-xs">
+                                <i class="bi bi-signpost-2-fill me-1"></i> @L["Get Directions"]
+                            </a>
+                        }
+                    </div>
+                </div>
+
+                <div id="equipmentDetailMap" class="rounded-3 border shadow-xs bg-white" style="height: 260px; width: 100%; z-index: 1;"></div>
             </div>
         </div>
 
         <!-- Availability Calendar Component -->
         <partial name="_AvailabilityCalendar" model="Model.BookedDates" />
+
+        <!-- =========================================================================
+             EQUIPMENT HEALTH & MAINTENANCE HISTORY SECTION
+             ========================================================================= -->
+        <div class="card krishi-card p-4 mt-4 border-0 shadow-sm" id="healthSection">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-3 border-bottom">
+                <h4 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-wrench-adjustable text-success"></i>
+                    <span>@L["Machinery Health & Maintenance History"]</span>
+                </h4>
+                @if (Model.LastServicedDaysAgo.HasValue)
+                {
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold shadow-xs">
+                        <i class="bi bi-patch-check-fill me-1"></i>
+                        @if (Model.LastServicedDaysAgo.Value == 0)
+                        {
+                            @L["Serviced Today (Prime Condition)"]
+                        }
+                        else if (Model.LastServicedDaysAgo.Value == 1)
+                        {
+                            @L["Serviced Yesterday (Prime Condition)"]
+                        }
+                        else
+                        {
+                            @L["Last Serviced {0} Days Ago", Model.LastServicedDaysAgo.Value]
+                        }
+                    </span>
+                }
+            </div>
+
+            @if (Model.MaintenanceHistory.Any())
+            {
+                <!-- Trust summary alert -->
+                <div class="bg-light p-3.5 rounded-4 border mb-3 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="bi bi-shield-check fs-5"></i>
+                        </div>
+                        <div>
+                            <span class="fw-bold text-dark d-block">@L["Verified Owner Maintenance Log"]</span>
+                            <span class="small text-muted">@L["Owner records routine maintenance and inspections on KrishiLink to ensure optimal fieldwork reliability."]</span>
+                        </div>
+                    </div>
+                    <span class="badge bg-white text-dark border font-monospace px-3 py-2 rounded-pill small">
+                        @L["{0} Service Events Logged", Model.MaintenanceHistory.Count]
+                    </span>
+                </div>
+
+                <!-- Timeline / Service List -->
+                <div class="d-flex flex-column gap-2.5">
+                    @foreach (var log in Model.MaintenanceHistory)
+                    {
+                        <div class="p-3.5 rounded-3 border bg-white shadow-xs">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-1.5">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">
+                                        @L[log.ServiceType]
+                                    </span>
+                                    @if (!string.IsNullOrWhiteSpace(log.ServicedBy))
+                                    {
+                                        <span class="text-muted small"><i class="bi bi-tools text-muted me-1"></i>@log.ServicedBy</span>
+                                    }
+                                </div>
+                                <div class="text-end text-nowrap">
+                                    <span class="fw-bold text-dark small">@log.ServiceDateFormatted</span>
+                                    <span class="badge bg-light text-muted border ms-1" style="font-size: 0.72rem;">@L[log.DaysAgoText]</span>
+                                </div>
+                            </div>
+                            <p class="text-secondary small mb-0 mt-2 ps-1 border-start border-2 border-success-subtle ps-2.5">
+                                @log.Description
+                            </p>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <!-- Empty State -->
+                <div class="text-center py-4 px-3 bg-light rounded-4 border">
+                    <i class="bi bi-journal-x text-muted fs-3 d-block mb-1"></i>
+                    <h6 class="fw-bold text-dark mb-1">@L["No Maintenance Logs Available"]</h6>
+                    <p class="text-muted small mb-0 mx-auto" style="max-width: 420px;">
+                        @L["The owner has not logged specific servicing history for this equipment yet. You may contact the owner for machinery condition details."]
+                    </p>
+                </div>
+            }
+        </div>
 
         <!-- =========================================================================
              RATINGS & REVIEWS SECTION
@@ -348,10 +533,70 @@
                             <span>@L["Total Rental Duration:"]</span>
                             <span id="summaryDaysCount">@L["0 Days"]</span>
                         </div>
-                        <div class="d-flex justify-content-between fw-bold fs-6 mt-1">
-                            <span>@L["Estimated Rental Fee:"]</span>
+                        <div class="d-flex justify-content-between small fw-medium mt-1">
+                            <span>@L["Gross Rental Fee:"]</span>
+                            <span id="summaryGrossFee">৳0</span>
+                        </div>
+                        <div id="summaryDiscountRow" class="d-flex justify-content-between small fw-bold text-success mt-1 d-none">
+                            <span id="summaryDiscountLabel">@L["Loyalty Discount:"]</span>
+                            <span id="summaryDiscountAmount">-৳0</span>
+                        </div>
+                        <div class="d-flex justify-content-between fw-bold fs-6 mt-1.5 pt-1.5 border-top border-success-subtle">
+                            <span>@L["Estimated Net Total:"]</span>
                             <span id="summaryTotalFee">@L["Tk {0}", 0]</span>
                         </div>
+                        <div class="d-flex justify-content-between small text-muted mt-1" style="font-size: 0.75rem;">
+                            <span>@L["KrishiPoints Earned on Completion:"]</span>
+                            <span id="summaryPointsEarned" class="fw-bold text-success">+10 pts</span>
+                        </div>
+                    </div>
+
+                    <!-- Loyalty Points & Promo Code Redemption -->
+                    <div class="card border border-success-subtle bg-light rounded-3 mb-3 p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label small fw-bold text-dark mb-0 d-flex align-items-center gap-1.5">
+                                <i class="bi bi-gift-fill text-success"></i>
+                                <span>@L["KrishiPoints & Promo Code"]</span>
+                            </label>
+                            @if (User.Identity?.IsAuthenticated == true && Model.FarmerLoyaltyPoints > 0)
+                            {
+                                <span class="badge bg-success text-white rounded-pill px-2 py-0.5 small" id="farmerPointsBadge">
+                                    @Model.FarmerLoyaltyPoints @L["pts available"]
+                                </span>
+                            }
+                        </div>
+
+                        <!-- Quick Tier Select (If points available) -->
+                        @if (User.Identity?.IsAuthenticated == true && Model.FarmerLoyaltyPoints >= 50 && Model.AvailableConversionTiers.Any(t => t.PointsRequired <= Model.FarmerLoyaltyPoints))
+                        {
+                            <div class="mb-2">
+                                <label class="small text-muted mb-1 d-block" style="font-size: 0.78rem;">@L["1-Click Redeem KrishiPoints:"]</label>
+                                <select class="form-select form-select-sm rounded-3" id="pointsTierSelect" onchange="applyPointsTier(this.value)">
+                                    <option value="0">@L["-- Do not use points --"]</option>
+                                    @foreach (var tier in Model.AvailableConversionTiers.Where(t => t.PointsRequired <= Model.FarmerLoyaltyPoints))
+                                    {
+                                        <option value="@tier.PointsRequired" data-discount="@tier.DiscountTaka">
+                                            @L["Use {0} pts → Save ৳{1}", tier.PointsRequired, tier.DiscountTaka.ToString("N0")]
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                        }
+
+                        <!-- Or Promo Code Input -->
+                        <div class="mt-1">
+                            <label class="small text-muted mb-1 d-block" style="font-size: 0.78rem;">@L["Or enter Promo Voucher code:"]</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control rounded-start-3 text-uppercase" id="promoCodeInput" placeholder="@L["e.g. KL-PTS120-ABCD"]" />
+                                <button type="button" class="btn btn-outline-success px-3 fw-semibold" id="applyPromoBtn" onclick="applyPromoCode()">@L["Apply"]</button>
+                                <button type="button" class="btn btn-outline-secondary d-none" id="clearPromoBtn" onclick="clearPromoCode()"><i class="bi bi-x"></i></button>
+                            </div>
+                            <div id="promoFeedbackMsg" class="form-text small mt-1 d-none"></div>
+                        </div>
+
+                        <!-- Hidden form fields to submit -->
+                        <input type="hidden" name="AppliedPromoCode" id="hiddenAppliedPromoCode" value="" />
+                        <input type="hidden" name="PointsUsed" id="hiddenPointsUsed" value="0" />
                     </div>
 
                     <!-- Optional Note -->
@@ -430,6 +675,190 @@
             scrollToRequestForm();
         }
 
+        let currentAppliedDiscount = 0;
+        let currentAppliedPromo = '';
+        let currentPointsUsed = 0;
+        let currentDaysCount = 0;
+        let currentGrossFee = 0;
+
+        function applyPointsTier(pts) {
+            pts = parseInt(pts) || 0;
+            const selectEl = document.getElementById('pointsTierSelect');
+            const promoInput = document.getElementById('promoCodeInput');
+            const promoFeedback = document.getElementById('promoFeedbackMsg');
+            const clearBtn = document.getElementById('clearPromoBtn');
+
+            if (pts > 0) {
+                // Clear promo text input if point tier is selected
+                if (promoInput) promoInput.value = '';
+                if (clearBtn) clearBtn.classList.add('d-none');
+                if (promoFeedback) promoFeedback.classList.add('d-none');
+                currentAppliedPromo = '';
+                document.getElementById('hiddenAppliedPromoCode').value = '';
+                document.getElementById('hiddenPointsUsed').value = pts;
+                currentPointsUsed = pts;
+
+                const selectedOption = selectEl?.selectedOptions[0];
+                const discount = parseFloat(selectedOption?.getAttribute('data-discount')) || 0;
+                currentAppliedDiscount = discount;
+            } else {
+                currentPointsUsed = 0;
+                document.getElementById('hiddenPointsUsed').value = 0;
+                currentAppliedDiscount = 0;
+            }
+
+            recalculateSummary();
+        }
+
+        async function applyPromoCode() {
+            const promoInput = document.getElementById('promoCodeInput');
+            const code = promoInput?.value?.trim()?.toUpperCase() || '';
+            const feedback = document.getElementById('promoFeedbackMsg');
+            const clearBtn = document.getElementById('clearPromoBtn');
+            const tierSelect = document.getElementById('pointsTierSelect');
+
+            if (!code) {
+                if (feedback) {
+                    feedback.textContent = '@L["Please enter a valid promo voucher code."]';
+                    feedback.className = 'form-text small mt-1 text-danger';
+                    feedback.classList.remove('d-none');
+                }
+                return;
+            }
+
+            if (!validateDates() || currentGrossFee <= 0) {
+                if (feedback) {
+                    feedback.textContent = '@L["Please select valid rental dates first."]';
+                    feedback.className = 'form-text small mt-1 text-danger';
+                    feedback.classList.remove('d-none');
+                }
+                return;
+            }
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+                const res = await fetch('/Loyalty/ValidatePromo', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        promoCode: code,
+                        pointsToRedeem: null,
+                        grossAmount: currentGrossFee
+                    })
+                });
+
+                const data = await res.json();
+                if (data.isValid) {
+                    if (tierSelect) tierSelect.value = "0";
+                    currentPointsUsed = data.pointsRequired || 0;
+                    currentAppliedDiscount = data.discountAmount || 0;
+                    currentAppliedPromo = data.promoCode || code;
+
+                    document.getElementById('hiddenAppliedPromoCode').value = currentAppliedPromo;
+                    document.getElementById('hiddenPointsUsed').value = currentPointsUsed;
+
+                    if (feedback) {
+                        feedback.textContent = `@L["Promo Applied!"] ${data.message}`;
+                        feedback.className = 'form-text small mt-1 text-success fw-semibold';
+                        feedback.classList.remove('d-none');
+                    }
+                    if (clearBtn) clearBtn.classList.remove('d-none');
+                } else {
+                    currentAppliedDiscount = 0;
+                    currentAppliedPromo = '';
+                    document.getElementById('hiddenAppliedPromoCode').value = '';
+                    document.getElementById('hiddenPointsUsed').value = 0;
+
+                    if (feedback) {
+                        feedback.textContent = data.message || '@L["Invalid or expired promo code."]';
+                        feedback.className = 'form-text small mt-1 text-danger';
+                        feedback.classList.remove('d-none');
+                    }
+                    if (clearBtn) clearBtn.classList.add('d-none');
+                }
+            } catch (err) {
+                if (feedback) {
+                    feedback.textContent = '@L["Network error validating promo code."]';
+                    feedback.className = 'form-text small mt-1 text-danger';
+                    feedback.classList.remove('d-none');
+                }
+            }
+
+            recalculateSummary();
+        }
+
+        function clearPromoCode() {
+            const promoInput = document.getElementById('promoCodeInput');
+            const feedback = document.getElementById('promoFeedbackMsg');
+            const clearBtn = document.getElementById('clearPromoBtn');
+
+            if (promoInput) promoInput.value = '';
+            if (feedback) feedback.classList.add('d-none');
+            if (clearBtn) clearBtn.classList.add('d-none');
+
+            currentAppliedDiscount = 0;
+            currentAppliedPromo = '';
+            currentPointsUsed = 0;
+            document.getElementById('hiddenAppliedPromoCode').value = '';
+            document.getElementById('hiddenPointsUsed').value = 0;
+
+            recalculateSummary();
+        }
+
+        function recalculateSummary() {
+            const costBox = document.getElementById('costSummaryBox');
+            const summaryDaysCount = document.getElementById('summaryDaysCount');
+            const summaryGrossFee = document.getElementById('summaryGrossFee');
+            const summaryDiscountRow = document.getElementById('summaryDiscountRow');
+            const summaryDiscountAmount = document.getElementById('summaryDiscountAmount');
+            const summaryDiscountLabel = document.getElementById('summaryDiscountLabel');
+            const summaryTotalFee = document.getElementById('summaryTotalFee');
+            const summaryPointsEarned = document.getElementById('summaryPointsEarned');
+
+            if (currentDaysCount <= 0 || currentGrossFee <= 0) {
+                if (costBox) costBox.classList.add('d-none');
+                return;
+            }
+
+            if (summaryDaysCount) {
+                summaryDaysCount.textContent = currentDaysCount > 1
+                    ? '@L["{0} Days", "__COUNT__"]'.replace('__COUNT__', currentDaysCount)
+                    : '@L["{0} Day", "__COUNT__"]'.replace('__COUNT__', currentDaysCount);
+            }
+
+            if (summaryGrossFee) {
+                summaryGrossFee.textContent = '৳' + currentGrossFee.toLocaleString();
+            }
+
+            const netTotal = Math.max(0, currentGrossFee - currentAppliedDiscount);
+
+            if (currentAppliedDiscount > 0) {
+                if (summaryDiscountRow) summaryDiscountRow.classList.remove('d-none');
+                if (summaryDiscountAmount) summaryDiscountAmount.textContent = '-৳' + currentAppliedDiscount.toLocaleString();
+                if (summaryDiscountLabel) {
+                    summaryDiscountLabel.textContent = currentAppliedPromo
+                        ? `@L["Promo Discount"] (${currentAppliedPromo}):`
+                        : `@L["KrishiPoints Discount"] (${currentPointsUsed} pts):`;
+                }
+            } else {
+                if (summaryDiscountRow) summaryDiscountRow.classList.add('d-none');
+            }
+
+            if (summaryTotalFee) {
+                summaryTotalFee.textContent = '৳' + netTotal.toLocaleString();
+            }
+
+            if (summaryPointsEarned) {
+                const pts = Math.max(10, Math.floor(netTotal / 100));
+                summaryPointsEarned.textContent = `+${pts.toLocaleString()} pts`;
+            }
+
+            if (costBox) costBox.classList.remove('d-none');
+        }
+
         function validateDates() {
             const startInput = document.getElementById('startDateInput');
             const endInput = document.getElementById('endDateInput');
@@ -440,6 +869,8 @@
             if (!startInput.value || !endInput.value) {
                 errorDiv.classList.add('d-none');
                 costBox.classList.add('d-none');
+                currentDaysCount = 0;
+                currentGrossFee = 0;
                 return true;
             }
 
@@ -451,6 +882,8 @@
                 errorDiv.classList.remove('d-none');
                 costBox.classList.add('d-none');
                 submitBtn.disabled = true;
+                currentDaysCount = 0;
+                currentGrossFee = 0;
                 return false;
             }
 
@@ -473,21 +906,18 @@
                 errorDiv.classList.remove('d-none');
                 costBox.classList.add('d-none');
                 submitBtn.disabled = true;
+                currentDaysCount = 0;
+                currentGrossFee = 0;
                 return false;
             }
 
             errorDiv.classList.add('d-none');
             submitBtn.disabled = false;
 
-            const summaryDaysCount = document.getElementById('summaryDaysCount');
-            const summaryTotalFee = document.getElementById('summaryTotalFee');
-            if (summaryDaysCount && summaryTotalFee) {
-                summaryDaysCount.textContent = daysCount > 1
-                    ? '@L["{0} Days", "__COUNT__"]'.replace('__COUNT__', daysCount)
-                    : '@L["{0} Day", "__COUNT__"]'.replace('__COUNT__', daysCount);
-                summaryTotalFee.textContent = '@L["Tk {0}", "__AMOUNT__"]'.replace('__AMOUNT__', (daysCount * dailyRate).toLocaleString());
-                costBox.classList.remove('d-none');
-            }
+            currentDaysCount = daysCount;
+            currentGrossFee = daysCount * dailyRate;
+
+            recalculateSummary();
 
             return true;
         }
@@ -522,5 +952,57 @@
                 }
             });
         }
+
+        // -------------------------------------------------------------------------
+        // LEAFLET MAP DISPLAY
+        // -------------------------------------------------------------------------
+        function copyCoordinates(lat, lng) {
+            const text = `${lat}, ${lng}`;
+            navigator.clipboard.writeText(text).then(() => {
+                if (window.KrishiToast) {
+                    KrishiToast.show('@L["Coordinates copied to clipboard!"]', { iconClass: 'bi-clipboard-check-fill text-success' });
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const mapEl = document.getElementById('equipmentDetailMap');
+            if (!mapEl) return;
+
+            const lat = @(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "24.8465");
+            const lng = @(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "89.3777");
+
+            const map = L.map('equipmentDetailMap', {
+                scrollWheelZoom: false
+            }).setView([lat, lng], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            const tractorIcon = L.divIcon({
+                className: 'custom-leaflet-marker',
+                html: `<div class="custom-map-pin"><i class="bi bi-gear-wide-connected"></i></div>`,
+                iconSize: [34, 34],
+                iconAnchor: [17, 34],
+                popupAnchor: [0, -34]
+            });
+
+            const marker = L.marker([lat, lng], { icon: tractorIcon }).addTo(map);
+            marker.bindPopup(`
+                <div class="p-1">
+                    <h6 class="fw-bold text-dark mb-1">@Model.Name</h6>
+                    <p class="small text-muted mb-1"><i class="bi bi-geo-alt text-success me-1"></i>@Model.Location</p>
+                    <div class="d-flex align-items-center justify-content-between gap-2 mt-2">
+                        <span class="badge bg-success-subtle text-success fw-bold">@Model.DailyRate</span>
+                        <a href="@Model.GoogleMapsUrl" target="_blank" class="btn btn-xs btn-outline-success rounded-pill px-2 py-0.5 small">@L["Directions"]</a>
+                    </div>
+                </div>
+            `);
+
+            setTimeout(() => { map.invalidateSize(); }, 300);
+        });
     </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 }

@@ -2500,4 +2500,782 @@
   <data name="Under Review" xml:space="preserve">
     <value>পর্যালোচনাধীন</value>
   </data>
+  <data name="Health Tracker" xml:space="preserve">
+    <value>স্বাস্থ্য ট্র্যাকার</value>
+  </data>
+  <data name="Equipment Health Tracker" xml:space="preserve">
+    <value>যন্ত্রপাতির স্বাস্থ্য ট্র্যাকার</value>
+  </data>
+  <data name="Equipment Health &amp; Service Tracker" xml:space="preserve">
+    <value>যন্ত্রপাতির স্বাস্থ্য ও সার্ভিসিং ট্র্যাকার</value>
+  </data>
+  <data name="Machinery Health &amp; Maintenance History" xml:space="preserve">
+    <value>যন্ত্রের স্বাস্থ্য ও সার্ভিসিং ইতিহাস</value>
+  </data>
+  <data name="Maintenance &amp; Service Log History" xml:space="preserve">
+    <value>রক্ষণাবেক্ষণ ও সার্ভিসিং লগ ইতিহাস</value>
+  </data>
+  <data name="Complete chronological log of repairs, parts replacements, and servicing." xml:space="preserve">
+    <value>মেরামত, যন্ত্রাংশ প্রতিস্থাপন এবং সার্ভিসিংয়ের সম্পূর্ণ সময়ানুক্রমিক লগ।</value>
+  </data>
+  <data name="Total Maintenance Cost" xml:space="preserve">
+    <value>মোট রক্ষণাবেক্ষণ ব্যয়</value>
+  </data>
+  <data name="Recorded Service Events" xml:space="preserve">
+    <value>লিপিবদ্ধ সার্ভিসিং ইভেন্ট</value>
+  </data>
+  <data name="Last Serviced" xml:space="preserve">
+    <value>সর্বশেষ সার্ভিসিং</value>
+  </data>
+  <data name="Last serviced: {0} days ago" xml:space="preserve">
+    <value>সর্বশেষ সার্ভিসিং: {0} দিন আগে</value>
+  </data>
+  <data name="Last serviced: Today" xml:space="preserve">
+    <value>সর্বশেষ সার্ভিসিং: আজ</value>
+  </data>
+  <data name="Last serviced: Yesterday" xml:space="preserve">
+    <value>সর্বশেষ সার্ভিসিং: গতকাল</value>
+  </data>
+  <data name="Last Serviced {0} Days Ago" xml:space="preserve">
+    <value>সর্বশেষ সার্ভিসিং {0} দিন আগে</value>
+  </data>
+  <data name="Serviced today" xml:space="preserve">
+    <value>আজ সার্ভিসিং সম্পন্ন</value>
+  </data>
+  <data name="Serviced yesterday" xml:space="preserve">
+    <value>গতকাল সার্ভিসিং সম্পন্ন</value>
+  </data>
+  <data name="Serviced {0} days ago" xml:space="preserve">
+    <value>গত {0} দিন আগে সার্ভিসিং সম্পন্ন</value>
+  </data>
+  <data name="Serviced {0}d ago" xml:space="preserve">
+    <value>{0} দিন আগে সার্ভিসিং</value>
+  </data>
+  <data name="Serviced Today (Prime Condition)" xml:space="preserve">
+    <value>আজ সার্ভিসিং সম্পন্ন (উৎকৃষ্ট অবস্থা)</value>
+  </data>
+  <data name="Serviced Yesterday (Prime Condition)" xml:space="preserve">
+    <value>গতকাল সার্ভিসিং সম্পন্ন (উৎকৃষ্ট অবস্থা)</value>
+  </data>
+  <data name="Prime Condition" xml:space="preserve">
+    <value>উৎকৃষ্ট অবস্থা</value>
+  </data>
+  <data name="Good Condition" xml:space="preserve">
+    <value>ভালো অবস্থা</value>
+  </data>
+  <data name="Service Due" xml:space="preserve">
+    <value>সার্ভিসিং সময় হয়েছে</value>
+  </data>
+  <data name="No Logs" xml:space="preserve">
+    <value>কোনো লগ নেই</value>
+  </data>
+  <data name="Recently Serviced" xml:space="preserve">
+    <value>সম্প্রতি সার্ভিসিং সম্পন্ন</value>
+  </data>
+  <data name="Regularly Maintained" xml:space="preserve">
+    <value>নিয়মিত রক্ষণাবেক্ষণকৃত</value>
+  </data>
+  <data name="Maintenance Recommended" xml:space="preserve">
+    <value>রক্ষণাবেক্ষণের পরামর্শ দেওয়া হচ্ছে</value>
+  </data>
+  <data name="Log First Service" xml:space="preserve">
+    <value>প্রথম সার্ভিসিং লিপিবদ্ধ করুন</value>
+  </data>
+  <data name="Public Trust Indicator Active" xml:space="preserve">
+    <value>পাবলিক ট্রাস্ট সূচক সক্রিয়</value>
+  </data>
+  <data name="Verified Maintenance Record" xml:space="preserve">
+    <value>যাচাইকৃত রক্ষণাবেক্ষণ রেকর্ড</value>
+  </data>
+  <data name="Verified Owner Maintenance Log" xml:space="preserve">
+    <value>মালিকের যাচাইকৃত রক্ষণাবেক্ষণ লগ</value>
+  </data>
+  <data name="Owner records routine maintenance and inspections on KrishiLink to ensure optimal fieldwork reliability." xml:space="preserve">
+    <value>মাঠের কাজের নির্ভরযোগ্যতা নিশ্চিত করতে মালিক কৃষিলিঙ্কে নিয়মিত রক্ষণাবেক্ষণ ও পরিদর্শন লিপিবদ্ধ করেন।</value>
+  </data>
+  <data name="{0} Service Events Logged" xml:space="preserve">
+    <value>{0}টি সার্ভিসিং ইভেন্ট লিপিবদ্ধ</value>
+  </data>
+  <data name="No Maintenance Logs Available" xml:space="preserve">
+    <value>কোনো রক্ষণাবেক্ষণ লগ পাওয়া যায়নি</value>
+  </data>
+  <data name="The owner has not logged specific servicing history for this equipment yet. You may contact the owner for machinery condition details." xml:space="preserve">
+    <value>মালিক এখনও এই যন্ত্রপাতির নির্দিষ্ট সার্ভিসিং ইতিহাস লিপিবদ্ধ করেননি। যন্ত্রের অবস্থা জানতে আপনি মালিকের সাথে যোগাযোগ করতে পারেন।</value>
+  </data>
+  <data name="Log Service Event" xml:space="preserve">
+    <value>সার্ভিসিং ইভেন্ট লগ করুন</value>
+  </data>
+  <data name="Log Maintenance Event" xml:space="preserve">
+    <value>রক্ষণাবেক্ষণ ইভেন্ট লগ করুন</value>
+  </data>
+  <data name="Log New Service Event" xml:space="preserve">
+    <value>নতুন সার্ভিসিং ইভেন্ট লগ করুন</value>
+  </data>
+  <data name="Log Your First Service Event" xml:space="preserve">
+    <value>আপনার প্রথম সার্ভিসিং ইভেন্ট লগ করুন</value>
+  </data>
+  <data name="Keep a regular maintenance log of your machinery to demonstrate reliability to renting farmers and maintain equipment longevity." xml:space="preserve">
+    <value>ভাড়া গ্রহণকারী কৃষকদের কাছে নির্ভরযোগ্যতা প্রমাণ করতে এবং যন্ত্রপাতির দীর্ঘায়ু বজায় রাখতে নিয়মিত রক্ষণাবেক্ষণ লগ রাখুন।</value>
+  </data>
+  <data name="-- Select Service Category --" xml:space="preserve">
+    <value>-- সার্ভিসিং শ্রেণি নির্বাচন করুন --</value>
+  </data>
+  <data name="Engine Oil &amp; Filter Change" xml:space="preserve">
+    <value>ইঞ্জিন তেল ও ফিল্টার পরিবর্তন</value>
+  </data>
+  <data name="Hydraulic System Maintenance" xml:space="preserve">
+    <value>হাইড্রোলিক সিস্টেম রক্ষণাবেক্ষণ</value>
+  </data>
+  <data name="Blade / Rotavator Replacement" xml:space="preserve">
+    <value>ব্লেড / রোটাভেটর প্রতিস্থাপন</value>
+  </data>
+  <data name="Tire &amp; Track Maintenance" xml:space="preserve">
+    <value>টায়ার ও ট্র্যাক রক্ষণাবেক্ষণ</value>
+  </data>
+  <data name="Electrical &amp; Battery Tune-up" xml:space="preserve">
+    <value>বৈদ্যুতিক ও ব্যাটারি টিউন-আপ</value>
+  </data>
+  <data name="General Servicing &amp; Inspection" xml:space="preserve">
+    <value>সাধারণ সার্ভিসিং ও পরিদর্শন</value>
+  </data>
+  <data name="Fuel System &amp; Injector Cleaning" xml:space="preserve">
+    <value>জ্বালানি ব্যবস্থা ও ইনজেক্টর পরিষ্কার</value>
+  </data>
+  <data name="Brake &amp; Clutch Adjustment" xml:space="preserve">
+    <value>ব্রেক ও ক্লাচ সমন্বয়</value>
+  </data>
+  <data name="Transmission &amp; Gearbox Overhaul" xml:space="preserve">
+    <value>ট্রান্সমিশন ও গিয়ারবক্স ওভারহল</value>
+  </data>
+  <data name="Other Repairs &amp; Maintenance" xml:space="preserve">
+    <value>অন্যান্য মেরামত ও রক্ষণাবেক্ষণ</value>
+  </data>
+  <data name="Maintenance Cost (BDT ৳)" xml:space="preserve">
+    <value>রক্ষণাবেক্ষণ ব্যয় (টাকা ৳)</value>
+  </data>
+  <data name="Parts cost, labor fees, fluids, or workshop invoice amount." xml:space="preserve">
+    <value>যন্ত্রাংশের খরচ, শ্রম ফি, তরল পদার্থ বা ওয়ার্কশপ ইনভয়েসের পরিমাণ।</value>
+  </data>
+  <data name="Serviced By / Workshop" xml:space="preserve">
+    <value>সার্ভিস প্রদানকারী / ওয়ার্কশপ</value>
+  </data>
+  <data name="e.g. Modern Auto Garage, Self, Local Mechanic..." xml:space="preserve">
+    <value>যেমন: আধুনিক অটো গ্যারেজ, নিজে, স্থানীয় মেকানিক...</value>
+  </data>
+  <data name="Describe what work was completed, oil grade used, parts replaced, or general health check remarks..." xml:space="preserve">
+    <value>কী কাজ সম্পন্ন হয়েছে, ব্যবহৃত তেলের গ্রেড, প্রতিস্থাপিত যন্ত্রাংশ বা সাধারণ স্বাস্থ্য পরীক্ষার মন্তব্য বর্ণনা করুন...</value>
+  </data>
+  <data name="Save Service Log" xml:space="preserve">
+    <value>সার্ভিস লগ সংরক্ষণ করুন</value>
+  </data>
+  <data name="Delete Maintenance Record?" xml:space="preserve">
+    <value>রক্ষণাবেক্ষণ রেকর্ড মুছবেন?</value>
+  </data>
+  <data name="Delete Record" xml:space="preserve">
+    <value>রেকর্ড মুছুন</value>
+  </data>
+  <data name="No maintenance logged yet" xml:space="preserve">
+    <value>এখনও কোনো রক্ষণাবেক্ষণ লিপিবদ্ধ হয়নি</value>
+  </data>
+  <data name="Health Log" xml:space="preserve">
+    <value>স্বাস্থ্য লগ</value>
+  </data>
+  <data name="No service logged" xml:space="preserve">
+    <value>সার্ভিসিং লগ নেই</value>
+  </data>
+  <data name="No recent service logged" xml:space="preserve">
+    <value>কোনো সাম্প্রতিক সার্ভিসিং লগ নেই</value>
+  </data>
+  <data name="Verified Maintenance Log Available" xml:space="preserve">
+    <value>যাচাইকৃত রক্ষণাবেক্ষণ লগ উপলব্ধ</value>
+  </data>
+  <data name="Not Logged Yet" xml:space="preserve">
+    <value>এখনও লিপিবদ্ধ হয়নি</value>
+  </data>
+  <data name="Date when maintenance or repair was conducted (cannot be future)." xml:space="preserve">
+    <value>রক্ষণাবেক্ষণ বা মেরামত করার তারিখ (ভবিষ্যতের তারিখ হতে পারবে না)।</value>
+  </data>
+  <data name="Booking Confirmation" xml:space="preserve">
+    <value>বুকিং নিশ্চিতকরণ</value>
+  </data>
+  <data name="Official Confirmation Voucher" xml:space="preserve">
+    <value>অফিসিয়াল নিশ্চিতকরণ ভাউচার</value>
+  </data>
+  <data name="KrishiLink Gate Pass" xml:space="preserve">
+    <value>কৃষিলিঙ্ক গেট পাস</value>
+  </data>
+  <data name="Booking Reference" xml:space="preserve">
+    <value>বুকিং রেফারেন্স</value>
+  </data>
+  <data name="Back to My Bookings" xml:space="preserve">
+    <value>আমার বুকিংয়ে ফিরুন</value>
+  </data>
+  <data name="Print / Save PDF" xml:space="preserve">
+    <value>প্রিন্ট / পিডিএফ সংরক্ষণ</value>
+  </data>
+  <data name="Download QR" xml:space="preserve">
+    <value>কিউআর ডাউনলোড</value>
+  </data>
+  <data name="Scan to Verify Authenticity" xml:space="preserve">
+    <value>সত্যতা যাচাই করতে স্ক্যান করুন</value>
+  </data>
+  <data name="Show this QR code to the owner at pickup or delivery to confirm identity &amp; booking in seconds." xml:space="preserve">
+    <value>হস্তান্তর বা গ্রহণের সময় পরিচয় ও বুকিং দ্রুত যাচাই করতে মালিককে এই কিউআর কোডটি দেখান।</value>
+  </data>
+  <data name="Rental Period:" xml:space="preserve">
+    <value>ভাড়ার মেয়াদ:</value>
+  </data>
+  <data name="Total Payable:" xml:space="preserve">
+    <value>মোট প্রদেয়:</value>
+  </data>
+  <data name="Owner / Provider" xml:space="preserve">
+    <value>মালিক / প্রদানকারী</value>
+  </data>
+  <data name="Farmer / Customer" xml:space="preserve">
+    <value>কৃষক / গ্রাহক</value>
+  </data>
+  <data name="1. Arrive on Schedule" xml:space="preserve">
+    <value>১. নির্ধারিত সময়ে পৌঁছান</value>
+  </data>
+  <data name="Reach the pickup location on {0} with valid ID." xml:space="preserve">
+    <value>বৈধ পরিচয়পত্রসহ {0} তারিখে পিকআপের স্থানে পৌঁছান।</value>
+  </data>
+  <data name="2. QR Handover Scan" xml:space="preserve">
+    <value>২. কিউআর কোড স্ক্যান</value>
+  </data>
+  <data name="Let the owner scan your QR pass to record handover." xml:space="preserve">
+    <value>হস্তান্তর নিশ্চিত করতে মালিককে আপনার কিউআর পাস স্ক্যান করতে দিন।</value>
+  </data>
+  <data name="3. Inspect &amp; Return" xml:space="preserve">
+    <value>৩. পরিদর্শন ও ফেরত</value>
+  </data>
+  <data name="Check machine health and return cleanly by {0}." xml:space="preserve">
+    <value>মেশিনের অবস্থা পরীক্ষা করুন এবং {0} তারিখের মধ্যে সঠিকভাবে ফেরত দিন।</value>
+  </data>
+  <data name="Encrypted Verification:" xml:space="preserve">
+    <value>এনক্রিপ্ট করা যাচাইকরণ:</value>
+  </data>
+  <data name="Generated on {0}" xml:space="preserve">
+    <value>তৈরির সময় {0}</value>
+  </data>
+  <data name="Booking Verification" xml:space="preserve">
+    <value>বুকিং যাচাইকরণ</value>
+  </data>
+  <data name="Verified Authentic Booking" xml:space="preserve">
+    <value>যাচাইকৃত আসল বুকিং</value>
+  </data>
+  <data name="Invalid Booking" xml:space="preserve">
+    <value>অবৈধ বুকিং</value>
+  </data>
+  <data name="Reference:" xml:space="preserve">
+    <value>রেফারেন্স:</value>
+  </data>
+  <data name="Action Completed!" xml:space="preserve">
+    <value>কার্যক্রম সম্পন্ন!</value>
+  </data>
+  <data name="Action Error" xml:space="preserve">
+    <value>কার্যক্রমে ত্রুটি</value>
+  </data>
+  <data name="Owner Verification Actions" xml:space="preserve">
+    <value>মালিকের যাচাইকরণ কার্যক্রম</value>
+  </data>
+  <data name="You Own This Asset" xml:space="preserve">
+    <value>আপনি এই সম্পদের মালিক</value>
+  </data>
+  <data name="You have verified the farmer's QR pass. Select an action below to update booking status immediately:" xml:space="preserve">
+    <value>আপনি কৃষকের কিউআর পাস সফলভাবে যাচাই করেছেন। বুকিং স্ট্যাটাস আপডেট করতে নিচের অপশন নির্বাচন করুন:</value>
+  </data>
+
+  <data name="Reject Request" xml:space="preserve">
+    <value>অনুরোধ প্রত্যাখ্যান করুন</value>
+  </data>
+  <data name="Confirm Pickup &amp; Handover" xml:space="preserve">
+    <value>পিকআপ ও হস্তান্তর নিশ্চিত করুন</value>
+  </data>
+  <data name="Call Farmer" xml:space="preserve">
+    <value>কৃষককে কল করুন</value>
+  </data>
+  <data name="Booking Reference Not Found" xml:space="preserve">
+    <value>বুকিং রেফারেন্স পাওয়া যায়নি</value>
+  </data>
+  <data name="The scanned QR reference does not match any active or past booking records in KrishiLink." xml:space="preserve">
+    <value>স্ক্যান করা কিউআর রেফারেন্সটি কৃষিলিঙ্কের কোনো সক্রিয় বা অতীত বুকিং রেকর্ডের সাথে মেলে না।</value>
+  </data>
+  <data name="Secured with KrishiLink Digital Trust Protocol • Scanned at {0}" xml:space="preserve">
+    <value>কৃষিলিঙ্ক ডিজিটাল ট্রাস্ট প্রোটোকল দ্বারা সুরক্ষিত • স্ক্যান করা হয়েছে {0}</value>
+  </data>
+  <data name="Scan QR Pass" xml:space="preserve">
+    <value>কিউআর পাস স্ক্যান</value>
+  </data>
+  <data name="Scan Farmer Booking Pass" xml:space="preserve">
+    <value>কৃষকের বুকিং পাস স্ক্যান করুন</value>
+  </data>
+  <data name="Camera ready for live scanning" xml:space="preserve">
+    <value>লাইভ স্ক্যানের জন্য ক্যামেরা প্রস্তুত</value>
+  </data>
+  <data name="Start Camera Scanner" xml:space="preserve">
+    <value>ক্যামেরা স্ক্যানার চালু করুন</value>
+  </data>
+  <data name="Align the farmer's QR pass inside the frame, or enter reference below." xml:space="preserve">
+    <value>কৃষকের কিউআর পাসটি ফ্রেমের মধ্যে রাখুন, অথবা নিচে রেফারেন্স কোড লিখুন।</value>
+  </data>
+  <data name="Or Enter Booking Reference Code:" xml:space="preserve">
+    <value>অথবা বুকিং রেফারেন্স কোড লিখুন:</value>
+  </data>
+  <data name="Powered by KrishiLink Verified Handover" xml:space="preserve">
+    <value>কৃষিলিঙ্ক ভেরিফাইড হ্যান্ডওভার দ্বারা চালিত</value>
+  </data>
+  <data name="Show QR Code" xml:space="preserve">
+    <value>কিউআর কোড দেখুন</value>
+  </data>
+  <data name="View Pass &amp; Voucher" xml:space="preserve">
+    <value>পাস ও ভাউচার দেখুন</value>
+  </data>
+  <data name="View Full Voucher Pass" xml:space="preserve">
+    <value>সম্পূর্ণ ভাউচার পাস দেখুন</value>
+  </data>
+  <data name="Booking QR Code Pass" xml:space="preserve">
+    <value>বুকিং কিউআর কোড পাস</value>
+  </data>
+  <data name="Generating QR Pass..." xml:space="preserve">
+    <value>কিউআর পাস তৈরি হচ্ছে...</value>
+  </data>
+  <data name="Present this QR code to the owner upon pickup or delivery to quickly verify your identity." xml:space="preserve">
+    <value>পিকআপ বা ডেলিভারির সময় আপনার পরিচয় দ্রুত নিশ্চিত করতে মালিকের কাছে এই কিউআর কোডটি উপস্থাপন করুন।</value>
+  </data>
+  <data name="Open Full Voucher" xml:space="preserve">
+    <value>সম্পূর্ণ ভাউচার খুলুন</value>
+  </data>
+  <data name="Verified Machinery Host" xml:space="preserve">
+    <value>যাচাইকৃত মেশিন হোস্ট</value>
+  </data>
+  <data name="Authentic &amp; Verified Booking — Confirmed &amp; Active" xml:space="preserve">
+    <value>প্রমাণিত ও আসল বুকিং — নিশ্চিত ও সক্রিয়</value>
+  </data>
+  <data name="Pending Owner Review — Not Yet Confirmed" xml:space="preserve">
+    <value>মালিকের পর্যালোচনার অপেক্ষায় — এখনও নিশ্চিত হয়নি</value>
+  </data>
+  <data name="Completed Booking — Service Finished &amp; Handover Settled" xml:space="preserve">
+    <value>সম্পন্ন বুকিং — সেবা শেষ ও হস্তান্তর নিষ্পত্তি হয়েছে</value>
+  </data>
+  <data name="Booking Cancelled by Farmer" xml:space="preserve">
+    <value>কৃষক কর্তৃক বুকিং বাতিল</value>
+  </data>
+  <data name="Booking Rejected by Owner" xml:space="preserve">
+    <value>মালিক কর্তৃক বুকিং প্রত্যাখ্যাত</value>
+  </data>
+  <data name="Authentic &amp; Verified Storage Booking — Space Allocated &amp; Active" xml:space="preserve">
+    <value>প্রমাণিত ও আসল সংরক্ষণ বুকিং — স্থান বরাদ্দকৃত ও সক্রিয়</value>
+  </data>
+  <data name="Completed Storage — Storage Period Ended &amp; Handover Settled" xml:space="preserve">
+    <value>সম্পন্ন সংরক্ষণ — সংরক্ষণের মেয়াদ শেষ ও নিষ্পত্তি হয়েছে</value>
+  </data>
+  <data name="Leaderboard" xml:space="preserve">
+    <value>লিডারবোর্ড</value>
+  </data>
+  <data name="Host Leaderboard &amp; Recognition" xml:space="preserve">
+    <value>হোস্ট লিডারবোর্ড ও স্বীকৃতি</value>
+  </data>
+  <data name="KrishiLink Trust &amp; Recognition Awards" xml:space="preserve">
+    <value>কৃষিলিংক আস্থা ও স্বীকৃতি পুরস্কার</value>
+  </data>
+  <data name="Host Leaderboard &amp; Rankings" xml:space="preserve">
+    <value>হোস্ট লিডারবোর্ড ও র‍্যাংকিং</value>
+  </data>
+  <data name="Celebrating top-performing equipment and godown owners across Bangladesh delivering certified reliability, peak machine maintenance, and 5-star agricultural service." xml:space="preserve">
+    <value>সারা বাংলাদেশে শীর্ষ পারফর্মিং যন্ত্রপাতি ও গুদাম মালিকদের স্বীকৃতি যারা নির্ভরযোগ্যতা, নিয়মিত রক্ষণাবেক্ষণ এবং ৫-স্টার কৃষি সেবা প্রদান করেন।</value>
+  </data>
+  <data name="Cached rankings • 15m update cycle" xml:space="preserve">
+    <value>ক্যাশ করা র‍্যাংকিং • প্রতি ১৫ মিনিটে আপডেট</value>
+  </data>
+  <data name="Refresh Rankings" xml:space="preserve">
+    <value>র‍্যাংকিং রিফ্রেশ করুন</value>
+  </data>
+  <data name="All Hosts" xml:space="preserve">
+    <value>সকল হোস্ট</value>
+  </data>
+  <data name="All Bangladesh (64)" xml:space="preserve">
+    <value>সারা বাংলাদেশ (৬৪)</value>
+  </data>
+  <data name="Sort By" xml:space="preserve">
+    <value>সাজানোর ক্রম</value>
+  </data>
+  <data name="Trust Score" xml:space="preserve">
+    <value>আস্থা স্কোর</value>
+  </data>
+  <data name="Most Bookings" xml:space="preserve">
+    <value>সর্বাধিক বুকিং</value>
+  </data>
+  <data name="Highest Rating" xml:space="preserve">
+    <value>সর্বোচ্চ রেটিং</value>
+  </data>
+  <data name="Top Ranked Hosts Podium" xml:space="preserve">
+    <value>শীর্ষ র‍্যাঙ্কড হোস্ট পডিয়াম</value>
+  </data>
+  <data name="{0} Verified Providers" xml:space="preserve">
+    <value>{0} জন যাচাইকৃত প্রদানকারী</value>
+  </data>
+  <data name="Gold Champion" xml:space="preserve">
+    <value>গোল্ড চ্যাম্পিয়ন</value>
+  </data>
+  <data name="Silver Host" xml:space="preserve">
+    <value>সিলভার হোস্ট</value>
+  </data>
+  <data name="Bronze Host" xml:space="preserve">
+    <value>ব্রোঞ্জ হোস্ট</value>
+  </data>
+  <data name="Completed Bookings" xml:space="preserve">
+    <value>সম্পন্ন বুকিং</value>
+  </data>
+  <data name="View Machinery" xml:space="preserve">
+    <value>যন্ত্রপাতি দেখুন</value>
+  </data>
+  <data name="View Storage" xml:space="preserve">
+    <value>গুদাম দেখুন</value>
+  </data>
+  <data name="View Top Listings" xml:space="preserve">
+    <value>শীর্ষ তালিকা দেখুন</value>
+  </data>
+  <data name="Full Provider Rankings" xml:space="preserve">
+    <value>সম্পূর্ণ প্রদানকারী র‍্যাংকিং</value>
+  </data>
+  <data name="Showing {0} rated owners" xml:space="preserve">
+    <value>{0} জন মূল্যায়িত মালিক দেখানো হচ্ছে</value>
+  </data>
+  <data name="Rank" xml:space="preserve">
+    <value>র‍্যাঙ্ক</value>
+  </data>
+  <data name="Host / Farm" xml:space="preserve">
+    <value>হোস্ট / খামার</value>
+  </data>
+  <data name="Badges Earned" xml:space="preserve">
+    <value>অর্জিত ব্যাজ</value>
+  </data>
+  <data name="Badges" xml:space="preserve">
+    <value>ব্যাজসমূহ</value>
+  </data>
+  <data name="Identity and official credentials authenticated by KrishiLink." xml:space="preserve">
+    <value>কৃষিলিংক দ্বারা পরিচয় ও অফিসিয়াল তথ্য যাচাইকৃত।</value>
+  </data>
+  <data name="Submit NID or Trade License and receive approval." xml:space="preserve">
+    <value>এনআইডি বা ট্রেড লাইসেন্স জমা দিয়ে অনুমোদন পান।</value>
+  </data>
+  <data name="Century Host" xml:space="preserve">
+    <value>সেঞ্চুরি হোস্ট</value>
+  </data>
+  <data name="Completed 100 or more successful rental and storage bookings." xml:space="preserve">
+    <value>১০০ বা ততোধিক সফল ভাড়া ও সংরক্ষণ বুকিং সম্পন্ন করেছেন।</value>
+  </data>
+  <data name="Complete 100 successful bookings on KrishiLink." xml:space="preserve">
+    <value>কৃষিলিংকে ১০০টি সফল বুকিং সম্পন্ন করুন।</value>
+  </data>
+  <data name="Pro Host" xml:space="preserve">
+    <value>প্রো হোস্ট</value>
+  </data>
+  <data name="Completed 50 or more successful bookings." xml:space="preserve">
+    <value>৫০ বা ততোধিক সফল বুকিং সম্পন্ন করেছেন।</value>
+  </data>
+  <data name="Complete 50 successful bookings." xml:space="preserve">
+    <value>৫০টি সফল বুকিং সম্পন্ন করুন।</value>
+  </data>
+  <data name="Active Host" xml:space="preserve">
+    <value>সক্রিয় হোস্ট</value>
+  </data>
+  <data name="Completed 10 or more successful bookings." xml:space="preserve">
+    <value>১০ বা ততোধিক সফল বুকিং সম্পন্ন করেছেন।</value>
+  </data>
+  <data name="Complete 10 successful bookings." xml:space="preserve">
+    <value>১০টি সফল বুকিং সম্পন্ন করুন।</value>
+  </data>
+  <data name="Top Rated Host" xml:space="preserve">
+    <value>শীর্ষ রেটেড হোস্ট</value>
+  </data>
+  <data name="Maintains an average rating of 4.7★ or higher with trusted farmer reviews." xml:space="preserve">
+    <value>কৃষকদের বিশ্বস্ত মূল্যায়নের মাধ্যমে ৪.৭★ বা ততোধিক গড় রেটিং বজায় রেখেছেন।</value>
+  </data>
+  <data name="Achieve 4.7+ star rating with at least 3 customer reviews." xml:space="preserve">
+    <value>কমপক্ষে ৩টি রিভিউ সহ ৪.৭+ স্টার রেটিং অর্জন করুন।</value>
+  </data>
+  <data name="Quick Responder" xml:space="preserve">
+    <value>দ্রুত সাড়া প্রদানকারী</value>
+  </data>
+  <data name="Demonstrates exceptional reliability with 80%+ request acceptance rate." xml:space="preserve">
+    <value>৮০%+ অনুরোধ গ্রহণ ও সম্পন্ন করার মাধ্যমে অনন্য নির্ভরযোগ্যতা প্রদর্শন।</value>
+  </data>
+  <data name="Maintain an 80%+ booking acceptance rate across at least 3 requests." xml:space="preserve">
+    <value>কমপক্ষে ৩টি অনুরোধের মধ্যে ৮০%+ বুকিং গ্রহণের হার বজায় রাখুন।</value>
+  </data>
+  <data name="Machinery Master" xml:space="preserve">
+    <value>মেশিনারিজ মাস্টার</value>
+  </data>
+  <data name="Maintains peak equipment health with verified service records." xml:space="preserve">
+    <value>যাচাইকৃত সার্ভিস রেকর্ডের মাধ্যমে যন্ত্রপাতির সেরা স্বাস্থ্য বজায় রাখেন।</value>
+  </data>
+  <data name="Log at least 1 verified maintenance service event." xml:space="preserve">
+    <value>কমপক্ষে ১টি যাচাইকৃত রক্ষণাবেক্ষণ সার্ভিস রেকর্ড করুন।</value>
+  </data>
+  <data name="Rising Star" xml:space="preserve">
+    <value>উদীয়মান তারকা</value>
+  </data>
+  <data name="Newly registered host achieving outstanding farmer satisfaction within 90 days." xml:space="preserve">
+    <value>৯০ দিনের মধ্যে অসাধারণ কৃষক সন্তুষ্টি অর্জনকারী নতুন নিবন্ধিত হোস্ট।</value>
+  </data>
+  <data name="Joined within 90 days with 2+ bookings and 4.5+ star rating." xml:space="preserve">
+    <value>২+ বুকিং এবং ৪.৫+ স্টার রেটিং সহ ৯০ দিনের মধ্যে যোগদান করেছেন।</value>
+  </data>
+  <data name="Host Recognition &amp; Badges" xml:space="preserve">
+    <value>হোস্ট স্বীকৃতি ও ব্যাজসমূহ</value>
+  </data>
+  <data name="Unlock trust badges to boost visibility, build farmer confidence, and climb the KrishiLink Leaderboard." xml:space="preserve">
+    <value>আস্থা ব্যাজ আনলক করে দৃশ্যমানতা বাড়ান, কৃষকের আস্থা অর্জন করুন এবং লিডারবোর্ডে এগিয়ে যান।</value>
+  </data>
+  <data name="Unlocked Badges ({0})" xml:space="preserve">
+    <value>আনলককৃত ব্যাজসমূহ ({0})</value>
+  </data>
+  <data name="Badges in Progress ({0})" xml:space="preserve">
+    <value>অগ্রগতিতে থাকা ব্যাজসমূহ ({0})</value>
+  </data>
+  <data name="Unranked" xml:space="preserve">
+    <value>র‍্যাঙ্কহীন</value>
+  </data>
+  <data name="out of {0} hosts" xml:space="preserve">
+    <value>{0} জন হোস্টের মধ্যে</value>
+  </data>
+  <data name="Based on ratings &amp; activity" xml:space="preserve">
+    <value>রেটিং ও কার্যক্রমের উপর ভিত্তি করে</value>
+  </data>
+  <data name="Unlocked Badges" xml:space="preserve">
+    <value>আনলককৃত ব্যাজসমূহ</value>
+  </data>
+  <data name="Progress" xml:space="preserve">
+    <value>অগ্রগতি</value>
+  </data>
+  <data name="Fulfillment" xml:space="preserve">
+    <value>সম্পূর্ণকরণ</value>
+  </data>
+  <data name="Service Records" xml:space="preserve">
+    <value>সার্ভিস রেকর্ড</value>
+  </data>
+  <data name="Expired (>90d)" xml:space="preserve">
+    <value>মেয়াদোত্তীর্ণ (>৯০ দিন)</value>
+  </data>
+  <data name="No badges unlocked yet. Complete bookings and maintain high ratings to earn recognition!" xml:space="preserve">
+    <value>এখনও কোনো ব্যাজ আনলক হয়নি। বুকিং সম্পন্ন করুন এবং উচ্চ রেটিং বজায় রেখে স্বীকৃতি অর্জন করুন!</value>
+  </data>
+  <data name="View Public Leaderboard" xml:space="preserve">
+    <value>পাবলিক লিডারবোর্ড দেখুন</value>
+  </data>
+  <data name="Badge Progress" xml:space="preserve">
+    <value>ব্যাজ অগ্রগতি</value>
+  </data>
+  <data name="Leaderboard Rank" xml:space="preserve">
+    <value>লিডারবোর্ড র‍্যাঙ্ক</value>
+  </data>
+  <data name="Machinery Hosts" xml:space="preserve">
+    <value>যন্ত্রপাতি হোস্ট</value>
+  </data>
+  <data name="Godown Hosts" xml:space="preserve">
+    <value>গুদাম হোস্ট</value>
+  </data>
+  <data name="Sort by Trust Score" xml:space="preserve">
+    <value>ট্রাস্ট স্কোর অনুযায়ী সাজান</value>
+  </data>
+  <data name="Sort by Completed Bookings" xml:space="preserve">
+    <value>সম্পন্ন বুকিং অনুযায়ী সাজান</value>
+  </data>
+  <data name="Sort by Highest Rating" xml:space="preserve">
+    <value>সর্বোচ্চ রেটিং অনুযায়ী সাজান</value>
+  </data>
+  <data name="All Districts" xml:space="preserve">
+    <value>সকল জেলা</value>
+  </data>
+  <data name="KrishiLink Trust Score" xml:space="preserve">
+    <value>কৃষিলিংক ট্রাস্ট স্কোর</value>
+  </data>
+  <data name="Rankings refreshed successfully from real-time database records." xml:space="preserve">
+    <value>ডাটাবেজ রেকর্ড থেকে র‍্যাংকিং সফলভাবে রিফ্রেশ করা হয়েছে।</value>
+  </data>
+  <data name="Champion" xml:space="preserve">
+    <value>চ্যাম্পিয়ন</value>
+  </data>
+  <data name="Runner Up" xml:space="preserve">
+    <value>রানার আপ</value>
+  </data>
+  <data name="2nd Runner Up" xml:space="preserve">
+    <value>২য় রানার আপ</value>
+  </data>
+  <data name="Host Recognition &amp; Badge Progression" xml:space="preserve">
+    <value>হোস্ট স্বীকৃতি ও ব্যাজ অগ্রগতি</value>
+  </data>
+  <data name="Track your milestone badges, unlock new host tiers, and climb the public KrishiLink leaderboard." xml:space="preserve">
+    <value>আপনার মাইলফলক ব্যাজ ট্র্যাক করুন, নতুন হোস্ট স্তর আনলক করুন এবং পাবলিক কৃষিলিংক লিডারবোর্ডে এগিয়ে যান।</value>
+  </data>
+  <data name="Your Trust Score" xml:space="preserve">
+    <value>আপনার ট্রাস্ট স্কোর</value>
+  </data>
+  <data name="Leaderboard Standings" xml:space="preserve">
+    <value>লিডারবোর্ড অবস্থান</value>
+  </data>
+  <data name="Full Leaderboard Standings" xml:space="preserve">
+    <value>সম্পূর্ণ লিডারবোর্ড অবস্থান</value>
+  </data>
+  <data name="Host / Organization" xml:space="preserve">
+    <value>হোস্ট / প্রতিষ্ঠান</value>
+  </data>
+  <data name="Badges &amp; Accreditations" xml:space="preserve">
+    <value>ব্যাজ ও স্বীকৃতি</value>
+  </data>
+  <data name="Activity &amp; Fulfillment" xml:space="preserve">
+    <value>কার্যক্রম ও সম্পূর্ণকরণ</value>
+  </data>
+  <data name="View Profile" xml:space="preserve">
+    <value>প্রোফাইল দেখুন</value>
+  </data>
+  <data name="View Listings" xml:space="preserve">
+    <value>তালিকা দেখুন</value>
+  </data>
+  <data name="Ranked #" xml:space="preserve">
+    <value>র‍্যাঙ্ক #</value>
+  </data>
+  <data name="Top Host Podium" xml:space="preserve">
+    <value>শীর্ষ হোস্ট পোডিয়াম</value>
+  </data>
+  <data name="Top 3 hosts based on trust score, bookings, and verified customer reviews" xml:space="preserve">
+    <value>ট্রাস্ট স্কোর, বুকিং ও যাচাইকৃত গ্রাহক পর্যালোচনার ভিত্তিতে শীর্ষ ৩ হোস্ট</value>
+  </data>
+  <data name="KrishiPoints &amp; Rewards Hub" xml:space="preserve">
+    <value>কৃষিপয়েন্টস ও রিওয়ার্ডস হাব</value>
+  </data>
+  <data name="KrishiPoints Rewards" xml:space="preserve">
+    <value>কৃষিপয়েন্টস রিওয়ার্ডস</value>
+  </data>
+  <data name="KrishiPoints" xml:space="preserve">
+    <value>কৃষিপয়েন্টস</value>
+  </data>
+  <data name="Points Available" xml:space="preserve">
+    <value>উপলব্ধ পয়েন্টস</value>
+  </data>
+  <data name="Next Tier" xml:space="preserve">
+    <value>পরবর্তী স্তর</value>
+  </data>
+  <data name="Farmer Loyalty Hub" xml:space="preserve">
+    <value>কৃষক লয়্যালটি হাব</value>
+  </data>
+  <data name="Earn KrishiPoints with every booking and convert them into instant rental and storage discounts!" xml:space="preserve">
+    <value>প্রতিটি বুকিংয়ে কৃষিপয়েন্টস অর্জন করুন এবং সরাসরি ভাড়া ও স্টোরেজ ডিসকাউন্টে রূপান্তর করুন!</value>
+  </data>
+  <data name="How to Earn Points" xml:space="preserve">
+    <value>কীভাবে পয়েন্ট অর্জন করবেন</value>
+  </data>
+  <data name="Earn 1 KrishiPoint for every ৳100 spent on completed equipment rentals or godown storage bookings (min. 10 pts)." xml:space="preserve">
+    <value>সম্পূর্ণ হওয়া সরঞ্জাম ভাড়া বা গোডাউন স্টোরেজে প্রতি ৳১০০ খরচে ১ কৃষিপয়েন্ট অর্জন করুন (সর্বনিম্ন ১০ পয়েন্ট)।</value>
+  </data>
+  <data name="Direct Checkout Discounts" xml:space="preserve">
+    <value>সরাসরি চেকআউট ডিসকাউন্ট</value>
+  </data>
+  <data name="Apply your loyalty tier or generated promo code directly during equipment or storage booking checkout." xml:space="preserve">
+    <value>সরঞ্জাম বা স্টোরেজ বুকিং চেকআউটে সরাসরি আপনার লয়্যালটি স্তর বা ভাউচার কোড ব্যবহার করুন।</value>
+  </data>
+  <data name="Auto Refund Protection" xml:space="preserve">
+    <value>স্বয়ংক্রিয় রিফান্ড সুরক্ষা</value>
+  </data>
+  <data name="If a booking request is declined or cancelled, used points and vouchers are automatically restored to your wallet." xml:space="preserve">
+    <value>বুকিং অনুরোধ বাতিল বা প্রত্যাখ্যাত হলে ব্যবহৃত পয়েন্ট ও ভাউচার স্বয়ংক্রিয়ভাবে আপনার ওয়ালেটে ফেরত আসবে।</value>
+  </data>
+  <data name="Fixed Discount Conversion Table" xml:space="preserve">
+    <value>নির্দিষ্ট ডিসকাউন্ট রূপান্তর তালিকা</value>
+  </data>
+  <data name="Choose a conversion tier below to generate a reusable promo discount voucher." xml:space="preserve">
+    <value>একটি পুনঃব্যবহারযোগ্য প্রোমো ডিসকাউন্ট ভাউচার তৈরি করতে নিচের রূপান্তর স্তরটি নির্বাচন করুন।</value>
+  </data>
+  <data name="Points Required" xml:space="preserve">
+    <value>প্রয়োজনীয় পয়েন্ট</value>
+  </data>
+  <data name="Discount Value" xml:space="preserve">
+    <value>ডিসকাউন্টের মান</value>
+  </data>
+  <data name="Bonus Rate" xml:space="preserve">
+    <value>বোনাস হার</value>
+  </data>
+  <data name="Promo Voucher" xml:space="preserve">
+    <value>প্রোমো ভাউচার</value>
+  </data>
+  <data name="pts" xml:space="preserve">
+    <value>পয়েন্ট</value>
+  </data>
+  <data name="Standard (1.0x)" xml:space="preserve">
+    <value>স্ট্যান্ডার্ড (১.০x)</value>
+  </data>
+  <data name="Generate Voucher" xml:space="preserve">
+    <value>ভাউচার তৈরি করুন</value>
+  </data>
+  <data name="Need More Pts" xml:space="preserve">
+    <value>আরও পয়েন্ট দরকার</value>
+  </data>
+  <data name="Active Promo Discount Vouchers" xml:space="preserve">
+    <value>সক্রিয় প্রোমো ডিসকাউন্ট ভাউচার</value>
+  </data>
+  <data name="Copy &amp; use these promo vouchers at checkout for instant savings." xml:space="preserve">
+    <value>তাৎক্ষণিক সাশ্রয়ের জন্য চেকআউটে এই প্রোমো ভাউচার কোডগুলো কপি করে ব্যবহার করুন।</value>
+  </data>
+  <data name="Valid for Equipment &amp; Godown bookings" xml:space="preserve">
+    <value>সরঞ্জাম ও গোডাউন উভয় বুকিংয়ের জন্য প্রযোজ্য</value>
+  </data>
+  <data name="Points &amp; Discount Transaction History" xml:space="preserve">
+    <value>পয়েন্ট ও ডিসকাউন্ট লেনদেনের ইতিহাস</value>
+  </data>
+  <data name="Complete transparent ledger of your points earned, promo codes generated, and booking discounts." xml:space="preserve">
+    <value>আপনার অর্জিত পয়েন্ট, তৈরিকৃত প্রোমো কোড এবং বুকিং ডিসকাউন্টের সম্পূর্ণ স্বচ্ছ ইতিহাস।</value>
+  </data>
+  <data name="Date &amp; Time" xml:space="preserve">
+    <value>তারিখ ও সময়</value>
+  </data>
+  <data name="Booking / Promo Ref" xml:space="preserve">
+    <value>বুকিং / প্রোমো রেফারেন্স</value>
+  </data>
+  <data name="Points Change" xml:space="preserve">
+    <value>পয়েন্ট পরিবর্তন</value>
+  </data>
+  <data name="Discount / Spent" xml:space="preserve">
+    <value>ডিসকাউন্ট / খরচ</value>
+  </data>
+  <data name="No point transactions recorded yet. Complete bookings to start earning KrishiPoints!" xml:space="preserve">
+    <value>এখনো কোনো পয়েন্ট লেনদেনের তথ্য নেই। কৃষিপয়েন্টস অর্জন শুরু করতে বুকিং সম্পন্ন করুন!</value>
+  </data>
+  <data name="KrishiPoints Discount" xml:space="preserve">
+    <value>কৃষিপয়েন্টস ডিসকাউন্ট</value>
+  </data>
+  <data name="Apply loyalty points or promo code for instant savings" xml:space="preserve">
+    <value>তাৎক্ষণিক সাশ্রয়ের জন্য লয়্যালটি পয়েন্ট বা প্রোমো কোড ব্যবহার করুন</value>
+  </data>
+  <data name="Available Balance" xml:space="preserve">
+    <value>উপলব্ধ ব্যালেন্স</value>
+  </data>
+  <data name="Choose Point Redemption Tier" xml:space="preserve">
+    <value>পয়েন্ট রিডেম্পশন স্তর নির্বাচন করুন</value>
+  </data>
+  <data name="Or Enter Promo / Voucher Code" xml:space="preserve">
+    <value>অথবা প্রোমো / ভাউচার কোড লিখুন</value>
+  </data>
+  <data name="Apply Promo" xml:space="preserve">
+    <value>প্রোমো প্রয়োগ করুন</value>
+  </data>
+  <data name="Remove Promo" xml:space="preserve">
+    <value>প্রোমো মুছুন</value>
+  </data>
+  <data name="Applied Promo Discount" xml:space="preserve">
+    <value>প্রয়োগকৃত প্রোমো ডিসকাউন্ট</value>
+  </data>
+  <data name="Bronze Tier" xml:space="preserve">
+    <value>ব্রোঞ্জ স্তর</value>
+  </data>
+  <data name="Silver Tier" xml:space="preserve">
+    <value>সিলভার স্তর</value>
+  </data>
+  <data name="Gold Tier" xml:space="preserve">
+    <value>গোল্ড স্তর</value>
+  </data>
+  <data name="Platinum Tier" xml:space="preserve">
+    <value>প্লাটিনাম স্তর</value>
+  </data>
 </root>

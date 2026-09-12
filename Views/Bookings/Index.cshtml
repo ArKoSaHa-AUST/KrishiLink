@@ -339,6 +339,14 @@
                                                     }
                                                 }
 
+                                                <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs" onclick="openBookingQrModal('@b.BookingType', @b.Id)">
+                                                    <i class="bi bi-qr-code"></i>
+                                                    <span>@L["Show QR Code"]</span>
+                                                </button>
+                                                <a asp-action="Confirmation" asp-route-type="@b.BookingType" asp-route-id="@b.Id" class="btn btn-outline-secondary btn-sm rounded-pill px-3.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5">
+                                                    <i class="bi bi-ticket-perforated-fill text-success"></i>
+                                                    <span>@L["View Pass & Voucher"]</span>
+                                                </a>
                                                 @if (b.CanCancel)
                                                 {
                                                     <form asp-action="Cancel" method="post" onsubmit="return confirm('@L["Cancel this booking? The dates will be released to other farmers."]');">
@@ -351,7 +359,7 @@
                                                     </form>
                                                 }
                                                 <a href="@b.ListingDetailUrl" class="btn btn-krishi-primary btn-sm rounded-pill px-3.5 py-1.5 fw-semibold">
-                                                    <span>@L["View Original Listing"]</span>
+                                                    <span>@L["View Listing"]</span>
                                                     <i class="bi bi-arrow-right small ms-1"></i>
                                                 </a>
                                             </div>
@@ -471,9 +479,19 @@
                             </button>
                         }
 
-                        <a href="@b.ListingDetailUrl" class="btn btn-krishi-primary btn-sm w-100 rounded-pill py-2 fw-semibold mt-2">
-                            @L["View Original Listing"]
-                        </a>
+                        <div class="d-grid gap-2 mt-2">
+                            <button type="button" class="btn btn-outline-success btn-sm rounded-pill py-2 fw-semibold d-flex align-items-center justify-content-center gap-1.5" onclick="openBookingQrModal('@b.BookingType', @b.Id)">
+                                <i class="bi bi-qr-code"></i>
+                                <span>@L["Show QR Code"]</span>
+                            </button>
+                            <a asp-action="Confirmation" asp-route-type="@b.BookingType" asp-route-id="@b.Id" class="btn btn-outline-secondary btn-sm rounded-pill py-2 fw-semibold d-flex align-items-center justify-content-center gap-1.5">
+                                <i class="bi bi-ticket-perforated-fill text-success"></i>
+                                <span>@L["View Full Voucher Pass"]</span>
+                            </a>
+                            <a href="@b.ListingDetailUrl" class="btn btn-krishi-primary btn-sm rounded-pill py-2 fw-semibold">
+                                @L["View Listing"]
+                            </a>
+                        </div>
                         @if (b.CanCancel)
                         {
                             <form asp-action="Cancel" method="post" class="mt-2" onsubmit="return confirm('@L["Cancel this booking? The dates will be released to other farmers."]');">
@@ -540,5 +558,87 @@ else
     </div>
 }
 
+<!-- =========================================================================
+     QUICK QR CODE MODAL FOR MOBILE / DESKTOP
+     ========================================================================= -->
+<div class="modal fade" id="quickQrModal" tabindex="-1" aria-labelledby="quickQrModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header bg-success text-white py-3 border-0">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-qr-code-scan fs-5"></i>
+                    <h6 class="modal-title fw-bold mb-0" id="quickQrModalLabel">@L["Booking QR Code Pass"]</h6>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div id="modalQrLoading" class="py-4">
+                    <div class="spinner-border text-success" role="status"></div>
+                    <p class="text-muted small mt-2 mb-0">@L["Generating QR Pass..."]</p>
+                </div>
+                <div id="modalQrContent" class="d-none">
+                    <div id="modalQrSvg" class="p-3 bg-light rounded-4 border d-inline-block mb-3 shadow-xs" style="max-width: 220px; max-height: 220px;"></div>
+                    <h5 class="fw-bold text-dark mb-1" id="modalQrItemName"></h5>
+                    <p class="font-monospace fw-bold text-success mb-1" id="modalQrCode"></p>
+                    <p class="text-muted small mb-3" id="modalQrDates"></p>
+                    <div class="alert alert-light border small text-start mb-3 p-2.5 rounded-3">
+                        <i class="bi bi-info-circle-fill text-success me-1"></i>
+                        <span>@L["Present this QR code to the owner upon pickup or delivery to quickly verify your identity." ]</span>
+                    </div>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a id="modalQrVoucherLink" href="#" class="btn btn-success btn-sm rounded-pill px-3.5 py-1.5 fw-semibold">
+                            <i class="bi bi-ticket-perforated me-1"></i> @L["Open Full Voucher"]
+                        </a>
+                        <a id="modalQrDownloadLink" href="#" download="" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold">
+                            <i class="bi bi-download me-1"></i> @L["Download"]
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <partial name="_ReviewModal" />
+
+@section Scripts {
+    <script>
+        async function openBookingQrModal(type, id) {
+            const modalEl = document.getElementById('quickQrModal');
+            if (!modalEl) return;
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+
+            const loading = document.getElementById('modalQrLoading');
+            const content = document.getElementById('modalQrContent');
+            loading.classList.remove('d-none');
+            content.classList.add('d-none');
+
+            try {
+                const res = await fetch(`/Bookings/GetQrData?type=${encodeURIComponent(type)}&id=${id}`);
+                if (!res.ok) throw new Error('Failed to load QR');
+                const data = await res.json();
+
+                document.getElementById('modalQrSvg').innerHTML = data.qrSvg;
+                document.getElementById('modalQrItemName').textContent = data.itemName;
+                document.getElementById('modalQrCode').textContent = data.bookingCode;
+                document.getElementById('modalQrDates').textContent = `${data.dates} • ${data.amount}`;
+                
+                const voucherLink = document.getElementById('modalQrVoucherLink');
+                voucherLink.href = `/Bookings/Confirmation?type=${encodeURIComponent(data.bookingType)}&id=${id}`;
+
+                const downloadLink = document.getElementById('modalQrDownloadLink');
+                downloadLink.href = data.qrBase64;
+                downloadLink.download = `KrishiLink_QR_${data.bookingCode}.png`;
+
+                loading.classList.add('d-none');
+                content.classList.remove('d-none');
+            } catch (err) {
+                console.error(err);
+                loading.innerHTML = `<p class="text-danger small mb-0">@L["Failed to load QR code. Please open full voucher."]`;
+            }
+        }
+    </script>
+}
+
 

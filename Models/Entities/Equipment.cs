@@ -7,6 +7,13 @@ namespace KrishiLink.Models.Entities
         public string Category { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
+
+        /// <summary>Geographic latitude coordinate for map pin location.</summary>
+        public double? Latitude { get; set; }
+
+        /// <summary>Geographic longitude coordinate for map pin location.</summary>
+        public double? Longitude { get; set; }
+
         public decimal DailyRate { get; set; }
         public decimal? HourlyRate { get; set; }
 
@@ -27,5 +34,6 @@ namespace KrishiLink.Models.Entities
         public ICollection<EquipmentBooking> Bookings { get; set; } = new List<EquipmentBooking>();
         public ICollection<EquipmentBlockedDate> BlockedDates { get; set; } = new List<EquipmentBlockedDate>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();
+        public ICollection<EquipmentMaintenanceRecord> MaintenanceRecords { get; set; } = new List<EquipmentMaintenanceRecord>();
     }
 }

@@ -296,7 +296,7 @@
                             </h5>
 
                             <!-- Location & Owner -->
-                            <div class="small text-muted mb-3">
+                            <div class="small text-muted mb-2">
                                 <div class="d-flex align-items-center gap-1 text-truncate mb-1">
                                     <i class="bi bi-geo-alt text-success"></i>
                                     <span class="text-truncate">@L[item.Location]</span>
@@ -315,6 +315,16 @@
                                     }
                                 </div>
                             </div>
+
+                            <!-- Last Serviced Trust Chip -->
+                            @if (!string.IsNullOrEmpty(item.LastServicedText))
+                            {
+                                <div class="mb-2.5">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle font-monospace small py-1 px-2" style="font-size: 0.72rem;">
+                                        <i class="bi bi-wrench-adjustable me-1"></i>@L[item.LastServicedText]
+                                    </span>
+                                </div>
+                            }
 
                             <!-- Pricing & Action Button -->
                             <div class="pt-3 border-top mt-auto">
@@ -738,7 +748,7 @@
                                     ${item.name}
                                 </h5>
 
-                                <div class="small text-muted mb-3">
+                                <div class="small text-muted mb-2">
                                     <div class="d-flex align-items-center gap-1 text-truncate mb-1">
                                         <i class="bi bi-geo-alt text-success"></i>
                                         <span class="text-truncate">${localizedLocations[item.location] || item.location}</span>
@@ -748,6 +758,14 @@
                                         ${item.reviewCount > 0 ? `<span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>${item.rating.toFixed(1)} (${item.reviewCount})</span>` : ''}
                                     </div>
                                 </div>
+
+                                ${item.lastServicedText ? `
+                                    <div class="mb-2.5">
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle font-monospace small py-1 px-2" style="font-size: 0.72rem;">
+                                            <i class="bi bi-wrench-adjustable me-1"></i>${item.lastServicedText}
+                                        </span>
+                                    </div>
+                                ` : ''}
 
                                 <div class="pt-3 border-top mt-auto">
                                     <div class="d-flex justify-content-between align-items-baseline mb-3">

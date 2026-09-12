@@ -58,7 +58,8 @@ namespace KrishiLink.Controllers
         /// <summary>GET: /Godown/Details/3</summary>
         public async Task<IActionResult> Details(int id)
         {
-            var model = await _godowns.GetDetailsAsync(id);
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var model = await _godowns.GetDetailsAsync(id, currentUserId);
             return model is null ? NotFound() : View(model);
         }
 
@@ -69,13 +70,15 @@ namespace KrishiLink.Controllers
         public async Task<IActionResult> SubmitBooking(GodownDetailViewModel model)
         {
             var farmerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            var error = await _godowns.RequestStorageAsync(farmerId, model);
+            var (error, bookingId) = await _godowns.RequestStorageWithResultAsync(farmerId, model, model.AppliedPromoCode, model.PointsUsed);
 
-            if (error is null)
-                TempData["SuccessMessage"] = $"Storage space request ({model.RequestedCapacityTons:N0} Tons) sent to the godown owner! You will be notified once confirmed.";
-            else
-                TempData["ErrorMessage"] = error;
+            if (error is null && bookingId.HasValue)
+            {
+                TempData["SuccessMessage"] = $"Storage space request ({model.RequestedCapacityTons:N0} Tons) sent successfully! Here is your official booking confirmation pass.";
+                return RedirectToAction("Confirmation", "Bookings", new { type = "Godown", id = bookingId.Value, justCreated = true });
+            }
 
+            TempData["ErrorMessage"] = error ?? "Failed to submit storage booking.";
             return RedirectToAction(nameof(Details), new { id = model.Id });
         }
     }

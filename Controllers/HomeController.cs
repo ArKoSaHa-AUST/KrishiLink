@@ -32,7 +32,7 @@ namespace KrishiLink.Controllers
                 Response.Cookies.Append(
                     CookieRequestCultureProvider.DefaultCookieName,
                     CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(culture)),
-                    new CookieOptions { Expires = DateTimeOffset.UtcNow.AddYears(1), IsEssential = true, Secure = true });
+                    new CookieOptions { Expires = DateTimeOffset.UtcNow.AddYears(1), IsEssential = true, Secure = Request.IsHttps });
             }
 
             return LocalRedirect(string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl);

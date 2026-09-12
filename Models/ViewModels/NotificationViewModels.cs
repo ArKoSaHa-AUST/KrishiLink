@@ -24,6 +24,7 @@ namespace KrishiLink.Models.ViewModels
             NotificationTypes.BookingCompleted => "info",
             NotificationTypes.PayoutProcessed => "success",
             NotificationTypes.ReviewReceived => "warning",
+            NotificationTypes.WeatherSuggestion => "warning",
             _ => "secondary"
         };
 
@@ -35,6 +36,7 @@ namespace KrishiLink.Models.ViewModels
             NotificationTypes.BookingCompleted => "bi bi-patch-check-fill",
             NotificationTypes.PayoutProcessed => "bi bi-cash-stack",
             NotificationTypes.ReviewReceived => "bi bi-star-fill",
+            NotificationTypes.WeatherSuggestion => "bi bi-cloud-sun-fill",
             _ => "bi bi-bell-fill"
         };
 
@@ -46,6 +48,7 @@ namespace KrishiLink.Models.ViewModels
             NotificationTypes.BookingCompleted => "bg-info-subtle",
             NotificationTypes.PayoutProcessed => "bg-success-subtle",
             NotificationTypes.ReviewReceived => "bg-warning-subtle",
+            NotificationTypes.WeatherSuggestion => "bg-warning-subtle",
             _ => "bg-light"
         };
 

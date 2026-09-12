@@ -26,6 +26,14 @@ namespace KrishiLink.Models.ViewModels
         [Display(Name = "Location (District / Upazila)")]
         public string Location { get; set; } = string.Empty;
 
+        [Display(Name = "Latitude")]
+        [Range(-90.0, 90.0, ErrorMessage = "Invalid latitude coordinate.")]
+        public double? Latitude { get; set; }
+
+        [Display(Name = "Longitude")]
+        [Range(-180.0, 180.0, ErrorMessage = "Invalid longitude coordinate.")]
+        public double? Longitude { get; set; }
+
         [Required(ErrorMessage = "Total storage capacity is required.")]
         [Range(0.1, 100000, ErrorMessage = "Total capacity must be a positive number greater than 0.")]
         [Display(Name = "Total Capacity")]

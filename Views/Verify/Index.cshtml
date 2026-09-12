@@ -1,0 +1,235 @@
+@model KrishiLink.Models.ViewModels.BookingVerificationViewModel
+@{
+    ViewData["Title"] = $"{L["Booking Verification"]} - {Model.BookingCode}";
+}
+
+@section Styles {
+    <style>
+        .cert-card {
+            border-radius: 24px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+        .cert-header-valid {
+            background: linear-gradient(135deg, #198754 0%, #0d6838 100%);
+            color: white;
+        }
+        .cert-header-invalid {
+            background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%);
+            color: white;
+        }
+        .cert-shield-badge {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            margin: 0 auto;
+        }
+    </style>
+}
+
+<div class="container py-4" style="max-width: 760px;">
+    
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4 p-3.5 d-flex align-items-center gap-3">
+            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+            <div>
+                <h6 class="fw-bold mb-0.5 text-success-emphasis">@L["Action Completed!"]</h6>
+                <span class="small text-success-emphasis">@TempData["SuccessMessage"]</span>
+            </div>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm rounded-4 mb-4 p-3.5 d-flex align-items-center gap-3">
+            <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
+            <div>
+                <h6 class="fw-bold mb-0.5 text-danger-emphasis">@L["Action Error"]</h6>
+                <span class="small text-danger-emphasis">@TempData["ErrorMessage"]</span>
+            </div>
+        </div>
+    }
+
+    <!-- =========================================================================
+         VERIFICATION CERTIFICATE CARD
+         ========================================================================= -->
+    <div class="card cert-card shadow-lg border-0 mb-4">
+        
+        <!-- Header Banner -->
+        <div class="@(Model.IsValid ? "cert-header-valid" : "cert-header-invalid") p-4 p-md-5 text-center position-relative">
+            <div class="cert-shield-badge mb-3">
+                <i class="bi @(Model.IsValid ? "bi-patch-check-fill" : "bi-shield-x") text-white fs-1"></i>
+            </div>
+            <span class="badge bg-white text-dark rounded-pill px-3 py-1.5 fw-bold text-uppercase mb-2 shadow-xs" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+                @(Model.IsValid ? L["Verified Authentic Booking"] : L["Invalid Booking"])
+            </span>
+            <h3 class="fw-black mb-1 text-white">@L[Model.VerificationStatusMessage]</h3>
+            <p class="text-white-50 small mb-0 font-monospace">@L["Reference:"] <strong class="text-white">@Model.BookingCode</strong></p>
+        </div>
+
+        @if (Model.IsFound)
+        {
+            <div class="card-body p-4 p-md-5">
+                
+                <!-- Status & Type Pill -->
+                <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom flex-wrap gap-2">
+                    <div>
+                        <span class="badge bg-light text-muted border px-2.5 py-1 font-monospace me-1">@Model.BookingCode</span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold">
+                            <i class="bi @(Model.BookingType == "Equipment" ? "bi-truck" : "bi-building") me-1"></i>@L[Model.BookingType]
+                        </span>
+                    </div>
+                    <div>
+                        <partial name="_StatusBadge" model="@Model.Status" />
+                    </div>
+                </div>
+
+                <!-- Asset Item Details -->
+                <div class="p-3.5 rounded-4 bg-light border mb-4 d-flex align-items-center gap-3">
+                    @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                    {
+                        <img src="@Model.ImageUrl" alt="@Model.ItemName" class="rounded-3 object-fit-cover shadow-xs border flex-shrink-0" style="width: 76px; height: 64px;" />
+                    }
+                    <div class="flex-grow-1 min-w-0">
+                        <span class="badge bg-white text-muted border mb-1" style="font-size: 0.72rem;">@L[Model.Category]</span>
+                        <h5 class="fw-bold text-dark mb-0.5 text-truncate">@Model.ItemName</h5>
+                        <span class="text-muted small"><i class="bi bi-geo-alt text-success me-1"></i>@Model.Location</span>
+                    </div>
+                </div>
+
+                <!-- Verified Metadata Grid -->
+                <div class="row g-3 mb-4">
+                    
+                    <!-- Farmer Info -->
+                    <div class="col-12 col-md-6">
+                        <div class="p-3.5 rounded-4 border bg-white h-100 shadow-xs">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="bi bi-person-badge-fill text-success fs-5"></i>
+                                <span class="fw-bold text-dark small">@L["Farmer / Customer"]</span>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">@Model.FarmerName</h6>
+                            <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1"></i>@Model.FarmerLocation</p>
+                            <a href="tel:@Model.FarmerPhone" class="btn btn-outline-success btn-sm rounded-pill px-3 py-1 fw-semibold">
+                                <i class="bi bi-telephone-fill me-1"></i> @Model.FarmerPhone
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Owner Info -->
+                    <div class="col-12 col-md-6">
+                        <div class="p-3.5 rounded-4 border bg-white h-100 shadow-xs">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="bi bi-building-check text-success fs-5"></i>
+                                <span class="fw-bold text-dark small">@L["Owner / Provider"]</span>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">@Model.OwnerName</h6>
+                            <p class="text-muted small mb-2">@(string.IsNullOrWhiteSpace(Model.OwnerBusiness) ? L["Verified Machinery Host"] : Model.OwnerBusiness)</p>
+                            <a href="tel:@Model.OwnerPhone" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1 fw-semibold">
+                                <i class="bi bi-telephone-fill me-1"></i> @Model.OwnerPhone
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Booking Schedule & Financials -->
+                    <div class="col-12">
+                        <div class="p-3.5 rounded-4 border bg-white shadow-xs">
+                            <div class="row g-2 small">
+                                <div class="col-6 col-sm-3 text-muted">@L["Rental Dates:"]</div>
+                                <div class="col-6 col-sm-3 fw-bold text-dark">@Model.DateRangeDisplay</div>
+
+                                <div class="col-6 col-sm-3 text-muted">@L["Duration:"]</div>
+                                <div class="col-6 col-sm-3 fw-semibold text-dark">@Model.DurationDisplay</div>
+
+                                <div class="col-6 col-sm-3 text-muted">@L["Total Cost:"]</div>
+                                <div class="col-6 col-sm-3 fw-bold text-success fs-6">@Model.CostDisplay</div>
+
+                                <div class="col-6 col-sm-3 text-muted">@L["Payment Status:"]</div>
+                                <div class="col-6 col-sm-3"><span class="badge bg-light text-dark border">@L[Model.PaymentStatus]</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- =========================================================================
+                     OWNER 1-CLICK VERIFICATION ACTIONS TOOLBAR
+                     ========================================================================= -->
+                @if (Model.IsCurrentOwner)
+                {
+                    <div class="p-4 rounded-4 bg-success-subtle border border-success-subtle mb-3">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                            <h6 class="fw-bold text-success-emphasis mb-0 d-flex align-items-center gap-2">
+                                <i class="bi bi-person-check-fill text-success fs-5"></i>
+                                <span>@L["Owner Verification Actions"]</span>
+                            </h6>
+                            <span class="badge bg-success text-white rounded-pill px-2.5 py-1 small">@L["You Own This Asset"]</span>
+                        </div>
+                        <p class="small text-success-emphasis mb-3">
+                            @L["You have verified the farmer's QR pass. Select an action below to update booking status immediately:"]
+                        </p>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            @if (Model.CanAccept)
+                            {
+                                <form asp-action="QuickAction" asp-route-code="@Model.BookingCode" method="post" class="d-inline">
+                                    <input type="hidden" name="action" value="accept" />
+                                    <button type="submit" class="btn btn-success rounded-pill px-4 py-2 fw-bold shadow-sm">
+                                        <i class="bi bi-check-lg me-1"></i> @L["Accept Booking Request"]
+                                    </button>
+                                </form>
+                                <form asp-action="QuickAction" asp-route-code="@Model.BookingCode" method="post" class="d-inline" onsubmit="return confirm('@L["Reject this booking request?"]');">
+                                    <input type="hidden" name="action" value="reject" />
+                                    <button type="submit" class="btn btn-outline-danger rounded-pill px-3 py-2 fw-semibold">
+                                        <i class="bi bi-x-lg me-1"></i> @L["Reject Request"]
+                                    </button>
+                                </form>
+                            }
+
+                            @if (Model.CanConfirmPickup || Model.CanComplete)
+                            {
+                                <form asp-action="QuickAction" asp-route-code="@Model.BookingCode" method="post" class="d-inline" onsubmit="return confirm('@L["Confirm farmer pickup & mark booking as completed?"]');">
+                                    <input type="hidden" name="action" value="confirm-pickup" />
+                                    <button type="submit" class="btn btn-success rounded-pill px-4 py-2 fw-bold shadow-sm">
+                                        <i class="bi bi-shield-fill-check me-1"></i> @L["Confirm Pickup & Handover"]
+                                    </button>
+                                </form>
+                            }
+
+                            <a href="tel:@Model.FarmerPhone" class="btn btn-outline-success rounded-pill px-3 py-2 fw-semibold">
+                                <i class="bi bi-telephone-fill me-1"></i> @L["Call Farmer"]
+                            </a>
+                        </div>
+                    </div>
+                }
+
+            </div>
+        }
+        else
+        {
+            <div class="card-body p-5 text-center">
+                <i class="bi bi-exclamation-octagon text-danger display-3 d-block mb-3"></i>
+                <h4 class="fw-bold text-dark mb-2">@L["Booking Reference Not Found"]</h4>
+                <p class="text-muted mb-4 mx-auto" style="max-width: 440px;">
+                    @L["The scanned QR reference does not match any active or past booking records in KrishiLink."]
+                </p>
+                <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-semibold">
+                    @L["Back to Homepage"]
+                </a>
+            </div>
+        }
+
+        <div class="bg-light p-3 border-top text-center text-muted small">
+            <i class="bi bi-patch-check-fill text-success me-1"></i>
+            @L["Secured with KrishiLink Digital Trust Protocol • Scanned at {0}", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm UTC")]
+        </div>
+
+    </div>
+
+</div>

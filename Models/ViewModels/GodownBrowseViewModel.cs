@@ -12,6 +12,8 @@ namespace KrishiLink.Models.ViewModels
         public string Name { get; set; } = string.Empty;
         public string StorageType { get; set; } = "Grain Warehouse"; // Cold Storage, Grain Warehouse, Silo Facility, Dry Godown, Pest Controlled
         public string Location { get; set; } = string.Empty;
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
         public double DistanceKm { get; set; }
         public double TotalCapacityTons { get; set; }
         public double AvailableCapacityTons { get; set; }

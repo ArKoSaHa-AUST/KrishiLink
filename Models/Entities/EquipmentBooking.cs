@@ -26,5 +26,12 @@ namespace KrishiLink.Models.Entities
 
         /// <summary>The farmer's review for this completed booking; null if not yet reviewed.</summary>
         public Review? Review { get; set; }
+
+        // Loyalty Points & Promo Code Discount
+        public decimal DiscountAmount { get; set; } = 0;
+        public string? AppliedPromoCode { get; set; }
+        public int PointsUsed { get; set; } = 0;
+        public int PointsEarned { get; set; } = 0;
+        public bool PointsAwarded { get; set; } = false;
     }
 }

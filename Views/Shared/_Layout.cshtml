@@ -27,6 +27,9 @@
     
     <!-- Custom site styling -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <!-- Page Specific Styles -->
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="d-flex flex-column min-vh-100 @(isBangla ? "lang-bn" : "") @ViewData["BodyClass"]">
     <!-- Header & Sticky Top Navbar -->
@@ -66,6 +69,11 @@
                         <li class="nav-item">
                             <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Advisory" ? "active" : "") d-flex align-items-center gap-1.5" asp-controller="Advisory" asp-action="Index">
                                 <span>@L["Crop Advisory"]</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Leaderboard" ? "active" : "") d-flex align-items-center gap-1.5" asp-controller="Leaderboard" asp-action="Index">
+                                <span>@L["Leaderboard"]</span>
                             </a>
                         </li>
                     </ul>
@@ -145,6 +153,15 @@
                                             <span>@L["Dashboard"]</span>
                                         </a>
                                     </li>
+                                    @if (roleDisplay == "Farmer")
+                                    {
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="Loyalty" asp-action="Index">
+                                                <i class="bi bi-gift text-success"></i>
+                                                <span>@L["KrishiPoints Hub"]</span>
+                                            </a>
+                                        </li>
+                                    }
                                     @if (roleDisplay is "GodownOwner" or "EquipmentOwner")
                                     {
                                         <li>
@@ -230,8 +247,18 @@
                                     <i class="bi bi-cloud-sun"></i> @L["Crop Advisory"]
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Leaderboard" asp-action="Index">
+                                    <i class="bi bi-trophy"></i> @L["Leaderboard"]
+                                </a>
+                            </li>
                             @if (SignInManager.IsSignedIn(User))
                             {
+                                <li class="nav-item">
+                                    <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Loyalty" asp-action="Index">
+                                        <i class="bi bi-gift"></i> @L["KrishiPoints Hub"]
+                                    </a>
+                                </li>
                                 <li class="nav-item">
                                     <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center justify-content-between" asp-controller="Notifications" asp-action="Index">
                                         <div class="d-flex align-items-center gap-2">

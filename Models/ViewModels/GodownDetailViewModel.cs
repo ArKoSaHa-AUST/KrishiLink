@@ -12,9 +12,23 @@ namespace KrishiLink.Models.ViewModels
         public double TotalCapacityTons { get; set; }
         public double AvailableCapacityTons { get; set; }
         public string PricePerTonPerMonth { get; set; } = string.Empty;
+        public decimal PricePerTonPerMonthAmount { get; set; }
         public string DailyRatePerTon { get; set; } = string.Empty;
         public string Status { get; set; } = "Available";
         public string Description { get; set; } = string.Empty;
+
+        // Geographic Coordinates & Navigation
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public string FormattedCoordinates => (Latitude.HasValue && Longitude.HasValue)
+            ? $"{Latitude.Value:F4}° N, {Longitude.Value:F4}° E"
+            : string.Empty;
+        public string GoogleMapsUrl => (Latitude.HasValue && Longitude.HasValue)
+            ? $"https://www.google.com/maps/dir/?api=1&destination={Latitude.Value:F6},{Longitude.Value:F6}"
+            : "https://www.google.com/maps";
+        public string OpenStreetMapUrl => (Latitude.HasValue && Longitude.HasValue)
+            ? $"https://www.openstreetmap.org/?mlat={Latitude.Value:F6}&mlon={Longitude.Value:F6}#map=14/{Latitude.Value:F6}/{Longitude.Value:F6}"
+            : "https://www.openstreetmap.org";
 
         // Owner Details
         public string OwnerName { get; set; } = string.Empty;
@@ -24,6 +38,8 @@ namespace KrishiLink.Models.ViewModels
         public int TotalReviews { get; set; }
         public string OwnerPhone { get; set; } = string.Empty;
         public string OwnerMemberSince { get; set; } = string.Empty;
+        public List<OwnerBadgeViewModel> OwnerBadges { get; set; } = new();
+        public string? OwnerRankText { get; set; }
 
         // Media & Highlights
         public List<string> ImageUrls { get; set; } = new();
@@ -42,5 +58,13 @@ namespace KrishiLink.Models.ViewModels
         public double AverageRating { get; set; }
         public int ReviewCount { get; set; }
         public ReviewsListViewModel Reviews { get; set; } = new();
+
+        // Farmer Loyalty Points & Promo Discounts
+        public int FarmerLoyaltyPoints { get; set; }
+        public string FarmerTierName { get; set; } = string.Empty;
+        public List<FixedConversionTierViewModel> AvailableConversionTiers { get; set; } = new();
+        public string? AppliedPromoCode { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public int PointsUsed { get; set; }
     }
 }

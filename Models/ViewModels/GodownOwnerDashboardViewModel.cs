@@ -19,6 +19,8 @@ namespace KrishiLink.Models.ViewModels
 
         public List<OwnerGodownItem> Godowns { get; set; } = new();
         public List<GodownBookingRequestItem> PendingRequestItems { get; set; } = new();
+
+        public OwnerBadgeDashboardWidgetViewModel BadgeWidget { get; set; } = new();
     }
 
     /// <summary>A godown preview card with capacity utilization for the owner dashboard.</summary>

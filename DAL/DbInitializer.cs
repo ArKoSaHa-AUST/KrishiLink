@@ -1,3 +1,4 @@
+using KrishiLink.BLL.Helpers;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
@@ -56,6 +57,34 @@ namespace KrishiLink.DAL
                     demoGd.VerificationNotes = "Verified owner account.";
                     await userManager.UpdateAsync(demoGd);
                 }
+
+                // Backfill map coordinates for any listings that have null coordinates
+                var unmappedEquipments = await db.Equipment.Where(e => e.Latitude == null || e.Longitude == null).ToListAsync();
+                if (unmappedEquipments.Any())
+                {
+                    foreach (var eq in unmappedEquipments)
+                    {
+                        var (lat, lng) = GeoLocationHelper.GetDistrictCoordinates(eq.Location);
+                        eq.Latitude = lat;
+                        eq.Longitude = lng;
+                    }
+                    await db.SaveChangesAsync();
+                }
+
+                var unmappedGodowns = await db.Godowns.Where(g => g.Latitude == null || g.Longitude == null).ToListAsync();
+                if (unmappedGodowns.Any())
+                {
+                    foreach (var gd in unmappedGodowns)
+                    {
+                        var (lat, lng) = GeoLocationHelper.GetDistrictCoordinates(gd.Location);
+                        gd.Latitude = lat;
+                        gd.Longitude = lng;
+                    }
+                    await db.SaveChangesAsync();
+                }
+
+                // Seed demo loyalty points for demo farmers
+                await SeedDemoLoyaltyPointsAsync(db, userManager);
             }
         }
 
@@ -345,32 +374,42 @@ namespace KrishiLink.DAL
             return user;
         }
 
-        private static Equipment Machine(string name, string category, decimal daily, decimal hourly, string location, string description, string image, int createdDaysAgo) =>
-            new()
+        private static Equipment Machine(string name, string category, decimal daily, decimal hourly, string location, string description, string image, int createdDaysAgo, double? lat = null, double? lng = null)
+        {
+            var (defaultLat, defaultLng) = GeoLocationHelper.GetDistrictCoordinates(location);
+            return new()
             {
                 Name = name,
                 Category = category,
                 DailyRate = daily,
                 HourlyRate = hourly,
                 Location = location,
+                Latitude = lat ?? defaultLat,
+                Longitude = lng ?? defaultLng,
                 Description = description,
                 ImageUrls = image,
                 CreatedAt = DateTime.UtcNow.AddDays(createdDaysAgo)
             };
+        }
 
-        private static Godown Storage(string name, string type, double tons, decimal price, string location, string description, string facilities, string image, int createdDaysAgo) =>
-            new()
+        private static Godown Storage(string name, string type, double tons, decimal price, string location, string description, string facilities, string image, int createdDaysAgo, double? lat = null, double? lng = null)
+        {
+            var (defaultLat, defaultLng) = GeoLocationHelper.GetDistrictCoordinates(location);
+            return new()
             {
                 Name = name,
                 StorageType = type,
                 CapacityInTons = tons,
                 PricePerTonPerMonth = price,
                 Location = location,
+                Latitude = lat ?? defaultLat,
+                Longitude = lng ?? defaultLng,
                 Description = description,
                 Facilities = facilities,
                 ImageUrls = image,
                 CreatedAt = DateTime.UtcNow.AddDays(createdDaysAgo)
             };
+        }
 
         private static EquipmentBooking Rental(Equipment e, ApplicationUser farmer, int startOffset, int endOffset, string status, int requestedOffset, string? note = null, string? reject = null) =>
             new()
@@ -423,6 +462,94 @@ namespace KrishiLink.DAL
                 TransactionDate = date
             });
             repo.MarkBookingsPaid(list.Select(b => b.Id), payoutId);
+        }
+
+        private static async Task SeedDemoLoyaltyPointsAsync(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+        {
+            var farmer = await userManager.FindByEmailAsync("farmer@krishilink.com");
+            if (farmer != null && (!await db.LoyaltyPointTransactions.AnyAsync(t => t.UserId == farmer.Id) || farmer.LoyaltyPoints == 0))
+            {
+                var eqBooking = await db.EquipmentBookings.FirstOrDefaultAsync(b => b.FarmerId == farmer.Id && b.Status == BookingStatus.Completed);
+                var gdBooking = await db.GodownBookings.FirstOrDefaultAsync(b => b.FarmerId == farmer.Id && b.Status == BookingStatus.Completed);
+
+                var transactions = new List<LoyaltyPointTransaction>
+                {
+                    new()
+                    {
+                        UserId = farmer.Id,
+                        Points = 50,
+                        Type = LoyaltyTransactionTypes.Bonus,
+                        Description = "Welcome bonus points for joining KrishiLink",
+                        CreatedAt = DateTime.UtcNow.AddMonths(-2)
+                    }
+                };
+
+                if (eqBooking != null)
+                {
+                    transactions.Add(new()
+                    {
+                        UserId = farmer.Id,
+                        Points = 125,
+                        Type = LoyaltyTransactionTypes.Earned,
+                        Description = $"Earned 125 points for completed Equipment Rental (#EQ-{eqBooking.Id:D4})",
+                        BookingType = "Equipment",
+                        BookingId = eqBooking.Id,
+                        BookingCode = $"#EQ-{eqBooking.Id:D4}",
+                        AmountSpent = 12500m,
+                        CreatedAt = DateTime.UtcNow.AddDays(-28)
+                    });
+                }
+
+                if (gdBooking != null)
+                {
+                    transactions.Add(new()
+                    {
+                        UserId = farmer.Id,
+                        Points = 75,
+                        Type = LoyaltyTransactionTypes.Earned,
+                        Description = $"Earned 75 points for completed Godown Storage (#GD-{gdBooking.Id:D4})",
+                        BookingType = "Godown",
+                        BookingId = gdBooking.Id,
+                        BookingCode = $"#GD-{gdBooking.Id:D4}",
+                        AmountSpent = 7500m,
+                        CreatedAt = DateTime.UtcNow.AddDays(-40)
+                    });
+                }
+
+                farmer.LoyaltyPoints = transactions.Sum(t => t.Points);
+                db.LoyaltyPointTransactions.AddRange(transactions);
+                await db.SaveChangesAsync();
+                await userManager.UpdateAsync(farmer);
+            }
+
+            var karim = await userManager.FindByEmailAsync("karim.mia@krishilink.com");
+            if (karim != null && (!await db.LoyaltyPointTransactions.AnyAsync(t => t.UserId == karim.Id) || karim.LoyaltyPoints == 0))
+            {
+                var transactions = new List<LoyaltyPointTransaction>
+                {
+                    new()
+                    {
+                        UserId = karim.Id,
+                        Points = 50,
+                        Type = LoyaltyTransactionTypes.Bonus,
+                        Description = "Welcome bonus points for joining KrishiLink",
+                        CreatedAt = DateTime.UtcNow.AddMonths(-2)
+                    },
+                    new()
+                    {
+                        UserId = karim.Id,
+                        Points = 85,
+                        Type = LoyaltyTransactionTypes.Earned,
+                        Description = "Earned 85 points for completed Equipment Rental",
+                        AmountSpent = 8500m,
+                        CreatedAt = DateTime.UtcNow.AddDays(-20)
+                    }
+                };
+                karim.LoyaltyPoints = transactions.Sum(t => t.Points);
+                db.LoyaltyPointTransactions.AddRange(transactions);
+                await db.SaveChangesAsync();
+                await userManager.UpdateAsync(karim);
+            }
         }
     }
 }

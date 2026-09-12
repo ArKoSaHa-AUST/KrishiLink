@@ -18,6 +18,8 @@ namespace KrishiLink.Models.ViewModels
 
         public List<OwnerListingItem> Listings { get; set; } = new();
         public List<RentalRequestItem> PendingRequestItems { get; set; } = new();
+
+        public OwnerBadgeDashboardWidgetViewModel BadgeWidget { get; set; } = new();
     }
 
     /// <summary>A single equipment listing preview card on the owner dashboard.</summary>
@@ -31,5 +33,8 @@ namespace KrishiLink.Models.ViewModels
 
         /// <summary>Available | Rented | Unavailable</summary>
         public string Status { get; set; } = "Available";
+
+        public int? LastServicedDaysAgo { get; set; }
+        public string? LastServicedText { get; set; }
     }
 }

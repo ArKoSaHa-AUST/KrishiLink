@@ -7,6 +7,30 @@
     var ownerMemberSinceParts = Model.OwnerMemberSince?.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
 }
 
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+        .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+        .custom-godown-pin {
+            background-color: #0d6efd;
+            color: white;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .custom-godown-pin i {
+            transform: rotate(45deg);
+            font-size: 15px;
+        }
+    </style>
+}
+
 <!-- Breadcrumb Navigation -->
 <nav aria-label='@L["breadcrumb"]' class="mb-3">
     <ol class="breadcrumb small">
@@ -152,18 +176,66 @@
                         </div>
                     </div>
                 </div>
-                @if (Model.OwnerIsVerified)
-                {
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill small fw-semibold shadow-xs">
-                        <i class="bi bi-patch-check-fill text-success me-1"></i> @L["Verified Owner"]
-                    </span>
-                }
-                else
-                {
-                    <span class="badge bg-light text-muted border px-3 py-2 rounded-pill small">
-                        <i class="bi bi-shield text-muted me-1"></i> @L["Unverified"]
-                    </span>
-                }
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    @if (!string.IsNullOrWhiteSpace(Model.OwnerRankText))
+                    {
+                        <a asp-controller="Leaderboard" asp-action="Index" class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 rounded-pill small fw-bold text-decoration-none">
+                            <i class="bi bi-trophy-fill text-warning me-1"></i> @Model.OwnerRankText
+                        </a>
+                    }
+                    @if (Model.OwnerIsVerified)
+                    {
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill small fw-semibold shadow-xs">
+                            <i class="bi bi-patch-check-fill text-success me-1"></i> @L["Verified Owner"]
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-light text-muted border px-3 py-2 rounded-pill small">
+                            <i class="bi bi-shield text-muted me-1"></i> @L["Unverified"]
+                        </span>
+                    }
+                </div>
+            </div>
+
+            @if (Model.OwnerBadges != null && Model.OwnerBadges.Any())
+            {
+                <div class="mt-2.5 pt-2.5 border-top d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-muted small fw-medium me-1"><i class="bi bi-award"></i> @L["Badges"]:</span>
+                    <partial name="_OwnerBadgeList" model="Model.OwnerBadges" />
+                </div>
+            }
+
+            <!-- Storage Facility Location & Map Directions Card -->
+            <div class="card p-3.5 mt-4 border rounded-4 bg-light shadow-xs">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-2 border-bottom">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                            <i class="bi bi-geo-alt-fill text-primary"></i>
+                            <span>@L["Location & Map Directions"]</span>
+                        </h6>
+                        <div class="text-muted small d-flex align-items-center flex-wrap gap-2">
+                            <span class="fw-semibold text-dark"><i class="bi bi-pin-map text-primary me-1"></i>@Model.Location</span>
+                            @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+                            {
+                                <span class="badge bg-white text-muted border font-monospace">@Model.FormattedCoordinates</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+                        {
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold shadow-xs" onclick="copyCoordinates('@Model.Latitude.Value.ToString("F6")', '@Model.Longitude.Value.ToString("F6")')">
+                                <i class="bi bi-clipboard me-1"></i> @L["Copy GPS"]
+                            </button>
+                            <a href="@Model.GoogleMapsUrl" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm rounded-pill px-3 fw-semibold shadow-xs">
+                                <i class="bi bi-signpost-2-fill me-1"></i> @L["Get Directions"]
+                            </a>
+                        }
+                    </div>
+                </div>
+
+                <div id="godownDetailMap" class="rounded-3 border shadow-xs bg-white" style="height: 260px; width: 100%; z-index: 1;"></div>
             </div>
 
         </div>
@@ -397,6 +469,78 @@
                         </div>
                     </div>
 
+                    <!-- Estimated Cost Summary -->
+                    <div id="godownCostSummaryBox" class="p-3 bg-success-subtle text-success border border-success-subtle rounded-3 mb-3 d-none">
+                        <div class="d-flex justify-content-between small fw-medium">
+                            <span>@L["Storage Duration:"]</span>
+                            <span id="godownSummaryDuration">0 Months</span>
+                        </div>
+                        <div class="d-flex justify-content-between small fw-medium mt-1">
+                            <span>@L["Gross Storage Fee:"]</span>
+                            <span id="godownSummaryGrossFee">৳0</span>
+                        </div>
+                        <div id="godownSummaryDiscountRow" class="d-flex justify-content-between small fw-bold text-success mt-1 d-none">
+                            <span id="godownSummaryDiscountLabel">@L["Loyalty Discount:"]</span>
+                            <span id="godownSummaryDiscountAmount">-৳0</span>
+                        </div>
+                        <div class="d-flex justify-content-between fw-bold fs-6 mt-1.5 pt-1.5 border-top border-success-subtle">
+                            <span>@L["Estimated Net Total:"]</span>
+                            <span id="godownSummaryTotalFee">৳0</span>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted mt-1" style="font-size: 0.75rem;">
+                            <span>@L["KrishiPoints Earned on Completion:"]</span>
+                            <span id="godownSummaryPointsEarned" class="fw-bold text-success">+10 pts</span>
+                        </div>
+                    </div>
+
+                    <!-- Loyalty Points & Promo Code Redemption -->
+                    <div class="card border border-success-subtle bg-light rounded-3 mb-3 p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label small fw-bold text-dark mb-0 d-flex align-items-center gap-1.5">
+                                <i class="bi bi-gift-fill text-success"></i>
+                                <span>@L["KrishiPoints & Promo Code"]</span>
+                            </label>
+                            @if (User.Identity?.IsAuthenticated == true && Model.FarmerLoyaltyPoints > 0)
+                            {
+                                <span class="badge bg-success text-white rounded-pill px-2 py-0.5 small" id="godownFarmerPointsBadge">
+                                    @Model.FarmerLoyaltyPoints @L["pts available"]
+                                </span>
+                            }
+                        </div>
+
+                        <!-- Quick Tier Select (If points available) -->
+                        @if (User.Identity?.IsAuthenticated == true && Model.FarmerLoyaltyPoints >= 50 && Model.AvailableConversionTiers.Any(t => t.PointsRequired <= Model.FarmerLoyaltyPoints))
+                        {
+                            <div class="mb-2">
+                                <label class="small text-muted mb-1 d-block" style="font-size: 0.78rem;">@L["1-Click Redeem KrishiPoints:"]</label>
+                                <select class="form-select form-select-sm rounded-3" id="godownPointsTierSelect" onchange="applyGodownPointsTier(this.value)">
+                                    <option value="0">@L["-- Do not use points --"]</option>
+                                    @foreach (var tier in Model.AvailableConversionTiers.Where(t => t.PointsRequired <= Model.FarmerLoyaltyPoints))
+                                    {
+                                        <option value="@tier.PointsRequired" data-discount="@tier.DiscountTaka">
+                                            @L["Use {0} pts → Save ৳{1}", tier.PointsRequired, tier.DiscountTaka.ToString("N0")]
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                        }
+
+                        <!-- Or Promo Code Input -->
+                        <div class="mt-1">
+                            <label class="small text-muted mb-1 d-block" style="font-size: 0.78rem;">@L["Or enter Promo Voucher code:"]</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control rounded-start-3 text-uppercase" id="godownPromoCodeInput" placeholder="@L["e.g. KL-PTS120-ABCD"]" />
+                                <button type="button" class="btn btn-outline-success px-3 fw-semibold" id="godownApplyPromoBtn" onclick="applyGodownPromoCode()">@L["Apply"]</button>
+                                <button type="button" class="btn btn-outline-secondary d-none" id="godownClearPromoBtn" onclick="clearGodownPromoCode()"><i class="bi bi-x"></i></button>
+                            </div>
+                            <div id="godownPromoFeedbackMsg" class="form-text small mt-1 d-none"></div>
+                        </div>
+
+                        <!-- Hidden form fields to submit -->
+                        <input type="hidden" name="AppliedPromoCode" id="godownHiddenAppliedPromoCode" value="" />
+                        <input type="hidden" name="PointsUsed" id="godownHiddenPointsUsed" value="0" />
+                    </div>
+
                     <!-- Notes -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold text-dark small" for="bookingNotesInput">@L["Produce Details & Notes (Optional)"]</label>
@@ -503,6 +647,209 @@
             }
         }
 
+        const pricePerTonPerMonth = @Model.PricePerTonPerMonthAmount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        let currentGodownDiscount = 0;
+        let currentGodownPromo = '';
+        let currentGodownPointsUsed = 0;
+        let currentGodownGross = 0;
+
+        function recalculateGodownSummary() {
+            const startInput = document.getElementById('startDateInput');
+            const endInput = document.getElementById('endDateInput');
+            const capacityInput = document.getElementById('requestedCapacityInput');
+            const costBox = document.getElementById('godownCostSummaryBox');
+            const summaryDuration = document.getElementById('godownSummaryDuration');
+            const summaryGrossFee = document.getElementById('godownSummaryGrossFee');
+            const summaryDiscountRow = document.getElementById('godownSummaryDiscountRow');
+            const summaryDiscountAmount = document.getElementById('godownSummaryDiscountAmount');
+            const summaryDiscountLabel = document.getElementById('godownSummaryDiscountLabel');
+            const summaryTotalFee = document.getElementById('godownSummaryTotalFee');
+            const summaryPointsEarned = document.getElementById('godownSummaryPointsEarned');
+
+            if (!startInput?.value || !endInput?.value || !capacityInput?.value) {
+                if (costBox) costBox.classList.add('d-none');
+                currentGodownGross = 0;
+                return;
+            }
+
+            const start = new Date(startInput.value);
+            const end = new Date(endInput.value);
+            const capacity = parseFloat(capacityInput.value) || 0;
+
+            if (end <= start || capacity <= 0) {
+                if (costBox) costBox.classList.add('d-none');
+                currentGodownGross = 0;
+                return;
+            }
+
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            const months = Math.max(1.0, diffDays / 30.0);
+
+            const gross = Math.round(capacity * pricePerTonPerMonth * months);
+            currentGodownGross = gross;
+
+            if (summaryDuration) {
+                summaryDuration.textContent = `${months.toFixed(1)} Months (${diffDays} Days)`;
+            }
+
+            if (summaryGrossFee) {
+                summaryGrossFee.textContent = '৳' + gross.toLocaleString();
+            }
+
+            const netTotal = Math.max(0, gross - currentGodownDiscount);
+
+            if (currentGodownDiscount > 0) {
+                if (summaryDiscountRow) summaryDiscountRow.classList.remove('d-none');
+                if (summaryDiscountAmount) summaryDiscountAmount.textContent = '-৳' + currentGodownDiscount.toLocaleString();
+                if (summaryDiscountLabel) {
+                    summaryDiscountLabel.textContent = currentGodownPromo
+                        ? `@L["Promo Discount"] (${currentGodownPromo}):`
+                        : `@L["KrishiPoints Discount"] (${currentGodownPointsUsed} pts):`;
+                }
+            } else {
+                if (summaryDiscountRow) summaryDiscountRow.classList.add('d-none');
+            }
+
+            if (summaryTotalFee) {
+                summaryTotalFee.textContent = '৳' + netTotal.toLocaleString();
+            }
+
+            if (summaryPointsEarned) {
+                const pts = Math.max(10, Math.floor(netTotal / 100));
+                summaryPointsEarned.textContent = `+${pts.toLocaleString()} pts`;
+            }
+
+            if (costBox) costBox.classList.remove('d-none');
+        }
+
+        function applyGodownPointsTier(pts) {
+            pts = parseInt(pts) || 0;
+            const selectEl = document.getElementById('godownPointsTierSelect');
+            const promoInput = document.getElementById('godownPromoCodeInput');
+            const promoFeedback = document.getElementById('godownPromoFeedbackMsg');
+            const clearBtn = document.getElementById('godownClearPromoBtn');
+
+            if (pts > 0) {
+                if (promoInput) promoInput.value = '';
+                if (clearBtn) clearBtn.classList.add('d-none');
+                if (promoFeedback) promoFeedback.classList.add('d-none');
+                currentGodownPromo = '';
+                document.getElementById('godownHiddenAppliedPromoCode').value = '';
+                document.getElementById('godownHiddenPointsUsed').value = pts;
+                currentGodownPointsUsed = pts;
+
+                const selectedOption = selectEl?.selectedOptions[0];
+                const discount = parseFloat(selectedOption?.getAttribute('data-discount')) || 0;
+                currentGodownDiscount = discount;
+            } else {
+                currentGodownPointsUsed = 0;
+                document.getElementById('godownHiddenPointsUsed').value = 0;
+                currentGodownDiscount = 0;
+            }
+
+            recalculateGodownSummary();
+        }
+
+        async function applyGodownPromoCode() {
+            const promoInput = document.getElementById('godownPromoCodeInput');
+            const code = promoInput?.value?.trim()?.toUpperCase() || '';
+            const feedback = document.getElementById('godownPromoFeedbackMsg');
+            const clearBtn = document.getElementById('godownClearPromoBtn');
+            const tierSelect = document.getElementById('godownPointsTierSelect');
+
+            if (!code) {
+                if (feedback) {
+                    feedback.textContent = '@L["Please enter a valid promo voucher code."]';
+                    feedback.className = 'form-text small mt-1 text-danger';
+                    feedback.classList.remove('d-none');
+                }
+                return;
+            }
+
+            recalculateGodownSummary();
+            if (currentGodownGross <= 0) {
+                if (feedback) {
+                    feedback.textContent = '@L["Please select valid storage dates and capacity first."]';
+                    feedback.className = 'form-text small mt-1 text-danger';
+                    feedback.classList.remove('d-none');
+                }
+                return;
+            }
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+                const res = await fetch('/Loyalty/ValidatePromo', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        promoCode: code,
+                        pointsToRedeem: null,
+                        grossAmount: currentGodownGross
+                    })
+                });
+
+                const data = await res.json();
+                if (data.isValid) {
+                    if (tierSelect) tierSelect.value = "0";
+                    currentGodownPointsUsed = data.pointsRequired || 0;
+                    currentGodownDiscount = data.discountAmount || 0;
+                    currentGodownPromo = data.promoCode || code;
+
+                    document.getElementById('godownHiddenAppliedPromoCode').value = currentGodownPromo;
+                    document.getElementById('godownHiddenPointsUsed').value = currentGodownPointsUsed;
+
+                    if (feedback) {
+                        feedback.textContent = `@L["Promo Applied!"] ${data.message}`;
+                        feedback.className = 'form-text small mt-1 text-success fw-semibold';
+                        feedback.classList.remove('d-none');
+                    }
+                    if (clearBtn) clearBtn.classList.remove('d-none');
+                } else {
+                    currentGodownDiscount = 0;
+                    currentGodownPromo = '';
+                    document.getElementById('godownHiddenAppliedPromoCode').value = '';
+                    document.getElementById('godownHiddenPointsUsed').value = 0;
+
+                    if (feedback) {
+                        feedback.textContent = data.message || '@L["Invalid or expired promo code."]';
+                        feedback.className = 'form-text small mt-1 text-danger';
+                        feedback.classList.remove('d-none');
+                    }
+                    if (clearBtn) clearBtn.classList.add('d-none');
+                }
+            } catch (err) {
+                if (feedback) {
+                    feedback.textContent = '@L["Network error validating promo code."]';
+                    feedback.className = 'form-text small mt-1 text-danger';
+                    feedback.classList.remove('d-none');
+                }
+            }
+
+            recalculateGodownSummary();
+        }
+
+        function clearGodownPromoCode() {
+            const promoInput = document.getElementById('godownPromoCodeInput');
+            const feedback = document.getElementById('godownPromoFeedbackMsg');
+            const clearBtn = document.getElementById('godownClearPromoBtn');
+
+            if (promoInput) promoInput.value = '';
+            if (feedback) feedback.classList.add('d-none');
+            if (clearBtn) clearBtn.classList.add('d-none');
+
+            currentGodownDiscount = 0;
+            currentGodownPromo = '';
+            currentGodownPointsUsed = 0;
+            document.getElementById('godownHiddenAppliedPromoCode').value = '';
+            document.getElementById('godownHiddenPointsUsed').value = 0;
+
+            recalculateGodownSummary();
+        }
+
         function updateRemainingCapacity(val) {
             const max = Number(document.getElementById('maxAvailableCapacity')?.value || 0);
             const req = Number(val || 0);
@@ -520,7 +867,13 @@
                 if (submitBtn) submitBtn.disabled = false;
                 if (remainingSpan) remainingSpan.innerText = remaining.toLocaleString();
             }
+
+            recalculateGodownSummary();
         }
+
+        document.getElementById('startDateInput')?.addEventListener('change', recalculateGodownSummary);
+        document.getElementById('endDateInput')?.addEventListener('change', recalculateGodownSummary);
+        document.addEventListener('DOMContentLoaded', recalculateGodownSummary);
 
         // Intercept submit: show a confirmation modal with a booking summary before posting
         document.getElementById('godownBookingForm')?.addEventListener('submit', function (e) {
@@ -556,5 +909,57 @@
                 onConfirm: function () { form.submit(); }
             });
         });
+
+        // -------------------------------------------------------------------------
+        // LEAFLET MAP DISPLAY (GODOWN)
+        // -------------------------------------------------------------------------
+        function copyCoordinates(lat, lng) {
+            const text = `${lat}, ${lng}`;
+            navigator.clipboard.writeText(text).then(() => {
+                if (window.KrishiToast) {
+                    KrishiToast.show('@L["Coordinates copied to clipboard!"]', { iconClass: 'bi-clipboard-check-fill text-success' });
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const mapEl = document.getElementById('godownDetailMap');
+            if (!mapEl) return;
+
+            const lat = @(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "25.6279");
+            const lng = @(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "88.6332");
+
+            const map = L.map('godownDetailMap', {
+                scrollWheelZoom: false
+            }).setView([lat, lng], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            const godownIcon = L.divIcon({
+                className: 'custom-leaflet-marker',
+                html: `<div class="custom-godown-pin"><i class="bi bi-building"></i></div>`,
+                iconSize: [34, 34],
+                iconAnchor: [17, 34],
+                popupAnchor: [0, -34]
+            });
+
+            const marker = L.marker([lat, lng], { icon: godownIcon }).addTo(map);
+            marker.bindPopup(`
+                <div class="p-1">
+                    <h6 class="fw-bold text-dark mb-1">@Model.Name</h6>
+                    <p class="small text-muted mb-1"><i class="bi bi-geo-alt text-primary me-1"></i>@Model.Location</p>
+                    <div class="d-flex align-items-center justify-content-between gap-2 mt-2">
+                        <span class="badge bg-primary-subtle text-primary fw-bold">@Model.PricePerTonPerMonth</span>
+                        <a href="@Model.GoogleMapsUrl" target="_blank" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-0.5 small">@L["Directions"]</a>
+                    </div>
+                </div>
+            `);
+
+            setTimeout(() => { map.invalidateSize(); }, 300);
+        });
     </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 }

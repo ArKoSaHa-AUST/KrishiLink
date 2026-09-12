@@ -1,0 +1,466 @@
+@model KrishiLink.Models.ViewModels.LoyaltyHubViewModel
+@{
+    ViewData["Title"] = L["KrishiPoints Loyalty Hub"].Value;
+    var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+}
+
+<div class="container-xl py-4">
+
+    <!-- Back / Navigation Breadcrumb -->
+    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a asp-controller="Farmer" asp-action="Dashboard" class="text-decoration-none text-success">@L["Farmer Dashboard"]</a></li>
+                <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">@L["KrishiPoints Loyalty Hub"]</li>
+            </ol>
+        </nav>
+        <div class="d-flex align-items-center gap-2">
+            <a asp-controller="Equipment" asp-action="Index" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                <i class="bi bi-truck me-1"></i>@L["Rent Equipment"]
+            </a>
+            <a asp-controller="Godown" asp-action="Index" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                <i class="bi bi-building me-1"></i>@L["Find Storage"]
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center gap-3 p-3 animate__animated animate__fadeIn">
+            <i class="bi bi-check-circle-fill text-success fs-4"></i>
+            <div>
+                <span class="fw-bold d-block">@L["Success!"]</span>
+                <span class="small">@TempData["SuccessMessage"]</span>
+            </div>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center gap-3 p-3 animate__animated animate__fadeIn">
+            <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
+            <div>
+                <span class="fw-bold d-block">@L["Notice"]</span>
+                <span class="small">@TempData["ErrorMessage"]</span>
+            </div>
+        </div>
+    }
+
+    <!-- HERO SECTION: KrishiPoints & Tier Status Card -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 position-relative text-white"
+         style="background: linear-gradient(135deg, #15803d 0%, #166534 50%, #14532d 100%);">
+        
+        <!-- Decorative Background Elements -->
+        <div class="position-absolute end-0 top-0 bottom-0 opacity-10 pe-4 d-none d-md-flex align-items-center pointer-events-none" style="font-size: 14rem;">
+            <i class="bi bi-gift-fill"></i>
+        </div>
+
+        <div class="card-body p-4 p-md-5 position-relative z-1">
+            <div class="row align-items-center gy-4">
+                
+                <!-- Left: Points & Tier Details -->
+                <div class="col-12 col-lg-7">
+                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white bg-opacity-20 backdrop-blur mb-3">
+                        <i class="bi bi-stars text-warning"></i>
+                        <span class="small fw-semibold text-white">@L["Farmer Rewards Program"]</span>
+                    </div>
+
+                    <h1 class="display-6 fw-black text-white mb-2">
+                        @L["KrishiPoints Hub"]
+                    </h1>
+                    <p class="text-white-50 mb-4" style="max-width: 520px; line-height: 1.6;">
+                        @L["Earn 1 KrishiPoint for every ৳100 spent on confirmed equipment rentals and godown storage. Redeem points instantly for direct discounts!"]
+                    </p>
+
+                    <!-- Tier Status Pill Strip -->
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <div class="bg-white bg-opacity-15 px-3 py-2 rounded-3 border border-white border-opacity-20 d-flex align-items-center gap-2">
+                            <span class="fs-4">@Model.CurrentTier.TierIcon</span>
+                            <div>
+                                <span class="d-block text-white-50" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">@L["Current Tier"]</span>
+                                <span class="fw-bold text-white fs-6">@L[Model.CurrentTier.TierName]</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-white bg-opacity-15 px-3 py-2 rounded-3 border border-white border-opacity-20 d-flex align-items-center gap-2">
+                            <i class="bi bi-percent fs-4 text-warning"></i>
+                            <div>
+                                <span class="d-block text-white-50" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">@L["Discount Power"]</span>
+                                <span class="fw-bold text-white fs-6">@Model.CurrentTier.DiscountMultiplier.ToString("0.0")x @L["Multiplier"]</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Big Points Balance & Progress Card -->
+                <div class="col-12 col-lg-5">
+                    <div class="bg-white text-dark p-4 rounded-4 shadow-lg border border-success-subtle">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.5px;">@L["Available Balance"]</span>
+                                <div class="d-flex align-items-baseline gap-2 mt-1">
+                                    <span class="display-5 fw-black text-success" id="userPointsBalance">@Model.CurrentPoints.ToString("N0")</span>
+                                    <span class="fs-5 fw-bold text-muted">@L["Points"]</span>
+                                </div>
+                            </div>
+                            <span class="badge @Model.CurrentTier.BadgeColorClass text-white px-3 py-2 rounded-pill fw-bold fs-6">
+                                @Model.CurrentTier.TierIcon @L[Model.CurrentTier.TierName]
+                            </span>
+                        </div>
+
+                        <!-- Progress to Next Tier -->
+                        <div class="mt-3 pt-3 border-top">
+                            @if (!string.IsNullOrEmpty(Model.NextTierName))
+                            {
+                                <div class="d-flex justify-content-between align-items-center small mb-1">
+                                    <span class="text-muted fw-semibold">@L["Progress to {0}", L[Model.NextTierName]]</span>
+                                    <span class="fw-bold text-success">@Model.PointsToNextTier @L["pts away"]</span>
+                                </div>
+                                <div class="progress" style="height: 8px; border-radius: 4px; background-color: #e2e8f0;">
+                                    <div class="progress-bar bg-success progress-bar-striped progress-bar-animated"
+                                         role="progressbar"
+                                         style="width: @Model.ProgressToNextTierPercent%;"
+                                         aria-valuenow="@Model.ProgressToNextTierPercent"
+                                         aria-valuemin="0"
+                                         aria-valuemax="100"></div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="d-flex align-items-center gap-2 text-success small fw-bold">
+                                    <i class="bi bi-trophy-fill text-warning"></i>
+                                    <span>@L["Maximum VIP Tier Achieved! You enjoy the highest discount conversion rate."]</span>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Lifetime Stats -->
+                        <div class="row g-2 mt-3 pt-2 border-top text-center">
+                            <div class="col-6 border-end">
+                                <span class="d-block text-muted" style="font-size: 0.75rem;">@L["Lifetime Earned"]</span>
+                                <span class="fw-bold text-dark fs-6">+@Model.LifetimeEarned.ToString("N0") pts</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="d-block text-muted" style="font-size: 0.75rem;">@L["Total Saved"]</span>
+                                <span class="fw-bold text-success fs-6">৳@Model.TotalSavingsTaka.ToString("N0")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT ROW: Conversion Table & Active Vouchers -->
+    <div class="row g-4 mb-5">
+        
+        <!-- Left 7 Cols: Fixed Conversion Tiers (Redeem Points) -->
+        <div class="col-12 col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100" style="background-color: var(--krishi-surface); border: 1px solid var(--krishi-border-color) !important;">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                            <i class="bi bi-tags-fill text-success"></i>
+                            <span>@L["Point Conversion & Promo Code Tiers"]</span>
+                        </h5>
+                        <p class="text-muted small mb-0">@L["Convert your accumulated KrishiPoints into ready-to-use discount promo codes for any future booking."]</p>
+                    </div>
+                </div>
+                
+                <div class="card-body px-4 pb-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr class="text-uppercase small text-muted" style="background-color: var(--krishi-primary-light);">
+                                    <th class="ps-3 py-2.5">@L["KrishiPoints"]</th>
+                                    <th class="py-2.5">@L["Discount Value"]</th>
+                                    <th class="py-2.5 d-none d-sm-table-cell">@L["Efficiency Rate"]</th>
+                                    <th class="pe-3 py-2.5 text-end">@L["Action"]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var tier in Model.ConversionTiers)
+                                {
+                                    var canRedeem = Model.CurrentPoints >= tier.PointsRequired;
+                                    <tr>
+                                        <td class="ps-3 py-3">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-bold fs-6">
+                                                    @tier.PointsRequired pts
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="py-3">
+                                            <span class="fw-bold text-dark fs-6">৳@tier.DiscountTaka.ToString("N0")</span>
+                                            <span class="small text-muted d-block">@L["Promo Discount"]</span>
+                                        </td>
+                                        <td class="py-3 d-none d-sm-table-cell">
+                                            <span class="badge bg-light text-dark border px-2 py-1 small fw-semibold">
+                                                @tier.EffectiveMultiplier.ToString("0.0")x @L["Value"]
+                                            </span>
+                                        </td>
+                                        <td class="pe-3 py-3 text-end">
+                                            @if (canRedeem)
+                                            {
+                                                <form asp-controller="Loyalty" asp-action="GenerateVoucher" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="pointsRequired" value="@tier.PointsRequired" />
+                                                    <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 py-1.5 fw-semibold shadow-xs">
+                                                        <i class="bi bi-lightning-charge-fill me-1"></i>@L["Convert to Promo"]
+                                                    </button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-sm btn-light border text-muted rounded-pill px-3 py-1.5 disabled" disabled title="@L["Need {0} more points", tier.PointsRequired - Model.CurrentPoints]">
+                                                    <i class="bi bi-lock-fill me-1"></i>@L["Need {0} pts", tier.PointsRequired - Model.CurrentPoints]
+                                                </button>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Direct Checkout Note -->
+                    <div class="mt-4 p-3 bg-light rounded-3 border d-flex align-items-start gap-3">
+                        <i class="bi bi-info-circle-fill text-success fs-5 flex-shrink-0 mt-0.5"></i>
+                        <div class="small text-secondary">
+                            <span class="fw-bold text-dark d-block mb-1">@L["Pro-Tip: Direct Points Redemption at Checkout"]</span>
+                            @L["You can also apply your KrishiPoints directly on any Equipment or Godown booking request form with 1-click! No need to pre-generate a code."]
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right 5 Cols: Active Vouchers & Tier Roadmap -->
+        <div class="col-12 col-lg-5">
+            
+            <!-- Active Vouchers Card -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4" style="background-color: var(--krishi-surface); border: 1px solid var(--krishi-border-color) !important;">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2">
+                    <h5 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-ticket-perforated-fill text-success"></i>
+                        <span>@L["Your Generated Vouchers"]</span>
+                    </h5>
+                    <p class="text-muted small mb-0">@L["Active discount codes generated from your points balance."]</p>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    @if (Model.ActiveVouchers.Any())
+                    {
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var voucher in Model.ActiveVouchers)
+                            {
+                                <div class="p-3 rounded-3 border border-success-subtle bg-success bg-opacity-5 position-relative">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge bg-success text-white px-2.5 py-1 rounded-pill small fw-bold">
+                                            @L["Save ৳{0}", voucher.DiscountAmount.ToString("N0")]
+                                        </span>
+                                        <span class="small text-muted">@voucher.PointsCost @L["points converted"]</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center gap-2 bg-white p-2 rounded-2 border">
+                                        <code class="fw-bold text-success fs-6 user-select-all" id="code-@voucher.PromoCode">@voucher.PromoCode</code>
+                                        <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2.5 py-1 copy-btn" onclick="copyCode('@voucher.PromoCode', this)">
+                                            <i class="bi bi-clipboard me-1"></i><span>@L["Copy"]</span>
+                                        </button>
+                                    </div>
+                                    <span class="d-block text-muted mt-2" style="font-size: 0.72rem;">@L["Created on"]: @voucher.CreatedAt.ToString("dd MMM yyyy, hh:mm tt")</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-ticket-detailed fs-1 opacity-25 d-block mb-2"></i>
+                            <span class="small fw-semibold d-block">@L["No active promo codes generated yet"]</span>
+                            <span class="small" style="font-size: 0.78rem;">@L["Pick a tier from the table to convert your points into a reusable discount code."]</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Tier Roadmap Card -->
+            <div class="card border-0 shadow-sm rounded-4" style="background-color: var(--krishi-surface); border: 1px solid var(--krishi-border-color) !important;">
+                <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2">
+                    <h5 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                        <i class="bi bi-award-fill text-warning"></i>
+                        <span>@L["KrishiPoints Tier Roadmap"]</span>
+                    </h5>
+                    <p class="text-muted small mb-0">@L["The more you rent and store on KrishiLink, the higher your reward multipliers!"]</p>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <div class="d-flex flex-column gap-2.5">
+                        
+                        <!-- Bronze -->
+                        <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between @(Model.CurrentTier.TierName == "Bronze Farmer" ? "bg-success-subtle border-success" : "bg-light")">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <span class="fs-4">🥉</span>
+                                <div>
+                                    <span class="fw-bold text-dark d-block small">@L["Bronze Farmer"]</span>
+                                    <span class="text-muted" style="font-size: 0.72rem;">0 – 199 @L["points"] (1.0x @L["multiplier"])</span>
+                                </div>
+                            </div>
+                            @if (Model.CurrentTier.TierName == "Bronze Farmer")
+                            {
+                                <span class="badge bg-success text-white rounded-pill px-2 py-1 small">@L["Active Tier"]</span>
+                            }
+                        </div>
+
+                        <!-- Silver -->
+                        <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between @(Model.CurrentTier.TierName == "Silver Farmer" ? "bg-success-subtle border-success" : "bg-light")">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <span class="fs-4">🥈</span>
+                                <div>
+                                    <span class="fw-bold text-dark d-block small">@L["Silver Farmer"]</span>
+                                    <span class="text-muted" style="font-size: 0.72rem;">200 – 499 @L["points"] (1.2x @L["multiplier"])</span>
+                                </div>
+                            </div>
+                            @if (Model.CurrentTier.TierName == "Silver Farmer")
+                            {
+                                <span class="badge bg-success text-white rounded-pill px-2 py-1 small">@L["Active Tier"]</span>
+                            }
+                        </div>
+
+                        <!-- Gold -->
+                        <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between @(Model.CurrentTier.TierName == "Gold Farmer" ? "bg-success-subtle border-success" : "bg-light")">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <span class="fs-4">🥇</span>
+                                <div>
+                                    <span class="fw-bold text-dark d-block small">@L["Gold Farmer"]</span>
+                                    <span class="text-muted" style="font-size: 0.72rem;">500 – 999 @L["points"] (1.3x @L["multiplier"])</span>
+                                </div>
+                            </div>
+                            @if (Model.CurrentTier.TierName == "Gold Farmer")
+                            {
+                                <span class="badge bg-success text-white rounded-pill px-2 py-1 small">@L["Active Tier"]</span>
+                            }
+                        </div>
+
+                        <!-- Platinum -->
+                        <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between @(Model.CurrentTier.TierName == "Platinum VIP" ? "bg-success-subtle border-success" : "bg-light")">
+                            <div class="d-flex align-items-center gap-2.5">
+                                <span class="fs-4">💎</span>
+                                <div>
+                                    <span class="fw-bold text-dark d-block small">@L["Platinum VIP"]</span>
+                                    <span class="text-muted" style="font-size: 0.72rem;">1,000+ @L["points"] (1.5x @L["multiplier"])</span>
+                                </div>
+                            </div>
+                            @if (Model.CurrentTier.TierName == "Platinum VIP")
+                            {
+                                <span class="badge bg-success text-white rounded-pill px-2 py-1 small">@L["Active Tier"]</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- POINTS LEDGER & TRANSACTION HISTORY TABLE -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4" style="background-color: var(--krishi-surface); border: 1px solid var(--krishi-border-color) !important;">
+        <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-clock-history text-success"></i>
+                    <span>@L["Points Activity & Ledger"]</span>
+                </h5>
+                <p class="text-muted small mb-0">@L["Complete record of points earned on bookings, discounts redeemed, and refunds."]</p>
+            </div>
+            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill small fw-semibold">
+                @Model.RecentTransactions.Count @L["Records"]
+            </span>
+        </div>
+
+        <div class="card-body px-4 pb-4">
+            @if (Model.RecentTransactions.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="text-uppercase small text-muted" style="background-color: var(--krishi-primary-light);">
+                                <th class="ps-3 py-2.5">@L["Date & Time"]</th>
+                                <th class="py-2.5">@L["Type"]</th>
+                                <th class="py-2.5">@L["Description / Booking"]</th>
+                                <th class="py-2.5">@L["Amount Spent"]</th>
+                                <th class="pe-3 py-2.5 text-end">@L["Points Change"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in Model.RecentTransactions)
+                            {
+                                var isPositive = t.Points > 0;
+                                <tr>
+                                    <td class="ps-3 py-3">
+                                        <span class="small fw-semibold d-block text-dark">@t.CreatedAt.ToString("dd MMM yyyy")</span>
+                                        <span class="text-muted" style="font-size: 0.72rem;">@t.CreatedAt.ToString("hh:mm tt")</span>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="badge @t.BadgeColorClass rounded-pill px-2.5 py-1 small fw-semibold">
+                                            @L[t.Type]
+                                        </span>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="fw-semibold text-dark d-block">@t.Description</span>
+                                        @if (!string.IsNullOrEmpty(t.BookingCode))
+                                        {
+                                            <span class="small text-muted">@t.BookingType @t.BookingCode</span>
+                                        }
+                                    </td>
+                                    <td class="py-3">
+                                        @if (t.AmountSpent.HasValue && t.AmountSpent.Value > 0)
+                                        {
+                                            <span class="small text-dark fw-semibold">৳@t.AmountSpent.Value.ToString("N0")</span>
+                                        }
+                                        else if (t.DiscountAmount.HasValue && t.DiscountAmount.Value > 0)
+                                        {
+                                            <span class="small text-success fw-bold">@L["Saved ৳{0}", t.DiscountAmount.Value.ToString("N0")]</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">—</span>
+                                        }
+                                    </td>
+                                    <td class="pe-3 py-3 text-end">
+                                        <span class="fw-bold fs-6 @(isPositive ? "text-success" : "text-danger")">
+                                            @(isPositive ? $"+{t.Points:N0}" : $"{t.Points:N0}") pts
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-clock-history fs-1 opacity-25 d-block mb-2"></i>
+                    <h6 class="fw-bold mb-1 text-dark">@L["No points transactions yet"]</h6>
+                    <p class="small text-muted mb-0">@L["Complete your first equipment rental or godown storage booking to start earning KrishiPoints!"]</p>
+                </div>
+            }
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        function copyCode(code, btn) {
+            navigator.clipboard.writeText(code).then(function() {
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>@L["Copied!"]';
+                btn.classList.remove('btn-outline-success');
+                btn.classList.add('btn-success');
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-success');
+                }, 2000);
+            });
+        }
+    </script>
+}

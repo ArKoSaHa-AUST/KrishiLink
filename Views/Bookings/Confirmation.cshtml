@@ -1,0 +1,227 @@
+@model KrishiLink.Models.ViewModels.BookingConfirmationViewModel
+@{
+    ViewData["Title"] = $"{L["Booking Confirmation"]} - {Model.BookingCode}";
+}
+
+@section Styles {
+    <style>
+        .voucher-card {
+            border-radius: 20px;
+            background: #ffffff;
+            border: 2px dashed #d1e7dd;
+            position: relative;
+            overflow: hidden;
+        }
+        .voucher-header {
+            background: linear-gradient(135deg, #198754 0%, #0f5132 100%);
+            color: white;
+        }
+        .voucher-notch-left, .voucher-notch-right {
+            position: absolute;
+            top: 50%;
+            width: 24px;
+            height: 24px;
+            background-color: #f8f9fa;
+            border-radius: 50%;
+            z-index: 2;
+        }
+        .voucher-notch-left { left: -12px; }
+        .voucher-notch-right { right: -12px; }
+        .qr-frame {
+            background: white;
+            padding: 16px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 2px solid #e9ecef;
+            display: inline-block;
+        }
+        .qr-frame svg {
+            width: 180px;
+            height: 180px;
+            display: block;
+        }
+        @@media print {
+            header, footer, nav, .navbar, .btn-no-print, .alert-banner { display: none !important; }
+            body { background: white !important; padding: 0 !important; }
+            .voucher-card { border: 1px solid #333 !important; box-shadow: none !important; }
+            .container { max-width: 100% !important; width: 100% !important; padding: 0 !important; }
+        }
+    </style>
+}
+
+<div class="container py-4" style="max-width: 860px;">
+    
+    <!-- Breadcrumb & Back Navigation -->
+    <div class="d-flex align-items-center justify-content-between mb-3 btn-no-print">
+        <a asp-controller="Bookings" asp-action="Index" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold">
+            <i class="bi bi-arrow-left me-1"></i> @L["Back to My Bookings"]
+        </a>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3 fw-semibold" onclick="window.print()">
+                <i class="bi bi-printer-fill me-1"></i> @L["Print / Save PDF"]
+            </button>
+            <a href="@Model.QrCodeBase64" download="KrishiLink_QR_@(Model.BookingCode).png" class="btn btn-success btn-sm rounded-pill px-3 fw-semibold">
+                <i class="bi bi-download me-1"></i> @L["Download QR"]
+            </a>
+        </div>
+    </div>
+
+    @if (Model.JustCreated || TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4 p-3.5 d-flex align-items-center gap-3 alert-banner">
+            <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
+                <i class="bi bi-check2-circle fs-4"></i>
+            </div>
+            <div>
+                <h6 class="fw-bold text-success-emphasis mb-0.5">@L["Booking Request Submitted Successfully!"]</h6>
+                <p class="small text-success-emphasis mb-0">
+                    @(TempData["SuccessMessage"] ?? L["Your booking request has been registered and sent to the owner. Save or show this QR pass for swift verification at handover."])
+                </p>
+            </div>
+        </div>
+    }
+
+    <!-- =========================================================================
+         OFFICIAL BOOKING PASS & VOUCHER CARD
+         ========================================================================= -->
+    <div class="card voucher-card shadow border-0 mb-4">
+        
+        <!-- Voucher Header Banner -->
+        <div class="voucher-header p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2.5">
+                    <div class="bg-white text-success rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 46px; height: 46px;">
+                        <i class="bi bi-qr-code-scan fs-4"></i>
+                    </div>
+                    <div>
+                        <span class="badge bg-white text-success fw-bold text-uppercase px-2.5 py-1 mb-1" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                            @L["Official Confirmation Voucher"]
+                        </span>
+                        <h4 class="fw-bold mb-0 text-white">KrishiLink Gate Pass</h4>
+                    </div>
+                </div>
+                <div class="text-md-end">
+                    <span class="d-block small text-white-50 text-uppercase fw-semibold" style="letter-spacing: 0.05em;">@L["Booking Reference"]</span>
+                    <span class="fs-4 fw-black text-white font-monospace">@Model.BookingCode</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-4 p-md-5">
+            
+            <div class="row g-4 align-items-center">
+                
+                <!-- Left: QR Code & Verification Prompt -->
+                <div class="col-12 col-md-5 text-center border-end-md">
+                    <div class="qr-frame mb-3">
+                        @Html.Raw(Model.QrCodeSvg)
+                    </div>
+                    <div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 mb-2 shadow-xs">
+                            <i class="bi bi-shield-check text-success"></i> @L["Scan to Verify Authenticity"]
+                        </span>
+                        <p class="text-muted small mb-0 px-2">
+                            @L["Show this QR code to the owner at pickup or delivery to confirm identity & booking in seconds."]
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right: Asset & Rental Summary -->
+                <div class="col-12 col-md-7">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="badge bg-light text-dark border px-3 py-1.5 rounded-pill fw-semibold">
+                            <i class="bi @(Model.BookingType == "Equipment" ? "bi-truck" : "bi-building") text-success me-1"></i> @L[Model.BookingType]
+                        </span>
+                        <partial name="_StatusBadge" model="@Model.Status" />
+                    </div>
+
+                    <h3 class="fw-bold text-dark mb-1">@Model.ItemName</h3>
+                    <p class="text-muted small mb-3"><i class="bi bi-geo-alt text-success me-1"></i>@Model.Location</p>
+
+                    <!-- Key Spec Grid -->
+                    <div class="bg-light p-3 rounded-4 border mb-3">
+                        <div class="row g-2 small">
+                            <div class="col-5 text-muted">@L["Rental Period:"]</div>
+                            <div class="col-7 fw-bold text-dark">@Model.DateRangeDisplay</div>
+
+                            <div class="col-5 text-muted">@L["Duration:"]</div>
+                            <div class="col-7 fw-semibold text-dark">@Model.DurationDisplay</div>
+
+                            <div class="col-5 text-muted">@L["Total Payable:"]</div>
+                            <div class="col-7 fw-bold text-success fs-6">@Model.CostDisplay</div>
+
+                            <div class="col-5 text-muted">@L["Payment Status:"]</div>
+                            <div class="col-7"><span class="badge bg-white text-dark border">@L[Model.PaymentStatus]</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Owner & Farmer Quick Row -->
+                    <div class="row g-2 small">
+                        <div class="col-12 col-sm-6">
+                            <div class="p-2.5 rounded-3 border bg-white">
+                                <span class="text-muted d-block" style="font-size: 0.72rem;">@L["Owner / Provider"]</span>
+                                <span class="fw-bold text-dark d-block">@Model.OwnerName</span>
+                                <a href="tel:@Model.OwnerPhone" class="text-success text-decoration-none small"><i class="bi bi-telephone-fill me-1"></i>@Model.OwnerPhone</a>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="p-2.5 rounded-3 border bg-white">
+                                <span class="text-muted d-block" style="font-size: 0.72rem;">@L["Farmer / Customer"]</span>
+                                <span class="fw-bold text-dark d-block">@Model.FarmerName</span>
+                                <span class="text-muted small"><i class="bi bi-telephone me-1"></i>@Model.FarmerPhone</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <hr class="my-4" />
+
+            <!-- Pickup / Delivery Checklist & Terms -->
+            <div class="row g-3 text-secondary small">
+                <div class="col-12 col-md-4">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="bi bi-1-circle-fill text-success fs-5"></i>
+                        <div>
+                            <strong class="text-dark d-block">@L["1. Arrive on Schedule"]</strong>
+                            <span>@L["Reach the pickup location on {0} with valid ID.", Model.StartDate.ToString("dd MMM yyyy")]</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="bi bi-2-circle-fill text-success fs-5"></i>
+                        <div>
+                            <strong class="text-dark d-block">@L["2. QR Handover Scan"]</strong>
+                            <span>@L["Let the owner scan your QR pass to record handover."]</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="bi bi-3-circle-fill text-success fs-5"></i>
+                        <div>
+                            <strong class="text-dark d-block">@L["3. Inspect & Return"]</strong>
+                            <span>@L["Check machine health and return cleanly by {0}.", Model.EndDate.ToString("dd MMM yyyy")]</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Voucher Footer -->
+        <div class="bg-light p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="text-muted small">
+                <i class="bi bi-lock-fill text-success me-1"></i> @L["Encrypted Verification:"] <span class="font-monospace text-dark">@Model.VerificationUrl</span>
+            </span>
+            <span class="badge bg-white text-muted border font-monospace" style="font-size: 0.72rem;">
+                @L["Generated on {0}", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm UTC")]
+            </span>
+        </div>
+
+    </div>
+
+</div>

@@ -1,0 +1,273 @@
+@model KrishiLink.Models.ViewModels.WeatherSuggestionAdvisoryViewModel
+@{
+    ViewData["Title"] = L["Weather-Triggered Crop & Equipment Suggestions"].Value;
+    var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+    var ws = Model.Suggestion;
+    var isUrgent = ws.OverallRiskLevel == "Urgent";
+    var isHigh = ws.OverallRiskLevel == "High";
+}
+
+<!-- ADVISORY SECTION 4-TAB NAVIGATION -->
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4 pb-2 border-bottom" style="border-color: var(--krishi-border-color) !important;">
+    <div>
+        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">
+            <i class="bi bi-cloud-sun text-warning me-2"></i>@L["Weather-Triggered Suggestions"]
+        </h2>
+        <p class="mb-0 text-muted">
+            @L["Proactive agricultural nudges connecting 5-day weather forecasts, crop calendar growth stages, and machinery/storage availability."]
+        </p>
+    </div>
+
+    <!-- Top Tab Bar -->
+    <div class="nav nav-pills bg-light p-1.5 rounded-pill border shadow-sm" role="tablist">
+        <a asp-controller="Advisory" asp-action="Index" class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-muted d-flex align-items-center gap-1.5">
+            <i class="bi bi-cpu"></i>
+            <span>@L["Smart Advisor"]</span>
+        </a>
+        <a asp-controller="Advisory" asp-action="Calendar" class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-muted d-flex align-items-center gap-1.5">
+            <i class="bi bi-calendar-week"></i>
+            <span>@L["Crop Calendar"]</span>
+        </a>
+        <a asp-controller="Advisory" asp-action="Alerts" class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-muted d-flex align-items-center gap-1.5">
+            <i class="bi bi-shield-shaded"></i>
+            <span>@L["Pest Alerts"]</span>
+        </a>
+        <a asp-controller="Advisory" asp-action="Suggestions" class="nav-link active bg-warning text-dark rounded-pill px-3.5 py-1.5 fw-bold d-flex align-items-center gap-1.5 shadow-sm">
+            <i class="bi bi-lightning-charge-fill"></i>
+            <span>@L["Weather Suggestions"]</span>
+        </a>
+    </div>
+</div>
+
+<!-- FILTER & SELECTOR BAR -->
+<div class="card border-0 shadow-sm rounded-4 mb-4" style="background-color: var(--krishi-surface); border: 1px solid var(--krishi-border-color) !important;">
+    <div class="card-body p-3.5">
+        <form method="get" asp-controller="Advisory" asp-action="Suggestions" class="row g-3 align-items-end">
+            <!-- District -->
+            <div class="col-12 col-md-5">
+                <label for="districtSelect" class="form-label small fw-bold text-dark mb-1">
+                    <i class="bi bi-geo-alt-fill text-success me-1"></i>@L["Select District / Region"]
+                </label>
+                <select class="form-select rounded-3 py-2" id="districtSelect" name="district" onchange="this.form.submit()">
+                    @foreach (var district in Model.AvailableDistricts)
+                    {
+                        <option value="@district" selected="@(district.Equals(Model.SelectedDistrict, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">
+                            @L[district]
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <!-- Crop -->
+            <div class="col-12 col-md-5">
+                <label for="cropSelect" class="form-label small fw-bold text-dark mb-1">
+                    <i class="bi bi-flower2 text-success me-1"></i>@L["Select Cultivated Crop"]
+                </label>
+                <select class="form-select rounded-3 py-2" id="cropSelect" name="crop" onchange="this.form.submit()">
+                    @foreach (var crop in Model.AvailableCrops)
+                    {
+                        <option value="@crop" selected="@(crop.Equals(Model.SelectedCrop, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">
+                            @L[crop]
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="col-12 col-md-2">
+                <button type="submit" class="btn btn-krishi-primary w-100 py-2 rounded-3 fw-semibold d-flex align-items-center justify-content-center gap-1.5 shadow-xs">
+                    <i class="bi bi-arrow-repeat"></i>
+                    <span>@L["Update"]</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- LIVE TELEMETRY & BANNER -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+    <div class="card-body p-4 text-white">
+        <div class="row align-items-center gy-4">
+            
+            <!-- Left: Regional Weather Overview -->
+            <div class="col-12 col-lg-7">
+                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                    <span class="badge @(isUrgent ? "bg-danger" : isHigh ? "bg-warning text-dark" : "bg-success") text-white px-3 py-1 rounded-pill fw-bold text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                        <i class="bi bi-broadcast me-1"></i>@(isBangla ? ws.BanglaCropStage : ws.CropStage)
+                    </span>
+                    <span class="badge bg-white bg-opacity-20 text-white px-2.5 py-1 rounded-pill small">
+                        @ws.District · @ws.Division @L["Division"]
+                    </span>
+                    @if (ws.RainAlert)
+                    {
+                        <span class="badge bg-danger text-white px-2.5 py-1 rounded-pill small fw-bold">
+                            <i class="bi bi-cloud-rain-heavy-fill me-1"></i>@L["Rain Expected in 2–4 Days"]
+                        </span>
+                    }
+                </div>
+
+                <div class="d-flex align-items-baseline gap-3 my-2">
+                    <h1 class="display-5 fw-bold text-white mb-0">@ws.Weather.Temperature.ToString("0.#")°C</h1>
+                    <div>
+                        <div class="fs-5 fw-semibold text-light mb-0">
+                            <i class="bi @ws.Weather.ConditionIcon text-warning me-1"></i>
+                            @(isBangla ? ws.Weather.BanglaCondition : ws.Weather.Condition)
+                        </div>
+                        <div class="text-white-50 small">
+                            @(isBangla ? ws.BanglaCrop : ws.FarmerCrop) · @DateTime.Today.ToString("MMMM yyyy")
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telemetry Chips -->
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <div class="bg-white bg-opacity-10 rounded-pill px-3 py-1.5 small d-flex align-items-center gap-2 border border-white border-opacity-10">
+                        <i class="bi bi-droplet-fill text-info"></i>
+                        <span>@L["Humidity:"] <strong>@ws.Weather.Humidity.ToString("0")%</strong></span>
+                    </div>
+                    <div class="bg-white bg-opacity-10 rounded-pill px-3 py-1.5 small d-flex align-items-center gap-2 border border-white border-opacity-10">
+                        <i class="bi bi-cloud-rain-fill @(ws.MaxRainChance >= 45 ? "text-danger" : "text-light")"></i>
+                        <span>@L["Rain Probability:"] <strong>@ws.MaxRainChance.ToString("0")%</strong></span>
+                    </div>
+                    <div class="bg-white bg-opacity-10 rounded-pill px-3 py-1.5 small d-flex align-items-center gap-2 border border-white border-opacity-10">
+                        <i class="bi bi-wind text-secondary"></i>
+                        <span>@L["Wind:"] <strong>@ws.Weather.WindSpeedKmh.ToString("0") km/h</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: 5-Day Mini Forecast Strip -->
+            <div class="col-12 col-lg-5">
+                <div class="bg-white bg-opacity-10 p-3 rounded-4 border border-white border-opacity-10">
+                    <div class="d-flex justify-content-between align-items-center mb-2 text-white-50 small fw-bold">
+                        <span><i class="bi bi-calendar-week me-1"></i>@L["5-Day Regional Forecast"]</span>
+                        <span>@ws.District</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between text-center gap-1">
+                        @foreach (var day in ws.Weather.FiveDayForecast)
+                        {
+                            <div class="p-2 rounded-3 bg-black bg-opacity-20 flex-grow-1">
+                                <span class="d-block text-white-50 small" style="font-size: 0.72rem;">
+                                    @(isBangla ? day.BanglaDayName : day.DayName)
+                                </span>
+                                <i class="bi @day.ConditionIcon fs-5 my-1 d-block @(day.RainChance >= 45 ? "text-danger" : "text-warning")"></i>
+                                <span class="d-block fw-bold text-white small">@day.MaxTemp.ToString("0")°</span>
+                                <span class="d-block text-white-50" style="font-size: 0.68rem;">@day.RainChance.ToString("0")% 🌧️</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ACTIVE SUGGESTIONS HEADER -->
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h4 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+        <i class="bi bi-lightning-charge-fill text-warning"></i>
+        <span>@L["Targeted Agricultural Nudges ({0})", ws.Suggestions.Count]</span>
+    </h4>
+    <span class="badge bg-@ws.OverallBadgeClass text-@((ws.OverallBadgeClass == "warning" || ws.OverallBadgeClass == "light") ? "dark" : "white") rounded-pill px-3 py-1.5 fw-bold">
+        @ws.OverallRiskLevel Status
+    </span>
+</div>
+
+<!-- ACTIONABLE CARDS GRID -->
+<div class="row g-4 mb-5">
+    @if (ws.Suggestions.Any())
+    {
+        @foreach (var nudge in ws.Suggestions)
+        {
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm rounded-4 p-4 d-flex flex-column justify-content-between" 
+                     style="background-color: var(--krishi-surface); border: 1px solid var(--krishi-border-color) !important; border-top: 4px solid @(nudge.IsCritical ? "#e11d48" : "#16a34a") !important;">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                            <span class="badge bg-@nudge.BadgeClass-subtle text-@nudge.BadgeClass border border-@nudge.BadgeClass-subtle rounded-pill px-3 py-1 small fw-bold">
+                                <i class="bi @nudge.IconClass me-1"></i>@(isBangla ? nudge.BanglaBadgeText : nudge.BadgeText)
+                            </span>
+                            @if (nudge.IsCritical)
+                            {
+                                <span class="badge bg-danger text-white rounded-pill px-2 py-0.5" style="font-size: 0.7rem;">
+                                    @L["High Priority"]
+                                </span>
+                            }
+                        </div>
+
+                        <h5 class="fw-bold text-dark mb-2">
+                            @(isBangla ? nudge.BanglaTitle : nudge.Title)
+                        </h5>
+                        <p class="text-secondary small mb-4" style="line-height: 1.6;">
+                            @(isBangla ? nudge.BanglaMessage : nudge.Message)
+                        </p>
+                    </div>
+
+                    <a href="@nudge.ActionUrl" class="btn btn-@nudge.BadgeClass rounded-pill py-2.5 fw-semibold d-inline-flex align-items-center justify-content-center gap-2 shadow-xs w-100">
+                        <span>@(isBangla ? nudge.BanglaActionText : nudge.ActionText)</span>
+                        <i class="bi @nudge.ActionIcon"></i>
+                    </a>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="text-center py-5 bg-light rounded-4 border">
+                <i class="bi bi-check-circle-fill text-success fs-1 mb-2 d-block"></i>
+                <h5 class="fw-bold text-dark mb-1">@L["No Critical Weather Risks Detected"]</h5>
+                <p class="text-muted small mb-0">@L["Weather conditions are currently optimal for your selected crop and region."]</p>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- HOW IT WORKS & FARMER GUIDANCE -->
+<div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid var(--krishi-border-color) !important;">
+    <div class="row align-items-center gy-4">
+        <div class="col-12 col-lg-8">
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill fw-bold mb-2">
+                <i class="bi bi-info-circle me-1"></i>@L["How Weather Nudges Work"]
+            </span>
+            <h4 class="fw-bold text-dark mb-2">
+                @L["Protecting Harvests & Maximizing Farm Profits Through Proactive Intelligence"]
+            </h4>
+            <p class="text-secondary small mb-3" style="line-height: 1.6;">
+                @L["KrishiLink continuously monitors regional meteorological parameters across Bangladesh. When adverse rainstorms, humid spore conditions, or optimal sowing moisture levels are detected, the system immediately cross-checks your cultivated crop with verified DAE crop calendars and alerts you in advance."]
+            </p>
+            <div class="row g-3 text-secondary small">
+                <div class="col-12 col-sm-6 d-flex align-items-center gap-2">
+                    <i class="bi bi-check2-circle text-success fs-5"></i>
+                    <span>@L["Pre-book storage capacity before rain damages harvest."]</span>
+                </div>
+                <div class="col-12 col-sm-6 d-flex align-items-center gap-2">
+                    <i class="bi bi-check2-circle text-success fs-5"></i>
+                    <span>@L["Rent combine harvesters to cut crop days faster."]</span>
+                </div>
+                <div class="col-12 col-sm-6 d-flex align-items-center gap-2">
+                    <i class="bi bi-check2-circle text-success fs-5"></i>
+                    <span>@L["Apply prophylactic fungicides before heavy dense fog."]</span>
+                </div>
+                <div class="col-12 col-sm-6 d-flex align-items-center gap-2">
+                    <i class="bi bi-check2-circle text-success fs-5"></i>
+                    <span>@L["Schedule irrigation pumps during dry sowing spells."]</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-4 text-center">
+            <div class="p-4 bg-white rounded-4 border shadow-xs d-inline-block w-100">
+                <i class="bi bi-bell-fill text-warning fs-1 mb-2 d-block"></i>
+                <h6 class="fw-bold text-dark mb-1">@L["Automatic In-App & Email Alerts"]</h6>
+                <p class="text-muted small mb-3">
+                    @L["Keep your profile updated with your active district and crop to receive instant notifications on your device."]
+                </p>
+                <a asp-controller="Account" asp-action="Profile" class="btn btn-outline-success btn-sm rounded-pill px-3 py-1.5 fw-semibold">
+                    <i class="bi bi-person-gear me-1"></i>@L["Update My Crop Profile"]
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

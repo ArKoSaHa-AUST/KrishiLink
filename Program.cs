@@ -38,6 +38,11 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "RequestVerificationToken";
+});
+
 // Localization: shared .resx resources (English is the default/fallback, Bangla via SharedResource.bn.resx)
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
@@ -72,14 +77,21 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ICropCalendarService, CropCalendarService>();
 builder.Services.AddScoped<IPestAlertService, PestAlertService>();
 builder.Services.AddScoped<IOwnerVerificationService, OwnerVerificationService>();
+builder.Services.AddScoped<IWeatherSuggestionService, WeatherSuggestionService>();
+builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IBadgeService, BadgeService>();
+builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
+builder.Services.AddScoped<ILoyaltyService, LoyaltyService>();
 
-// Email + scheduled monthly statements (falls back to a logging sender until SMTP is configured)
+// Email + scheduled background services
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
 if (builder.Configuration.GetSection(EmailOptions.SectionName).Get<EmailOptions>()?.IsConfigured == true)
     builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 else
     builder.Services.AddScoped<IEmailSender, LoggingEmailSender>();
 builder.Services.AddHostedService<MonthlyStatementScheduler>();
+builder.Services.AddHostedService<WeatherSuggestionScheduler>();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

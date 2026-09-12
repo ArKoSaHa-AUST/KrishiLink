@@ -12,6 +12,8 @@ namespace KrishiLink.Models.Entities
         public const string BookingCompleted = "BookingCompleted";
         public const string PayoutProcessed = "PayoutProcessed";
         public const string ReviewReceived = "ReviewReceived";
+        public const string WeatherSuggestion = "WeatherSuggestion";
+        public const string Loyalty = "Loyalty";
         public const string System = "System";
     }
 
