@@ -48,6 +48,8 @@ namespace KrishiLink.BLL.Services
         private readonly IFileStorageService _files;
         private readonly IReviewService _reviews;
         private readonly INotificationService _notifications;
+        private readonly IBadgeService _badges;
+        private readonly ILeaderboardService _leaderboard;
 
         public EquipmentService(
             IRepository<Equipment> equipment,
@@ -57,7 +59,9 @@ namespace KrishiLink.BLL.Services
             IRepository<EquipmentMaintenanceRecord> maintenanceRecords,
             IFileStorageService files,
             IReviewService reviews,
-            INotificationService notifications)
+            INotificationService notifications,
+            IBadgeService badges,
+            ILeaderboardService leaderboard)
         {
             _equipment = equipment;
             _bookings = bookings;
@@ -67,6 +71,8 @@ namespace KrishiLink.BLL.Services
             _files = files;
             _reviews = reviews;
             _notifications = notifications;
+            _badges = badges;
+            _leaderboard = leaderboard;
         }
 
         // ---------------------------------------------------------------- Browse & details
@@ -278,7 +284,7 @@ namespace KrishiLink.BLL.Services
                 lng = fallbackLng;
             }
 
-            return new EquipmentDetailViewModel
+            var model = new EquipmentDetailViewModel
             {
                 Id = e.Id,
                 Name = e.Name,
@@ -308,6 +314,19 @@ namespace KrishiLink.BLL.Services
                 LastServicedText = lastServicedText,
                 MaintenanceHistory = maintenanceLogs
             };
+
+            if (!string.IsNullOrWhiteSpace(e.OwnerId))
+            {
+                var badges = await _badges.GetOwnerBadgesAsync(e.OwnerId);
+                model.OwnerBadges = badges.Where(b => b.IsEarned).ToList();
+                var (rank, trust, total) = await _leaderboard.GetOwnerRankAsync(e.OwnerId);
+                if (rank.HasValue)
+                {
+                    model.OwnerRankText = $"Rank #{rank.Value} Top Host";
+                }
+            }
+
+            return model;
         }
 
         public async Task<string?> RequestRentalAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note)
@@ -410,12 +429,17 @@ namespace KrishiLink.BLL.Services
                 };
             }).ToList();
 
+            var (rank, trustScore, totalRanked) = await _leaderboard.GetOwnerRankAsync(ownerId);
+            var badgeWidget = await _badges.GetOwnerBadgeWidgetAsync(ownerId, rank, totalRanked);
+            badgeWidget.TrustScore = trustScore;
+
             return new EquipmentOwnerDashboardViewModel
             {
                 TotalListings = listings.Count,
                 ActiveRentals = rawListings.Count(l => l.RentedToday),
                 Listings = listings,
-                PendingRequestItems = requests.Select(ToRequestItem).OrderByDescending(r => r.RequestedOn).ToList()
+                PendingRequestItems = requests.Select(ToRequestItem).OrderByDescending(r => r.RequestedOn).ToList(),
+                BadgeWidget = badgeWidget
             };
         }
 

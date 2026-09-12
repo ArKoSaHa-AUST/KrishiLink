@@ -43,6 +43,8 @@ namespace KrishiLink.BLL.Services
         private readonly IFileStorageService _files;
         private readonly IReviewService _reviews;
         private readonly INotificationService _notifications;
+        private readonly IBadgeService _badges;
+        private readonly ILeaderboardService _leaderboard;
 
         public GodownService(
             IRepository<Godown> godowns,
@@ -51,7 +53,9 @@ namespace KrishiLink.BLL.Services
             IRepository<ApplicationUser> users,
             IFileStorageService files,
             IReviewService reviews,
-            INotificationService notifications)
+            INotificationService notifications,
+            IBadgeService badges,
+            ILeaderboardService leaderboard)
         {
             _godowns = godowns;
             _bookings = bookings;
@@ -60,6 +64,8 @@ namespace KrishiLink.BLL.Services
             _files = files;
             _reviews = reviews;
             _notifications = notifications;
+            _badges = badges;
+            _leaderboard = leaderboard;
         }
 
         // ---------------------------------------------------------------- Browse & details
@@ -230,7 +236,7 @@ namespace KrishiLink.BLL.Services
                 lng = fallbackLng;
             }
 
-            return new GodownDetailViewModel
+            var model = new GodownDetailViewModel
             {
                 Id = g.Id,
                 Name = g.Name,
@@ -261,6 +267,19 @@ namespace KrishiLink.BLL.Services
                 RequestedCapacityTons = Math.Min(10, available),
                 Reviews = reviewsList
             };
+
+            if (!string.IsNullOrWhiteSpace(g.OwnerId))
+            {
+                var badges = await _badges.GetOwnerBadgesAsync(g.OwnerId);
+                model.OwnerBadges = badges.Where(b => b.IsEarned).ToList();
+                var (rank, trust, total) = await _leaderboard.GetOwnerRankAsync(g.OwnerId);
+                if (rank.HasValue)
+                {
+                    model.OwnerRankText = $"Rank #{rank.Value} Top Host";
+                }
+            }
+
+            return model;
         }
 
         public async Task<string?> RequestStorageAsync(string farmerId, GodownDetailViewModel r)
@@ -322,13 +341,18 @@ namespace KrishiLink.BLL.Services
             var godowns = await OwnerGodownsAsync(ownerId);
             var pending = await OwnerBookingsQuery(ownerId).Where(b => b.Status == BookingStatus.Pending).ToListAsync();
 
+            var (rank, trustScore, totalRanked) = await _leaderboard.GetOwnerRankAsync(ownerId);
+            var badgeWidget = await _badges.GetOwnerBadgeWidgetAsync(ownerId, rank, totalRanked);
+            badgeWidget.TrustScore = trustScore;
+
             return new GodownOwnerDashboardViewModel
             {
                 TotalGodowns = godowns.Count,
                 TotalCapacityTons = godowns.Sum(g => g.TotalCapacityTons),
                 OccupiedCapacityTons = godowns.Sum(g => g.OccupiedTons),
                 Godowns = godowns,
-                PendingRequestItems = pending.Select(ToRequestItem).OrderByDescending(r => r.RequestedOn).ToList()
+                PendingRequestItems = pending.Select(ToRequestItem).OrderByDescending(r => r.RequestedOn).ToList(),
+                BadgeWidget = badgeWidget
             };
         }
 

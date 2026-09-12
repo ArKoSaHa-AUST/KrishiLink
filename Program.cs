@@ -74,6 +74,9 @@ builder.Services.AddScoped<IPestAlertService, PestAlertService>();
 builder.Services.AddScoped<IOwnerVerificationService, OwnerVerificationService>();
 builder.Services.AddScoped<IWeatherSuggestionService, WeatherSuggestionService>();
 builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IBadgeService, BadgeService>();
+builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 
 // Email + scheduled background services
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
