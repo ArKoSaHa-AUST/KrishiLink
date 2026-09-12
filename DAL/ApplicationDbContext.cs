@@ -23,6 +23,7 @@ namespace KrishiLink.DAL
         public DbSet<WeatherData> WeatherData { get; set; } = null!;
         public DbSet<Transaction> Transactions { get; set; } = null!;
         public DbSet<Review> Reviews { get; set; } = null!;
+        public DbSet<Notification> Notifications { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -124,6 +125,18 @@ namespace KrishiLink.DAL
                 r.HasOne(x => x.Godown).WithMany(g => g.Reviews).HasForeignKey(x => x.GodownId).OnDelete(DeleteBehavior.NoAction);
                 r.HasOne(x => x.EquipmentBooking).WithOne(b => b.Review).HasForeignKey<Review>(x => x.EquipmentBookingId).OnDelete(DeleteBehavior.NoAction);
                 r.HasOne(x => x.GodownBooking).WithOne(b => b.Review).HasForeignKey<Review>(x => x.GodownBookingId).OnDelete(DeleteBehavior.NoAction);
+            });
+
+            builder.Entity<Notification>(n =>
+            {
+                n.Property(x => x.Title).HasMaxLength(150);
+                n.Property(x => x.Message).HasMaxLength(1000);
+                n.Property(x => x.LinkUrl).HasMaxLength(255);
+                n.Property(x => x.Type).HasMaxLength(50);
+                n.HasIndex(x => new { x.UserId, x.IsRead });
+                n.HasIndex(x => new { x.UserId, x.CreatedAt });
+
+                n.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             });
         }
     }
