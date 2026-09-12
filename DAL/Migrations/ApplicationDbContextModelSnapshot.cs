@@ -55,6 +55,9 @@ namespace KrishiLink.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime?>("LastStatementSentMonth")
                         .HasColumnType("datetime2");
 
@@ -66,6 +69,18 @@ namespace KrishiLink.DAL.Migrations
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("NidBackImagePath")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("NidFrontImagePath")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("NidNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -94,6 +109,10 @@ namespace KrishiLink.DAL.Migrations
                         .HasMaxLength(60)
                         .HasColumnType("nvarchar(60)");
 
+                    b.Property<string>("TradeLicenseImagePath")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
 
@@ -105,7 +124,30 @@ namespace KrishiLink.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("VerificationNotes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("VerificationRejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("VerificationReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VerificationStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("Unverified");
+
+                    b.Property<DateTime?>("VerificationSubmittedAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("IsVerified");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -114,6 +156,8 @@ namespace KrishiLink.DAL.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex")
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
+
+                    b.HasIndex("VerificationStatus");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });
@@ -215,6 +259,11 @@ namespace KrishiLink.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<double>("AverageRating")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("float")
+                        .HasDefaultValue(0.0);
+
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -255,6 +304,11 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<string>("OwnerId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("ReviewCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.HasKey("Id");
 
@@ -348,6 +402,11 @@ namespace KrishiLink.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<double>("AverageRating")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("float")
+                        .HasDefaultValue(0.0);
+
                     b.Property<double>("CapacityInTons")
                         .HasColumnType("float");
 
@@ -386,6 +445,11 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<decimal>("PricePerTonPerMonth")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ReviewCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("StorageType")
                         .IsRequired()
@@ -477,6 +541,175 @@ namespace KrishiLink.DAL.Migrations
                     b.HasIndex("GodownId", "Status");
 
                     b.ToTable("GodownBookings");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LinkUrl")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.HasIndex("UserId", "IsRead");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.OwnerVerificationRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdminNotes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("NidBackImagePath")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("NidFrontImagePath")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("NidNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReviewedByAdminId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("Pending");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TradeLicenseImagePath")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubmittedAt");
+
+                    b.HasIndex("UserId", "Status");
+
+                    b.ToTable("VerificationRequests");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.Review", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BookingType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("EquipmentBookingId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("EquipmentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FarmerId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("GodownBookingId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("GodownId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EquipmentBookingId")
+                        .IsUnique()
+                        .HasFilter("[EquipmentBookingId] IS NOT NULL");
+
+                    b.HasIndex("FarmerId");
+
+                    b.HasIndex("GodownBookingId")
+                        .IsUnique()
+                        .HasFilter("[GodownBookingId] IS NOT NULL");
+
+                    b.HasIndex("EquipmentId", "CreatedAt");
+
+                    b.HasIndex("GodownId", "CreatedAt");
+
+                    b.ToTable("Reviews");
                 });
 
             modelBuilder.Entity("KrishiLink.Models.Entities.Transaction", b =>
@@ -791,6 +1024,67 @@ namespace KrishiLink.DAL.Migrations
                     b.Navigation("Payout");
                 });
 
+            modelBuilder.Entity("KrishiLink.Models.Entities.Notification", b =>
+                {
+                    b.HasOne("KrishiLink.Models.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.OwnerVerificationRequest", b =>
+                {
+                    b.HasOne("KrishiLink.Models.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.Review", b =>
+                {
+                    b.HasOne("KrishiLink.Models.Entities.EquipmentBooking", "EquipmentBooking")
+                        .WithOne("Review")
+                        .HasForeignKey("KrishiLink.Models.Entities.Review", "EquipmentBookingId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("KrishiLink.Models.Entities.Equipment", "Equipment")
+                        .WithMany("Reviews")
+                        .HasForeignKey("EquipmentId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("KrishiLink.Models.Entities.ApplicationUser", "Farmer")
+                        .WithMany()
+                        .HasForeignKey("FarmerId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("KrishiLink.Models.Entities.GodownBooking", "GodownBooking")
+                        .WithOne("Review")
+                        .HasForeignKey("KrishiLink.Models.Entities.Review", "GodownBookingId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("KrishiLink.Models.Entities.Godown", "Godown")
+                        .WithMany("Reviews")
+                        .HasForeignKey("GodownId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Equipment");
+
+                    b.Navigation("EquipmentBooking");
+
+                    b.Navigation("Farmer");
+
+                    b.Navigation("Godown");
+
+                    b.Navigation("GodownBooking");
+                });
+
             modelBuilder.Entity("KrishiLink.Models.Entities.Transaction", b =>
                 {
                     b.HasOne("KrishiLink.Models.Entities.ApplicationUser", "User")
@@ -858,6 +1152,13 @@ namespace KrishiLink.DAL.Migrations
                     b.Navigation("BlockedDates");
 
                     b.Navigation("Bookings");
+
+                    b.Navigation("Reviews");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.EquipmentBooking", b =>
+                {
+                    b.Navigation("Review");
                 });
 
             modelBuilder.Entity("KrishiLink.Models.Entities.Godown", b =>
@@ -865,6 +1166,13 @@ namespace KrishiLink.DAL.Migrations
                     b.Navigation("BlockedDates");
 
                     b.Navigation("Bookings");
+
+                    b.Navigation("Reviews");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.GodownBooking", b =>
+                {
+                    b.Navigation("Review");
                 });
 #pragma warning restore 612, 618
         }

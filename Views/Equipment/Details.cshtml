@@ -94,26 +94,218 @@
             <!-- Owner Info Card -->
             <div class="p-3 rounded-3 border bg-white d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold" style="width: 44px; height: 44px;">
+                        @(Model.OwnerName.Length > 0 ? Model.OwnerName[0].ToString().ToUpperInvariant() : "O")
+                    </div>
                     <div>
-                        <h6 class="fw-bold mb-0 text-dark">@Model.OwnerName</h6>
-                        <div class="d-flex align-items-center gap-2 small text-muted">
-                            @if (Model.TotalReviews > 0)
+                        <h6 class="fw-bold mb-0 text-dark d-flex align-items-center gap-1.5">
+                            @Model.OwnerName
+                            @if (Model.OwnerIsVerified)
                             {
-                                <span class="text-success fw-semibold">@L["Rating:"] @Model.OwnerRating</span>
-                                <span>(@L["{0} reviews", Model.TotalReviews])</span>
+                                <i class="bi bi-patch-check-fill text-success" title="@L["Verified Owner"]"></i>
+                            }
+                        </h6>
+                        <div class="d-flex align-items-center gap-2 small text-muted">
+                            @if (Model.ReviewCount > 0)
+                            {
+                                <span class="text-warning fw-bold d-inline-flex align-items-center gap-1">
+                                    <i class="bi bi-star-fill"></i> @Model.AverageRating.ToString("0.0")
+                                </span>
+                                <span>(@L["{0} reviews", Model.ReviewCount])</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-light text-muted border py-0.5 px-2">@L["New Listing"]</span>
                             }
                             <span>@L["Member since {0}", Model.OwnerMemberSince]</span>
                         </div>
                     </div>
                 </div>
-                <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill small">
-                    @L["Verified Owner"]
-                </span>
+                @if (Model.OwnerIsVerified)
+                {
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill small fw-semibold shadow-xs">
+                        <i class="bi bi-patch-check-fill text-success me-1"></i> @L["Verified Owner"]
+                    </span>
+                }
+                else
+                {
+                    <span class="badge bg-light text-muted border px-3 py-2 rounded-pill small">
+                        <i class="bi bi-shield text-muted me-1"></i> @L["Unverified"]
+                    </span>
+                }
             </div>
         </div>
 
         <!-- Availability Calendar Component -->
         <partial name="_AvailabilityCalendar" model="Model.BookedDates" />
+
+        <!-- =========================================================================
+             RATINGS & REVIEWS SECTION
+             ========================================================================= -->
+        <div class="card krishi-card p-4 mt-4 border-0 shadow-sm" id="reviewsSection">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4 pb-3 border-bottom">
+                <h4 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-star-fill text-warning"></i>
+                    <span>@L["Ratings & Reviews"]</span>
+                </h4>
+                @if (Model.ReviewCount > 0)
+                {
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1.5 fw-semibold">
+                        @L["{0} Verified Farmer Reviews", Model.ReviewCount]
+                    </span>
+                }
+            </div>
+
+            @if (Model.ReviewCount > 0 && Model.Reviews != null)
+            {
+                <!-- Rating Score Summary & Breakdown Card -->
+                <div class="bg-light p-4 rounded-4 border mb-4">
+                    <div class="row g-4 align-items-center">
+                        
+                        <!-- Left: Overall Score -->
+                        <div class="col-12 col-md-5 text-center text-md-start border-end-md">
+                            <div class="d-flex flex-column align-items-center align-items-md-start">
+                                <div class="display-4 fw-black text-dark lh-1 mb-1">
+                                    @Model.AverageRating.ToString("0.0")
+                                </div>
+                                <div class="text-warning mb-1 fs-5">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        if (i <= Math.Round(Model.AverageRating))
+                                        {
+                                            <i class="bi bi-star-fill"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-star text-muted opacity-50"></i>
+                                        }
+                                    }
+                                </div>
+                                <span class="text-muted small fw-medium">
+                                    @L["Based on {0} verified booking reviews", Model.ReviewCount]
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Right: Star Breakdown Progress Bars -->
+                        <div class="col-12 col-md-7">
+                            <div class="d-flex flex-column gap-1.5">
+                                
+                                <!-- 5 Stars -->
+                                <div class="d-flex align-items-center gap-2 small">
+                                    <span class="text-muted text-nowrap" style="width: 45px;">5 <i class="bi bi-star-fill text-warning" style="font-size: 0.75rem;"></i></span>
+                                    <div class="progress flex-grow-1" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: @(Model.Reviews.Breakdown.FiveStarPercent)%;" aria-valuenow="@Model.Reviews.Breakdown.FiveStarPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <span class="text-muted text-end text-nowrap" style="width: 30px;">@Model.Reviews.Breakdown.FiveStarCount</span>
+                                </div>
+
+                                <!-- 4 Stars -->
+                                <div class="d-flex align-items-center gap-2 small">
+                                    <span class="text-muted text-nowrap" style="width: 45px;">4 <i class="bi bi-star-fill text-warning" style="font-size: 0.75rem;"></i></span>
+                                    <div class="progress flex-grow-1" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: @(Model.Reviews.Breakdown.FourStarPercent)%;" aria-valuenow="@Model.Reviews.Breakdown.FourStarPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <span class="text-muted text-end text-nowrap" style="width: 30px;">@Model.Reviews.Breakdown.FourStarCount</span>
+                                </div>
+
+                                <!-- 3 Stars -->
+                                <div class="d-flex align-items-center gap-2 small">
+                                    <span class="text-muted text-nowrap" style="width: 45px;">3 <i class="bi bi-star-fill text-warning" style="font-size: 0.75rem;"></i></span>
+                                    <div class="progress flex-grow-1" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: @(Model.Reviews.Breakdown.ThreeStarPercent)%;" aria-valuenow="@Model.Reviews.Breakdown.ThreeStarPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <span class="text-muted text-end text-nowrap" style="width: 30px;">@Model.Reviews.Breakdown.ThreeStarCount</span>
+                                </div>
+
+                                <!-- 2 Stars -->
+                                <div class="d-flex align-items-center gap-2 small">
+                                    <span class="text-muted text-nowrap" style="width: 45px;">2 <i class="bi bi-star-fill text-warning" style="font-size: 0.75rem;"></i></span>
+                                    <div class="progress flex-grow-1" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: @(Model.Reviews.Breakdown.TwoStarPercent)%;" aria-valuenow="@Model.Reviews.Breakdown.TwoStarPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <span class="text-muted text-end text-nowrap" style="width: 30px;">@Model.Reviews.Breakdown.TwoStarCount</span>
+                                </div>
+
+                                <!-- 1 Star -->
+                                <div class="d-flex align-items-center gap-2 small">
+                                    <span class="text-muted text-nowrap" style="width: 45px;">1 <i class="bi bi-star-fill text-warning" style="font-size: 0.75rem;"></i></span>
+                                    <div class="progress flex-grow-1" style="height: 8px;">
+                                        <div class="progress-bar bg-warning" role="progressbar" style="width: @(Model.Reviews.Breakdown.OneStarPercent)%;" aria-valuenow="@Model.Reviews.Breakdown.OneStarPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                    <span class="text-muted text-end text-nowrap" style="width: 30px;">@Model.Reviews.Breakdown.OneStarCount</span>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Individual Reviews List -->
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var review in Model.Reviews.Reviews)
+                    {
+                        <div class="p-3.5 rounded-3 border bg-white shadow-xs">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                <div class="d-flex align-items-center gap-2.5">
+                                    <div class="rounded-circle bg-success-subtle text-success border border-success-subtle d-flex align-items-center justify-content-center fw-bold" style="width: 38px; height: 38px;">
+                                        @review.UserInitial
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-0">@review.FarmerName</h6>
+                                        <div class="small text-muted d-flex align-items-center gap-2">
+                                            @if (!string.IsNullOrWhiteSpace(review.FarmerLocation))
+                                            {
+                                                <span><i class="bi bi-geo-alt text-success"></i> @review.FarmerLocation</span>
+                                            }
+                                            <span class="badge bg-light text-muted border py-0.5 px-1.5" style="font-size: 0.7rem;">@L["Verified Rental"]</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <div class="text-warning small mb-0.5">
+                                        @for (int s = 1; s <= 5; s++)
+                                        {
+                                            if (s <= review.Rating)
+                                            {
+                                                <i class="bi bi-star-fill"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-star text-muted opacity-50"></i>
+                                            }
+                                        }
+                                    </div>
+                                    <span class="text-muted small" style="font-size: 0.75rem;">@review.TimeAgo</span>
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(review.Comment))
+                            {
+                                <p class="text-secondary small mb-0 mt-2 ps-1 border-start border-2 border-success-subtle ps-2.5">
+                                    @review.Comment
+                                </p>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <!-- Empty State -->
+                <div class="text-center py-5 px-3 bg-light rounded-4 border">
+                    <div class="display-6 text-muted mb-2">
+                        <i class="bi bi-chat-square-heart text-success opacity-75"></i>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">@L["No Reviews Yet"]</h6>
+                    <p class="text-muted small mb-0" style="max-width: 420px; margin: 0 auto;">
+                        @L["Be the first farmer to rent this equipment and leave an honest rating and review after your booking is completed!"]
+                    </p>
+                </div>
+            }
+        </div>
     </div>
 
     <!-- RIGHT COLUMN: Sticky Rental Request Form (Desktop) -->

@@ -32,6 +32,72 @@
 }
 <partial name="_OnboardingBanner" />
 
+<!-- Owner Identity Verification Status Banner -->
+@if (Model.IsVerified)
+{
+    <div class="alert alert-success bg-success bg-opacity-10 border border-success-subtle rounded-4 p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2 shadow-xs">
+        <div class="d-flex align-items-center gap-2.5">
+            <i class="bi bi-patch-check-fill text-success fs-4"></i>
+            <div>
+                <strong class="text-success d-block small">@L["Verified Equipment Owner"]</strong>
+                <span class="text-secondary small">@L["Your identity is authenticated. All your machinery listings feature the KrishiLink Trust Badge."]</span>
+            </div>
+        </div>
+        <a asp-controller="Account" asp-action="Verification" class="btn btn-outline-success btn-sm rounded-pill px-3 py-1 fw-semibold">
+            @L["View Verification"]
+        </a>
+    </div>
+}
+else if (Model.VerificationStatus == "Pending")
+{
+    <div class="alert alert-warning bg-warning bg-opacity-10 border border-warning-subtle rounded-4 p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2 shadow-xs">
+        <div class="d-flex align-items-center gap-2.5">
+            <i class="bi bi-hourglass-split text-warning fs-4"></i>
+            <div>
+                <strong class="text-warning-emphasis d-block small">@L["National ID Verification Pending Review"]</strong>
+                <span class="text-secondary small">@L["Your NID documents are currently being checked. You will be notified upon approval."]</span>
+            </div>
+        </div>
+        <a asp-controller="Account" asp-action="Verification" class="btn btn-outline-warning btn-sm rounded-pill px-3 py-1 fw-semibold">
+            @L["Check Status"]
+        </a>
+    </div>
+}
+else if (Model.VerificationStatus == "Rejected")
+{
+    <div class="alert alert-danger bg-danger bg-opacity-10 border border-danger-subtle rounded-4 p-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2 shadow-xs">
+        <div class="d-flex align-items-center gap-2.5">
+            <i class="bi bi-exclamation-octagon-fill text-danger fs-4"></i>
+            <div>
+                <strong class="text-danger d-block small">@L["Verification Needs Attention"]</strong>
+                <span class="text-secondary small">@L["Your previous NID submission was rejected. Please re-upload clear photos."]</span>
+            </div>
+        </div>
+        <a asp-controller="Account" asp-action="Verification" class="btn btn-danger btn-sm rounded-pill px-3 py-1 fw-semibold">
+            @L["Re-submit NID"]
+        </a>
+    </div>
+}
+else
+{
+    <div class="card krishi-card border-0 shadow-sm rounded-4 p-3 mb-4 bg-primary bg-opacity-10 border border-primary-subtle">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="p-2.5 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                    <i class="bi bi-shield-plus fs-5"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-dark mb-0.5">@L["Get Your Verified Owner Badge"]</h6>
+                    <p class="text-muted small mb-0">@L["Verify your identity with National ID (NID) to build trust and increase rental bookings."]</p>
+                </div>
+            </div>
+            <a asp-controller="Account" asp-action="Verification" class="btn btn-krishi-primary btn-sm rounded-pill px-3.5 py-2 fw-semibold">
+                <i class="bi bi-shield-check me-1"></i> @L["Verify Identity Now"]
+            </a>
+        </div>
+    </div>
+}
+
 <!-- Summary Cards Row (horizontal scroll strip on mobile) -->
 <div class="d-flex flex-nowrap overflow-x-auto flex-md-wrap gap-3 pb-2 mb-4">
     <a href="#myListings" class="text-decoration-none flex-shrink-0 flex-md-grow-1 krishi-summary-card">

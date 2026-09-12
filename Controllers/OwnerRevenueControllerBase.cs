@@ -15,7 +15,7 @@ namespace KrishiLink.Controllers
     public abstract class OwnerRevenueControllerBase : Controller
     {
         private readonly IOwnerRevenueService _revenueService;
-        private readonly UserManager<ApplicationUser> _userManager;
+        protected readonly UserManager<ApplicationUser> _userManager;
 
         protected OwnerRevenueControllerBase(IOwnerRevenueService revenueService, UserManager<ApplicationUser> userManager)
         {

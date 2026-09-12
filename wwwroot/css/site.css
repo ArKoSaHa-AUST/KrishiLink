@@ -597,18 +597,68 @@ a:hover {
 .krishi-image-preview-card {
     position: relative;
     width: 130px;
-    height: 98px;
+    height: 105px;
     border-radius: var(--krishi-radius-sm);
     overflow: hidden;
-    border: 1px solid var(--krishi-border-color);
+    border: 2px solid var(--krishi-border-color);
     background: #ffffff;
     box-shadow: var(--krishi-shadow-sm);
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
 }
 
 .krishi-image-preview-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--krishi-shadow-md);
+}
+
+.krishi-image-preview-card.is-primary {
+    border-color: var(--krishi-primary) !important;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25), var(--krishi-shadow-sm) !important;
+}
+
+.krishi-primary-badge {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    background-color: var(--krishi-primary);
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    z-index: 3;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    pointer-events: none;
+}
+
+.krishi-set-primary-btn {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    color: #ffffff;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-align: center;
+    padding: 3px 2px;
+    border: none;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+    z-index: 2;
+}
+
+.krishi-image-preview-card:hover .krishi-set-primary-btn {
+    opacity: 1;
+}
+
+.krishi-set-primary-btn:hover {
+    background: rgba(22, 163, 74, 0.9);
 }
 
 .krishi-preview-remove-btn {
@@ -627,7 +677,7 @@ a:hover {
     font-size: 0.75rem;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    z-index: 3;
+    z-index: 4;
 }
 
 .krishi-preview-remove-btn:hover {
@@ -637,7 +687,7 @@ a:hover {
 @media (max-width: 575.98px) {
     .krishi-image-preview-card {
         width: calc(50% - 6px);
-        height: 105px;
+        height: 110px;
     }
 }
 
@@ -702,3 +752,52 @@ a:hover {
         max-width: 100% !important;
     }
 }
+
+/* ==========================================================================
+   Notification System Styles
+   ========================================================================== */
+
+#notificationBellBtn {
+    transition: all 0.2s ease-in-out;
+}
+
+#notificationBellBtn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+.notification-dropdown-item {
+    transition: background-color 0.15s ease-in-out;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+}
+
+.notification-dropdown-item:hover {
+    background-color: #f3f8f4 !important;
+}
+
+.notification-dropdown-item.unread {
+    background-color: #f7faf8;
+    border-left: 3px solid var(--krishi-primary);
+}
+
+.notification-unread-dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--krishi-primary);
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.text-hover-danger:hover {
+    color: #dc3545 !important;
+    background-color: #fdf2f2 !important;
+}
+
+.hover-success:hover {
+    color: var(--krishi-primary) !important;
+    border-color: var(--krishi-primary) !important;
+    background-color: var(--krishi-primary-light) !important;
+}
+

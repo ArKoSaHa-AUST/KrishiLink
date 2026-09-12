@@ -35,6 +35,7 @@
         
         <form asp-controller="EquipmentOwner" asp-action="Save" method="post" id="equipmentListingForm" enctype="multipart/form-data" onsubmit="return validateListingForm(event)">
             <input type="hidden" asp-for="Id" id="equipmentId" />
+            <input type="hidden" asp-for="PrimaryImageKey" id="primaryImageKeyInput" />
 
             <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4">
                 
@@ -162,7 +163,7 @@
                                 </span>
                                 <h5 class="fw-bold text-dark mb-0">@L["3. Machinery Photos"] <span class="text-danger">*</span></h5>
                             </div>
-                            <span class="text-muted small">@L["At least 1 photo required (PNG, JPG, WebP)"]</span>
+                            <span class="text-muted small">@L["At least 1 photo required (Max 5 MB each: PNG, JPG, WebP)"]</span>
                         </div>
 
                         <!-- Dropzone Component -->
@@ -171,13 +172,14 @@
                             <div class="mb-2">
                                 <i class="bi bi-cloud-arrow-up text-success" style="font-size: 2.5rem;"></i>
                             </div>
-                            <h6 class="fw-bold text-dark mb-1">@L["Drag & drop equipment photos here, or"] <span class="text-success text-decoration-underline">@L["browse files"]</span></h6>
-                            <p class="text-muted small mb-0">@L["High-quality photos of the front, side, and engine bay increase rental bookings."]</p>
+                            <h6 class="fw-bold text-dark mb-1">@L["Drag & drop machinery photos here, or"] <span class="text-success text-decoration-underline">@L["browse files"]</span></h6>
+                            <p class="text-muted small mb-0">@L["High-quality photos increase rental bookings. Click any photo below to set it as the Primary preview."]</p>
                         </div>
 
-                        <!-- Image Validation Alert -->
+                        <!-- Server-Side & Client-Side Validation Alerts -->
+                        <span asp-validation-for="ImageFiles" class="text-danger small d-block mb-2"></span>
                         <div class="alert alert-danger d-none py-2 px-3 small rounded-3 mb-3" id="imageValidationAlert">
-                            <i class="bi bi-exclamation-triangle-fill me-1.5"></i> @L["Please upload at least one photo of the equipment before saving."]
+                            <i class="bi bi-exclamation-triangle-fill me-1.5"></i> <span id="imageValidationAlertText">@L["Please upload at least one photo of the machinery before saving."]</span>
                         </div>
 
                         <!-- Live Preview Cards Container -->
@@ -187,10 +189,17 @@
                             @for (int i = 0; i < Model.ExistingImageUrls.Count; i++)
                             {
                                 var imgUrl = Model.ExistingImageUrls[i];
-                                <div class="krishi-image-preview-card existing-image-card" id="existingCard_@i">
+                                var isPrimary = (string.IsNullOrEmpty(Model.PrimaryImageKey) && i == 0) || string.Equals(Model.PrimaryImageKey, imgUrl, StringComparison.OrdinalIgnoreCase);
+                                <div class="krishi-image-preview-card existing-image-card @(isPrimary ? "is-primary" : "")" id="existingCard_@i" data-key="@imgUrl" onclick="setPrimaryImage('@imgUrl', this)">
                                     <img src="@imgUrl" alt="@L["Equipment photo"]" class="w-100 h-100 object-fit-cover" />
                                     <input type="hidden" name="ExistingImageUrls" value="@imgUrl" />
-                                    <button type="button" class="krishi-preview-remove-btn" onclick="removeExistingImage(@i)" title="@L["Remove photo"]">
+                                    <span class="krishi-primary-badge @(isPrimary ? "" : "d-none")">
+                                        <i class="bi bi-star-fill"></i> @L["Primary"]
+                                    </span>
+                                    <button type="button" class="krishi-set-primary-btn @(isPrimary ? "d-none" : "")" onclick="event.stopPropagation(); setPrimaryImage('@imgUrl', this.parentElement)">
+                                        <i class="bi bi-star me-1"></i>@L["Set as Primary"]
+                                    </button>
+                                    <button type="button" class="krishi-preview-remove-btn" onclick="event.stopPropagation(); removeExistingImage(@i, '@imgUrl')" title="@L["Remove photo"]">
                                         <i class="bi bi-x"></i>
                                     </button>
                                 </div>
@@ -223,8 +232,10 @@
     <partial name="_ValidationScriptsPartial" />
 
     <script>
-        // Track uploaded files in memory
-        let selectedFiles = [];
+        // Track newly selected File objects in memory
+        let selectedNewFiles = [];
+        const maxFileSize = 5 * 1024 * 1024; // 5 MB
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
 
         const dropzone = document.getElementById('dropzoneArea');
 
@@ -253,53 +264,184 @@
         }, false);
 
         function handleFileSelect(files) {
-            const container = document.getElementById('imagePreviewsContainer');
             const alertBox = document.getElementById('imageValidationAlert');
             if (alertBox) alertBox.classList.add('d-none');
 
             Array.from(files).forEach(file => {
-                if (!file.type.startsWith('image/')) return;
+                const ext = '.' + file.name.split('.').pop().toLowerCase();
 
-                selectedFiles.push(file);
-                const fileIndex = selectedFiles.length - 1;
+                if (!allowedExtensions.includes(ext) || !file.type.startsWith('image/')) {
+                    if (window.KrishiToast) {
+                        KrishiToast.show(`File '${file.name}' is not a supported image format. Use JPG, PNG, or WebP.`, { iconClass: 'bi-exclamation-triangle-fill text-warning' });
+                    }
+                    return;
+                }
+
+                if (file.size > maxFileSize) {
+                    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+                    if (window.KrishiToast) {
+                        KrishiToast.show(`File '${file.name}' exceeds the 5 MB limit (${sizeMb} MB).`, { iconClass: 'bi-exclamation-triangle-fill text-warning' });
+                    }
+                    return;
+                }
+
+                selectedNewFiles.push(file);
+            });
+
+            renderNewPreviewCards();
+        }
+
+        function renderNewPreviewCards() {
+            // Remove existing new-image cards
+            document.querySelectorAll('.new-image-card').forEach(el => el.remove());
+
+            const container = document.getElementById('imagePreviewsContainer');
+            const primaryKeyInput = document.getElementById('primaryImageKeyInput');
+            let currentPrimary = primaryKeyInput.value;
+
+            selectedNewFiles.forEach((file, index) => {
+                const key = 'new_' + index;
+                const isPrimary = currentPrimary === key;
+
+                const card = document.createElement('div');
+                card.className = `krishi-image-preview-card new-image-card ${isPrimary ? 'is-primary' : ''}`;
+                card.id = 'previewCard_' + index;
+                card.dataset.key = key;
+                card.onclick = function () { setPrimaryImage(key, card); };
+
+                const img = document.createElement('img');
+                img.className = 'w-100 h-100 object-fit-cover';
+                img.alt = file.name;
 
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    const card = document.createElement('div');
-                    card.className = 'krishi-image-preview-card new-image-card';
-                    card.id = 'previewCard_' + fileIndex;
-
-                    card.innerHTML = `
-                        <img src="${e.target.result}" alt="@L["New Upload"]" class="w-100 h-100 object-fit-cover" />
-                        <button type="button" class="krishi-preview-remove-btn" onclick="removeNewImage(${fileIndex})" title="@L["Remove photo"]">
-                            <i class="bi bi-x"></i>
-                        </button>
-                    `;
-                    container.appendChild(card);
+                reader.onload = function (e) {
+                    img.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
+
+                card.appendChild(img);
+
+                const badge = document.createElement('span');
+                badge.className = `krishi-primary-badge ${isPrimary ? '' : 'd-none'}`;
+                badge.innerHTML = `<i class="bi bi-star-fill"></i> @L["Primary"]`;
+                card.appendChild(badge);
+
+                const setPrimaryBtn = document.createElement('button');
+                setPrimaryBtn.type = 'button';
+                setPrimaryBtn.className = `krishi-set-primary-btn ${isPrimary ? 'd-none' : ''}`;
+                setPrimaryBtn.innerHTML = `<i class="bi bi-star me-1"></i>@L["Set as Primary"]`;
+                setPrimaryBtn.onclick = function (ev) {
+                    ev.stopPropagation();
+                    setPrimaryImage(key, card);
+                };
+                card.appendChild(setPrimaryBtn);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'krishi-preview-remove-btn';
+                removeBtn.title = '@L["Remove photo"]';
+                removeBtn.innerHTML = '<i class="bi bi-x"></i>';
+                removeBtn.onclick = function (ev) {
+                    ev.stopPropagation();
+                    removeNewImage(index);
+                };
+                card.appendChild(removeBtn);
+
+                container.appendChild(card);
             });
+
+            ensurePrimarySelected();
+            syncFileInput();
+        }
+
+        function setPrimaryImage(key, cardElement) {
+            document.getElementById('primaryImageKeyInput').value = key;
+
+            document.querySelectorAll('.krishi-image-preview-card').forEach(card => {
+                card.classList.remove('is-primary');
+                const badge = card.querySelector('.krishi-primary-badge');
+                if (badge) badge.classList.add('d-none');
+                const btn = card.querySelector('.krishi-set-primary-btn');
+                if (btn) btn.classList.remove('d-none');
+            });
+
+            if (cardElement) {
+                cardElement.classList.add('is-primary');
+                const badge = cardElement.querySelector('.krishi-primary-badge');
+                if (badge) badge.classList.remove('d-none');
+                const btn = cardElement.querySelector('.krishi-set-primary-btn');
+                if (btn) btn.classList.add('d-none');
+            }
         }
 
         function removeNewImage(index) {
-            const card = document.getElementById('previewCard_' + index);
-            if (card) card.remove();
-            selectedFiles[index] = null; // Mark as deleted
+            const removedKey = 'new_' + index;
+            selectedNewFiles.splice(index, 1);
+
+            const primaryKeyInput = document.getElementById('primaryImageKeyInput');
+            if (primaryKeyInput.value === removedKey) {
+                primaryKeyInput.value = '';
+            }
+
+            renderNewPreviewCards();
         }
 
-        function removeExistingImage(index) {
+        function removeExistingImage(index, url) {
             const card = document.getElementById('existingCard_' + index);
             if (card) card.remove();
+
+            const primaryKeyInput = document.getElementById('primaryImageKeyInput');
+            if (primaryKeyInput.value === url) {
+                primaryKeyInput.value = '';
+            }
+
+            ensurePrimarySelected();
+        }
+
+        function ensurePrimarySelected() {
+            const primaryKeyInput = document.getElementById('primaryImageKeyInput');
+            const allCards = Array.from(document.querySelectorAll('.krishi-image-preview-card'));
+
+            if (allCards.length === 0) {
+                primaryKeyInput.value = '';
+                return;
+            }
+
+            const currentSelectedCard = allCards.find(c => c.dataset.key === primaryKeyInput.value);
+
+            if (!currentSelectedCard) {
+                // Default to the first available card
+                const firstCard = allCards[0];
+                const firstKey = firstCard.dataset.key;
+                setPrimaryImage(firstKey, firstCard);
+            }
+        }
+
+        function syncFileInput() {
+            const fileInput = document.getElementById('equipmentImageFileInput');
+            if (!fileInput) return;
+
+            try {
+                const dt = new DataTransfer();
+                selectedNewFiles.forEach(file => dt.items.add(file));
+                fileInput.files = dt.files;
+            } catch (err) {
+                console.warn('DataTransfer not fully supported on this browser', err);
+            }
         }
 
         function validateListingForm(e) {
+            syncFileInput();
+
             const dailyRate = Number(document.getElementById('dailyRateInput')?.value || 0);
             const existingCount = document.querySelectorAll('.existing-image-card').length;
-            const newCount = selectedFiles.filter(f => f !== null).length;
+            const newCount = selectedNewFiles.length;
             const alertBox = document.getElementById('imageValidationAlert');
 
             if (dailyRate <= 0) {
-                alert('@L["Daily rental rate must be greater than 0."]');
+                if (window.KrishiToast) {
+                    KrishiToast.show('@L["Daily rental rate must be greater than 0."]', { iconClass: 'bi-exclamation-triangle-fill text-warning' });
+                }
                 return false;
             }
 
@@ -313,5 +455,10 @@
 
             return true;
         }
+
+        // Initialize primary selection state on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            ensurePrimarySelected();
+        });
     </script>
 }

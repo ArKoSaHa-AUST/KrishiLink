@@ -19,6 +19,8 @@ namespace KrishiLink.Models.ViewModels
         public string Status => IsAvailable ? "Available" : "Unavailable";
         public string ImageUrl { get; set; } = string.Empty;
         public string OwnerName { get; set; } = string.Empty;
+        public bool OwnerIsVerified { get; set; } = false;
+        public string OwnerVerificationStatus { get; set; } = "Unverified";
         public double Rating { get; set; }
         public int ReviewCount { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -32,6 +34,8 @@ namespace KrishiLink.Models.ViewModels
         public string? Location { get; set; }
         public decimal? SelectedMaxPrice { get; set; }
         public DateTime? AvailabilityDate { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
         public string SortBy { get; set; } = "newest";
     }
 
@@ -48,34 +52,17 @@ namespace KrishiLink.Models.ViewModels
         public decimal MaxPrice { get; set; } = 5000;
         public decimal? SelectedMaxPrice { get; set; }
         public DateTime? AvailabilityDate { get; set; }
-        public string SortBy { get; set; } = "newest"; // "price_asc", "price_desc", "distance", "newest"
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public string SortBy { get; set; } = "newest"; // "price_asc", "price_desc", "distance", "rating_desc", "newest"
 
         // Results
         public List<EquipmentItemViewModel> EquipmentList { get; set; } = new();
         public int TotalCount => EquipmentList.Count;
 
         // Meta lists for filters
-        public List<string> AvailableCategories { get; set; } = new()
-        {
-            "Tractor",
-            "Power Tiller",
-            "Combine Harvester",
-            "Seed Drill / Seeder",
-            "Power Sprayer",
-            "Irrigation Pump",
-            "Thresher"
-        };
+        public List<string> AvailableCategories { get; set; } = new(OnboardingOptions.EquipmentCategories);
 
-        public List<string> AvailableLocations { get; set; } = new()
-        {
-            "Bogra Sadar, Bogra",
-            "Sherpur, Bogra",
-            "Dinajpur Sadar, Dinajpur",
-            "Rangpur Sadar, Rangpur",
-            "Mymensingh Sadar, Mymensingh",
-            "Comilla Sadar, Comilla",
-            "Jessore Sadar, Jessore",
-            "Natore Sadar, Natore"
-        };
+        public List<string> AvailableLocations { get; set; } = new(OnboardingOptions.Districts);
     }
 }

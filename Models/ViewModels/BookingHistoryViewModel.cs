@@ -44,8 +44,15 @@ namespace KrishiLink.Models.ViewModels
         public string? OwnerRemarks { get; set; }
 
         public string ListingDetailUrl { get; set; } = "#";
+        public int ListingId { get; set; }
         public bool CanCancel { get; set; }
         public List<BookingTimelineStep> Timeline { get; set; } = new();
+
+        // Review Information (For Completed bookings)
+        public bool HasReview { get; set; }
+        public int? ReviewRating { get; set; }
+        public string? ReviewComment { get; set; }
+        public DateTime? ReviewedAt { get; set; }
     }
 
     public class BookingHistoryViewModel

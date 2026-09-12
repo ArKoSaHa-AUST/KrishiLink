@@ -18,6 +18,8 @@ namespace KrishiLink.Models.ViewModels
 
         // Owner Details
         public string OwnerName { get; set; } = string.Empty;
+        public bool OwnerIsVerified { get; set; } = false;
+        public string OwnerVerificationStatus { get; set; } = "Unverified";
         public double OwnerRating { get; set; }
         public int TotalReviews { get; set; }
         public string OwnerPhone { get; set; } = string.Empty;
@@ -35,5 +37,10 @@ namespace KrishiLink.Models.ViewModels
         public DateTime? EndDate { get; set; }
         public double RequestedCapacityTons { get; set; } = 5;
         public string? BookingNotes { get; set; }
+
+        // Ratings & Reviews
+        public double AverageRating { get; set; }
+        public int ReviewCount { get; set; }
+        public ReviewsListViewModel Reviews { get; set; } = new();
     }
 }

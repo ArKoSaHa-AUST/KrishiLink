@@ -12,11 +12,16 @@ namespace KrishiLink.Controllers
     {
         private readonly IBookingService _bookings;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IPestAlertService _pestAlertService;
 
-        public FarmerController(IBookingService bookings, UserManager<ApplicationUser> userManager)
+        public FarmerController(
+            IBookingService bookings,
+            UserManager<ApplicationUser> userManager,
+            IPestAlertService pestAlertService)
         {
             _bookings = bookings;
             _userManager = userManager;
+            _pestAlertService = pestAlertService;
         }
 
         /// <summary>GET: /Farmer — redirects to Dashboard.</summary>
@@ -33,6 +38,10 @@ namespace KrishiLink.Controllers
 
             var farmer = await _userManager.GetUserAsync(User);
             model.FarmerName = string.IsNullOrWhiteSpace(farmer?.FullName) ? User.Identity?.Name ?? "Farmer" : farmer.FullName;
+
+            string district = farmer?.District ?? farmer?.Location ?? "Bogra";
+            model.WeatherAlert = await _pestAlertService.GetWeatherAlertNoteAsync(district);
+
             return View(model);
         }
     }

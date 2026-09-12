@@ -12,5 +12,7 @@ namespace KrishiLink.Models.ViewModels
         public string? Price { get; set; }
         public string? Status { get; set; }
         public string? DetailUrl { get; set; }
+        public double Rating { get; set; }
+        public int ReviewCount { get; set; }
     }
 }

@@ -237,11 +237,25 @@
                                                     <div class="col-5 text-muted">@L["Payment Status:"]</div>
                                                     <div class="col-7"><span class="badge bg-light text-dark border">@L[b.PaymentStatus]</span></div>
                                                 </div>
-                                                @if (!string.IsNullOrWhiteSpace(b.FarmerNotes))
+                                            @if (!string.IsNullOrWhiteSpace(b.FarmerNotes))
                                                 {
                                                     <div class="mt-2 pt-2 border-top">
                                                         <span class="text-muted small d-block mb-1">@L["Your Request Notes:"]</span>
                                                         <p class="small text-dark mb-0 fst-italic">"@b.FarmerNotes"</p>
+                                                    </div>
+                                                }
+
+                                                @if (b.HasReview)
+                                                {
+                                                    <div class="mt-2 pt-2 border-top">
+                                                        <div class="d-flex align-items-center gap-1.5 text-warning small fw-bold mb-1">
+                                                            <i class="bi bi-star-fill"></i>
+                                                            <span>★ @(b.ReviewRating ?? 0)/5 @L["Your Review:"]</span>
+                                                        </div>
+                                                        @if (!string.IsNullOrWhiteSpace(b.ReviewComment))
+                                                        {
+                                                            <p class="small text-secondary mb-0 fst-italic">"@b.ReviewComment"</p>
+                                                        }
                                                     </div>
                                                 }
                                             </div>
@@ -250,7 +264,7 @@
                                             <div class="bg-white p-3 rounded-3 border d-flex justify-content-between align-items-center flex-wrap gap-2">
                                                 <div class="d-flex align-items-center gap-2.5">
                                                     <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold" style="width: 38px; height: 38px;">
-                                                        @(b.OwnerName.Length > 0 ? b.OwnerName[0].ToString() : "O")
+                                                        @(b.OwnerName.Length > 0 ? b.OwnerName[0].ToString().ToUpperInvariant() : "O")
                                                     </div>
                                                     <div>
                                                         <span class="small text-muted d-block">@L["Facility / Asset Owner"]</span>
@@ -303,7 +317,28 @@
                                                 }
                                             </div>
 
-                                            <div class="mt-3 d-flex justify-content-end gap-2 flex-wrap">
+                                            <div class="mt-3 d-flex justify-content-end align-items-center gap-2 flex-wrap">
+                                                @if (b.Status == "Completed")
+                                                {
+                                                    if (b.HasReview)
+                                                    {
+                                                        <div id="reviewActionContainer_@(b.BookingType)_@(b.Id)" class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle small fw-bold">
+                                                            <i class="bi bi-star-fill text-warning"></i>
+                                                            <span>★ @(b.ReviewRating ?? 0)/5 @L["Reviewed"]</span>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <div id="reviewActionContainer_@(b.BookingType)_@(b.Id)">
+                                                            <button type="button" class="btn btn-warning btn-sm rounded-pill px-3.5 py-1.5 fw-bold text-dark shadow-sm d-inline-flex align-items-center gap-1.5"
+                                                                    onclick="openReviewModal('@b.BookingType', @b.Id, '@b.ItemName.Replace("'", "\\'")', '@b.BookingCode', '@b.OwnerName.Replace("'", "\\'")', '@b.ImageUrl')">
+                                                                <i class="bi bi-star-fill text-dark"></i>
+                                                                <span>@L["Rate & Review"]</span>
+                                                            </button>
+                                                        </div>
+                                                    }
+                                                }
+
                                                 @if (b.CanCancel)
                                                 {
                                                     <form asp-action="Cancel" method="post" onsubmit="return confirm('@L["Cancel this booking? The dates will be released to other farmers."]');">
@@ -320,7 +355,6 @@
                                                     <i class="bi bi-arrow-right small ms-1"></i>
                                                 </a>
                                             </div>
-
                                         </div>
 
                                     </div>
@@ -414,6 +448,29 @@
                             </div>
                         }
 
+                        @if (b.HasReview)
+                        {
+                            <div class="p-2.5 bg-warning-subtle border border-warning-subtle rounded-3 mb-2">
+                                <div class="d-flex align-items-center gap-1.5 text-warning-emphasis small fw-bold mb-1">
+                                    <i class="bi bi-star-fill text-warning"></i>
+                                    <span>★ @(b.ReviewRating ?? 0)/5 @L["Your Review:"]</span>
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(b.ReviewComment))
+                                {
+                                    <p class="small text-dark mb-0 fst-italic">"@b.ReviewComment"</p>
+                                }
+                            </div>
+                        }
+
+                        @if (b.Status == "Completed" && !b.HasReview)
+                        {
+                            <button type="button" class="btn btn-warning btn-sm w-100 rounded-pill py-2 fw-bold text-dark shadow-sm mb-2 d-flex align-items-center justify-content-center gap-1.5"
+                                    onclick="openReviewModal('@b.BookingType', @b.Id, '@b.ItemName.Replace("'", "\\'")', '@b.BookingCode', '@b.OwnerName.Replace("'", "\\'")', '@b.ImageUrl')">
+                                <i class="bi bi-star-fill text-dark"></i>
+                                <span>@L["Rate & Review This Booking"]</span>
+                            </button>
+                        }
+
                         <a href="@b.ListingDetailUrl" class="btn btn-krishi-primary btn-sm w-100 rounded-pill py-2 fw-semibold mt-2">
                             @L["View Original Listing"]
                         </a>
@@ -482,3 +539,6 @@ else
         }
     </div>
 }
+
+<partial name="_ReviewModal" />
+

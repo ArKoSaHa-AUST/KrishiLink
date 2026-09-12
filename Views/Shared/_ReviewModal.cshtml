@@ -1,0 +1,246 @@
+@*
+    Shared Partial: Interactive Rating & Review Modal
+*@
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            
+            <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="reviewModalLabel">
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <span>@L["Rate & Review Your Experience"]</span>
+                    </h5>
+                    <p class="text-muted small mb-0 mt-1">@L["Help the farming community by sharing honest feedback about this service."]</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form id="reviewForm" method="post" asp-controller="Reviews" asp-action="Submit">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="reviewBookingType" name="BookingType" value="Equipment" />
+                <input type="hidden" id="reviewBookingId" name="BookingId" value="0" />
+                <input type="hidden" id="reviewRatingInput" name="Rating" value="5" />
+
+                <div class="modal-body p-4">
+                    
+                    <!-- Item Context Card -->
+                    <div class="bg-light p-3 rounded-3 border d-flex align-items-center gap-3 mb-4" id="reviewItemContext">
+                        <img src="" id="reviewItemImage" class="rounded-3 object-fit-cover shadow-sm border" style="width: 54px; height: 48px;" alt="Listing thumbnail" />
+                        <div class="overflow-hidden">
+                            <h6 class="fw-bold text-dark mb-0 text-truncate" id="reviewItemName">Item Name</h6>
+                            <div class="small text-muted d-flex align-items-center gap-2 mt-0.5">
+                                <span class="badge bg-white text-muted border py-0.5 px-1.5" style="font-size: 0.72rem;" id="reviewBookingCode">KL-000</span>
+                                <span class="text-truncate" id="reviewOwnerName">Owner</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Star Selector -->
+                    <div class="text-center my-3">
+                        <label class="form-label fw-bold text-dark small text-uppercase tracking-wider d-block mb-2">
+                            @L["Select Your Rating"]
+                        </label>
+                        
+                        <div class="d-inline-flex align-items-center gap-2 justify-content-center p-2 rounded-pill bg-light border shadow-sm" id="starPickerContainer">
+                            @for (int s = 1; s <= 5; s++)
+                            {
+                                <button type="button" class="btn p-1 border-0 bg-transparent star-btn" data-star="@s" 
+                                        aria-label="@L["Rate {0} stars", s]" style="font-size: 1.85rem; line-height: 1; transition: transform 0.15s ease;">
+                                    <i class="bi bi-star-fill text-warning star-icon"></i>
+                                </button>
+                            }
+                        </div>
+
+                        <div class="mt-2">
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-1 fw-bold fs-6" id="starRatingLabel">
+                                ★ 5.0 — @L["Excellent Experience"]
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Written Comment -->
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="reviewComment" class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-0">
+                                @L["Your Review Comment"] <span class="text-muted fw-normal">(@L["Optional"])</span>
+                            </label>
+                            <span class="small text-muted" id="commentCharCount">0 / 1000</span>
+                        </div>
+                        <textarea class="form-control rounded-3 py-2 px-3" id="reviewComment" name="Comment" rows="3" maxlength="1000"
+                                  placeholder="@L["How was the machine performance, timing, communication, or facility condition?"]"
+                                  oninput="document.getElementById('commentCharCount').textContent = this.value.length + ' / 1000';"></textarea>
+                    </div>
+
+                    <div class="alert alert-danger border-0 small rounded-3 mt-3 mb-0 d-none" id="reviewErrorAlert"></div>
+
+                </div>
+
+                <div class="modal-footer border-top-0 pt-0 pb-4 px-4 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4 fw-medium" data-bs-dismiss="modal">
+                        @L["Cancel"]
+                    </button>
+                    <button type="submit" class="btn btn-krishi-primary rounded-pill px-4 fw-semibold d-inline-flex align-items-center gap-2" id="submitReviewBtn">
+                        <span id="submitReviewBtnText">@L["Submit Review"]</span>
+                        <div class="spinner-border spinner-border-sm d-none" id="submitReviewSpinner" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const starLabels = {
+            1: "★ 1.0 — @L["Poor Service"]",
+            2: "★ 2.0 — @L["Fair / Needs Improvement"]",
+            3: "★ 3.0 — @L["Good Quality"]",
+            4: "★ 4.0 — @L["Very Good & Reliable"]",
+            5: "★ 5.0 — @L["Excellent Experience"]"
+        };
+
+        let selectedRating = 5;
+
+        window.openReviewModal = function (bookingType, bookingId, itemName, bookingCode, ownerName, imageUrl) {
+            document.getElementById('reviewBookingType').value = bookingType;
+            document.getElementById('reviewBookingId').value = bookingId;
+            document.getElementById('reviewItemName').textContent = itemName || '@L["Booking Item"]';
+            document.getElementById('reviewBookingCode').textContent = bookingCode || '';
+            document.getElementById('reviewOwnerName').textContent = ownerName || '';
+            
+            const imgEl = document.getElementById('reviewItemImage');
+            if (imageUrl) {
+                imgEl.src = imageUrl;
+                imgEl.classList.remove('d-none');
+            } else {
+                imgEl.classList.add('d-none');
+            }
+
+            document.getElementById('reviewComment').value = '';
+            document.getElementById('commentCharCount').textContent = '0 / 1000';
+            document.getElementById('reviewErrorAlert').classList.add('d-none');
+            
+            setStarRating(5);
+
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('reviewModal'));
+            modal.show();
+        };
+
+        function setStarRating(rating) {
+            selectedRating = rating;
+            document.getElementById('reviewRatingInput').value = rating;
+            document.getElementById('starRatingLabel').textContent = starLabels[rating] || (rating + ' Stars');
+
+            const starButtons = document.querySelectorAll('#starPickerContainer .star-btn');
+            starButtons.forEach((btn, idx) => {
+                const icon = btn.querySelector('.star-icon');
+                if (idx < rating) {
+                    icon.classList.remove('bi-star', 'text-secondary', 'opacity-50');
+                    icon.classList.add('bi-star-fill', 'text-warning');
+                    btn.style.transform = idx === rating - 1 ? 'scale(1.15)' : 'scale(1)';
+                } else {
+                    icon.classList.remove('bi-star-fill', 'text-warning');
+                    icon.classList.add('bi-star', 'text-secondary', 'opacity-50');
+                    btn.style.transform = 'scale(1)';
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const starButtons = document.querySelectorAll('#starPickerContainer .star-btn');
+            starButtons.forEach(btn => {
+                const starVal = parseInt(btn.getAttribute('data-star'));
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    setStarRating(starVal);
+                });
+                btn.addEventListener('mouseenter', function () {
+                    starButtons.forEach((b, idx) => {
+                        const icon = b.querySelector('.star-icon');
+                        if (idx < starVal) {
+                            icon.classList.remove('bi-star', 'text-secondary', 'opacity-50');
+                            icon.classList.add('bi-star-fill', 'text-warning');
+                        } else {
+                            icon.classList.remove('bi-star-fill', 'text-warning');
+                            icon.classList.add('bi-star', 'text-secondary', 'opacity-50');
+                        }
+                    });
+                    document.getElementById('starRatingLabel').textContent = starLabels[starVal];
+                });
+            });
+
+            const container = document.getElementById('starPickerContainer');
+            if (container) {
+                container.addEventListener('mouseleave', function () {
+                    setStarRating(selectedRating);
+                });
+            }
+
+            const form = document.getElementById('reviewForm');
+            if (form) {
+                form.addEventListener('submit', async function (e) {
+                    e.preventDefault();
+                    const submitBtn = document.getElementById('submitReviewBtn');
+                    const spinner = document.getElementById('submitReviewSpinner');
+                    const errorAlert = document.getElementById('reviewErrorAlert');
+                    
+                    submitBtn.disabled = true;
+                    spinner.classList.remove('d-none');
+                    errorAlert.classList.add('d-none');
+
+                    try {
+                        const formData = new FormData(form);
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            },
+                            body: formData
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            const modalEl = document.getElementById('reviewModal');
+                            const modal = bootstrap.Modal.getInstance(modalEl);
+                            if (modal) modal.hide();
+
+                            // Update booking row UI dynamically
+                            const bId = data.bookingId;
+                            const bType = data.bookingType;
+                            const actionContainer = document.getElementById(`reviewActionContainer_${bType}_${bId}`);
+                            if (actionContainer) {
+                                actionContainer.innerHTML = `
+                                    <div class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle small fw-bold">
+                                        <i class="bi bi-star-fill text-warning"></i>
+                                        <span>★ ${data.rating}/5 Reviewed</span>
+                                    </div>
+                                `;
+                            }
+
+                            // Show toast or alert if KrishiToast exists
+                            if (window.showToast) {
+                                window.showToast(data.message || '@L["Review submitted successfully!"]', 'success');
+                            } else {
+                                location.reload();
+                            }
+                        } else {
+                            errorAlert.textContent = data.message || '@L["An error occurred while submitting your review."]';
+                            errorAlert.classList.remove('d-none');
+                        }
+                    } catch (err) {
+                        errorAlert.textContent = '@L["Network error. Please try again."]';
+                        errorAlert.classList.remove('d-none');
+                    } finally {
+                        submitBtn.disabled = false;
+                        spinner.classList.add('d-none');
+                    }
+                });
+            }
+        });
+    })();
+</script>

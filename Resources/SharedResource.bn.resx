@@ -2062,7 +2062,442 @@
   <data name="৳650 / ton × 10 Tons" xml:space="preserve">
     <value>৳৬৫০ / টন × ১০ টন</value>
   </data>
-  <data name="৳900 / day × 5 days" xml:space="preserve">
-    <value>৳৯০০ / দিন × ৫ দিন</value>
+  <data name="Crop Planting &amp; Harvesting Calendar" xml:space="preserve">
+    <value>ফসল রোপণ ও তোলার পঞ্জিকা</value>
+  </data>
+  <data name="Agricultural Crop Calendar" xml:space="preserve">
+    <value>কৃষি ফসলের পঞ্জিকা</value>
+  </data>
+  <data name="Official Bangladesh DAE, BARI &amp; BRRI sowing, vegetative growth, and harvesting schedules across 12 months." xml:space="preserve">
+    <value>বাংলাদেশ কৃষি সম্প্রসারণ অধিদপ্তর (DAE), বারি ও ব্রি নির্দেশিত ১২ মাসের ফসল রোপণ, বৃদ্ধি ও ফসল তোলার সময়সূচি।</value>
+  </data>
+  <data name="Smart Advisor" xml:space="preserve">
+    <value>স্মার্ট পরামর্শদাতা</value>
+  </data>
+  <data name="Crop Calendar" xml:space="preserve">
+    <value>ফসল পঞ্জিকা</value>
+  </data>
+  <data name="Current Agricultural Window" xml:space="preserve">
+    <value>বর্তমান কৃষি মৌসুম উইন্ডো</value>
+  </data>
+  <data name="Real-time planting guide for Bangladesh farmers. Discover which crops are optimal for seedbed preparation, active tillering, or ready for harvest right now." xml:space="preserve">
+    <value>বাংলাদেশের কৃষকদের জন্য রিয়েল-টাইম চাষের নির্দেশিকা। এখনই কোন ফসল বীজতলা প্রস্তুতি, বাড়ন্ত অবস্থা বা তোলার জন্য উপযুক্ত তা জানুন।</value>
+  </data>
+  <data name="Sowing Now" xml:space="preserve">
+    <value>এখন রোপণের সময়</value>
+  </data>
+  <data name="In-Field" xml:space="preserve">
+    <value>মাঠে বাড়ন্ত</value>
+  </data>
+  <data name="Search crop, variety, district..." xml:space="preserve">
+    <value>ফসল, জাত, জেলা দিয়ে খুঁজুন...</value>
+  </data>
+  <data name="All Growth Stages" xml:space="preserve">
+    <value>সকল বৃদ্ধির ধাপ</value>
+  </data>
+  <data name="Sowing Stage" xml:space="preserve">
+    <value>বীজবপন/রোপণ ধাপ</value>
+  </data>
+  <data name="Growing Stage" xml:space="preserve">
+    <value>বাড়ন্ত ধাপ</value>
+  </data>
+  <data name="Harvesting Stage" xml:space="preserve">
+    <value>ফসল কাটার ধাপ</value>
+  </data>
+  <data name="All Crops ({0})" xml:space="preserve">
+    <value>সকল ফসল ({0})</value>
+  </data>
+  <data name="Harvesting Now" xml:space="preserve">
+    <value>এখন ফসল তোলা</value>
+  </data>
+  <data name="Kharif-1 (Summer)" xml:space="preserve">
+    <value>খরিফ-১ (গ্রীষ্মকাল)</value>
+  </data>
+  <data name="Timeline Matrix" xml:space="preserve">
+    <value>সময়রেখা ম্যাট্রিক্স</value>
+  </data>
+  <data name="Crop Cards" xml:space="preserve">
+    <value>কার্ড ভিউ</value>
+  </data>
+  <data name="Timeline Legend:" xml:space="preserve">
+    <value>সময়রেখার সংকেত:</value>
+  </data>
+  <data name="🌱 Sowing / Transplanting" xml:space="preserve">
+    <value>🌱 বীজবপন / রোপণ</value>
+  </data>
+  <data name="🌿 Growing / Vegetative" xml:space="preserve">
+    <value>🌿 বাড়ন্ত অবস্থা</value>
+  </data>
+  <data name="🌾 Harvesting / Reaping" xml:space="preserve">
+    <value>🌾 ফসল কাটা / সংগ্রহ</value>
+  </data>
+  <data name="Showing {0} crops matching criteria" xml:space="preserve">
+    <value>মানদণ্ড অনুযায়ী {0}টি ফসল প্রদর্শিত</value>
+  </data>
+  <data name="No Crops Found" xml:space="preserve">
+    <value>কোনো ফসল পাওয়া যায়নি</value>
+  </data>
+  <data name="No crops match the selected category, season, or regional filter criteria." xml:space="preserve">
+    <value>নির্বাচিত ক্যাটাগরি, মৌসুম বা অঞ্চলের সাথে কোনো ফসল মেলেনি।</value>
+  </data>
+  <data name="Reset All Filters" xml:space="preserve">
+    <value>ফিল্টার রিসেট করুন</value>
+  </data>
+  <data name="Crop &amp; Category" xml:space="preserve">
+    <value>ফসল ও শ্রেণি</value>
+  </data>
+  <data name="NOW" xml:space="preserve">
+    <value>চলতি</value>
+  </data>
+  <data name="Guide" xml:space="preserve">
+    <value>গাইড</value>
+  </data>
+  <data name="Sowing Months:" xml:space="preserve">
+    <value>রোপণের মাস:</value>
+  </data>
+  <data name="Harvesting Months:" xml:space="preserve">
+    <value>তোলার মাস:</value>
+  </data>
+  <data name="Optimal Temp:" xml:space="preserve">
+    <value>অনুকূল তাপমাত্রা:</value>
+  </data>
+  <data name="Soil:" xml:space="preserve">
+    <value>মাটি:</value>
+  </data>
+  <data name="Varieties:" xml:space="preserve">
+    <value>জাতসমূহ:</value>
+  </data>
+  <data name="Full Cultivation Guide" xml:space="preserve">
+    <value>সম্পূর্ণ চাষ নির্দেশিকা</value>
+  </data>
+  <data name="Crop Cultivation Profile" xml:space="preserve">
+    <value>ফসলের চাষ প্রোফাইল</value>
+  </data>
+  <data name="Sowing &amp; Transplanting Window" xml:space="preserve">
+    <value>বীজবপন ও রোপণের সময়সীমা</value>
+  </data>
+  <data name="Harvesting &amp; Reaping Window" xml:space="preserve">
+    <value>ফসল কাটা ও তোলার সময়সীমা</value>
+  </data>
+  <data name="Field Duration" xml:space="preserve">
+    <value>মাঠে থাকার সময়কাল</value>
+  </data>
+  <data name="Optimal Temperature &amp; Climate" xml:space="preserve">
+    <value>অনুকূল তাপমাত্রা ও আবহাওয়া</value>
+  </data>
+  <data name="Suitable Soil Types" xml:space="preserve">
+    <value>উপযুক্ত মাটির ধরন</value>
+  </data>
+  <data name="Water &amp; Irrigation Needs" xml:space="preserve">
+    <value>পানি ও সেচ চাহিদা</value>
+  </data>
+  <data name="Popular HYV &amp; Hybrid Varieties" xml:space="preserve">
+    <value>জনপ্রিয় উফশী ও হাইব্রিড জাতসমূহ</value>
+  </data>
+  <data name="Key Agronomic Tips &amp; Precautions" xml:space="preserve">
+    <value>মূল কৃষি পরামর্শ ও সতর্কতা</value>
+  </data>
+  <data name="Get Custom Advisory for this Crop" xml:space="preserve">
+    <value>এই ফসলের জন্য পরামর্শ নিন</value>
+  </data>
+  <data name="Pest &amp; Disease Alerts" xml:space="preserve">
+    <value>বালাই ও রোগবালাই সতর্কতা</value>
+  </data>
+  <data name="Agrometeorological Pest &amp; Disease Alerts" xml:space="preserve">
+    <value>আবহাওয়াভিত্তিক বালাই ও রোগবালাই সতর্কতা</value>
+  </data>
+  <data name="Real-time crop disease warning rules based on temperature, relative humidity, and regional weather forecasts." xml:space="preserve">
+    <value>তাপমাত্রা, আপেক্ষিক আর্দ্রতা ও আঞ্চলিক আবহাওয়ার ওপর ভিত্তি করে রিয়েল-টাইম ফসলের রোগ পূর্বাভাস।</value>
+  </data>
+  <data name="Pest Alerts" xml:space="preserve">
+    <value>বালাই সতর্কতা</value>
+  </data>
+  <data name="Live Weather Telemetry" xml:space="preserve">
+    <value>লাইভ আবহাওয়া তথ্য</value>
+  </data>
+  <data name="Division" xml:space="preserve">
+    <value>বিভাগ</value>
+  </data>
+  <data name="Simulation Mode Active" xml:space="preserve">
+    <value>সিমুলেশন মোড সক্রিয়</value>
+  </data>
+  <data name="Humidity:" xml:space="preserve">
+    <value>আর্দ্রতা:</value>
+  </data>
+  <data name="Rain Chance:" xml:space="preserve">
+    <value>বৃষ্টির সম্ভাবনা:</value>
+  </data>
+  <data name="Wind:" xml:space="preserve">
+    <value>বাতাস:</value>
+  </data>
+  <data name="Active Disease Risk Assessment" xml:space="preserve">
+    <value>সক্রিয় রোগ ঝুঁকি মূল্যায়ন</value>
+  </data>
+  <data name="{0} Active Warnings" xml:space="preserve">
+    <value>{0}টি সক্রিয় সতর্কতা</value>
+  </data>
+  <data name="Critical Risk" xml:space="preserve">
+    <value>চরম ঝুঁকি</value>
+  </data>
+  <data name="High Risk" xml:space="preserve">
+    <value>উচ্চ ঝুঁকি</value>
+  </data>
+  <data name="Moderate" xml:space="preserve">
+    <value>মাঝারি</value>
+  </data>
+  <data name="Rules match DAE guidelines. Humidity ≥85% drastically elevates fungal blast and blight spore propagation." xml:space="preserve">
+    <value>এই নিয়মগুলো ডিএই নির্দেশিকা ভিত্তিক। ৮৫% এর বেশি আর্দ্রতা ব্লাস্ট ও ধসা রোগের জীবাণু দ্রুত ছড়িয়ে দেয়।</value>
+  </data>
+  <data name="5-Day Forecast:" xml:space="preserve">
+    <value>৫ দিনের পূর্বাভাস:</value>
+  </data>
+  <data name="Select Bangladesh District / Zone:" xml:space="preserve">
+    <value>বাংলাদেশের জেলা / অঞ্চল নির্বাচন করুন:</value>
+  </data>
+  <data name="Filter by Target Crop:" xml:space="preserve">
+    <value>নির্দিষ্ট ফসল অনুযায়ী ফিল্টার করুন:</value>
+  </data>
+  <data name="Weather Scenario Simulator" xml:space="preserve">
+    <value>আবহাওয়া পরিস্থিতি সিমুলেটর</value>
+  </data>
+  <data name="Agrometeorological Scenario Simulator" xml:space="preserve">
+    <value>কৃষি-আবহাওয়া সিমুলেটর</value>
+  </data>
+  <data name="Test how different temperatures, humidities, and fog conditions trigger disease warnings." xml:space="preserve">
+    <value>ভিন্ন তাপমাত্রা, আর্দ্রতা ও কুয়াশার পরিস্থিতিতে কীভাবে রোগের সতর্কতা কার্যকর হয় তা পরীক্ষা করুন।</value>
+  </data>
+  <data name="Reset to Live Weather" xml:space="preserve">
+    <value>লাইভ আবহাওয়ায় ফেরত যান</value>
+  </data>
+  <data name="Quick Presets:" xml:space="preserve">
+    <value>দ্রুত প্রিসেটসমূহ:</value>
+  </data>
+  <data name="Temperature (°C):" xml:space="preserve">
+    <value>তাপমাত্রা (°সে.):</value>
+  </data>
+  <data name="Relative Humidity (%):" xml:space="preserve">
+    <value>আপেক্ষিক আর্দ্রতা (%):</value>
+  </data>
+  <data name="Weather Condition:" xml:space="preserve">
+    <value>আবহাওয়ার অবস্থা:</value>
+  </data>
+  <data name="Run Simulation" xml:space="preserve">
+    <value>সিমুলেশন চালান</value>
+  </data>
+  <data name="Active Outbreak Warnings for Your Area" xml:space="preserve">
+    <value>আপনার অঞ্চলের জন্য সক্রিয় প্রাদুর্ভাব সতর্কতা</value>
+  </data>
+  <data name="Triggered" xml:space="preserve">
+    <value>কার্যকর হয়েছে</value>
+  </data>
+  <data name="Evaluated for {0} at {1}°C and {2}% Humidity" xml:space="preserve">
+    <value>{0} জেলার জন্য {1}° সে. তাপমাত্রা ও {2}% আর্দ্রতায় মূল্যায়ন করা হয়েছে</value>
+  </data>
+  <data name="No Critical Disease Outbreaks Detected" xml:space="preserve">
+    <value>কোনো মারাত্মক রোগবালাইয়ের প্রাদুর্ভাব শনাক্ত হয়নি</value>
+  </data>
+  <data name="Current meteorological parameters ({0}°C, {1}% Humidity) in {2} do not currently satisfy high-risk thresholds for major fungal or bacterial crop epidemics. Continue standard agronomic scouting." xml:space="preserve">
+    <value>{2} জেলায় বর্তমান আবহাওয়া প্যারামিটার ({0}° সে., {1}% আর্দ্রতা) কোনো মারাত্মক ছত্রাক বা ব্যাকটেরিয়া মহামারীর ঝুঁকিপূর্ণ সীমায় পৌঁছায়নি। নিয়মিত মাঠ পরিদর্শন চালিয়ে যান।</value>
+  </data>
+  <data name="Risk" xml:space="preserve">
+    <value>ঝুঁকি</value>
+  </data>
+  <data name="{0}% Outbreak Likelihood" xml:space="preserve">
+    <value>{0}% প্রাদুর্ভাবের সম্ভাবনা</value>
+  </data>
+  <data name="Pathogen / Pest:" xml:space="preserve">
+    <value>রোগজীবাণু / বালাই:</value>
+  </data>
+  <data name="Susceptible Crops:" xml:space="preserve">
+    <value>সংবেদনশীল ফসলসমূহ:</value>
+  </data>
+  <data name="Field Identification &amp; Symptoms" xml:space="preserve">
+    <value>মাঠ পর্যায়ে শনাক্তকরণ ও লক্ষণ</value>
+  </data>
+  <data name="Immediate Actionable Control Measures" xml:space="preserve">
+    <value>তাৎক্ষণিক করণীয় দমন ও প্রতিকার</value>
+  </data>
+  <data name="Recommended Spray:" xml:space="preserve">
+    <value>প্রস্তাবিত কীটনাশক/ছত্রাকনাশক:</value>
+  </data>
+  <data name="Eco/Organic Control:" xml:space="preserve">
+    <value>পরিবেশবান্ধব/জৈব দমন:</value>
+  </data>
+  <data name="Bangladesh Crop Disease &amp; Weather Knowledge Base" xml:space="preserve">
+    <value>বাংলাদেশ ফসল রোগবালাই ও আবহাওয়া জ্ঞানভাণ্ডার</value>
+  </data>
+  <data name="Full reference catalog of agrometeorological rules established by DAE, BARI, and BRRI." xml:space="preserve">
+    <value>ডিএই, বারি ও ব্রি কর্তৃক প্রতিষ্ঠিত কৃষি-আবহাওয়া বিধিমালার সম্পূর্ণ তথ্যভাণ্ডার।</value>
+  </data>
+  <data name="{0} Verified Rules" xml:space="preserve">
+    <value>{0}টি পরীক্ষিত বিধিমালা</value>
+  </data>
+  <data name="Pathogen &amp; Biology" xml:space="preserve">
+    <value>জীবাণু ও জীবতত্ত্ব</value>
+  </data>
+  <data name="Weather Trigger Mechanism" xml:space="preserve">
+    <value>আবহাওয়াগত সংক্রামণ প্রক্রিয়া</value>
+  </data>
+  <data name="Symptoms" xml:space="preserve">
+    <value>লক্ষণসমূহ</value>
+  </data>
+  <data name="Preventive Spray &amp; Dose" xml:space="preserve">
+    <value>প্রতিরোধক স্প্রে ও মাত্রা</value>
+  </data>
+  <data name="View Full Outbreak Alerts" xml:space="preserve">
+    <value>সকল বালাই সতর্কতা দেখুন</value>
+  </data>
+  <data name="Owner Verification" xml:space="preserve">
+    <value>মালিক যাচাইকরণ</value>
+  </data>
+  <data name="Identity Verification" xml:space="preserve">
+    <value>পরিচয় যাচাইকরণ</value>
+  </data>
+  <data name="Unverified" xml:space="preserve">
+    <value>যাচাইবিহীন</value>
+  </data>
+  <data name="Verification Status" xml:space="preserve">
+    <value>যাচাইকরণের অবস্থা</value>
+  </data>
+  <data name="National ID (NID)" xml:space="preserve">
+    <value>জাতীয় পরিচয়পত্র (এনআইডি)</value>
+  </data>
+  <data name="Trade License" xml:space="preserve">
+    <value>ট্রেড লাইসেন্স</value>
+  </data>
+  <data name="Submit Verification" xml:space="preserve">
+    <value>যাচাইকরণের জন্য জমা দিন</value>
+  </data>
+  <data name="Resubmit Verification" xml:space="preserve">
+    <value>পুনরায় যাচাইকরণ জমা দিন</value>
+  </data>
+  <data name="Account Verification Center" xml:space="preserve">
+    <value>অ্যাকাউন্ট যাচাইকরণ কেন্দ্র</value>
+  </data>
+  <data name="Verify your identity to earn the Verified Owner trust badge and unlock maximum farmer bookings." xml:space="preserve">
+    <value>কৃষকদের সর্বোচ্চ আস্থা ও বুকিং পেতে আপনার পরিচয় যাচাই করে ভেরিফাইড ব্যাজ অর্জন করুন।</value>
+  </data>
+  <data name="Verification Pending" xml:space="preserve">
+    <value>যাচাইকরণ প্রক্রিয়াধীন</value>
+  </data>
+  <data name="Your documents have been submitted and are under review. Our compliance team will review your NID within 24–48 hours." xml:space="preserve">
+    <value>আপনার কাগজপত্র জমা দেওয়া হয়েছে এবং পর্যালোচনার অধীনে রয়েছে। আমাদের টিম ২৪–৪৮ ঘণ্টার মধ্যে আপনার এনআইডি পর্যালোচনা করবে।</value>
+  </data>
+  <data name="Identity Verified" xml:space="preserve">
+    <value>পরিচয় যাচাইকৃত</value>
+  </data>
+  <data name="Congratulations! Your identity is officially verified on KrishiLink. The verified trust badge is active on all your machinery and godown listings." xml:space="preserve">
+    <value>অভিনন্দন! কৃষিলিঙ্কে আপনার পরিচয় সফলভাবে যাচাই করা হয়েছে। আপনার সকল যন্ত্রপাতি ও গুদামের তালিকায় যাচাইকৃত ব্যাজ প্রদর্শিত হচ্ছে।</value>
+  </data>
+  <data name="Verification Request Rejected" xml:space="preserve">
+    <value>যাচাইকরণ আবেদন বাতিল হয়েছে</value>
+  </data>
+  <data name="Your previous verification submission was rejected. Please review the reason below, ensure your photos are crisp and legible, and re-submit." xml:space="preserve">
+    <value>আপনার পূর্ববর্তী যাচাইকরণ আবেদনটি বাতিল হয়েছে। অনুগ্রহ করে কারণটি দেখুন, পরিষ্কার ছবি তুলে পুনরায় জমা দিন।</value>
+  </data>
+  <data name="Rejection Reason:" xml:space="preserve">
+    <value>বাতিলের কারণ:</value>
+  </data>
+  <data name="Upload Document Photos" xml:space="preserve">
+    <value>কাগজপত্রের ছবি আপলোড করুন</value>
+  </data>
+  <data name="NID Front Side" xml:space="preserve">
+    <value>জাতীয় পরিচয়পত্রের সম্মুখভাগ</value>
+  </data>
+  <data name="NID Back Side" xml:space="preserve">
+    <value>জাতীয় পরিচয়পত্রের পিছনের ভাগ</value>
+  </data>
+  <data name="Trade License (Optional)" xml:space="preserve">
+    <value>ট্রেড লাইসেন্স (ঐচ্ছিক)</value>
+  </data>
+  <data name="Submit Identity Verification" xml:space="preserve">
+    <value>পরিচয় যাচাইকরণ জমা দিন</value>
+  </data>
+  <data name="Update &amp; Resubmit" xml:space="preserve">
+    <value>হালনাগাদ ও পুনরায় জমা দিন</value>
+  </data>
+  <data name="Verification Guidelines" xml:space="preserve">
+    <value>যাচাইকরণের নির্দেশিকা</value>
+  </data>
+  <data name="Why Verify Your Account?" xml:space="preserve">
+    <value>কেন অ্যাকাউন্ট যাচাই করবেন?</value>
+  </data>
+  <data name="Verified Badge on Listings" xml:space="preserve">
+    <value>তালিকায় যাচাইকৃত ব্যাজ</value>
+  </data>
+  <data name="Higher Farmer Trust" xml:space="preserve">
+    <value>কৃষকদের অধিক আস্থা</value>
+  </data>
+  <data name="Priority Search Ranking" xml:space="preserve">
+    <value>অনুসন্ধানে অগ্রাধিকার</value>
+  </data>
+  <data name="Fast Dispute Resolution" xml:space="preserve">
+    <value>দ্রুত বিরোধ নিষ্পত্তি</value>
+  </data>
+  <data name="10-digit Smart NID or 13/17-digit legacy NID number" xml:space="preserve">
+    <value>১০-সংখ্যার স্মার্ট এনআইডি বা ১৩/১৭-সংখ্যার লেগাসি এনআইডি নম্বর</value>
+  </data>
+  <data name="Valid Bangladeshi National ID (NID) is required." xml:space="preserve">
+    <value>সঠিক বাংলাদেশি জাতীয় পরিচয়পত্র (এনআইডি) প্রদান আবশ্যক।</value>
+  </data>
+  <data name="Smart NID must be exactly 10 digits." xml:space="preserve">
+    <value>স্মার্ট এনআইডি ঠিক ১০ সংখ্যার হতে হবে।</value>
+  </data>
+  <data name="Old NID must be either 13 digits or 17 digits (with birth year prefix)." xml:space="preserve">
+    <value>পুরাতন এনআইডি ১৩ সংখ্যা বা ১৭ সংখ্যার (জন্ম সালসহ) হতে হবে।</value>
+  </data>
+  <data name="Front side photo of your NID is required." xml:space="preserve">
+    <value>জাতীয় পরিচয়পত্রের সম্মুখভাগের ছবি আবশ্যক।</value>
+  </data>
+  <data name="Back side photo of your NID is required." xml:space="preserve">
+    <value>জাতীয় পরিচয়পত্রের পিছনের ভাগের ছবি আবশ্যক।</value>
+  </data>
+  <data name="Admin / Developer Verification Simulator" xml:space="preserve">
+    <value>অ্যাডমিন / ডেভেলপার যাচাইকরণ সিমুলেটর</value>
+  </data>
+  <data name="Instantly Approve (Demo)" xml:space="preserve">
+    <value>তাৎক্ষণিক অনুমোদন (ডেমো)</value>
+  </data>
+  <data name="Simulate Rejection (Demo)" xml:space="preserve">
+    <value>বাতিল সিমুলেশন (ডেমো)</value>
+  </data>
+  <data name="Reset to Unverified" xml:space="preserve">
+    <value>যাচাইবিহীনে রিসেট করুন</value>
+  </data>
+  <data name="Verification Submitted" xml:space="preserve">
+    <value>যাচাইকরণ জমা দেওয়া হয়েছে</value>
+  </data>
+  <data name="In Review" xml:space="preserve">
+    <value>পর্যালোচনায়</value>
+  </data>
+  <data name="Submitted on:" xml:space="preserve">
+    <value>জমার তারিখ:</value>
+  </data>
+  <data name="Verified on:" xml:space="preserve">
+    <value>যাচাইয়ের তারিখ:</value>
+  </data>
+  <data name="Reviewed on:" xml:space="preserve">
+    <value>পর্যালোচনার তারিখ:</value>
+  </data>
+  <data name="Admin Notes (Optional)" xml:space="preserve">
+    <value>অ্যাডমিন নোট (ঐচ্ছিক)</value>
+  </data>
+  <data name="Verify Account" xml:space="preserve">
+    <value>অ্যাকাউন্ট যাচাই করুন</value>
+  </data>
+  <data name="Your account is pending identity verification." xml:space="preserve">
+    <value>আপনার অ্যাকাউন্ট পরিচয় যাচাইয়ের অপেক্ষায় রয়েছে।</value>
+  </data>
+  <data name="Your account is verified." xml:space="preserve">
+    <value>আপনার অ্যাকাউন্ট যাচাইকৃত।</value>
+  </data>
+  <data name="Your verification was rejected. Click here to resubmit." xml:space="preserve">
+    <value>আপনার যাচাইকরণ বাতিল হয়েছে। পুনরায় জমা দিতে এখানে ক্লিক করুন।</value>
+  </data>
+  <data name="Complete your NID identity verification to earn the Verified Owner trust badge on your listings and boost farmer bookings." xml:space="preserve">
+    <value>আপনার তালিকায় যাচাইকৃত ব্যাজ অর্জন করতে এবং কৃষকদের বুকিং বাড়াতে আপনার এনআইডি পরিচয় যাচাইকরণ সম্পন্ন করুন।</value>
+  </data>
+  <data name="Under Review" xml:space="preserve">
+    <value>পর্যালোচনাধীন</value>
   </data>
 </root>

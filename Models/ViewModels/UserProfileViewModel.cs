@@ -32,6 +32,10 @@ namespace KrishiLink.Models.ViewModels
         public string? Specialization { get; set; }
         public bool OnboardingComplete { get; set; }
 
+        public bool IsVerified { get; set; } = false;
+        public string VerificationStatus { get; set; } = "Unverified";
+        public string? NidNumber { get; set; }
+
         public DateTime MemberSince { get; set; } = DateTime.UtcNow;
 
         public string Initials

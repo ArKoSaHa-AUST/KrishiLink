@@ -146,10 +146,12 @@ namespace KrishiLink.BLL.Services
         {
             var rentals = await _rentals.Query()
                 .Include(b => b.Equipment!).ThenInclude(e => e.Owner)
+                .Include(b => b.Review)
                 .Where(b => b.FarmerId == farmerId)
                 .ToListAsync();
             var storage = await _storage.Query()
                 .Include(b => b.Godown!).ThenInclude(g => g.Owner)
+                .Include(b => b.Review)
                 .Where(b => b.FarmerId == farmerId)
                 .ToListAsync();
 
@@ -174,7 +176,12 @@ namespace KrishiLink.BLL.Services
                 TotalCost = days * e.DailyRate,
                 RateDescription = $"{ListingFormat.Taka(e.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
                 QuantityDisplay = $"1 {e.Category}",
-                ListingDetailUrl = $"/Equipment/Details/{e.Id}"
+                ListingDetailUrl = $"/Equipment/Details/{e.Id}",
+                ListingId = e.Id,
+                HasReview = b.Review != null,
+                ReviewRating = b.Review?.Rating,
+                ReviewComment = b.Review?.Comment,
+                ReviewedAt = b.Review?.CreatedAt
             };
             return Finish(item, b.Status, b.Note, b.RejectReason, b.RequestedOn, b.UpdatedOn, e.Owner, "Rental Requested", "Active in Field", "Equipment in use", "Completed & Handover");
         }
@@ -197,7 +204,12 @@ namespace KrishiLink.BLL.Services
                 TotalCost = decimal.Round((decimal)b.StorageTons * g.PricePerTonPerMonth * (decimal)months, 0),
                 RateDescription = $"{ListingFormat.Taka(g.PricePerTonPerMonth)} / ton / mo × {b.StorageTons:N0} Tons × {months:0.#} Months",
                 QuantityDisplay = $"{b.StorageTons:N0} Tons Capacity",
-                ListingDetailUrl = $"/Godown/Details/{g.Id}"
+                ListingDetailUrl = $"/Godown/Details/{g.Id}",
+                ListingId = g.Id,
+                HasReview = b.Review != null,
+                ReviewRating = b.Review?.Rating,
+                ReviewComment = b.Review?.Comment,
+                ReviewedAt = b.Review?.CreatedAt
             };
             return Finish(item, b.Status, b.Note, b.RejectReason, b.RequestedOn, b.UpdatedOn, g.Owner, "Booking Requested", "Produce Stored", "Goods in storage", "Storage Period Ended");
         }

@@ -1,0 +1,96 @@
+@model KrishiLink.Models.ViewModels.OwnerVerificationViewModel
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer L
+
+<form asp-controller="Account" asp-action="Verification" method="post" enctype="multipart/form-data" class="needs-validation">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="UserId" />
+
+    <!-- NID Number -->
+    <div class="mb-4">
+        <label asp-for="NidNumber" class="form-label fw-bold text-dark">
+            @L["National ID (NID) Number"] <span class="text-danger">*</span>
+        </label>
+        <div class="input-group">
+            <span class="input-group-text bg-light"><i class="bi bi-credit-card-2-front"></i></span>
+            <input asp-for="NidNumber" class="form-control" placeholder='@L["e.g. 19882692012345 or 8269201234"]' required maxlength="20" />
+        </div>
+        <span asp-validation-for="NidNumber" class="text-danger small"></span>
+        <div class="form-text small">@L["Enter your 10-digit Smart NID or 13/17-digit National ID number."]</div>
+    </div>
+
+    <!-- NID Front Image Upload -->
+    <div class="mb-4">
+        <label asp-for="NidFrontImage" class="form-label fw-bold text-dark">
+            @L["NID Card Front Photo"] <span class="text-danger">*</span>
+        </label>
+        @if (string.IsNullOrWhiteSpace(Model.ExistingNidFrontUrl))
+        {
+            <input asp-for="NidFrontImage" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp"
+                   onchange="previewImage(this, 'nidFrontPreview', 'nidFrontPreviewContainer')" required />
+        }
+        else
+        {
+            <input asp-for="NidFrontImage" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp"
+                   onchange="previewImage(this, 'nidFrontPreview', 'nidFrontPreviewContainer')" />
+        }
+        <span asp-validation-for="NidFrontImage" class="text-danger small"></span>
+        <div class="form-text small">@L["Upload a clear, bright color photo of the front side of your NID card (max 5 MB)."]</div>
+
+        <!-- Preview Thumbnail -->
+        <div id="nidFrontPreviewContainer" class="mt-2 @(string.IsNullOrWhiteSpace(Model.ExistingNidFrontUrl) ? "d-none" : "")">
+            <div class="p-2 border rounded-3 bg-light d-inline-block text-center" style="max-width: 200px;">
+                <img id="nidFrontPreview" src="@(Model.ExistingNidFrontUrl ?? "#")" class="img-fluid rounded" style="max-height: 120px; object-fit: cover;" alt="Front Preview" />
+                <span class="small text-muted d-block mt-1">@L["Front Preview"]</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- NID Back Image Upload (Optional / Recommended) -->
+    <div class="mb-4">
+        <label asp-for="NidBackImage" class="form-label fw-bold text-dark">
+            @L["NID Card Back Photo"] <span class="text-muted small fw-normal">(@L["Recommended"])</span>
+        </label>
+        <input asp-for="NidBackImage" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp"
+               onchange="previewImage(this, 'nidBackPreview', 'nidBackPreviewContainer')" />
+        <span asp-validation-for="NidBackImage" class="text-danger small"></span>
+        <div class="form-text small">@L["Upload the back side of your NID showing your permanent address and barcode."]</div>
+
+        <!-- Preview Thumbnail -->
+        <div id="nidBackPreviewContainer" class="mt-2 @(string.IsNullOrWhiteSpace(Model.ExistingNidBackUrl) ? "d-none" : "")">
+            <div class="p-2 border rounded-3 bg-light d-inline-block text-center" style="max-width: 200px;">
+                <img id="nidBackPreview" src="@(Model.ExistingNidBackUrl ?? "#")" class="img-fluid rounded" style="max-height: 120px; object-fit: cover;" alt="Back Preview" />
+                <span class="small text-muted d-block mt-1">@L["Back Preview"]</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trade License (Optional for Business Owners) -->
+    <div class="mb-4">
+        <label asp-for="TradeLicenseImage" class="form-label fw-bold text-dark">
+            @L["Trade License / Business Registration"] <span class="text-muted small fw-normal">(@L["Optional for businesses"])</span>
+        </label>
+        <input asp-for="TradeLicenseImage" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp"
+               onchange="previewImage(this, 'tradeLicensePreview', 'tradeLicensePreviewContainer')" />
+        <span asp-validation-for="TradeLicenseImage" class="text-danger small"></span>
+        <div class="form-text small">@L["If operating as an agro-machinery rental firm or commercial godown facility."]}</div>
+
+        <!-- Preview Thumbnail -->
+        <div id="tradeLicensePreviewContainer" class="mt-2 @(string.IsNullOrWhiteSpace(Model.ExistingTradeLicenseUrl) ? "d-none" : "")">
+            <div class="p-2 border rounded-3 bg-light d-inline-block text-center" style="max-width: 200px;">
+                <img id="tradeLicensePreview" src="@(Model.ExistingTradeLicenseUrl ?? "#")" class="img-fluid rounded" style="max-height: 120px; object-fit: cover;" alt="Trade License Preview" />
+                <span class="small text-muted d-block mt-1">@L["Trade License Preview"]</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="d-flex align-items-center gap-3 pt-2">
+        <button type="submit" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-semibold shadow-sm">
+            <i class="bi bi-cloud-arrow-up-fill me-1.5"></i> @L["Submit Verification Documents"]
+        </button>
+        <span class="text-muted small">
+            <i class="bi bi-shield-check text-success me-1"></i> @L["Fast 24h verification turnaround"]
+        </span>
+    </div>
+</form>

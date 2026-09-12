@@ -6,7 +6,7 @@
     if (Model.SelectedCategories.Any()) activeFiltersCount += Model.SelectedCategories.Count;
     if (!string.IsNullOrWhiteSpace(Model.Location)) activeFiltersCount++;
     if (Model.SelectedMaxPrice.HasValue && Model.SelectedMaxPrice.Value < Model.MaxPrice) activeFiltersCount++;
-    if (Model.AvailabilityDate.HasValue) activeFiltersCount++;
+    if (Model.StartDate.HasValue || Model.EndDate.HasValue || Model.AvailabilityDate.HasValue) activeFiltersCount++;
     var localizedCategoriesJson = System.Text.Json.JsonSerializer.Serialize(Model.AvailableCategories.ToDictionary(c => c, c => L[c].Value));
     var localizedLocationsJson = System.Text.Json.JsonSerializer.Serialize(Model.AvailableLocations.ToDictionary(loc => loc, loc => L[loc].Value));
 }
@@ -134,18 +134,24 @@
                 </div>
             </div>
 
-            <!-- 4. Availability Date Picker -->
+            <!-- 4. Availability Date Range Picker -->
             <div class="mb-4">
-                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="desktopDateInput">
-                    @L["Required Date"]
+                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2">
+                    @L["Required Dates"]
                 </label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0 text-muted">
-                        <i class="bi bi-calendar3 text-success"></i>
-                    </span>
-                    <input type="date" class="form-control border-start-0 filter-input" id="desktopDateInput"
-                           value="@(Model.AvailabilityDate.HasValue ? Model.AvailabilityDate.Value.ToString("yyyy-MM-dd") : "")" 
-                           min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncDate(this.value); onFilterChanged();" />
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="small text-muted mb-1" for="desktopStartDateInput">@L["From"]</label>
+                        <input type="date" class="form-control form-control-sm border-start-0 filter-input" id="desktopStartDateInput"
+                               value="@(Model.StartDate.HasValue ? Model.StartDate.Value.ToString("yyyy-MM-dd") : (Model.AvailabilityDate.HasValue ? Model.AvailabilityDate.Value.ToString("yyyy-MM-dd") : ""))"
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncDates(); onFilterChanged();" />
+                    </div>
+                    <div class="col-6">
+                        <label class="small text-muted mb-1" for="desktopEndDateInput">@L["To"]</label>
+                        <input type="date" class="form-control form-control-sm border-start-0 filter-input" id="desktopEndDateInput"
+                               value="@(Model.EndDate.HasValue ? Model.EndDate.Value.ToString("yyyy-MM-dd") : "")"
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncDates(); onFilterChanged();" />
+                    </div>
                 </div>
             </div>
 
@@ -191,6 +197,7 @@
                         </label>
                         <select class="form-select form-select-sm py-2" id="mainSortSelect" onchange="onFilterChanged()">
                             <option value="newest" selected="@(Model.SortBy == "newest" ? "selected" : null)">@L["Newest First"]</option>
+                            <option value="rating_desc" selected="@(Model.SortBy == "rating_desc" ? "selected" : null)">@L["Highest Rated"]</option>
                             <option value="price_asc" selected="@(Model.SortBy == "price_asc" ? "selected" : null)">@L["Price: Low to High"]</option>
                             <option value="price_desc" selected="@(Model.SortBy == "price_desc" ? "selected" : null)">@L["Price: High to Low"]</option>
                             <option value="distance" selected="@(Model.SortBy == "distance" ? "selected" : null)">@L["Distance: Nearest"]</option>
@@ -295,7 +302,13 @@
                                     <span class="text-truncate">@L[item.Location]</span>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between">
-                                    <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>@item.OwnerName</span>
+                                    <span class="text-truncate">
+                                        <i class="bi bi-person text-muted me-1"></i>@item.OwnerName
+                                        @if (item.OwnerIsVerified)
+                                        {
+                                            <span class="text-success ms-1" title="@L["Verified Owner"]"><i class="bi bi-patch-check-fill"></i></span>
+                                        }
+                                    </span>
                                     @if (item.ReviewCount > 0)
                                     {
                                         <span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>@item.Rating.ToString("0.0") (@item.ReviewCount)</span>
@@ -446,12 +459,23 @@
                    onchange="onFilterChanged()" />
         </div>
 
-        <!-- Mobile: Availability Date -->
+        <!-- Mobile: Availability Date Range -->
         <div class="mb-4">
-            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="mobileDateInput">@L["Required Date"]</label>
-            <input type="date" class="form-control" id="mobileDateInput"
-                   value="@(Model.AvailabilityDate.HasValue ? Model.AvailabilityDate.Value.ToString("yyyy-MM-dd") : "")" 
-                   min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncDate(this.value); onFilterChanged();" />
+            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2">@L["Required Dates"]</label>
+            <div class="row g-2">
+                <div class="col-6">
+                    <label class="small text-muted mb-1" for="mobileStartDateInput">@L["From"]</label>
+                    <input type="date" class="form-control form-control-sm" id="mobileStartDateInput"
+                           value="@(Model.StartDate.HasValue ? Model.StartDate.Value.ToString("yyyy-MM-dd") : (Model.AvailabilityDate.HasValue ? Model.AvailabilityDate.Value.ToString("yyyy-MM-dd") : ""))" 
+                           min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncMobileDates(); onFilterChanged();" />
+                </div>
+                <div class="col-6">
+                    <label class="small text-muted mb-1" for="mobileEndDateInput">@L["To"]</label>
+                    <input type="date" class="form-control form-control-sm" id="mobileEndDateInput"
+                           value="@(Model.EndDate.HasValue ? Model.EndDate.Value.ToString("yyyy-MM-dd") : "")" 
+                           min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncMobileDates(); onFilterChanged();" />
+                </div>
+            </div>
         </div>
 
         <!-- Bottom Sheet Actions -->
@@ -492,11 +516,22 @@
             if (mobLoc && mobLoc.value !== val) mobLoc.value = val;
         }
 
-        function syncDate(val) {
-            const deskDate = document.getElementById('desktopDateInput');
-            const mobDate = document.getElementById('mobileDateInput');
-            if (deskDate && deskDate.value !== val) deskDate.value = val;
-            if (mobDate && mobDate.value !== val) mobDate.value = val;
+        function syncDates() {
+            const sDesk = document.getElementById('desktopStartDateInput')?.value || '';
+            const eDesk = document.getElementById('desktopEndDateInput')?.value || '';
+            const sMob = document.getElementById('mobileStartDateInput');
+            const eMob = document.getElementById('mobileEndDateInput');
+            if (sMob) sMob.value = sDesk;
+            if (eMob) eMob.value = eDesk;
+        }
+
+        function syncMobileDates() {
+            const sMob = document.getElementById('mobileStartDateInput')?.value || '';
+            const eMob = document.getElementById('mobileEndDateInput')?.value || '';
+            const sDesk = document.getElementById('desktopStartDateInput');
+            const eDesk = document.getElementById('desktopEndDateInput');
+            if (sDesk) sDesk.value = sMob;
+            if (eDesk) eDesk.value = eMob;
         }
 
         function syncMobileToDesktopCategory() {
@@ -550,7 +585,11 @@
             syncPrice(DEFAULT_MAX_PRICE);
 
             // Reset dates
-            syncDate('');
+            const sDesk = document.getElementById('desktopStartDateInput');
+            const eDesk = document.getElementById('desktopEndDateInput');
+            if (sDesk) sDesk.value = '';
+            if (eDesk) eDesk.value = '';
+            syncDates();
 
             // Reset sort select
             const sortSelect = document.getElementById('mainSortSelect');
@@ -568,7 +607,8 @@
             const selectedCategories = Array.from(document.querySelectorAll('.desktop-cat-filter:checked')).map(cb => cb.value);
             const location = document.getElementById('desktopLocationSelect')?.value || '';
             const maxPrice = document.getElementById('desktopPriceSlider')?.value || DEFAULT_MAX_PRICE;
-            const date = document.getElementById('desktopDateInput')?.value || '';
+            const startDate = document.getElementById('desktopStartDateInput')?.value || '';
+            const endDate = document.getElementById('desktopEndDateInput')?.value || '';
             const sortBy = document.getElementById('mainSortSelect')?.value || 'newest';
 
             // Show skeleton shimmer & hide grid / empty state
@@ -586,7 +626,8 @@
             selectedCategories.forEach(cat => params.append('selectedCategories', cat));
             if (location) params.append('location', location);
             if (maxPrice && Number(maxPrice) < DEFAULT_MAX_PRICE) params.append('selectedMaxPrice', maxPrice);
-            if (date) params.append('availabilityDate', date);
+            if (startDate) params.append('startDate', startDate);
+            if (endDate) params.append('endDate', endDate);
             if (sortBy && sortBy !== 'newest') params.append('sortBy', sortBy);
 
             // Update browser URL query string without reloading
@@ -628,14 +669,15 @@
             const selectedCategories = Array.from(document.querySelectorAll('.desktop-cat-filter:checked')).map(cb => cb.value);
             const location = document.getElementById('desktopLocationSelect')?.value || '';
             const maxPrice = Number(document.getElementById('desktopPriceSlider')?.value || DEFAULT_MAX_PRICE);
-            const date = document.getElementById('desktopDateInput')?.value || '';
+            const startDate = document.getElementById('desktopStartDateInput')?.value || '';
+            const endDate = document.getElementById('desktopEndDateInput')?.value || '';
 
             let activeCount = 0;
             if (searchTerm.trim()) activeCount++;
             activeCount += selectedCategories.length;
             if (location) activeCount++;
             if (maxPrice < DEFAULT_MAX_PRICE) activeCount++;
-            if (date) activeCount++;
+            if (startDate || endDate) activeCount++;
 
             if (mobileFilterBadge) {
                 mobileFilterBadge.innerText = activeCount > 0 ? '@L["{0} active", "__COUNT__"]'.replace('__COUNT__', activeCount) : '@L["Filters"]';
@@ -647,7 +689,7 @@
             });
 
             // Update active tags
-            renderActiveTags(searchTerm, selectedCategories, location, maxPrice, date);
+            renderActiveTags(searchTerm, selectedCategories, location, maxPrice, startDate, endDate);
 
             if (count === 0) {
                 if (grid) {
@@ -702,7 +744,7 @@
                                         <span class="text-truncate">${localizedLocations[item.location] || item.location}</span>
                                     </div>
                                     <div class="d-flex align-items-center justify-content-between">
-                                        <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>${item.ownerName}</span>
+                                        <span class="text-truncate"><i class="bi bi-person text-muted me-1"></i>${item.ownerName}${item.ownerIsVerified ? ` <span class="text-success ms-1" title="@L["Verified Owner"]"><i class="bi bi-patch-check-fill"></i></span>` : ''}</span>
                                         ${item.reviewCount > 0 ? `<span class="text-warning fw-semibold"><i class="bi bi-star-fill me-1"></i>${item.rating.toFixed(1)} (${item.reviewCount})</span>` : ''}
                                     </div>
                                 </div>
@@ -738,21 +780,23 @@
             }
         }
 
-        function renderActiveTags(search, categories, location, maxPrice, date) {
+        function renderActiveTags(search, categories, location, maxPrice, startDate, endDate) {
             const container = document.getElementById('activeFilterTagsContainer');
             if (!container) return;
 
             let html = '';
-            if (search.trim()) {
+            if (search && search.trim()) {
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small d-inline-flex align-items-center gap-1">
                     @L["Search:"] "${search.trim()}" <i class="bi bi-x-circle-fill text-muted ms-1" style="cursor:pointer;" onclick="clearSearch()"></i>
                 </span>`;
             }
-            categories.forEach(cat => {
-                html += `<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill small">
-                    ${localizedCategories[cat] || cat}
-                </span>`;
-            });
+            if (categories && categories.length > 0) {
+                categories.forEach(cat => {
+                    html += `<span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1.5 rounded-pill small">
+                        ${localizedCategories[cat] || cat}
+                    </span>`;
+                });
+            }
             if (location) {
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
                     <i class="bi bi-geo-alt me-1"></i>${localizedLocations[location] || location}
@@ -763,9 +807,10 @@
                     ≤ ৳${maxPrice.toLocaleString()} @L["/ Day"]
                 </span>`;
             }
-            if (date) {
+            if (startDate || endDate) {
+                const dateText = startDate && endDate ? `${startDate} ~ ${endDate}` : (startDate || endDate);
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
-                    <i class="bi bi-calendar3 me-1"></i>${date}
+                    <i class="bi bi-calendar3 me-1"></i>${dateText}
                 </span>`;
             }
             container.innerHTML = html;
@@ -783,7 +828,8 @@
                 Array.from(document.querySelectorAll('.desktop-cat-filter:checked')).map(cb => cb.value),
                 document.getElementById('desktopLocationSelect')?.value || '',
                 Number(document.getElementById('desktopPriceSlider')?.value || DEFAULT_MAX_PRICE),
-                document.getElementById('desktopDateInput')?.value || ''
+                document.getElementById('desktopStartDateInput')?.value || '',
+                document.getElementById('desktopEndDateInput')?.value || ''
             );
         });
     </script>

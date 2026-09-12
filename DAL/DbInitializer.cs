@@ -28,6 +28,35 @@ namespace KrishiLink.DAL
 
             if (seedDemoData && !await db.Equipment.AnyAsync() && !await db.Godowns.AnyAsync())
                 await SeedDemoDataAsync(db, services.GetRequiredService<UserManager<ApplicationUser>>());
+            else if (seedDemoData && !await db.Reviews.AnyAsync())
+                await SeedDemoReviewsAsync(db);
+
+            // Ensure demo owner accounts have verified badges
+            if (seedDemoData)
+            {
+                var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+                var demoEq = await userManager.FindByEmailAsync("equipment@krishilink.com");
+                if (demoEq != null && !demoEq.IsVerified)
+                {
+                    demoEq.IsVerified = true;
+                    demoEq.VerificationStatus = "Verified";
+                    demoEq.NidNumber = "19882692012345";
+                    demoEq.VerificationReviewedAt = DateTime.UtcNow.AddMonths(-6);
+                    demoEq.VerificationNotes = "Verified owner account.";
+                    await userManager.UpdateAsync(demoEq);
+                }
+
+                var demoGd = await userManager.FindByEmailAsync("godown@krishilink.com");
+                if (demoGd != null && !demoGd.IsVerified)
+                {
+                    demoGd.IsVerified = true;
+                    demoGd.VerificationStatus = "Verified";
+                    demoGd.NidNumber = "19752718098765";
+                    demoGd.VerificationReviewedAt = DateTime.UtcNow.AddMonths(-6);
+                    demoGd.VerificationNotes = "Verified owner account.";
+                    await userManager.UpdateAsync(demoGd);
+                }
+            }
         }
 
         private static async Task SeedDemoDataAsync(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
@@ -38,8 +67,8 @@ namespace KrishiLink.DAL
             var salma = await CreateUserAsync(userManager, "salma@krishilink.com", "01711000004", "Salma Akter", AppRoles.Farmer, "Bochaganj, Dinajpur", "Rice (Aman)");
             var motaleb = await CreateUserAsync(userManager, "motaleb@krishilink.com", "01711000005", "Motaleb Hossain", AppRoles.Farmer, "Birol, Dinajpur", "Wheat");
 
-            var eqOwner = await CreateUserAsync(userManager, "equipment@krishilink.com", "01712000001", "Abdul Karim", AppRoles.EquipmentOwner, "Bogra Sadar, Bogra", "Tractor", "Karim Agro Machinery");
-            var gdOwner = await CreateUserAsync(userManager, "godown@krishilink.com", "01713000001", "Abdul Mannan", AppRoles.GodownOwner, "Dinajpur Sadar, Dinajpur", "Cold Storage", "Green Grain Storage Ltd.");
+            var eqOwner = await CreateUserAsync(userManager, "equipment@krishilink.com", "01712000001", "Abdul Karim", AppRoles.EquipmentOwner, "Bogra Sadar, Bogra", "Tractor", "Karim Agro Machinery", isVerified: true, nid: "19882692012345");
+            var gdOwner = await CreateUserAsync(userManager, "godown@krishilink.com", "01713000001", "Abdul Mannan", AppRoles.GodownOwner, "Dinajpur Sadar, Dinajpur", "Cold Storage", "Green Grain Storage Ltd.", isVerified: true, nid: "19752718098765");
 
             var yard = eqOwner.Location!;
             var equipment = new List<Equipment>
@@ -139,10 +168,150 @@ namespace KrishiLink.DAL
                 new BookingExpense { BookingType = "Equipment", BookingId = completedRental.Id, OwnerId = eqOwner.Id, Amount = 2500, Note = "Diesel for harvester", RecordedOn = today.AddDays(-113) },
                 new BookingExpense { BookingType = "Godown", BookingId = completedStorage.Id, OwnerId = gdOwner.Id, Amount = 4500, Note = "Fumigation before intake", RecordedOn = today.AddDays(-149) });
             await db.SaveChangesAsync();
+
+            // Seed initial reviews for completed bookings
+            await SeedDemoReviewsAsync(db);
+        }
+
+        private static async Task SeedDemoReviewsAsync(ApplicationDbContext db)
+        {
+            if (await db.Reviews.AnyAsync()) return;
+
+            var eqBookings = await db.EquipmentBookings
+                .Include(b => b.Equipment)
+                .Include(b => b.Farmer)
+                .Where(b => b.Status == BookingStatus.Completed)
+                .ToListAsync();
+
+            var gdBookings = await db.GodownBookings
+                .Include(b => b.Godown)
+                .Include(b => b.Farmer)
+                .Where(b => b.Status == BookingStatus.Completed)
+                .ToListAsync();
+
+            var reviews = new List<Review>();
+
+            // Harvester (Karim review)
+            var karimHarvesterBooking = eqBookings.FirstOrDefault(b => b.Equipment!.Name.Contains("Harvester") && b.Farmer!.FullName == "Karim Mia");
+            if (karimHarvesterBooking != null)
+            {
+                reviews.Add(new Review
+                {
+                    EquipmentBookingId = karimHarvesterBooking.Id,
+                    EquipmentId = karimHarvesterBooking.EquipmentId,
+                    FarmerId = karimHarvesterBooking.FarmerId,
+                    Rating = 5,
+                    Comment = "Harvester performed beyond expectations. Saved 3 days of manual labor for my paddy crop! Clean threshing and prompt owner.",
+                    CreatedAt = karimHarvesterBooking.EndDate.AddDays(1)
+                });
+            }
+
+            // Harvester (Rahim review)
+            var rahimHarvesterBooking = eqBookings.FirstOrDefault(b => b.Equipment!.Name.Contains("Harvester") && b.Farmer!.FullName == "Rahim Uddin");
+            if (rahimHarvesterBooking != null)
+            {
+                reviews.Add(new Review
+                {
+                    EquipmentBookingId = rahimHarvesterBooking.Id,
+                    EquipmentId = rahimHarvesterBooking.EquipmentId,
+                    FarmerId = rahimHarvesterBooking.FarmerId,
+                    Rating = 5,
+                    Comment = "Very smooth operation. Machine arrived with full tank and in pristine condition. Highly recommended for large fields.",
+                    CreatedAt = rahimHarvesterBooking.EndDate.AddDays(1)
+                });
+            }
+
+            // Tractor (Fatema review)
+            var fatemaTractorBooking = eqBookings.FirstOrDefault(b => b.Equipment!.Name.Contains("Tractor") && b.Farmer!.FullName == "Fatema Begum");
+            if (fatemaTractorBooking != null)
+            {
+                reviews.Add(new Review
+                {
+                    EquipmentBookingId = fatemaTractorBooking.Id,
+                    EquipmentId = fatemaTractorBooking.EquipmentId,
+                    FarmerId = fatemaTractorBooking.FarmerId,
+                    Rating = 4,
+                    Comment = "Good tractor with plenty of power for deep tilling. Fuel consumption was reasonable and attachment was sturdy.",
+                    CreatedAt = fatemaTractorBooking.EndDate.AddDays(2)
+                });
+            }
+
+            // Irrigation Pump (Motaleb review)
+            var motalebPumpBooking = eqBookings.FirstOrDefault(b => b.Equipment!.Name.Contains("Pump") && b.Farmer!.FullName == "Motaleb Hossain");
+            if (motalebPumpBooking != null)
+            {
+                reviews.Add(new Review
+                {
+                    EquipmentBookingId = motalebPumpBooking.Id,
+                    EquipmentId = motalebPumpBooking.EquipmentId,
+                    FarmerId = motalebPumpBooking.FarmerId,
+                    Rating = 5,
+                    Comment = "Strong flow rate and delivery hose was in great condition. Ran for continuous hours without overheating.",
+                    CreatedAt = motalebPumpBooking.EndDate.AddDays(1)
+                });
+            }
+
+            // Godown: AgriHub Warehouse (Motaleb review)
+            var motalebWarehouseBooking = gdBookings.FirstOrDefault(b => b.Godown!.Name.Contains("AgriHub") && b.Farmer!.FullName == "Motaleb Hossain");
+            if (motalebWarehouseBooking != null)
+            {
+                reviews.Add(new Review
+                {
+                    GodownBookingId = motalebWarehouseBooking.Id,
+                    GodownId = motalebWarehouseBooking.GodownId,
+                    FarmerId = motalebWarehouseBooking.FarmerId,
+                    Rating = 5,
+                    Comment = "Excellent warehouse facility. Platform is high enough for direct truck loading, and completely fumigated with zero pest damage.",
+                    CreatedAt = motalebWarehouseBooking.EndDate.AddDays(1)
+                });
+            }
+
+            // Godown: AgriHub Warehouse (Karim review)
+            var karimWarehouseBooking = gdBookings.FirstOrDefault(b => b.Godown!.Name.Contains("AgriHub") && b.Farmer!.FullName == "Karim Mia");
+            if (karimWarehouseBooking != null)
+            {
+                reviews.Add(new Review
+                {
+                    GodownBookingId = karimWarehouseBooking.Id,
+                    GodownId = karimWarehouseBooking.GodownId,
+                    FarmerId = karimWarehouseBooking.FarmerId,
+                    Rating = 4,
+                    Comment = "Safe storage for my wheat harvest. CCTV security, night guards, and good moisture control gave complete peace of mind.",
+                    CreatedAt = karimWarehouseBooking.EndDate.AddDays(2)
+                });
+            }
+
+            db.Reviews.AddRange(reviews);
+            await db.SaveChangesAsync();
+
+            // Recalculate and update AverageRating and ReviewCount on all Equipment and Godowns
+            var equipmentList = await db.Equipment.ToListAsync();
+            foreach (var eq in equipmentList)
+            {
+                var eqReviews = reviews.Where(r => r.EquipmentId == eq.Id).ToList();
+                if (eqReviews.Any())
+                {
+                    eq.ReviewCount = eqReviews.Count;
+                    eq.AverageRating = Math.Round((double)eqReviews.Average(r => r.Rating), 1);
+                }
+            }
+
+            var godownList = await db.Godowns.ToListAsync();
+            foreach (var gd in godownList)
+            {
+                var gdReviews = reviews.Where(r => r.GodownId == gd.Id).ToList();
+                if (gdReviews.Any())
+                {
+                    gd.ReviewCount = gdReviews.Count;
+                    gd.AverageRating = Math.Round((double)gdReviews.Average(r => r.Rating), 1);
+                }
+            }
+
+            await db.SaveChangesAsync();
         }
 
         private static async Task<ApplicationUser> CreateUserAsync(UserManager<ApplicationUser> userManager, string email, string phone,
-            string fullName, string role, string location, string specialization, string? business = null)
+            string fullName, string role, string location, string specialization, string? business = null, bool isVerified = false, string? nid = null)
         {
             var existing = await userManager.FindByEmailAsync(email);
             if (existing is not null) return existing;
@@ -159,6 +328,11 @@ namespace KrishiLink.DAL
                 BusinessOrFarmName = business,
                 District = OnboardingOptions.GuessDistrict(location),
                 Specialization = specialization,
+                IsVerified = isVerified,
+                VerificationStatus = isVerified ? "Verified" : "Unverified",
+                NidNumber = nid,
+                VerificationReviewedAt = isVerified ? DateTime.UtcNow.AddMonths(-6) : null,
+                VerificationNotes = isVerified ? "Verified demo owner account." : null,
                 OnboardingCompletedAt = DateTime.UtcNow.AddMonths(-8),
                 CreatedAt = DateTime.UtcNow.AddMonths(-8)
             };

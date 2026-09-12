@@ -11,11 +11,17 @@ namespace KrishiLink.Controllers
     public class EquipmentOwnerController : OwnerRevenueControllerBase
     {
         private readonly IEquipmentService _equipment;
+        private readonly IFileStorageService _files;
 
-        public EquipmentOwnerController(IEquipmentService equipment, IEquipmentRevenueService revenueService, UserManager<ApplicationUser> userManager)
+        public EquipmentOwnerController(
+            IEquipmentService equipment,
+            IFileStorageService files,
+            IEquipmentRevenueService revenueService,
+            UserManager<ApplicationUser> userManager)
             : base(revenueService, userManager)
         {
             _equipment = equipment;
+            _files = files;
         }
 
         /// <summary>GET: /EquipmentOwner — dashboard with listings, pending requests and revenue KPI.</summary>
@@ -24,6 +30,14 @@ namespace KrishiLink.Controllers
             var model = await _equipment.GetOwnerDashboardAsync(OwnerId);
             model.OwnerName = await OwnerDisplayNameAsync();
             model.ThisMonthRevenue = ThisMonthRevenue;
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null)
+            {
+                model.IsVerified = user.IsVerified;
+                model.VerificationStatus = user.VerificationStatus ?? "Unverified";
+            }
+
             return View(model);
         }
 
@@ -74,15 +88,31 @@ namespace KrishiLink.Controllers
             return model is null ? NotFound() : View("Create", model);
         }
 
-        /// <summary>POST: /EquipmentOwner/Save — create or update a listing (with optional image uploads).</summary>
+        /// <summary>POST: /EquipmentOwner/Save — create or update a listing (with robust server-side image validation).</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Save(EquipmentListingViewModel model, List<IFormFile>? imageFiles)
         {
+            model.ImageFiles = imageFiles;
+
+            if (imageFiles is not null && imageFiles.Count > 0)
+            {
+                var fileErrors = _files.ValidateFiles(imageFiles);
+                foreach (var err in fileErrors)
+                {
+                    ModelState.AddModelError("ImageFiles", err);
+                }
+            }
+
+            var totalImagesCount = (model.ExistingImageUrls?.Count ?? 0) + (imageFiles?.Count(f => f.Length > 0) ?? 0);
+            if (totalImagesCount == 0)
+            {
+                ModelState.AddModelError("ImageFiles", "At least one photograph of the machinery is required.");
+            }
+
             if (!ModelState.IsValid)
                 return View("Create", model);
 
-            model.ImageFiles = imageFiles;
             var isEdit = model.IsEditMode;
             if (!await _equipment.SaveListingAsync(OwnerId, model))
                 return NotFound();
