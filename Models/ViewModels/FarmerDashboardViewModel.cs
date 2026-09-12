@@ -25,6 +25,9 @@ namespace KrishiLink.Models.ViewModels
 
         /// <summary>Farmer Loyalty Points (KrishiPoints) summary widget.</summary>
         public FarmerDashboardLoyaltyWidgetViewModel LoyaltyWidget { get; set; } = new();
+
+        /// <summary>Monthly crop calendar advisory strip customized to farmer's crop and district.</summary>
+        public FarmerCropAdvisoryViewModel? CropCalendarAdvisory { get; set; }
     }
 
     /// <summary>

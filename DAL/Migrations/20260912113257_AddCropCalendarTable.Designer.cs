@@ -4,6 +4,7 @@ using KrishiLink.DAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KrishiLink.DAL.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260912113257_AddCropCalendarTable")]
+    partial class AddCropCalendarTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -922,14 +925,10 @@ namespace KrishiLink.DAL.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<string>("NidLast4")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
                     b.Property<string>("NidNumber")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.Property<string>("RejectionReason")
                         .HasMaxLength(500)
@@ -1111,42 +1110,15 @@ namespace KrishiLink.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("District")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("FetchedAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<DateTime>("ForecastDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<double>("HumidityMax")
-                        .HasColumnType("float");
-
-                    b.Property<double>("HumidityMin")
-                        .HasColumnType("float");
 
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<double>("PrecipitationMm")
-                        .HasColumnType("float");
-
-                    b.Property<double>("PrecipitationProbability")
-                        .HasColumnType("float");
-
                     b.Property<double>("Temperature")
                         .HasColumnType("float");
-
-                    b.Property<double>("TemperatureMax")
-                        .HasColumnType("float");
-
-                    b.Property<double>("TemperatureMin")
-                        .HasColumnType("float");
-
-                    b.Property<int>("WeatherCode")
-                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

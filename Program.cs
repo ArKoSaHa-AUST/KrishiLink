@@ -66,6 +66,11 @@ builder.Services.AddScoped<IEquipmentRevenueRepository, EquipmentRevenueReposito
 
 // Business logic
 builder.Services.Configure<RevenueOptions>(builder.Configuration.GetSection(RevenueOptions.SectionName));
+builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection(UploadOptions.SectionName));
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 32 * 1024 * 1024; // 32 MB
+});
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IEquipmentService, EquipmentService>();
 builder.Services.AddScoped<IGodownService, GodownService>();
@@ -75,6 +80,7 @@ builder.Services.AddScoped<IEquipmentRevenueService, EquipmentRevenueService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ICropCalendarService, CropCalendarService>();
+builder.Services.AddScoped<IWeatherService, WeatherService>();
 builder.Services.AddScoped<IPestAlertService, PestAlertService>();
 builder.Services.AddScoped<IOwnerVerificationService, OwnerVerificationService>();
 builder.Services.AddScoped<IWeatherSuggestionService, WeatherSuggestionService>();
@@ -84,13 +90,24 @@ builder.Services.AddScoped<IBadgeService, BadgeService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<ILoyaltyService, LoyaltyService>();
 
+builder.Services.Configure<AppOptions>(builder.Configuration.GetSection(AppOptions.SectionName));
+builder.Services.AddHttpClient();
+builder.Services.AddDataProtection();
+
+builder.Services.AddScoped<IPayoutSettlementService, PayoutSettlementService>();
+
 // Email + scheduled background services
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
 if (builder.Configuration.GetSection(EmailOptions.SectionName).Get<EmailOptions>()?.IsConfigured == true)
     builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 else
     builder.Services.AddScoped<IEmailSender, LoggingEmailSender>();
+
+builder.Services.AddSingleton<EmailDispatchService>();
+builder.Services.AddSingleton<IEmailQueue>(sp => sp.GetRequiredService<EmailDispatchService>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<EmailDispatchService>());
 builder.Services.AddHostedService<MonthlyStatementScheduler>();
+builder.Services.AddHostedService<PayoutSettlementScheduler>();
 builder.Services.AddHostedService<WeatherSuggestionScheduler>();
 
 // Add services to the container.
