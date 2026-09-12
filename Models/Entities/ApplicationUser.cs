@@ -31,6 +31,9 @@ namespace KrishiLink.Models.Entities
         public string? VerificationRejectionReason { get; set; }
         public string? VerificationNotes { get; set; }
 
+        // Loyalty Rewards & Points (KrishiPoints for Farmers)
+        public int LoyaltyPoints { get; set; } = 0;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

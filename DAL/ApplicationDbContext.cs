@@ -26,6 +26,7 @@ namespace KrishiLink.DAL
         public DbSet<Notification> Notifications { get; set; } = null!;
         public DbSet<OwnerVerificationRequest> VerificationRequests { get; set; } = null!;
         public DbSet<EquipmentMaintenanceRecord> EquipmentMaintenanceRecords { get; set; } = null!;
+        public DbSet<LoyaltyPointTransaction> LoyaltyPointTransactions { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -63,6 +64,8 @@ namespace KrishiLink.DAL
             builder.Entity<EquipmentBooking>(b =>
             {
                 b.Property(x => x.Status).HasMaxLength(20);
+                b.Property(x => x.DiscountAmount).HasPrecision(18, 2);
+                b.Property(x => x.AppliedPromoCode).HasMaxLength(50);
                 b.HasIndex(x => new { x.EquipmentId, x.Status });
                 b.HasOne(x => x.Equipment).WithMany(x => x.Bookings).HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Cascade);
                 b.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);
@@ -91,6 +94,8 @@ namespace KrishiLink.DAL
             builder.Entity<GodownBooking>(b =>
             {
                 b.Property(x => x.Status).HasMaxLength(20);
+                b.Property(x => x.DiscountAmount).HasPrecision(18, 2);
+                b.Property(x => x.AppliedPromoCode).HasMaxLength(50);
                 b.HasIndex(x => new { x.GodownId, x.Status });
                 b.HasOne(x => x.Godown).WithMany(x => x.Bookings).HasForeignKey(x => x.GodownId).OnDelete(DeleteBehavior.Cascade);
                 b.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);
@@ -181,6 +186,22 @@ namespace KrishiLink.DAL
                     .WithMany(e => e.MaintenanceRecords)
                     .HasForeignKey(x => x.EquipmentId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<LoyaltyPointTransaction>(l =>
+            {
+                l.Property(x => x.Type).HasMaxLength(30);
+                l.Property(x => x.Description).HasMaxLength(500);
+                l.Property(x => x.BookingType).HasMaxLength(20);
+                l.Property(x => x.BookingCode).HasMaxLength(30);
+                l.Property(x => x.PromoCode).HasMaxLength(50);
+                l.Property(x => x.DiscountAmount).HasPrecision(18, 2);
+                l.Property(x => x.AmountSpent).HasPrecision(18, 2);
+
+                l.HasIndex(x => x.UserId);
+                l.HasIndex(x => new { x.UserId, x.CreatedAt });
+                l.HasIndex(x => x.PromoCode);
+                l.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             });
         }
     }
