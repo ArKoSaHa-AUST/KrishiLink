@@ -23,6 +23,8 @@
 | **Verified Ratings & Reviews** | Review Completed Bookings (1-5 ⭐) | Reply to Reviews & View Aggregates | Reply to Reviews & View Aggregates | Moderate Reviews |
 | **Revenue & Financial Reports** | — | KPIs, Trends, PDF Statements | KPIs, Trends, PDF Statements | Platform Commission & Payouts |
 | **Agronomic Crop Calendar** | DAE 23 Crop Advisories by District | — | — | Database Calendar Management |
+| **Harvest Plan Cart** | Linked Multi-Item Plan, Seasonal Clone & Single-Click Submit | Context Badges on Requests | Context Badges on Requests | — |
+| **Farmer Trust Profile** | Read-Only Profile & Verified Reputation | Completed, Cancellation % & Punctuality | Completed, Cancellation % & Punctuality | Full Audit & Profile Inspection |
 | **Weather & Pest Early Warning** | Live 7-Day Open-Meteo Forecast & Alerts | — | — | Regional Alert Triggers |
 | **Multi-Channel Notifications** | In-App Real-Time & Emailed Updates | In-App Real-Time & Emailed Updates | In-App Real-Time & Emailed Updates | System Audit Notifications |
 
@@ -63,6 +65,7 @@
 - **Notification Deduplication**: Database unique filtered index (`(UserId, DedupeKey) WHERE DedupeKey IS NOT NULL`) preventing duplicate alert spam.
 - **Background Email Dispatch Queue**: Non-blocking channel queue (`EmailDispatchService : BackgroundService`) using `System.Threading.Channels.Channel<EmailJob>`.
 - **Real-Email Hygiene**: Filters out simulated development emails (`@krishilink.local`) to ensure clean delivery in production.
+- **Idempotent Reminder Scheduler (`ReminderScheduler`)**: Time-based background service sending proactive notifications (rental/storage starts tomorrow, equipment return due, storage ending soon, unpaid booking nudges, owner completion reminders, and stale pending request alerts). Fully idempotent via unique `(UserId, DedupeKey)` constraints with downtime-tolerant date windows; configurable in the `Reminders` appsettings section.
 
 ### 7. 💳 Money Flow (Simulated Escrow, Commission & Payouts)
 Farmers pay into **platform escrow** through a simulated gateway; owners are paid out of escrow net of commission. Every movement is written to an append-only, double-entry ledger, and no step needs a human on the platform side.
@@ -93,6 +96,77 @@ Pending ──reject──▶ Rejected ──undo──▶ Pending              
 - **Monthly PDF Statements**: Automated QuestPDF statements sent via email on month rollover.
 - **Development Settlement Trigger**: Instant manual settlement trigger available in Development environments.
 
+### 8. 🏷️ Dynamic & Seasonal Pricing + Minimum Rental Days (Equipment)
+- **Rate Rule Hierarchy**: Supports custom `Season` (date-ranged) and `Weekend` (Friday & Saturday by default) rate rules. Season rules take precedence over Weekend rules, which take precedence over the base daily rate.
+- **Strict Invariants**: Enforces at most one active Weekend rule per equipment and guarantees no overlapping active Season rules.
+- **Minimum Rental Duration**: Configurable `MinRentalDays` (1–90 days) per machine, validated on the client and enforced server-side upon rental request submission.
+- **Real-Time Live Quote API**: `GET /Equipment/Quote` provides debounced instant quoting with per-rule segment breakdown and pricing descriptions during checkout.
+- **Snapshot Persistence**: `QuotedGross` and `PricingNote` are captured at request time; accepting re-evaluates active rules and records updated totals with audit notes.
+
+### 9. 🚜 Multi-Unit Machinery Listings (Quantity & Available Capacity)
+- **Fleet Inventory (`Quantity = 1..50`)**: Equipment owners can specify fleet inventory quantity per machine listing. Owners cannot reduce listed quantity below maximum concurrently booked units on any future date.
+- **Concurrent Unit Booking (`Units = 1..Quantity`)**: Farmers can book multiple units in a single request. Gross rental fee and loyalty pricing automatically scale by `Units × DailyRate × Days`.
+- **Per-Day Availability Calendar**: Partial bookings are tracked per calendar date (`bookedOnDay = Σ Units`). Calendar displays distinct `.cal-partial` states for partially booked dates and `"x/Quantity"` utilization badges for equipment owners. Blocked blackout dates take all units off the market.
+- **Capacity-Aware Auto-Rejection**: When an owner accepts a rental request, overlapping pending requests are evaluated chronologically and automatically rejected only if remaining free capacity on any overlapping day cannot accommodate their requested units.
+- **Backward Compatible**: Listings with `Quantity = 1` retain legacy single-unit behavior, visual styles, and exact conflict messaging.
+
+### 10. 🗓️ Bulk Availability Tools & Date Range Blocking
+- **Bulk Date Range Block/Unblock**: Equipment and godown owners can block or unblock full date ranges (up to 366 days) with optional recurring weekday filters (Saturday through Friday, respecting the Bangladesh work week) and quick presets (`Every Friday`, `Fri + Sat`, `All weekdays`, `Next 7 days`, `Next 30 days`, `Rest of this month`).
+- **Farmer-Booked Date Protection**: Days already booked or stored by farmers are completely protected and automatically skipped during bulk blocking.
+- **Audit & Reason Tracking**: Optional reasons (up to 100 characters, e.g. "Annual Maintenance", "Harvest Festival") are persisted on `EquipmentBlockedDate` and `GodownBlockedDate`, displayed as tooltips and badges on calendar days.
+- **Diff-Based Calendar Persistence**: Single-month calendar updates use diffs (`Except` set operations) to preserve existing blocked date reasons when toggling availability.
+- **Upcoming Blocked Periods (12-Month Horizon)**: Contiguous blocked dates sharing identical reasons are automatically grouped (`DateRanges.Group`) and displayed in an upcoming blocked periods widget with quick inline unblock modals.
+- **Pending Conflict Badges**: Pending rental and storage booking requests that overlap any owner-blocked date display clear warning indicators with the conflicting date.
+
+### 11. 🔄 Booking Modification Lifecycle (Dates, Units & Capacity)
+- **Pre-Payment Flexibility**: Farmers can modify dates and requested quantity (equipment units / godown tonnage) on **Pending** and unpaid **Accepted** bookings prior to the booking start date.
+- **Re-Approval Safety**: Modifying an **Accepted** booking returns it to **Pending**, resets owner rejection reasons, and clears the financial snapshot (`AgreedRate`, `AgreedGross`, `CommissionRate`) to prevent stale pricing or bypass of owner consent. The payment button is disabled until the owner re-approves.
+- **Modification Guardrails**: Enforces a strict limit of 3 modifications per booking (`MaxModifications = 3`) and preserves audit history (`ModificationCount`, `ModifiedOn`, `PreviousDetails`). Paid bookings are locked in escrow and cannot be modified (farmers are prompted to cancel and refund instead).
+- **Self-Excluding Conflict Checks**: Availability validation excludes the booking's own ID (`excludeBookingId`), allowing farmers to safely shrink, shift, or expand their reservation within their reserved window.
+- **Automated Loyalty Re-pricing**: Prior loyalty points redemption and promo code discounts are safely refunded and re-calculated against the newly quoted gross amount.
+- **Owner Visibility & Notifications**: Triggers `NotificationTypes.BookingModified` alerts to owners and displays `"Changed ×N"` indicator badges with previous booking summaries on all owner dashboards and request rows.
+
+### 12. 🌾 Harvest Plan Cart (Multi-Item Seasonal Planning & Re-usable Templates)
+- **Multi-Item Agricultural Cart**: Farmers can bundle multiple equipment rentals (combine harvester, tractor, tiller) and godown storage facilities into a single unified seasonal plan (up to 10 items per plan, up to 5 draft plans per farmer).
+- **Live Availability & Quoting**: Real-time evaluation of live availability, conflicting dates, owner-blocked blackout periods, and dynamic daily / seasonal rate quotes on every plan item.
+- **Fail-Fast Two-Pass Submission**: Batch submission performs a complete validation pass over all items before writing any bookings. If all items pass, bookings are created via canonical booking flows, atomically linking `HarvestPlanId`.
+- **Race Condition Resiliency**: If any item fails during creation due to concurrent bookings, successfully created bookings remain intact, the plan remains in `Draft`, and the farmer is guided to adjust dates and resubmit (skipping already-booked items).
+- **Owner Visibility & Request Linking**: Equipment and godown owner request dashboards display a distinct `bi-diagram-3` badge (`Harvest plan: {name} · {n} items`) with a comprehensive tooltip listing other items in the plan for context.
+- **Seasonal Plan Cloning**: One-click duplication of previous harvest plans shifted by a customizable number of days (1–730 days, default 365 days) with all booking references cleared, streamlining recurring seasonal operations.
+- **Automated Lifecycle Closure**: Harvest plans automatically transition from `Submitted` to `Completed` once all associated bookings reach terminal states (`Completed`, `Rejected`, or `Cancelled`).
+
+### 13. 🛡️ Farmer Trust Profile for Owners
+- **Trust Signals on Request Lists**: Equipment and godown owner request dashboards display inline mini-stats (`✔ {0} completed · {1}% cancellations · since {2}`) and a color-coded trust chip (`Reliable`, `New to KrishiLink`, or `Frequent cancellations`) for each requesting farmer.
+- **Dedicated Read-Only Profile (`/FarmerProfile/{id}`)**: Owners can inspect a deep trust profile displaying total completed bookings, active rentals/storage, cancellation rate (excluding owner rejections and pending requests), average hours from acceptance to payment into platform escrow, reviews given, and repeat booking history with this specific owner.
+- **Strict Privacy Scoping**: Access is strictly limited to Administrators and Owners who have received at least one booking request from that farmer. Unrelated owners or unknown IDs receive a generic `404 NotFound` response to prevent ID enumeration. Phone numbers are revealed only after a booking is confirmed; email addresses are never exposed.
+- **High-Performance In-Memory Caching**: Summary lookups for request grids are cached per farmer ID for 5 minutes (`IMemoryCache`), preventing redundant database queries while keeping fresh trust metrics available.
+
+### 14. ❤️ Favorites / Wishlist & Saved Searches with Availability Alerts
+- **Farmer Wishlist (`/Favorites`)**: Farmers can bookmark machinery and storage facilities with responsive heart toggles across catalog cards and details pages. The wishlist provides real-time availability hints ("Available today", "Free from ...") and prunes stale or deleted listings automatically.
+- **Saved Searches with Filters (`/SavedSearches`)**: Farmers can save multi-criteria browse queries (keyword, category/type, district, max price, capacity, and date windows) directly from browse filter bars with instant "Run now" links.
+- **Automated Availability Alert Scheduler**: `SavedSearchAlertScheduler` background service continuously re-evaluates active saved searches against canonical `BrowseAsync` availability logic, sending deduplicated notifications and emails (`NotificationTypes.SavedSearchAlert`) when new matching listings appear.
+- **Immediate New Listing Evaluation**: When equipment or godown owners publish new listings, matching saved searches are immediately evaluated to notify interested farmers without delay.
+- **Lifecycle & Spam Guardrails**: Searches with past target dates are automatically retired with notification, while strict user scoping and deduplication keys prevent redundant alerts.
+
+### 15. 📦 Godown Produce Intake Tracking & Official Warehouse Receipts (QuestPDF + QR Verification)
+- **Produce Intake Lot Recording**: Godown owners can record physical batches/lots of produce (crop, variety, number of bags, bag weight in kg, auto-calculated net weight, moisture %, quality grade: Ungraded, Grade A, Grade B, Grade C, and handling/storage location remarks) against **Paid** or **Completed** storage bookings.
+- **Over-Storage Guard**: Enforces that total stored net weight (`Σ Stored + New Lot`) cannot exceed booked storage capacity plus a 5% weighbridge tolerance (`StorageTons * 1000 * 1.05`), protecting against inadvertent warehouse overfill.
+- **Sequential Year-Based Receipt Numbers**: Generates canonical, human-readable receipt identifiers in the format `KL-WR-{yyyy}-{Id:D5}` (e.g. `KL-WR-2026-00001`).
+- **Official Warehouse Receipt PDF (`QuestPDF`)**: Generates an official, print-ready A4 PDF receipt using KrishiLink's green design palette, complete with depositor and warehouse facility credentials, commodity specifications, quality grades, storage terms, official non-negotiable legal disclaimer, and a scannable verification QR code.
+- **Public QR Code Verification (`/Verify/Receipt/{receiptNumber}`)**: Anyone scanning the receipt's QR code is directed to a public verification page validating authenticity, current storage status (`STORED` vs `RELEASED`), and commodity specs while strictly protecting farmer privacy (zero farmer PII exposed).
+- **Produce Release Workflow**: Godown owners can release stored lots to the farmer or an authorized representative (recording release timestamp, recipient name/ID, and gate pass remarks). Releasing permanently stamps the lot and its receipt as `RELEASED` and renders it immutable against further edits or deletions.
+- **Comprehensive Lifecycle Notifications**: Farmers receive instant notifications when produce is accepted into the warehouse and when lots are released at pickup.
+
+### 16. 🧾 Farmer Payment Receipts & Profit-and-Loss / Tax Summary Reporting
+- **Farmer Payment Receipt (QuestPDF)**: Downloadable, print-ready A4 PDF payment receipt generated for all `Paid`, `Completed`, or `Refunded` equipment and godown bookings. Accessible via `GET /Bookings/Receipt?type={type}&id={id}` (authorized to the booking farmer or listing owner), with direct download buttons in *My Bookings*, *Booking Confirmation*, and the shared invoice view.
+- **Automated Email Delivery & In-App Alerts**: On successful payment completion (`PaymentService.CompleteAsync`), the receipt PDF is automatically attached and emailed to the farmer via `IEmailQueue`, alongside an in-app `PaymentReceived` confirmation notification linking directly to the booking receipt.
+- **Financial Invariants & Loyalty Clarity**: Strict separation between the legally agreed gross amount (`Payment.Amount == AgreedGross`) and platform loyalty point redemptions. Discounts are presented as an informational savings note without tampering with contractual gross amounts, escrow records, or refund amounts.
+- **Tamper-Evident Verification**: Includes escrow trust notices, payment method references, platform contact details, and a scannable QR code resolving to the booking verification endpoint (`/Verify/{code}`). Refunded bookings feature a prominent `REFUNDED` watermark and refund ledger breakdown.
+- **Categorized & General Operating Expenses**: `BookingExpense` extended with standard agricultural accounting categories (`Fuel`, `Labour`, `Repair`, `Transport`, `Fumigation`, `Utilities`, `Other`), optional listing associations, explicit expense dates, and support for general facility operating expenses (`BookingId == null`).
+- **Owner Profit-and-Loss & Tax Summary (`/{Owner}/ProfitAndLoss`)**: Dedicated single-page A4 P&L report PDF designed for owners' tax advisers, presenting gross receipts, tax-deductible platform commission, categorical operating expense breakdowns, net operating profit, and operating margin.
+- **Bangladesh Fiscal Year & Range Presets**: Range filters support Bangladesh fiscal year cycles (`1 Jul – 30 Jun`, preset `fy`), previous fiscal year (`lastfy`), year-to-date (`ytd`), rolling 12 months (`12m`), and current month (`month`), with automatic header dates and tax disclaimer notices.
+- **Unified Statements & Interactive Dashboard**: Integrated P&L summary into the monthly PDF statement (`MonthlyStatementDocument`) with shared styling (`PdfStyle`), alongside interactive dashboard range bars, category chips, general expense tables, and modal inputs in `Views/Shared/Revenue.cshtml`.
+
 ---
 
 ## 🏗️ Architecture & Project Structure
@@ -106,13 +180,18 @@ KrishiLink/
 │   ├── HomeController.cs          # Public Landing & Overview
 │   ├── AccountController.cs       # Auth, Registration, Login, Profile & Private Verification Docs
 │   ├── FarmerController.cs        # Farmer Hub, Dashboard & Crop Recommendations
+│   ├── FavoritesController.cs     # Wishlist Management & AJAX Heart Toggling
+│   ├── SavedSearchesController.cs # Saved Search Queries, Alert Toggling & Dev Triggers
 │   ├── EquipmentController.cs     # Machinery Catalog, Search, Filtering & Details
 │   ├── GodownController.cs        # Storage Facilities Directory & Booking
+│   ├── HarvestPlanController.cs   # Multi-Item Harvest Plan Cart, Submission & Seasonal Cloning
+│   ├── FarmerProfileController.cs # Privacy-Scoped Read-Only Farmer Trust Profiles
 │   ├── AdvisoryController.cs      # Weather Forecasts & Crop Calendars
 │   ├── BookingsController.cs      # User Booking History & Status Updates
+│   ├── VerifyController.cs        # Public QR Verification (Bookings & Warehouse Receipts)
 │   ├── ReviewsController.cs       # Verified Review Submission, AJAX Pagination & Owner Replies
 │   ├── EquipmentOwnerController.cs# Owner Listings, Rental Requests, Maintenance & Revenue
-│   ├── GodownOwnerController.cs   # Facility Listings, Space Requests & Revenue
+│   ├── GodownOwnerController.cs   # Facility Listings, Space Requests, Produce Intake & Revenue
 │   └── OwnerRevenueControllerBase.cs # Shared Revenue / Invoice / Expense base controller
 ├── Views/                         # Razor Views & Component Partials
 │   ├── Admin/Verifications/       # Admin Identity Verification Management
@@ -120,15 +199,20 @@ KrishiLink/
 │   ├── Home/                      # Landing Page
 │   ├── Account/                   # Login, Register, Profile, Verification UI
 │   ├── Farmer/                    # Farmer Dashboard & Advisory Strips
+│   ├── Favorites/                 # Wishlist & Saved Items Management UI
+│   ├── SavedSearches/             # Saved Searches & Alert Subscriptions UI
 │   ├── Equipment/                 # Equipment Catalog & Details UI
 │   ├── Godown/                    # Storage Directory UI
+│   ├── HarvestPlan/               # Harvest Plan Management & Multi-Item Details UI
+│   ├── FarmerProfile/             # Farmer Trust Profile Views
 │   ├── Advisory/                  # Advisory Dashboard & Pest Warnings
 │   ├── Bookings/                  # History & Review Modal Views
+│   ├── Verify/                    # QR Verification Views (Booking & Warehouse Receipt)
 │   ├── EquipmentOwner/            # Equipment Management Views
-│   └── GodownOwner/               # Godown Management Views
+│   └── GodownOwner/               # Godown Management Views & Intake Modals
 ├── Models/                        # Data Transfer & Entity Models
-│   ├── Entities/                  # EF Core Domain Entities (User, Equipment, Godown, Bookings, CropCalendar, WeatherData, etc.)
-│   └── ViewModels/                # Strongly-typed Razor ViewModels
+│   ├── Entities/                  # EF Core Domain Entities (User, Equipment, Godown, Bookings, StorageIntakeLot, HarvestPlan, CropCalendar, WeatherData, etc.)
+│   └── ViewModels/                # Strongly-typed Razor ViewModels (StorageIntakeViewModels, etc.)
 ├── BLL/                           # Business Logic Layer Services
 │   ├── Services/                  # Core Business Services:
 │   │   ├── AppLinks.cs            # Centralized Type-Safe URL Registry
@@ -137,12 +221,19 @@ KrishiLink/
 │   │   ├── CropCalendarService.cs # DAE Crop Recommendations & Caching
 │   │   ├── EmailDispatchService.cs# Asynchronous Background Email Dispatcher
 │   │   ├── EquipmentService.cs    # Equipment Management & Search
+│   │   ├── FarmerProfileService.cs# Farmer Trust Metrics & Privacy Verification
+│   │   ├── FavoriteService.cs     # Wishlist Management & Availability Tracking
 │   │   ├── GodownService.cs       # Godown Space Management & Search
+│   │   ├── HarvestPlanService.cs  # Harvest Plan Cart, Multi-Item Submission & Validation
 │   │   ├── NotificationService.cs # Localized Multi-Channel Alerts
 │   │   ├── OwnerRevenueService.cs # Revenue, Settlements & QuestPDF Reporting
 │   │   ├── OwnerVerificationService.cs # Encrypted NID & Document Verification
 │   │   ├── PestAlertService.cs    # Weather-Driven Outbreak Predictor
 │   │   ├── ReviewService.cs       # Verified Reviews & Atomic Aggregations
+│   │   ├── SavedSearchService.cs  # Saved Queries & Immediate Match Evaluation
+│   │   ├── SavedSearchAlertScheduler.cs # Background Periodic Search Match Dispatcher
+│   │   ├── StorageIntakeService.cs# Produce Intake Tracking & Warehouse Receipts
+│   │   ├── WarehouseReceiptDocument.cs # QuestPDF A4 Non-Negotiable Warehouse Receipt Document
 │   │   └── WeatherService.cs      # Open-Meteo Live 7-Day Forecast Integrator
 ├── DAL/                           # Data Access Layer
 │   ├── ApplicationDbContext.cs    # EF Core DbContext with Identity Integration
@@ -161,7 +252,8 @@ KrishiLink/
 - **Backend Framework**: C# / ASP.NET Core MVC (.NET 8 LTS / .NET 9)
 - **Data Access & ORM**: Entity Framework Core 9.0, Microsoft SQL Server / LocalDB
 - **Security & Cryptography**: ASP.NET Core Identity (RBAC), `IDataProtectionProvider` (NID Data at Rest)
-- **PDF Generation**: QuestPDF (Community license) for monthly owner accounting statements
+- **PDF Generation**: QuestPDF (Community license) for monthly owner accounting statements & official non-negotiable warehouse receipts
+- **QR Code Generation**: QRCoder for gate passes, booking verification & warehouse receipts
 - **Frontend Architecture**: Razor Views (HTML5), Bootstrap 5.3, Bootstrap Icons, Vanilla JavaScript (no heavy runtime dependencies)
 - **Localization**: Full Bilingual Support — English (`en-US`) and Bengali (`bn-BD` বাংলা)
 

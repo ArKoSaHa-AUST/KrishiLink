@@ -170,6 +170,259 @@ namespace KrishiLink.DAL
 
                 // Seed DAE crop calendar entries
                 await SeedCropCalendarAsync(db);
+
+                // Seed demo equipment rate rules and min rental days
+                await SeedDemoRateRulesAsync(db);
+
+                // Ensure demo tiller has Quantity = 3 for multi-unit testing
+                var demoTiller = await db.Equipment.FirstOrDefaultAsync(e => e.Name.Contains("ACI Power Tiller 12HP"));
+                if (demoTiller != null && demoTiller.Quantity == 1)
+                {
+                    demoTiller.Quantity = 3;
+                    await db.SaveChangesAsync();
+                }
+
+                // Seed demo harvest plans
+                await SeedDemoHarvestPlansAsync(db, userManager);
+
+                // Seed demo favorites and saved searches
+                await SeedDemoFavoritesAndSavedSearchesAsync(db, userManager);
+
+                // Seed demo storage intake lots and warehouse receipts
+                await SeedDemoIntakeLotsAsync(db);
+
+                // Seed demo expense categories and general operating expenses
+                await SeedDemoExpenseCategoriesAndGeneralExpensesAsync(db, userManager);
+            }
+        }
+
+        private static async Task SeedDemoFavoritesAndSavedSearchesAsync(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+        {
+            var farmer = await userManager.FindByEmailAsync("farmer@krishilink.com");
+            if (farmer == null) return;
+
+            if (!await db.Favorites.AnyAsync(f => f.UserId == farmer.Id))
+            {
+                var eq = await db.Equipment.FirstOrDefaultAsync();
+                var gd = await db.Godowns.FirstOrDefaultAsync();
+                if (eq != null)
+                {
+                    db.Favorites.Add(new Favorite
+                    {
+                        UserId = farmer.Id,
+                        ListingType = ListingTypes.Equipment,
+                        ListingId = eq.Id,
+                        CreatedAt = DateTime.UtcNow.AddDays(-3)
+                    });
+                }
+                if (gd != null)
+                {
+                    db.Favorites.Add(new Favorite
+                    {
+                        UserId = farmer.Id,
+                        ListingType = ListingTypes.Godown,
+                        ListingId = gd.Id,
+                        CreatedAt = DateTime.UtcNow.AddDays(-2)
+                    });
+                }
+            }
+
+            if (!await db.SavedSearches.AnyAsync(s => s.UserId == farmer.Id))
+            {
+                var currentYear = DateTime.Today.Year;
+                var novStart = new DateTime(DateTime.Today.Month > 11 ? currentYear + 1 : currentYear, 11, 1);
+                var novEnd = new DateTime(DateTime.Today.Month > 11 ? currentYear + 1 : currentYear, 11, 30);
+
+                db.SavedSearches.Add(new SavedSearch
+                {
+                    UserId = farmer.Id,
+                    Name = "Combine harvester in Bogura, November",
+                    ListingType = ListingTypes.Equipment,
+                    SearchTerm = "harvester",
+                    Category = "Harvester",
+                    District = "Bogura",
+                    MaxRate = 4000m,
+                    From = novStart,
+                    To = novEnd,
+                    AlertsEnabled = true,
+                    KnownListingIds = string.Empty,
+                    CreatedAt = DateTime.UtcNow.AddDays(-1)
+                });
+            }
+
+            await db.SaveChangesAsync();
+        }
+
+        private static async Task SeedDemoHarvestPlansAsync(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+        {
+            var farmer = await userManager.FindByEmailAsync("farmer@krishilink.com");
+            if (farmer == null) return;
+
+            if (await db.HarvestPlans.AnyAsync(p => p.FarmerId == farmer.Id)) return;
+
+            var harvesterOrTractor = await db.Equipment.FirstOrDefaultAsync(e => e.Category == "Harvester" || e.Category == "Tractor")
+                ?? await db.Equipment.FirstOrDefaultAsync();
+
+            var godown = await db.Godowns.FirstOrDefaultAsync(g => g.IsActive)
+                ?? await db.Godowns.FirstOrDefaultAsync();
+
+            if (harvesterOrTractor == null || godown == null) return;
+
+            var today = DateTime.Today;
+
+            // 1. Draft Harvest Plan: "Boro Season 2026 Harvest"
+            var draftPlan = new HarvestPlan
+            {
+                FarmerId = farmer.Id,
+                Name = "Boro Season 2026 Harvest",
+                Crop = "Rice (Boro)",
+                Note = "Coordinated harvest and storage plan for Boro rice field in Shibganj.",
+                Status = HarvestPlanStatus.Draft,
+                CreatedAt = DateTime.UtcNow.AddDays(-5),
+                Items = new List<HarvestPlanItem>
+                {
+                    new()
+                    {
+                        ItemType = HarvestPlanItemType.Equipment,
+                        ListingId = harvesterOrTractor.Id,
+                        StartDate = today.AddDays(25),
+                        EndDate = today.AddDays(29),
+                        Units = 1,
+                        Note = "Require skilled operator for 5-day harvesting window.",
+                        AddedAt = DateTime.UtcNow.AddDays(-5)
+                    },
+                    new()
+                    {
+                        ItemType = HarvestPlanItemType.Godown,
+                        ListingId = godown.Id,
+                        StartDate = today.AddDays(30),
+                        EndDate = today.AddDays(59),
+                        Tons = 5,
+                        Note = "5 Tons paddy storage right after harvest.",
+                        AddedAt = DateTime.UtcNow.AddDays(-5)
+                    }
+                }
+            };
+            db.HarvestPlans.Add(draftPlan);
+            await db.SaveChangesAsync();
+
+            // 2. Submitted Harvest Plan: "Wheat Harvest 2026"
+            var wheatPlan = new HarvestPlan
+            {
+                FarmerId = farmer.Id,
+                Name = "Wheat Harvest 2026",
+                Crop = "Wheat",
+                Note = "Wheat field preparation, cutting, and grain storage.",
+                Status = HarvestPlanStatus.Submitted,
+                CreatedAt = DateTime.UtcNow.AddDays(-2),
+                SubmittedOn = DateTime.UtcNow.AddDays(-1)
+            };
+            db.HarvestPlans.Add(wheatPlan);
+            await db.SaveChangesAsync();
+
+            // Create Pending Equipment Booking linked to wheatPlan
+            var eqStart = today.AddDays(15);
+            var eqEnd = today.AddDays(19);
+            var eqGross = BookingPricing.EquipmentGross(eqStart, eqEnd, harvesterOrTractor.DailyRate, 1);
+
+            var eqBooking = new EquipmentBooking
+            {
+                EquipmentId = harvesterOrTractor.Id,
+                FarmerId = farmer.Id,
+                StartDate = eqStart,
+                EndDate = eqEnd,
+                Units = 1,
+                Status = BookingStatus.Pending,
+                RequestedOn = DateTime.UtcNow.AddDays(-1),
+                AgreedRate = harvesterOrTractor.DailyRate,
+                QuotedGross = eqGross,
+                HarvestPlanId = wheatPlan.Id,
+                Note = "Requested as part of Wheat Harvest 2026 harvest plan."
+            };
+            db.EquipmentBookings.Add(eqBooking);
+
+            // Create Pending Godown Booking linked to wheatPlan
+            var gdStart = today.AddDays(20);
+            var gdEnd = today.AddDays(49);
+            var gdGross = BookingPricing.GodownGross(gdStart, gdEnd, 4, godown.PricePerTonPerMonth);
+
+            var gdBooking = new GodownBooking
+            {
+                GodownId = godown.Id,
+                FarmerId = farmer.Id,
+                StartDate = gdStart,
+                EndDate = gdEnd,
+                StorageTons = 4,
+                Status = BookingStatus.Pending,
+                RequestedOn = DateTime.UtcNow.AddDays(-1),
+                AgreedRate = godown.PricePerTonPerMonth,
+                AgreedGross = gdGross,
+                HarvestPlanId = wheatPlan.Id,
+                Note = "Requested as part of Wheat Harvest 2026 harvest plan."
+            };
+            db.GodownBookings.Add(gdBooking);
+            await db.SaveChangesAsync();
+
+            // Add the items to wheatPlan with their BookingId set
+            wheatPlan.Items = new List<HarvestPlanItem>
+            {
+                new()
+                {
+                    HarvestPlanId = wheatPlan.Id,
+                    ItemType = HarvestPlanItemType.Equipment,
+                    ListingId = harvesterOrTractor.Id,
+                    StartDate = eqStart,
+                    EndDate = eqEnd,
+                    Units = 1,
+                    BookingId = eqBooking.Id,
+                    AddedAt = DateTime.UtcNow.AddDays(-2)
+                },
+                new()
+                {
+                    HarvestPlanId = wheatPlan.Id,
+                    ItemType = HarvestPlanItemType.Godown,
+                    ListingId = godown.Id,
+                    StartDate = gdStart,
+                    EndDate = gdEnd,
+                    Tons = 4,
+                    BookingId = gdBooking.Id,
+                    AddedAt = DateTime.UtcNow.AddDays(-2)
+                }
+            };
+            await db.SaveChangesAsync();
+        }
+
+        private static async Task SeedDemoRateRulesAsync(ApplicationDbContext db)
+        {
+            if (!await db.EquipmentRateRules.AnyAsync())
+            {
+                var tractor = await db.Equipment.FirstOrDefaultAsync(e => e.Name.Contains("Mahindra 575 DI"));
+                if (tractor != null)
+                {
+                    tractor.MinRentalDays = 2;
+                    var currentYear = DateTime.Today.Year;
+                    db.EquipmentRateRules.AddRange(
+                        new EquipmentRateRule
+                        {
+                            EquipmentId = tractor.Id,
+                            Kind = "Season",
+                            Name = "Boro Harvest Peak",
+                            StartDate = new DateTime(currentYear, 4, 15),
+                            EndDate = new DateTime(currentYear, 5, 31),
+                            DailyRate = 2000m,
+                            IsActive = true
+                        },
+                        new EquipmentRateRule
+                        {
+                            EquipmentId = tractor.Id,
+                            Kind = "Weekend",
+                            Name = "Weekend Rate",
+                            DailyRate = 1800m,
+                            IsActive = true
+                        }
+                    );
+                    await db.SaveChangesAsync();
+                }
             }
         }
 
@@ -230,7 +483,7 @@ namespace KrishiLink.DAL
                     "https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&w=800&q=80", -35),
                 Machine("ACI Power Tiller 12HP", "Power Tiller", 800, 150, yard,
                     "12 HP diesel power tiller with rotary attachment. Suitable for small and medium plots and puddling before transplanting.",
-                    "https://images.unsplash.com/photo-1530267981375-f0de937f5f13?auto=format&fit=crop&w=800&q=80", -30),
+                    "https://images.unsplash.com/photo-1530267981375-f0de937f5f13?auto=format&fit=crop&w=800&q=80", -30, quantity: 3),
                 Machine("Honda WB30X Irrigation Pump", "Irrigation Pump", 350, 60, yard,
                     "3-inch centrifugal petrol pump, 1,100 L/min. Includes 20 m of delivery hose for shallow tube-well irrigation.",
                     "https://images.unsplash.com/photo-1628352081506-83c43123ed6d?auto=format&fit=crop&w=800&q=80", -25),
@@ -271,8 +524,13 @@ namespace KrishiLink.DAL
                 Rental(equipment[4], salma, -20, -19, BookingStatus.Cancelled, -24),
                 Rental(equipment[1], salma, -12, -7, BookingStatus.Rejected, -15, "Harvest window for early Aman.", "Harvester is under scheduled maintenance that week."),
                 // Live
-                Rental(equipment[0], farmer, -1, 4, BookingStatus.Accepted, -5, "Need standard disc plough attachment for deep tilling."),
+                Rental(equipment[0], farmer, 1, 4, BookingStatus.Accepted, -2, "Need standard disc plough attachment for deep tilling."),
+                Rental(equipment[2], farmer, -2, 1, BookingStatus.Accepted, -4, units: 1),
+                Rental(equipment[3], farmer, 4, 7, BookingStatus.Accepted, -3, "Irrigation pump for seedbed."),
+                Rental(equipment[4], salma, -7, -3, BookingStatus.Accepted, -9),
                 Rental(equipment[4], motaleb, 3, 4, BookingStatus.Accepted, -2),
+                Rental(equipment[2], motaleb, 5, 8, BookingStatus.Accepted, -3, units: 1),
+                Rental(equipment[2], salma, 6, 9, BookingStatus.Accepted, -2, units: 1),
                 Rental(equipment[1], farmer, 6, 10, BookingStatus.Pending, 0, "Need it for 5 acres of Aman paddy harvest."),
                 Rental(equipment[2], karim, 9, 11, BookingStatus.Pending, 0),
                 Rental(equipment[0], fatema, 14, 16, BookingStatus.Pending, -1, "Land preparation before potato season."));
@@ -287,6 +545,7 @@ namespace KrishiLink.DAL
                 new GodownBlockedDate { GodownId = godowns[2].Id, Date = today.AddDays(13) });
 
             db.GodownBookings.AddRange(
+                StorageBooking(godowns[0], farmer, 25, -28, 2, BookingStatus.Accepted, -30, "Seed potato storage."),
                 StorageBooking(godowns[1], motaleb, 100, -150, -90, BookingStatus.Completed, -158, "Boro season paddy."),
                 StorageBooking(godowns[0], farmer, 45, -140, -50, BookingStatus.Completed, -145),
                 StorageBooking(godowns[1], karim, 150, -100, -10, BookingStatus.Completed, -105, "Wheat storage before milling."),
@@ -316,8 +575,8 @@ namespace KrishiLink.DAL
             var completedRental = await db.EquipmentBookings.FirstAsync(b => b.EquipmentId == equipment[1].Id && b.Status == BookingStatus.Completed);
             var completedStorage = await db.GodownBookings.FirstAsync(b => b.GodownId == godowns[1].Id && b.Status == BookingStatus.Completed);
             db.BookingExpenses.AddRange(
-                new BookingExpense { BookingType = "Equipment", BookingId = completedRental.Id, OwnerId = eqOwner.Id, Amount = 2500, Note = "Diesel for harvester", RecordedOn = today.AddDays(-113) },
-                new BookingExpense { BookingType = "Godown", BookingId = completedStorage.Id, OwnerId = gdOwner.Id, Amount = 4500, Note = "Fumigation before intake", RecordedOn = today.AddDays(-149) });
+                new BookingExpense { BookingType = "Equipment", BookingId = completedRental.Id, OwnerId = eqOwner.Id, Amount = 2500, Note = "Diesel for harvester", Category = ExpenseCategories.Fuel, ExpenseDate = today.AddDays(-113), RecordedOn = today.AddDays(-113) },
+                new BookingExpense { BookingType = "Godown", BookingId = completedStorage.Id, OwnerId = gdOwner.Id, Amount = 4500, Note = "Fumigation before intake", Category = ExpenseCategories.Fumigation, ExpenseDate = today.AddDays(-149), RecordedOn = today.AddDays(-149) });
             await db.SaveChangesAsync();
 
             await SeedDemoPaymentsAndLedgerAsync(db);
@@ -518,7 +777,7 @@ namespace KrishiLink.DAL
             return user;
         }
 
-        private static Equipment Machine(string name, string category, decimal daily, decimal hourly, string location, string description, string image, int createdDaysAgo, double? lat = null, double? lng = null, string? district = null)
+        private static Equipment Machine(string name, string category, decimal daily, decimal hourly, string location, string description, string image, int createdDaysAgo, double? lat = null, double? lng = null, string? district = null, int quantity = 1)
         {
             var (defaultLat, defaultLng) = GeoLocationHelper.GetDistrictCoordinates(location);
             return new()
@@ -527,6 +786,7 @@ namespace KrishiLink.DAL
                 Category = category,
                 DailyRate = daily,
                 HourlyRate = hourly,
+                Quantity = quantity,
                 Location = location,
                 District = district ?? OnboardingOptions.GuessDistrict(location),
                 Latitude = lat ?? defaultLat,
@@ -557,12 +817,13 @@ namespace KrishiLink.DAL
             };
         }
 
-        private static EquipmentBooking Rental(Equipment e, ApplicationUser farmer, int startOffset, int endOffset, string status, int requestedOffset, string? note = null, string? reject = null)
+        private static EquipmentBooking Rental(Equipment e, ApplicationUser farmer, int startOffset, int endOffset, string status, int requestedOffset, string? note = null, string? reject = null, int units = 1)
         {
             var b = new EquipmentBooking
             {
                 EquipmentId = e.Id,
                 FarmerId = farmer.Id,
+                Units = units,
                 Status = status,
                 Note = note,
                 RejectReason = reject,
@@ -571,7 +832,7 @@ namespace KrishiLink.DAL
                 RequestedOn = DateTime.Now.AddDays(requestedOffset).AddHours(-2),
                 UpdatedOn = status == BookingStatus.Pending ? null : DateTime.Now.AddDays(requestedOffset).AddHours(4)
             };
-            Snapshot(b, e.DailyRate, BookingPricing.EquipmentGross(b.StartDate, b.EndDate, e.DailyRate));
+            Snapshot(b, e.DailyRate, BookingPricing.EquipmentGross(b.StartDate, b.EndDate, e.DailyRate, units));
             return b;
         }
 
@@ -667,13 +928,29 @@ namespace KrishiLink.DAL
             foreach (var b in storage.Where(b => b.Status == BookingStatus.Completed))
                 payments.Add((Pay(b, "Godown", PaymentStatus.Succeeded, b.StartDate.AddDays(-1).AddHours(11)), b));
 
-            // One paid + one unpaid Accepted booking per type so the demo shows both "Payment required" and "Paid".
-            var paidRental = rentals.Where(b => b.Status == BookingStatus.Accepted).OrderBy(b => b.StartDate).First();
-            var paidStorage = storage.Where(b => b.Status == BookingStatus.Accepted).OrderBy(b => b.StartDate).First();
-            payments.Add((Pay(paidRental, "Equipment", PaymentStatus.Succeeded, paidRental.UpdatedOn!.Value.AddHours(3)), paidRental));
-            payments.Add((Pay(paidStorage, "Godown", PaymentStatus.Succeeded, paidStorage.UpdatedOn!.Value.AddHours(2)), paidStorage));
+            // Configure demo payments for reminder scheduler rules (R1-R6):
+            var startTomorrowRental = rentals.FirstOrDefault(b => b.Status == BookingStatus.Accepted && b.StartDate.Date == DateTime.Today.AddDays(1));
+            if (startTomorrowRental != null)
+                payments.Add((Pay(startTomorrowRental, "Equipment", PaymentStatus.Succeeded, startTomorrowRental.UpdatedOn!.Value.AddHours(2)), startTomorrowRental));
 
-            var failedOn = rentals.Where(b => b.Status == BookingStatus.Accepted && b.Id != paidRental.Id).First();
+            var returnDueRental = rentals.FirstOrDefault(b => b.Status == BookingStatus.Accepted && b.EndDate.Date == DateTime.Today.AddDays(1));
+            if (returnDueRental != null)
+                payments.Add((Pay(returnDueRental, "Equipment", PaymentStatus.Succeeded, returnDueRental.UpdatedOn!.Value.AddHours(2)), returnDueRental));
+
+            var endingStorage = storage.FirstOrDefault(b => b.Status == BookingStatus.Accepted && b.EndDate.Date == DateTime.Today.AddDays(2));
+            if (endingStorage != null)
+                payments.Add((Pay(endingStorage, "Godown", PaymentStatus.Succeeded, endingStorage.UpdatedOn!.Value.AddHours(2)), endingStorage));
+
+            var overdueRental = rentals.FirstOrDefault(b => b.Status == BookingStatus.Accepted && b.EndDate.Date <= DateTime.Today.AddDays(-2));
+            if (overdueRental != null)
+                payments.Add((Pay(overdueRental, "Equipment", PaymentStatus.Succeeded, overdueRental.UpdatedOn!.Value.AddHours(2)), overdueRental));
+
+            var unpaidRental = rentals.FirstOrDefault(b => b.Status == BookingStatus.Accepted
+                && b.StartDate.Date >= DateTime.Today
+                && b.UpdatedOn <= DateTime.Now.AddHours(-48)
+                && !payments.Any(p => p.Booking.Id == b.Id));
+
+            var failedOn = unpaidRental ?? rentals.First(b => b.Status == BookingStatus.Accepted && !payments.Any(p => p.Booking.Id == b.Id));
             db.Payments.Add(Pay(failedOn, "Equipment", PaymentStatus.Failed, failedOn.UpdatedOn!.Value.AddHours(1), "Insufficient balance (simulated)"));
 
             foreach (var (p, b) in payments)
@@ -1330,5 +1607,177 @@ namespace KrishiLink.DAL
             await db.CropCalendarEntries.AddRangeAsync(entries);
             await db.SaveChangesAsync();
         }
+
+        private static async Task SeedDemoIntakeLotsAsync(ApplicationDbContext db)
+        {
+            if (await db.StorageIntakeLots.AnyAsync()) return;
+
+            var booking = await db.GodownBookings
+                .Include(b => b.Godown)
+                .Include(b => b.Farmer)
+                .FirstOrDefaultAsync(b => b.Status == BookingStatus.Paid || b.Status == BookingStatus.Completed);
+
+            if (booking == null) return;
+
+            var totalCapKg = (decimal)booking.StorageTons * 1000m;
+            decimal lot1Net, lot2Net;
+            int lot1Bags, lot2Bags;
+            decimal lot1BagWeight, lot2BagWeight;
+
+            if (totalCapKg >= 30000m)
+            {
+                lot1Net = 20000m;
+                lot1Bags = 400;
+                lot1BagWeight = 50m;
+
+                lot2Net = 10000m;
+                lot2Bags = 200;
+                lot2BagWeight = 50m;
+            }
+            else
+            {
+                lot1Net = Math.Round(totalCapKg * 0.50m, 0);
+                lot1Bags = Math.Max(1, (int)(lot1Net / 50m));
+                lot1BagWeight = Math.Round(lot1Net / lot1Bags, 1);
+
+                lot2Net = Math.Round(totalCapKg * 0.30m, 0);
+                lot2Bags = Math.Max(1, (int)(lot2Net / 50m));
+                lot2BagWeight = Math.Round(lot2Net / lot2Bags, 1);
+            }
+
+            var ownerId = booking.Godown?.OwnerId ?? string.Empty;
+            var year = booking.StartDate.Year;
+            var lot1 = new StorageIntakeLot
+            {
+                GodownBookingId = booking.Id,
+                ReceiptNumber = $"KL-WR-{year:D4}-00001",
+                IntakeDate = booking.StartDate.AddDays(1),
+                Crop = "Potato",
+                Variety = "Diamond",
+                Bags = lot1Bags,
+                BagWeightKg = lot1BagWeight,
+                NetWeightKg = lot1Net,
+                MoisturePercent = 12.5m,
+                Grade = IntakeGrades.A,
+                Remarks = "Chamber A, Stack 04. Inspected and verified sound.",
+                Status = IntakeLotStatus.Stored,
+                RecordedByUserId = ownerId,
+                RecordedAt = booking.StartDate.AddDays(1)
+            };
+
+            var lot2 = new StorageIntakeLot
+            {
+                GodownBookingId = booking.Id,
+                ReceiptNumber = $"KL-WR-{year:D4}-00002",
+                IntakeDate = booking.StartDate.AddDays(3),
+                Crop = "Potato",
+                Variety = "Cardinal",
+                Bags = lot2Bags,
+                BagWeightKg = lot2BagWeight,
+                NetWeightKg = lot2Net,
+                MoisturePercent = 13.0m,
+                Grade = IntakeGrades.B,
+                Remarks = "Chamber B, Stack 02. Grade B minor skin blemishes.",
+                Status = IntakeLotStatus.Stored,
+                RecordedByUserId = ownerId,
+                RecordedAt = booking.StartDate.AddDays(3)
+            };
+
+            db.StorageIntakeLots.AddRange(lot1, lot2);
+            await db.SaveChangesAsync();
+        }
+
+        private static async Task SeedDemoExpenseCategoriesAndGeneralExpensesAsync(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+        {
+            // Backfill categories and expense dates on existing demo booking expenses if unassigned
+            var existingExpenses = await db.BookingExpenses.ToListAsync();
+            foreach (var exp in existingExpenses)
+            {
+                if (string.IsNullOrEmpty(exp.Category) || exp.Category == ExpenseCategories.Other)
+                {
+                    if (exp.Note?.Contains("Diesel", StringComparison.OrdinalIgnoreCase) == true)
+                        exp.Category = ExpenseCategories.Fuel;
+                    else if (exp.Note?.Contains("Fumigation", StringComparison.OrdinalIgnoreCase) == true)
+                        exp.Category = ExpenseCategories.Fumigation;
+                }
+                if (exp.ExpenseDate == default)
+                {
+                    exp.ExpenseDate = exp.RecordedOn != default ? exp.RecordedOn : DateTime.UtcNow;
+                }
+            }
+            await db.SaveChangesAsync();
+
+            if (await db.BookingExpenses.AnyAsync(e => e.BookingId == null))
+                return;
+
+            var eqOwner = await userManager.FindByEmailAsync("equipment@krishilink.com");
+            var gdOwner = await userManager.FindByEmailAsync("godown@krishilink.com");
+            var today = DateTime.UtcNow.Date;
+
+            var generalExpenses = new List<BookingExpense>();
+
+            if (eqOwner != null)
+            {
+                generalExpenses.Add(new BookingExpense
+                {
+                    BookingType = "Equipment",
+                    BookingId = null,
+                    ListingId = null,
+                    OwnerId = eqOwner.Id,
+                    Category = ExpenseCategories.Repair,
+                    Amount = 3200m,
+                    Note = "Generator servicing & oil change",
+                    ExpenseDate = today.AddDays(-20),
+                    RecordedOn = today.AddDays(-20)
+                });
+                generalExpenses.Add(new BookingExpense
+                {
+                    BookingType = "Equipment",
+                    BookingId = null,
+                    ListingId = null,
+                    OwnerId = eqOwner.Id,
+                    Category = ExpenseCategories.Other,
+                    Amount = 6500m,
+                    Note = "Commercial vehicle insurance & fitness renewal",
+                    ExpenseDate = today.AddDays(-55),
+                    RecordedOn = today.AddDays(-55)
+                });
+            }
+
+            if (gdOwner != null)
+            {
+                generalExpenses.Add(new BookingExpense
+                {
+                    BookingType = "Godown",
+                    BookingId = null,
+                    ListingId = null,
+                    OwnerId = gdOwner.Id,
+                    Category = ExpenseCategories.Repair,
+                    Amount = 4500m,
+                    Note = "Roof waterproofing repair & gutter clearing",
+                    ExpenseDate = today.AddDays(-35),
+                    RecordedOn = today.AddDays(-35)
+                });
+                generalExpenses.Add(new BookingExpense
+                {
+                    BookingType = "Godown",
+                    BookingId = null,
+                    ListingId = null,
+                    OwnerId = gdOwner.Id,
+                    Category = ExpenseCategories.Utilities,
+                    Amount = 5800m,
+                    Note = "Warehouse electricity & ventilation fans",
+                    ExpenseDate = today.AddDays(-15),
+                    RecordedOn = today.AddDays(-15)
+                });
+            }
+
+            if (generalExpenses.Any())
+            {
+                db.BookingExpenses.AddRange(generalExpenses);
+                await db.SaveChangesAsync();
+            }
+        }
     }
 }
+

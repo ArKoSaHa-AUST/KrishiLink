@@ -4,6 +4,7 @@ using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace KrishiLink.Controllers
 {
@@ -12,16 +13,28 @@ namespace KrishiLink.Controllers
     {
         private readonly IGodownService _godowns;
         private readonly IFileStorageService _files;
+        private readonly ISavedSearchService _savedSearches;
+        private readonly IStorageIntakeService _intakeService;
+        private readonly ILogger<GodownOwnerController> _logger;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
         public GodownOwnerController(
             IGodownService godowns,
             IFileStorageService files,
+            ISavedSearchService savedSearches,
+            IStorageIntakeService intakeService,
+            ILogger<GodownOwnerController> logger,
             IGodownRevenueService revenueService,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IStringLocalizer<SharedResource> localizer)
             : base(revenueService, userManager)
         {
             _godowns = godowns;
             _files = files;
+            _savedSearches = savedSearches;
+            _intakeService = intakeService;
+            _logger = logger;
+            _localizer = localizer;
         }
 
         /// <summary>GET: /GodownOwner — dashboard with godowns, capacity utilisation and pending requests.</summary>
@@ -123,6 +136,18 @@ namespace KrishiLink.Controllers
             if (!await _godowns.SaveListingAsync(OwnerId, model))
                 return NotFound();
 
+            if (!isEdit && model.Id > 0)
+            {
+                try
+                {
+                    await _savedSearches.EvaluateForListingAsync(ListingTypes.Godown, model.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to evaluate saved search alerts for newly created godown listing {ListingId}", model.Id);
+                }
+            }
+
             TempData["SuccessMessage"] = $"Storage facility '{model.Name}' successfully {(isEdit ? "updated" : "listed")}!";
             return RedirectToAction(nameof(Index));
         }
@@ -146,6 +171,150 @@ namespace KrishiLink.Controllers
                 return NotFound();
 
             return RedirectToAction(nameof(Availability), new { id = listingId, month = month.ToString("yyyy-MM-dd"), saved = true });
+        }
+
+        /// <summary>POST: /GodownOwner/BlockRange — bulk blocks a date range and optional recurring weekdays.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BlockRange(BulkAvailabilityInputModel m)
+        {
+            var res = await _godowns.BlockRangeAsync(OwnerId, m.ListingId, m.From, m.To, m.DaysOfWeek, m.Reason);
+            if (!res.Found) return NotFound();
+
+            if (!string.IsNullOrEmpty(res.Error))
+            {
+                TempData["ErrorMessage"] = _localizer[res.Error].Value;
+            }
+            else
+            {
+                if (res.SkippedBooked > 0)
+                {
+                    TempData["SuccessMessage"] = _localizer["Blocked {0} day(s). Skipped {1} day(s) already booked by farmers.", res.Changed, res.SkippedBooked].Value;
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = _localizer["Blocked {0} day(s).", res.Changed].Value;
+                }
+            }
+
+            var targetMonth = m.Month == default ? m.From : m.Month;
+            return RedirectToAction(nameof(Availability), new { id = m.ListingId, month = targetMonth.ToString("yyyy-MM-dd") });
+        }
+
+        /// <summary>POST: /GodownOwner/UnblockRange — bulk unblocks a date range and optional recurring weekdays.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UnblockRange(BulkAvailabilityInputModel m)
+        {
+            var res = await _godowns.UnblockRangeAsync(OwnerId, m.ListingId, m.From, m.To, m.DaysOfWeek);
+            if (!res.Found) return NotFound();
+
+            if (!string.IsNullOrEmpty(res.Error))
+            {
+                TempData["ErrorMessage"] = _localizer[res.Error].Value;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = _localizer["Unblocked {0} day(s).", res.Changed].Value;
+            }
+
+            var targetMonth = m.Month == default ? m.From : m.Month;
+            return RedirectToAction(nameof(Availability), new { id = m.ListingId, month = targetMonth.ToString("yyyy-MM-dd") });
+        }
+
+        /// <summary>POST: /GodownOwner/RecordIntake — records a physical produce intake lot against a paid storage booking.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RecordIntake(IntakeLotInput input, string? returnUrl = null)
+        {
+            var (error, lotId) = await _intakeService.RecordAsync(OwnerId, input);
+            if (!string.IsNullOrEmpty(error))
+            {
+                TempData["ErrorMessage"] = _localizer[error].Value;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = _localizer["Warehouse receipt issued successfully."].Value;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(Requests));
+        }
+
+        /// <summary>POST: /GodownOwner/UpdateIntake — edits an existing Stored intake lot.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateIntake(int lotId, IntakeLotInput input, string? returnUrl = null)
+        {
+            var error = await _intakeService.UpdateAsync(OwnerId, lotId, input);
+            if (!string.IsNullOrEmpty(error))
+            {
+                TempData["ErrorMessage"] = _localizer[error].Value;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = _localizer["Intake lot updated successfully."].Value;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(Requests));
+        }
+
+        /// <summary>POST: /GodownOwner/DeleteIntake — deletes an unreleased intake lot.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteIntake(int lotId, string? returnUrl = null)
+        {
+            var error = await _intakeService.DeleteAsync(OwnerId, lotId);
+            if (!string.IsNullOrEmpty(error))
+            {
+                TempData["ErrorMessage"] = _localizer[error].Value;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = _localizer["Intake lot deleted successfully."].Value;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(Requests));
+        }
+
+        /// <summary>POST: /GodownOwner/ReleaseIntake — marks an intake lot as released to the farmer or representative.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReleaseIntake(int lotId, string releasedTo, string? remarks = null, string? returnUrl = null)
+        {
+            var error = await _intakeService.ReleaseAsync(OwnerId, lotId, releasedTo, remarks);
+            if (!string.IsNullOrEmpty(error))
+            {
+                TempData["ErrorMessage"] = _localizer[error].Value;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = _localizer["Goods released and farmer notified."].Value;
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
+
+            return RedirectToAction(nameof(Requests));
+        }
+
+        /// <summary>GET: /GodownOwner/WarehouseReceipt/5 — download official Warehouse Receipt PDF.</summary>
+        [HttpGet]
+        public async Task<IActionResult> WarehouseReceipt(int id)
+        {
+            var result = await _intakeService.GetReceiptPdfAsync(id, OwnerId, isOwner: true);
+            if (result is null)
+                return NotFound();
+
+            return File(result.Value.Content, "application/pdf", result.Value.FileName);
         }
     }
 }

@@ -11,6 +11,7 @@ namespace KrishiLink.Models.Entities
         public const string BookingRejected = "BookingRejected";
         public const string BookingCompleted = "BookingCompleted";
         public const string BookingCancelled = "BookingCancelled";
+        public const string BookingModified = "BookingModified";
         public const string PayoutProcessed = "PayoutProcessed";
         public const string PaymentReceived = "PaymentReceived";
         public const string PayoutCompleted = "PayoutCompleted";
@@ -18,6 +19,8 @@ namespace KrishiLink.Models.Entities
         public const string WeatherSuggestion = "WeatherSuggestion";
         public const string Verification = "Verification";
         public const string Loyalty = "Loyalty";
+        public const string Reminder = "Reminder";
+        public const string SavedSearchAlert = "SavedSearchAlert";
         public const string System = "System";
     }
 

@@ -56,6 +56,15 @@ namespace KrishiLink.Models.ViewModels
         public string ListingDetailUrl { get; set; } = "#";
         public int ListingId { get; set; }
         public bool CanCancel { get; set; }
+        public bool CanModify { get; set; }
+        public int Units { get; set; } = 1;
+        public double StorageTons { get; set; }
+        public int MaxUnits { get; set; } = 1;
+        public int MinDays { get; set; } = 1;
+        public int ModificationCount { get; set; } = 0;
+        public string? PreviousDetails { get; set; }
+        public int? HarvestPlanId { get; set; }
+        public string? HarvestPlanName { get; set; }
         public List<BookingTimelineStep> Timeline { get; set; } = new();
 
         // Review Information (For Completed bookings)
@@ -63,6 +72,9 @@ namespace KrishiLink.Models.ViewModels
         public int? ReviewRating { get; set; }
         public string? ReviewComment { get; set; }
         public DateTime? ReviewedAt { get; set; }
+
+        /// <summary>Recorded intake lots and warehouse receipts (Godown bookings only).</summary>
+        public List<StorageIntakeLotItemViewModel> IntakeLots { get; set; } = new();
     }
 
     public class BookingHistoryViewModel

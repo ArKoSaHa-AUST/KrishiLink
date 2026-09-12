@@ -67,6 +67,7 @@ builder.Services.AddScoped<ILedgerRepository, LedgerRepository>();
 
 // Business logic
 builder.Services.Configure<RevenueOptions>(builder.Configuration.GetSection(RevenueOptions.SectionName));
+builder.Services.Configure<PricingOptions>(builder.Configuration.GetSection(PricingOptions.SectionName));
 builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection(UploadOptions.SectionName));
 builder.Services.Configure<PaymentsOptions>(builder.Configuration.GetSection(PaymentsOptions.SectionName));
 builder.Services.PostConfigure<PaymentsOptions>(o =>
@@ -76,9 +77,15 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(optio
     options.MultipartBodyLengthLimit = 32 * 1024 * 1024; // 32 MB
 });
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.AddScoped<IFavoriteService, FavoriteService>();
+builder.Services.AddScoped<ISavedSearchService, SavedSearchService>();
 builder.Services.AddScoped<IEquipmentService, EquipmentService>();
 builder.Services.AddScoped<IGodownService, GodownService>();
+builder.Services.AddScoped<IStorageIntakeService, StorageIntakeService>();
+builder.Services.AddScoped<IReceiptDocumentService, ReceiptDocumentService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IHarvestPlanService, HarvestPlanService>();
+builder.Services.AddScoped<IFarmerProfileService, FarmerProfileService>();
 builder.Services.AddScoped<IGodownRevenueService, GodownRevenueService>();
 builder.Services.AddScoped<IEquipmentRevenueService, EquipmentRevenueService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
@@ -120,9 +127,15 @@ else
 builder.Services.AddSingleton<EmailDispatchService>();
 builder.Services.AddSingleton<IEmailQueue>(sp => sp.GetRequiredService<EmailDispatchService>());
 builder.Services.AddHostedService(sp => sp.GetRequiredService<EmailDispatchService>());
+builder.Services.Configure<ReminderOptions>(builder.Configuration.GetSection(ReminderOptions.SectionName));
+builder.Services.AddScoped<IReminderService, ReminderService>();
+builder.Services.Configure<AlertOptions>(builder.Configuration.GetSection(AlertOptions.SectionName));
+
 builder.Services.AddHostedService<MonthlyStatementScheduler>();
 builder.Services.AddHostedService<PayoutSettlementScheduler>();
 builder.Services.AddHostedService<WeatherSuggestionScheduler>();
+builder.Services.AddHostedService<ReminderScheduler>();
+builder.Services.AddHostedService<SavedSearchAlertScheduler>();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

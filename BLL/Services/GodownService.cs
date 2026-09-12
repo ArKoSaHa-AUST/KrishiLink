@@ -15,7 +15,7 @@ namespace KrishiLink.BLL.Services
 
         /// <summary>Creates a pending storage request. Returns a user-facing error message, or null on success.</summary>
         Task<string?> RequestStorageAsync(string farmerId, GodownDetailViewModel request, string? promoCode = null, int? pointsToRedeem = null);
-        Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel request, string? promoCode = null, int? pointsToRedeem = null);
+        Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel request, string? promoCode = null, int? pointsToRedeem = null, int? harvestPlanId = null, string? planName = null);
 
         // Owner
         Task<GodownOwnerDashboardViewModel> GetOwnerDashboardAsync(string ownerId);
@@ -31,6 +31,9 @@ namespace KrishiLink.BLL.Services
         Task<bool> SaveListingAsync(string ownerId, GodownListingViewModel model);
         Task<ManageAvailabilityViewModel?> GetAvailabilityAsync(string ownerId, int godownId, DateTime? month);
         Task<bool> SaveAvailabilityAsync(string ownerId, int godownId, DateTime month, IEnumerable<DateTime> blockedDates);
+        Task<BulkAvailabilityResult> BlockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek, string? reason);
+        Task<BulkAvailabilityResult> UnblockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek);
+        Task<string?> CheckAvailabilityAsync(int godownId, double tons, DateTime start, DateTime end, int? excludeBookingId = null);
     }
 
     public class GodownService : IGodownService
@@ -47,7 +50,11 @@ namespace KrishiLink.BLL.Services
         private readonly IBadgeService _badges;
         private readonly ILeaderboardService _leaderboard;
         private readonly ILoyaltyService _loyalty;
+        private readonly IFarmerProfileService _farmerProfile;
         private readonly ILedgerRepository _ledger;
+        private readonly IFavoriteService _favoriteService;
+        private readonly IRepository<StorageIntakeLot> _intakeLots;
+        private readonly IStorageIntakeService _intakeService;
         private readonly RevenueOptions _revenue;
 
         public GodownService(
@@ -61,7 +68,11 @@ namespace KrishiLink.BLL.Services
             IBadgeService badges,
             ILeaderboardService leaderboard,
             ILoyaltyService loyalty,
+            IFarmerProfileService farmerProfile,
             ILedgerRepository ledger,
+            IFavoriteService favoriteService,
+            IRepository<StorageIntakeLot> intakeLots,
+            IStorageIntakeService intakeService,
             IOptions<RevenueOptions> revenue)
         {
             _godowns = godowns;
@@ -74,7 +85,11 @@ namespace KrishiLink.BLL.Services
             _badges = badges;
             _leaderboard = leaderboard;
             _loyalty = loyalty;
+            _farmerProfile = farmerProfile;
             _ledger = ledger;
+            _favoriteService = favoriteService;
+            _intakeLots = intakeLots;
+            _intakeService = intakeService;
             _revenue = revenue.Value;
         }
 
@@ -210,6 +225,16 @@ namespace KrishiLink.BLL.Services
                 CreatedAt = g.CreatedAt
             }).ToList();
 
+            HashSet<int> favoriteIds = new();
+            if (!string.IsNullOrWhiteSpace(c.CurrentUserId))
+            {
+                favoriteIds = await _favoriteService.GetIdsAsync(c.CurrentUserId, ListingTypes.Godown);
+                foreach (var item in items)
+                {
+                    item.IsFavorite = favoriteIds.Contains(item.Id);
+                }
+            }
+
             var model = new GodownBrowseViewModel
             {
                 SearchTerm = c.SearchTerm,
@@ -223,6 +248,7 @@ namespace KrishiLink.BLL.Services
                 AvailableEndDate = c.AvailableEndDate,
                 SortBy = sort,
                 GodownList = items,
+                FavoriteIds = favoriteIds,
                 TotalCount = totalCount,
                 Page = page,
                 PageSize = pageSize,
@@ -334,6 +360,9 @@ namespace KrishiLink.BLL.Services
             // Populate Farmer Loyalty Context if user is authenticated
             if (!string.IsNullOrWhiteSpace(currentUserId))
             {
+                var userFavs = await _favoriteService.GetIdsAsync(currentUserId, ListingTypes.Godown);
+                model.IsFavorite = userFavs.Contains(id);
+
                 var farmer = await _users.FirstOrDefaultAsync(u => u.Id == currentUserId);
                 if (farmer != null)
                 {
@@ -352,7 +381,7 @@ namespace KrishiLink.BLL.Services
             return res.Error;
         }
 
-        public async Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel r, string? promoCode = null, int? pointsToRedeem = null)
+        public async Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel r, string? promoCode = null, int? pointsToRedeem = null, int? harvestPlanId = null, string? planName = null)
         {
             if (r.StartDate is null || r.EndDate is null) return ("Please choose a start and end date.", null);
             var s = r.StartDate.Value.Date;
@@ -402,7 +431,8 @@ namespace KrishiLink.BLL.Services
                 RequestedOn = DateTime.Now,
                 DiscountAmount = discountAmount,
                 AppliedPromoCode = appliedPromo,
-                PointsUsed = pointsUsed
+                PointsUsed = pointsUsed,
+                HarvestPlanId = harvestPlanId
             };
 
             await _bookings.AddAsync(newBooking);
@@ -425,13 +455,18 @@ namespace KrishiLink.BLL.Services
             // Notify godown owner of new pending storage request
             var farmer = await _users.FirstOrDefaultAsync(u => u.Id == farmerId);
             var farmerName = farmer?.FullName ?? "A farmer";
+            var hasPlan = !string.IsNullOrWhiteSpace(planName);
             await _notifications.NotifyAsync(new NotificationRequest
             {
                 UserId = g.OwnerId,
                 Type = NotificationTypes.BookingRequest,
                 TitleKey = "New Godown Storage Request",
-                MessageKey = "{0} requested storage for {1} tons in {2} from {3} to {4}.",
-                Args = new object[] { farmerName, r.RequestedCapacityTons, g.Name, $"{s:dd MMM yyyy}", $"{t:dd MMM yyyy}" },
+                MessageKey = hasPlan
+                    ? "{0} requested {1} tons of storage at {2} from {3} to {4} as part of harvest plan \"{5}\"."
+                    : "{0} requested storage for {1} tons in {2} from {3} to {4}.",
+                Args = hasPlan
+                    ? new object[] { farmerName, r.RequestedCapacityTons, g.Name, $"{s:dd MMM yyyy}", $"{t:dd MMM yyyy}", planName!.Trim() }
+                    : new object[] { farmerName, r.RequestedCapacityTons, g.Name, $"{s:dd MMM yyyy}", $"{t:dd MMM yyyy}" },
                 LinkUrl = AppLinks.OwnerRequests("godown", newBooking.Id),
                 DedupeKey = $"booking:godown:{newBooking.Id}:Requested",
                 SendEmail = false
@@ -465,9 +500,106 @@ namespace KrishiLink.BLL.Services
         public async Task<GodownBookingRequestsViewModel> GetOwnerRequestsAsync(string ownerId)
         {
             var bookings = await OwnerBookingsQuery(ownerId).ToListAsync();
+            var items = bookings.Select(ToRequestItem).OrderByDescending(r => r.RequestedOn).ToList();
+
+            var pendingItems = items.Where(i => i.Status == BookingStatus.Pending).ToList();
+            if (pendingItems.Any())
+            {
+                var godownIds = pendingItems.Select(p => p.GodownId).Distinct().ToList();
+                var allBlocked = await _blockedDates.Query()
+                    .Where(d => godownIds.Contains(d.GodownId))
+                    .ToListAsync();
+
+                foreach (var pending in pendingItems)
+                {
+                    var source = bookings.First(b => b.Id == pending.Id);
+                    var blocked = allBlocked
+                        .Where(d => d.GodownId == source.GodownId && d.Date >= source.StartDate && d.Date <= source.EndDate)
+                        .OrderBy(d => d.Date)
+                        .FirstOrDefault();
+
+                    if (blocked != null)
+                    {
+                        pending.HasConflict = true;
+                        pending.ConflictHint = $"Overlaps a date you blocked ({blocked.Date:dd MMM yyyy})";
+                    }
+                    else if (source.Godown != null)
+                    {
+                        var conflict = await FindConflictAsync(source.Godown, source.StorageTons, source.StartDate, source.EndDate, excludeBookingId: source.Id);
+                        if (conflict != null)
+                        {
+                            pending.HasConflict = true;
+                            pending.ConflictHint = conflict;
+                        }
+                    }
+                }
+            }
+
+            var farmerIds = items.Select(i => i.FarmerId).Where(id => !string.IsNullOrEmpty(id)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (farmerIds.Count > 0)
+            {
+                var summaries = await _farmerProfile.GetSummariesAsync(farmerIds);
+                foreach (var item in items)
+                {
+                    if (!string.IsNullOrEmpty(item.FarmerId) && summaries.TryGetValue(item.FarmerId, out var s))
+                    {
+                        item.FarmerCompleted = s.Completed;
+                        item.FarmerCancellationRate = s.CancellationRate;
+                        item.FarmerMemberSince = s.MemberSince;
+                        item.FarmerTrustLevel = s.TrustLevel;
+                    }
+                }
+            }
+
+            var bookingIds = items.Select(i => i.Id).ToList();
+            var intakeSummaries = await _intakeService.SummariseAsync(bookingIds);
+            var intakeLots = await _intakeLots.Query()
+                .Where(l => bookingIds.Contains(l.GodownBookingId))
+                .OrderByDescending(l => l.IntakeDate)
+                .ThenByDescending(l => l.Id)
+                .ToListAsync();
+
+            var lotsByBooking = intakeLots.GroupBy(l => l.GodownBookingId).ToDictionary(
+                g => g.Key,
+                g => g.Select(l => new StorageIntakeLotItemViewModel
+                {
+                    Id = l.Id,
+                    GodownBookingId = l.GodownBookingId,
+                    ReceiptNumber = l.ReceiptNumber,
+                    IntakeDate = l.IntakeDate,
+                    Crop = l.Crop,
+                    Variety = l.Variety,
+                    Bags = l.Bags,
+                    BagWeightKg = l.BagWeightKg,
+                    NetWeightKg = l.NetWeightKg,
+                    MoisturePercent = l.MoisturePercent,
+                    Grade = l.Grade,
+                    Remarks = l.Remarks,
+                    Status = l.Status,
+                    ReleasedOn = l.ReleasedOn,
+                    ReleasedTo = l.ReleasedTo,
+                    ReleaseRemarks = l.ReleaseRemarks,
+                    RecordedAt = l.RecordedAt,
+                    UpdatedAt = l.UpdatedAt,
+                    ReceiptPdfUrl = AppLinks.OwnerWarehouseReceipt(l.Id)
+                }).ToList());
+
+            foreach (var item in items)
+            {
+                if (intakeSummaries.TryGetValue(item.Id, out var sum))
+                {
+                    item.StoredTonsActual = sum.StoredTons;
+                    item.IntakeLotCount = sum.LotCount;
+                }
+                if (lotsByBooking.TryGetValue(item.Id, out var bLots))
+                {
+                    item.IntakeLots = bLots;
+                }
+            }
+
             return new GodownBookingRequestsViewModel
             {
-                Requests = bookings.Select(ToRequestItem).OrderByDescending(r => r.RequestedOn).ToList(),
+                Requests = items,
                 Godowns = await OwnerGodownsAsync(ownerId)
             };
         }
@@ -760,6 +892,28 @@ namespace KrishiLink.BLL.Services
             var first = new DateTime((month ?? DateTime.Today).Year, (month ?? DateTime.Today).Month, 1);
             var last = first.AddMonths(1).AddDays(-1);
 
+            var blockedRows = await _blockedDates.Query()
+                .Where(d => d.GodownId == godownId && d.Date >= first && d.Date <= last)
+                .Select(d => new { d.Date, d.Reason })
+                .ToListAsync();
+
+            var today = DateTime.Today;
+            var horizonEnd = today.AddMonths(12);
+            var upcomingBlocked = await _blockedDates.Query()
+                .Where(d => d.GodownId == godownId && d.Date >= today && d.Date <= horizonEnd)
+                .OrderBy(d => d.Date)
+                .Select(d => new { d.Date, d.Reason })
+                .ToListAsync();
+
+            var upcomingPeriods = DateRanges.Group(upcomingBlocked.Select(d => (d.Date, d.Reason)))
+                .Select(g => new BlockedPeriodItem
+                {
+                    From = g.From,
+                    To = g.To,
+                    Reason = g.Reason
+                })
+                .ToList();
+
             return new ManageAvailabilityViewModel
             {
                 ListingId = g.Id,
@@ -771,10 +925,9 @@ namespace KrishiLink.BLL.Services
                 Month = first,
                 MonthName = first.ToString("MMMM yyyy"),
                 FarmerBookedDates = (await StoredDaysAsync(godownId, first, last)).ToList(),
-                OwnerBlockedDates = await _blockedDates.Query()
-                    .Where(d => d.GodownId == godownId && d.Date >= first && d.Date <= last)
-                    .Select(d => d.Date)
-                    .ToListAsync()
+                OwnerBlockedDates = blockedRows.Select(d => d.Date).ToList(),
+                BlockedReasonsByDate = blockedRows.ToDictionary(d => d.Date.ToString("yyyy-MM-dd"), d => d.Reason),
+                UpcomingBlockedPeriods = upcomingPeriods
             };
         }
 
@@ -785,20 +938,142 @@ namespace KrishiLink.BLL.Services
             var first = new DateTime(month.Year, month.Month, 1);
             var last = first.AddMonths(1).AddDays(-1);
 
-            _blockedDates.RemoveRange(await _blockedDates.QueryTracked()
+            var current = await _blockedDates.QueryTracked()
                 .Where(d => d.GodownId == godownId && d.Date >= first && d.Date <= last)
-                .ToListAsync());
+                .ToListAsync();
 
-            // Days with goods already stored cannot be closed by the owner
             var stored = await StoredDaysAsync(godownId, first, last);
-            foreach (var date in blockedDates.Select(d => d.Date).Distinct().Where(d => d >= first && d <= last && !stored.Contains(d)))
+
+            var targetDates = blockedDates
+                .Select(d => d.Date)
+                .Distinct()
+                .Where(d => d >= first && d <= last && !stored.Contains(d))
+                .ToHashSet();
+
+            var toRemove = current.Where(c => !targetDates.Contains(c.Date)).ToList();
+            _blockedDates.RemoveRange(toRemove);
+
+            var currentDates = current.Select(c => c.Date).ToHashSet();
+            foreach (var date in targetDates.Where(d => !currentDates.Contains(d)))
+            {
                 await _blockedDates.AddAsync(new GodownBlockedDate { GodownId = godownId, Date = date });
+            }
 
             await _blockedDates.SaveChangesAsync();
             return true;
         }
 
+        public async Task<BulkAvailabilityResult> BlockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek, string? reason)
+        {
+            var f = from.Date;
+            if (f < DateTime.Today) f = DateTime.Today;
+            var t = to.Date;
+
+            if (t < f)
+                return new BulkAvailabilityResult(true, 0, 0, 0, "The end date must be on or after the start date.");
+
+            if ((t - f).TotalDays + 1 > DateRanges.MaxBulkDays)
+                return new BulkAvailabilityResult(true, 0, 0, 0, "You can block at most 366 days at a time.");
+
+            var g = await _godowns.Query().FirstOrDefaultAsync(x => x.Id == listingId && x.OwnerId == ownerId);
+            if (g is null)
+                return new BulkAvailabilityResult(false, 0, 0, 0, null);
+
+            var existingBlocked = (await _blockedDates.Query()
+                .Where(d => d.GodownId == listingId && d.Date >= f && d.Date <= t)
+                .Select(d => d.Date)
+                .ToListAsync())
+                .ToHashSet();
+
+            var stored = await StoredDaysAsync(listingId, f, t);
+
+            var days = DateRanges.Expand(f, t, daysOfWeek).ToList();
+            int changed = 0, skippedBooked = 0, alreadyInState = 0;
+
+            var cleanReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+            if (cleanReason?.Length > 100) cleanReason = cleanReason[..100];
+
+            foreach (var d in days)
+            {
+                if (stored.Contains(d))
+                {
+                    skippedBooked++;
+                }
+                else if (existingBlocked.Contains(d))
+                {
+                    alreadyInState++;
+                }
+                else
+                {
+                    await _blockedDates.AddAsync(new GodownBlockedDate
+                    {
+                        GodownId = listingId,
+                        Date = d,
+                        Reason = cleanReason
+                    });
+                    changed++;
+                }
+            }
+
+            if (changed > 0)
+            {
+                try
+                {
+                    await _blockedDates.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex) when (DbErrors.IsUniqueViolation(ex))
+                {
+                    return new BulkAvailabilityResult(true, 0, skippedBooked, alreadyInState, "A conflicting operation already modified blocked dates for these days. Please refresh and try again.");
+                }
+            }
+
+            return new BulkAvailabilityResult(true, changed, skippedBooked, alreadyInState, null);
+        }
+
+        public async Task<BulkAvailabilityResult> UnblockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek)
+        {
+            var f = from.Date;
+            if (f < DateTime.Today) f = DateTime.Today;
+            var t = to.Date;
+
+            if (t < f)
+                return new BulkAvailabilityResult(true, 0, 0, 0, "The end date must be on or after the start date.");
+
+            if ((t - f).TotalDays + 1 > DateRanges.MaxBulkDays)
+                return new BulkAvailabilityResult(true, 0, 0, 0, "You can block at most 366 days at a time.");
+
+            var g = await _godowns.Query().FirstOrDefaultAsync(x => x.Id == listingId && x.OwnerId == ownerId);
+            if (g is null)
+                return new BulkAvailabilityResult(false, 0, 0, 0, null);
+
+            var query = _blockedDates.QueryTracked()
+                .Where(d => d.GodownId == listingId && d.Date >= f && d.Date <= t);
+
+            var rows = await query.ToListAsync();
+            var filterDays = daysOfWeek != null && daysOfWeek.Count > 0;
+            if (filterDays)
+            {
+                rows = rows.Where(r => daysOfWeek!.Contains(r.Date.DayOfWeek)).ToList();
+            }
+
+            int count = rows.Count;
+            if (count > 0)
+            {
+                _blockedDates.RemoveRange(rows);
+                await _blockedDates.SaveChangesAsync();
+            }
+
+            return new BulkAvailabilityResult(true, count, 0, 0, null);
+        }
+
         // ---------------------------------------------------------------- Helpers
+
+        public async Task<string?> CheckAvailabilityAsync(int godownId, double tons, DateTime start, DateTime end, int? excludeBookingId = null)
+        {
+            var godown = await _godowns.GetByIdAsync(godownId);
+            if (godown is null) return "Godown not found.";
+            return await FindConflictAsync(godown, tons, start, end, excludeBookingId);
+        }
 
         /// <summary>
         /// The single source of truth for godown over-booking: a blocked date inside [start, end], or requested tons
@@ -865,9 +1140,17 @@ namespace KrishiLink.BLL.Services
                 })
                 .ToListAsync();
 
+            var godownIds = rows.Select(g => g.Id).ToList();
+            var storedTonsPerGodown = await _intakeLots.Query()
+                .Where(l => l.Status == IntakeLotStatus.Stored && godownIds.Contains(l.Booking!.GodownId))
+                .GroupBy(l => l.Booking!.GodownId)
+                .Select(g => new { GodownId = g.Key, StoredKg = g.Sum(l => l.NetWeightKg) })
+                .ToDictionaryAsync(x => x.GodownId, x => (double)(x.StoredKg / 1000m));
+
             return rows.Select(g =>
             {
                 var available = Math.Max(0, g.CapacityInTons - g.Occupied);
+                storedTonsPerGodown.TryGetValue(g.Id, out var actualStored);
                 return new OwnerGodownItem
                 {
                     Id = g.Id,
@@ -875,6 +1158,7 @@ namespace KrishiLink.BLL.Services
                     StorageType = g.StorageType,
                     TotalCapacityTons = g.CapacityInTons,
                     AvailableCapacityTons = available,
+                    StoredTonsActual = actualStored,
                     Status = !g.IsActive ? "Inactive" : available <= 0 ? "Full" : "Active"
                 };
             }).ToList();
@@ -885,22 +1169,49 @@ namespace KrishiLink.BLL.Services
                 .Include(b => b.Godown)
                 .Include(b => b.Farmer)
                 .Include(b => b.Payment)
+                .Include(b => b.HarvestPlan)
+                    .ThenInclude(p => p!.Items)
                 .Where(b => b.Godown!.OwnerId == ownerId);
 
-        private static GodownBookingRequestItem ToRequestItem(GodownBooking b) => new()
+        private static GodownBookingRequestItem ToRequestItem(GodownBooking b)
         {
-            Id = b.Id,
-            FarmerName = string.IsNullOrWhiteSpace(b.Farmer?.FullName) ? "Farmer" : b.Farmer!.FullName,
-            GodownId = b.GodownId,
-            GodownName = b.Godown?.Name ?? string.Empty,
-            RequestedCapacityTons = b.StorageTons,
-            DateRange = ListingFormat.DateRange(b.StartDate, b.EndDate),
-            Note = b.Note,
-            Status = b.Status,
-            RejectReason = b.RejectReason,
-            RequestedOn = b.RequestedOn,
-            AgreedGross = b.AgreedGross ?? (b.Godown is null ? 0 : BookingPricing.GodownGross(b.StartDate, b.EndDate, b.StorageTons, b.Godown.PricePerTonPerMonth)),
-            PaymentReference = b.Payment?.Status == PaymentStatus.Succeeded ? b.Payment.Reference : null
-        };
+            var plan = b.HarvestPlan;
+            string? otherItemsText = null;
+            if (plan?.Items != null)
+            {
+                var others = plan.Items
+                    .Where(i => i.BookingId != b.Id)
+                    .Select(i => i.ItemType == HarvestPlanItemType.Equipment
+                        ? $"{i.Units}x Equipment ({ListingFormat.DateRange(i.StartDate, i.EndDate)})"
+                        : $"{i.Tons}T Storage ({ListingFormat.DateRange(i.StartDate, i.EndDate)})")
+                    .ToList();
+                otherItemsText = others.Count > 0
+                    ? "Also in plan: " + string.Join(", ", others)
+                    : "Single item in plan";
+            }
+
+            return new GodownBookingRequestItem
+            {
+                Id = b.Id,
+                FarmerId = b.FarmerId,
+                FarmerName = string.IsNullOrWhiteSpace(b.Farmer?.FullName) ? "Farmer" : b.Farmer!.FullName,
+                GodownId = b.GodownId,
+                GodownName = b.Godown?.Name ?? string.Empty,
+                RequestedCapacityTons = b.StorageTons,
+                DateRange = ListingFormat.DateRange(b.StartDate, b.EndDate),
+                Note = b.Note,
+                Status = b.Status,
+                RejectReason = b.RejectReason,
+                RequestedOn = b.RequestedOn,
+                AgreedGross = b.AgreedGross ?? (b.Godown is null ? 0 : BookingPricing.GodownGross(b.StartDate, b.EndDate, b.StorageTons, b.Godown.PricePerTonPerMonth)),
+                PaymentReference = b.Payment?.Status == PaymentStatus.Succeeded ? b.Payment.Reference : null,
+                ModificationCount = b.ModificationCount,
+                PreviousDetails = b.PreviousDetails,
+                HarvestPlanId = b.HarvestPlanId,
+                HarvestPlanName = plan?.Name,
+                HarvestPlanItemCount = plan?.Items?.Count ?? 0,
+                HarvestPlanOtherItems = otherItemsText
+            };
+        }
     }
 }

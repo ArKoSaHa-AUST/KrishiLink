@@ -73,7 +73,14 @@ namespace KrishiLink.Models.ViewModels
         // UI Helpers
         public bool JustCreated { get; set; }
         public bool CanCancel { get; set; }
+        public bool CanModify { get; set; }
+        public int ModificationCount { get; set; } = 0;
+        public string? PreviousDetails { get; set; }
+        public string? FarmerProfileUrl { get; set; }
         public List<BookingTimelineStep> Timeline { get; set; } = new();
+
+        /// <summary>Recorded intake lots and warehouse receipts (Godown bookings only).</summary>
+        public List<StorageIntakeLotItemViewModel> IntakeLots { get; set; } = new();
     }
 
     public class BookingVerificationViewModel
@@ -134,5 +141,6 @@ namespace KrishiLink.Models.ViewModels
         public string QrCodeSvg { get; set; } = string.Empty;
         public string QrCodeBase64 { get; set; } = string.Empty;
         public string VerificationUrl { get; set; } = string.Empty;
+        public string? FarmerProfileUrl { get; set; }
     }
 }

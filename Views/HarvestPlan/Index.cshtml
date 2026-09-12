@@ -1,0 +1,300 @@
+@model KrishiLink.Models.ViewModels.HarvestPlanIndexViewModel
+@{
+    ViewData["Title"] = L["Harvest Plans"];
+    var successMsg = TempData["Success"] as string ?? TempData["SuccessMessage"] as string;
+    var errorMsg = TempData["Error"] as string ?? TempData["ErrorMessage"] as string;
+}
+
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4 pb-3 border-bottom">
+        <div>
+            <h2 class="fw-bold mb-1" style="color: var(--krishi-primary, #2e7d32);">
+                <i class="bi bi-diagram-3-fill text-success me-2"></i>@L["Harvest Plans"]
+            </h2>
+            <p class="text-muted mb-0">
+                @L["Bundle equipment rentals and crop storage into coordinated harvest plans. Track availability and submit requests simultaneously."]
+            </p>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            @if (Model.CanCreatePlan)
+            {
+                <button type="button" class="btn btn-success rounded-pill px-4 py-2 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#newPlanModal">
+                    <i class="bi bi-plus-circle me-1"></i> @L["New Harvest Plan"]
+                </button>
+            }
+            else
+            {
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-semibold" disabled title="@L["Maximum 5 draft plans allowed. Submit or delete an existing draft first."] - @Model.DraftCount/5">
+                    <i class="bi bi-lock me-1"></i> @L["Draft Limit Reached (5/5)"]
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    @if (!string.IsNullOrWhiteSpace(successMsg))
+    {
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2" role="alert">
+            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+            <div>@successMsg</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(errorMsg))
+    {
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2" role="alert">
+            <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+            <div>@errorMsg</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Stat Pills -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle p-2.5 bg-success-subtle text-success fs-4 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="bi bi-diagram-3"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-medium">@L["Total Plans"]</div>
+                        <div class="fs-4 fw-bold text-dark">@Model.Plans.Count</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle p-2.5 bg-warning-subtle text-warning-emphasis fs-4 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-medium">@L["Drafts"]</div>
+                        <div class="fs-4 fw-bold text-dark">@Model.DraftCount <span class="small text-muted fs-6 fw-normal">/ 5</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle p-2.5 bg-info-subtle text-info-emphasis fs-4 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="bi bi-send-check"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-medium">@L["Submitted"]</div>
+                        <div class="fs-4 fw-bold text-dark">@Model.Plans.Count(p => p.Status == KrishiLink.Models.Entities.HarvestPlanStatus.Submitted)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle p-2.5 bg-secondary-subtle text-secondary fs-4 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="bi bi-archive"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small fw-medium">@L["Closed"]</div>
+                        <div class="fs-4 fw-bold text-dark">@Model.Plans.Count(p => p.Status == KrishiLink.Models.Entities.HarvestPlanStatus.Closed)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plans Content -->
+    @if (!Model.Plans.Any())
+    {
+        <div class="card border-0 shadow-sm rounded-4 text-center py-5 px-3 my-4">
+            <div class="my-3">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success-subtle text-success p-4 mb-3" style="width: 80px; height: 80px;">
+                    <i class="bi bi-diagram-3 fs-1"></i>
+                </div>
+                <h4 class="fw-bold mb-2">@L["No Harvest Plans Yet"]</h4>
+                <p class="text-muted mx-auto mb-4" style="max-width: 480px;">
+                    @L["Create a seasonal harvest plan to group machinery and storage needs together. You can assemble multiple items and submit booking requests with a single click."]
+                </p>
+                <div class="d-flex justify-content-center gap-3">
+                    <button type="button" class="btn btn-success rounded-pill px-4 py-2 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#newPlanModal">
+                        <i class="bi bi-plus-circle me-1"></i> @L["Create Your First Plan"]
+                    </button>
+                    <a asp-controller="Equipment" asp-action="Index" class="btn btn-outline-success rounded-pill px-4 py-2 fw-semibold">
+                        <i class="bi bi-search me-1"></i> @L["Browse Equipment"]
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var plan in Model.Plans)
+            {
+                var statusBadgeClass = plan.Status switch
+                {
+                    KrishiLink.Models.Entities.HarvestPlanStatus.Draft => "bg-warning-subtle text-warning-emphasis border border-warning-subtle",
+                    KrishiLink.Models.Entities.HarvestPlanStatus.Submitted => "bg-info-subtle text-info-emphasis border border-info-subtle",
+                    _ => "bg-secondary-subtle text-secondary border border-secondary-subtle"
+                };
+
+                <div class="col-12 col-lg-6">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 d-flex flex-column hover-shadow transition-all position-relative">
+                        <div class="card-body p-4 flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                                <div>
+                                    <h5 class="fw-bold mb-1">
+                                        <a asp-action="Details" asp-route-id="@plan.Id" class="text-decoration-none text-dark stretched-link-pseudo">
+                                            @plan.Name
+                                        </a>
+                                    </h5>
+                                    @if (!string.IsNullOrWhiteSpace(plan.Crop))
+                                    {
+                                        <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill me-1">
+                                            <i class="bi bi-flower1 me-1"></i>@plan.Crop
+                                        </span>
+                                    }
+                                </div>
+                                <span class="badge @statusBadgeClass rounded-pill px-3 py-1.5 fw-semibold text-uppercase" style="font-size: 0.75rem;">
+                                    @plan.Status
+                                </span>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(plan.Note))
+                            {
+                                <p class="text-muted small mb-3 text-truncate-2">@plan.Note</p>
+                            }
+
+                            <div class="bg-light rounded-3 p-3 mb-3">
+                                <div class="row g-2 text-center">
+                                    <div class="col-4 border-end">
+                                        <div class="text-muted small">@L["Items"]</div>
+                                        <div class="fw-bold fs-5 text-dark">@plan.ItemCount <span class="fs-6 fw-normal text-muted">/ 10</span></div>
+                                    </div>
+                                    <div class="col-4 border-end">
+                                        <div class="text-muted small">@L["Target Window"]</div>
+                                        <div class="fw-semibold small text-dark mt-1 text-truncate" title="@plan.DateRangeSummary">
+                                            @plan.DateRangeSummary
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-muted small">@L["Est. Gross"]</div>
+                                        <div class="fw-bold fs-5 text-success">৳@plan.TotalEstimatedGross.ToString("N0")</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Footer / Actions -->
+                        <div class="card-footer bg-transparent border-top p-3 d-flex justify-content-between align-items-center">
+                            <div class="small text-muted">
+                                <i class="bi bi-clock me-1"></i>@plan.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")
+                            </div>
+                            <div class="d-flex gap-2 position-relative" style="z-index: 2;">
+                                <a asp-action="Details" asp-route-id="@plan.Id" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold">
+                                    <i class="bi bi-arrow-right-circle me-1"></i> @L["View Plan"]
+                                </a>
+
+                                @if (plan.CanClone)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5" 
+                                            data-bs-toggle="modal" data-bs-target="#cloneModal-@plan.Id" title="@L["Clone for Next Season"]">
+                                        <i class="bi bi-copy"></i>
+                                    </button>
+                                }
+
+                                @if (plan.CanDelete)
+                                {
+                                    <form asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('@L["Are you sure you want to delete this harvest plan?"]');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="planId" value="@plan.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2.5" title="@L["Delete Plan"]">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clone Modal for Plan -->
+                @if (plan.CanClone)
+                {
+                    <div class="modal fade" id="cloneModal-@plan.Id" tabindex="-1" aria-labelledby="cloneModalLabel-@plan.Id" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow rounded-4">
+                                <form asp-action="Clone" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="planId" value="@plan.Id" />
+                                    <div class="modal-header border-bottom pb-3">
+                                        <h5 class="modal-title fw-bold" id="cloneModalLabel-@plan.Id">
+                                            <i class="bi bi-copy text-success me-2"></i>@L["Clone Harvest Plan for Next Season"]
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body py-4">
+                                        <p class="text-muted small mb-3">
+                                            @L["This will duplicate all items from \"{0}\" into a new draft plan with future dates.", plan.Name]
+                                        </p>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">@L["Shift Dates By (Days)"]</label>
+                                            <input type="number" name="shiftDays" class="form-control rounded-3" value="365" min="1" max="730" required />
+                                            <div class="form-text">@L["Standard: 365 days for the next annual season, or custom offset (1-730 days)."]</div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-top pt-3">
+                                        <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">@L["Cancel"]</button>
+                                        <button type="submit" class="btn btn-success rounded-pill px-4 fw-semibold">
+                                            <i class="bi bi-copy me-1"></i>@L["Create Duplicate"]
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    }
+</div>
+
+<!-- New Harvest Plan Modal -->
+<div class="modal fade" id="newPlanModal" tabindex="-1" aria-labelledby="newPlanModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-bottom pb-3">
+                    <h5 class="modal-title fw-bold" id="newPlanModalLabel">
+                        <i class="bi bi-diagram-3 text-success me-2"></i>@L["Create New Harvest Plan"]
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-3">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">@L["Plan Name"] <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control rounded-3" placeholder="@L["e.g. Boro Harvest 2027"]" maxlength="80" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">@L["Target Crop"] <span class="text-muted small fw-normal">(@L["Optional"])</span></label>
+                        <input type="text" name="crop" class="form-control rounded-3" placeholder="@L["e.g. Rice (Boro), Wheat, Potato"]" maxlength="60" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">@L["Notes & Instructions"] <span class="text-muted small fw-normal">(@L["Optional"])</span></label>
+                        <textarea name="note" class="form-control rounded-3" rows="3" placeholder="@L["Internal notes on harvest timing, field locations, or labor coordination..."]" maxlength="300"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top pt-3">
+                    <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">@L["Cancel"]</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-semibold">
+                        <i class="bi bi-plus-circle me-1"></i>@L["Create Plan"]
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

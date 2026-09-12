@@ -7,5 +7,6 @@ namespace KrishiLink.Models.Entities
         public int EquipmentId { get; set; }
         public Equipment? Equipment { get; set; }
         public DateTime Date { get; set; }
+        public string? Reason { get; set; }
     }
 }

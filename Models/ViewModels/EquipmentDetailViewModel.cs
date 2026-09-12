@@ -13,9 +13,14 @@ namespace KrishiLink.Models.ViewModels
         public string DailyRate { get; set; } = string.Empty;
         public decimal DailyRateAmount { get; set; }
         public string HourlyRate { get; set; } = string.Empty;
+        public int MinRentalDays { get; set; } = 1;
+        public bool HasRateRules { get; set; }
+        public string FromRateText { get; set; } = string.Empty;
+        public List<EquipmentRateRuleViewModel> RateRules { get; set; } = new();
         public string Location { get; set; } = string.Empty;
         public string? District { get; set; }
         public string Status { get; set; } = "Available";
+        public bool IsFavorite { get; set; }
 
         // Geographic Coordinates & Navigation
         public double? Latitude { get; set; }
@@ -46,8 +51,13 @@ namespace KrishiLink.Models.ViewModels
 
         // Already booked dates (for visual calendar blocking)
         public List<DateTime> BookedDates { get; set; } = new();
+        public List<DateTime> PartiallyBookedDates { get; set; } = new();
+
+        public int Quantity { get; set; } = 1;
+        public string? UnitsAvailableText { get; set; }
 
         // Form inputs & submission state
+        public int Units { get; set; } = 1;
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public string? Note { get; set; }

@@ -14,6 +14,7 @@ namespace KrishiLink.DAL
         public DbSet<Equipment> Equipment { get; set; } = null!;
         public DbSet<EquipmentBooking> EquipmentBookings { get; set; } = null!;
         public DbSet<EquipmentBlockedDate> EquipmentBlockedDates { get; set; } = null!;
+        public DbSet<EquipmentRateRule> EquipmentRateRules { get; set; } = null!;
         public DbSet<Godown> Godowns { get; set; } = null!;
         public DbSet<GodownBooking> GodownBookings { get; set; } = null!;
         public DbSet<GodownBlockedDate> GodownBlockedDates { get; set; } = null!;
@@ -30,6 +31,11 @@ namespace KrishiLink.DAL
         public DbSet<CropCalendarEntry> CropCalendarEntries { get; set; } = null!;
         public DbSet<Payment> Payments { get; set; } = null!;
         public DbSet<LedgerEntry> LedgerEntries { get; set; } = null!;
+        public DbSet<HarvestPlan> HarvestPlans { get; set; } = null!;
+        public DbSet<HarvestPlanItem> HarvestPlanItems { get; set; } = null!;
+        public DbSet<Favorite> Favorites { get; set; } = null!;
+        public DbSet<SavedSearch> SavedSearches { get; set; } = null!;
+        public DbSet<StorageIntakeLot> StorageIntakeLots { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -60,6 +66,8 @@ namespace KrishiLink.DAL
                 e.Property(x => x.District).HasMaxLength(60);
                 e.Property(x => x.DailyRate).HasPrecision(18, 2);
                 e.Property(x => x.HourlyRate).HasPrecision(18, 2);
+                e.Property(x => x.MinRentalDays).HasDefaultValue(1);
+                e.Property(x => x.Quantity).HasDefaultValue(1);
                 e.Property(x => x.AverageRating).HasDefaultValue(0.0);
                 e.Property(x => x.ReviewCount).HasDefaultValue(0);
                 e.HasIndex(x => x.OwnerId);
@@ -71,22 +79,39 @@ namespace KrishiLink.DAL
             builder.Entity<EquipmentBooking>(b =>
             {
                 b.Property(x => x.Status).HasMaxLength(20);
+                b.Property(x => x.Units).HasDefaultValue(1);
                 b.Property(x => x.DiscountAmount).HasPrecision(18, 2);
                 b.Property(x => x.AppliedPromoCode).HasMaxLength(50);
+                b.Property(x => x.QuotedGross).HasPrecision(18, 2).HasDefaultValue(0m);
+                b.Property(x => x.PricingNote).HasMaxLength(200);
                 b.Property(x => x.AgreedRate).HasPrecision(18, 2);
                 b.Property(x => x.AgreedGross).HasPrecision(18, 2);
                 b.Property(x => x.CommissionRate).HasPrecision(5, 4);
+                b.Property(x => x.ModificationCount).HasDefaultValue(0);
+                b.Property(x => x.PreviousDetails).HasMaxLength(200);
                 b.HasIndex(x => new { x.EquipmentId, x.Status });
                 b.HasOne(x => x.Equipment).WithMany(x => x.Bookings).HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Cascade);
                 b.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);
                 b.HasOne(x => x.Payout).WithMany().HasForeignKey(x => x.PayoutId).OnDelete(DeleteBehavior.NoAction);
                 b.HasOne(x => x.Payment).WithMany().HasForeignKey(x => x.PaymentId).OnDelete(DeleteBehavior.NoAction);
+                b.HasOne(x => x.HarvestPlan).WithMany().HasForeignKey(x => x.HarvestPlanId).OnDelete(DeleteBehavior.SetNull);
+                b.HasIndex(x => x.HarvestPlanId);
             });
 
             builder.Entity<EquipmentBlockedDate>(d =>
             {
+                d.Property(x => x.Reason).HasMaxLength(100);
                 d.HasIndex(x => new { x.EquipmentId, x.Date }).IsUnique();
                 d.HasOne(x => x.Equipment).WithMany(x => x.BlockedDates).HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<EquipmentRateRule>(r =>
+            {
+                r.Property(x => x.Kind).HasMaxLength(10).IsRequired();
+                r.Property(x => x.Name).HasMaxLength(60).IsRequired();
+                r.Property(x => x.DailyRate).HasPrecision(18, 2);
+                r.HasIndex(x => new { x.EquipmentId, x.IsActive });
+                r.HasOne(x => x.Equipment).WithMany(e => e.RateRules).HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.Cascade);
             });
 
             builder.Entity<Godown>(g =>
@@ -112,15 +137,20 @@ namespace KrishiLink.DAL
                 b.Property(x => x.AgreedRate).HasPrecision(18, 2);
                 b.Property(x => x.AgreedGross).HasPrecision(18, 2);
                 b.Property(x => x.CommissionRate).HasPrecision(5, 4);
+                b.Property(x => x.ModificationCount).HasDefaultValue(0);
+                b.Property(x => x.PreviousDetails).HasMaxLength(200);
                 b.HasIndex(x => new { x.GodownId, x.Status });
                 b.HasOne(x => x.Godown).WithMany(x => x.Bookings).HasForeignKey(x => x.GodownId).OnDelete(DeleteBehavior.Cascade);
                 b.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.Restrict);
                 b.HasOne(x => x.Payout).WithMany().HasForeignKey(x => x.PayoutId).OnDelete(DeleteBehavior.NoAction);
                 b.HasOne(x => x.Payment).WithMany().HasForeignKey(x => x.PaymentId).OnDelete(DeleteBehavior.NoAction);
+                b.HasOne(x => x.HarvestPlan).WithMany().HasForeignKey(x => x.HarvestPlanId).OnDelete(DeleteBehavior.SetNull);
+                b.HasIndex(x => x.HarvestPlanId);
             });
 
             builder.Entity<GodownBlockedDate>(d =>
             {
+                d.Property(x => x.Reason).HasMaxLength(100);
                 d.HasIndex(x => new { x.GodownId, x.Date }).IsUnique();
                 d.HasOne(x => x.Godown).WithMany(x => x.BlockedDates).HasForeignKey(x => x.GodownId).OnDelete(DeleteBehavior.Cascade);
             });
@@ -128,9 +158,11 @@ namespace KrishiLink.DAL
             builder.Entity<BookingExpense>(x =>
             {
                 x.Property(e => e.BookingType).HasMaxLength(20);
+                x.Property(e => e.Category).HasMaxLength(30).HasDefaultValue(ExpenseCategories.Other);
                 x.Property(e => e.Note).HasMaxLength(200);
                 x.Property(e => e.Amount).HasPrecision(18, 2);
-                x.HasIndex(e => new { e.OwnerId, e.BookingType });
+                x.Property(e => e.ExpenseDate).HasDefaultValueSql("GETUTCDATE()");
+                x.HasIndex(e => new { e.OwnerId, e.BookingType, e.ExpenseDate });
             });
 
             builder.Entity<Transaction>(t =>
@@ -314,6 +346,86 @@ namespace KrishiLink.DAL
                 c.HasIndex(x => x.Category);
                 c.HasIndex(x => x.Season);
                 c.HasIndex(x => x.ProfileCropName);
+            });
+
+            builder.Entity<HarvestPlan>(p =>
+            {
+                p.Property(x => x.Name).HasMaxLength(80).IsRequired();
+                p.Property(x => x.Crop).HasMaxLength(60);
+                p.Property(x => x.Note).HasMaxLength(500);
+                p.Property(x => x.Status).HasMaxLength(20).HasDefaultValue(HarvestPlanStatus.Draft);
+
+                p.HasOne(x => x.Farmer)
+                    .WithMany()
+                    .HasForeignKey(x => x.FarmerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                p.HasMany(x => x.Items)
+                    .WithOne(x => x.Plan)
+                    .HasForeignKey(x => x.HarvestPlanId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                p.HasIndex(x => new { x.FarmerId, x.Status });
+            });
+
+            builder.Entity<HarvestPlanItem>(i =>
+            {
+                i.Property(x => x.ItemType).HasMaxLength(20).IsRequired();
+                i.Property(x => x.Note).HasMaxLength(300);
+
+                i.HasIndex(x => x.HarvestPlanId);
+            });
+
+            builder.Entity<Favorite>(f =>
+            {
+                f.Property(x => x.ListingType).HasMaxLength(20).IsRequired();
+                f.HasIndex(x => new { x.UserId, x.ListingType, x.ListingId }).IsUnique();
+                f.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<SavedSearch>(s =>
+            {
+                s.Property(x => x.Name).HasMaxLength(80).IsRequired();
+                s.Property(x => x.ListingType).HasMaxLength(20).IsRequired();
+                s.Property(x => x.SearchTerm).HasMaxLength(100);
+                s.Property(x => x.Category).HasMaxLength(50);
+                s.Property(x => x.District).HasMaxLength(60);
+                s.Property(x => x.MaxRate).HasPrecision(18, 2);
+                s.Property(x => x.KnownListingIds).HasMaxLength(2000).HasDefaultValue("");
+
+                s.HasIndex(x => x.UserId);
+                s.HasIndex(x => x.AlertsEnabled);
+
+                s.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<StorageIntakeLot>(lot =>
+            {
+                lot.Property(x => x.ReceiptNumber).HasMaxLength(20).IsRequired();
+                lot.Property(x => x.Crop).HasMaxLength(60).IsRequired();
+                lot.Property(x => x.Variety).HasMaxLength(60);
+                lot.Property(x => x.BagWeightKg).HasPrecision(6, 2);
+                lot.Property(x => x.NetWeightKg).HasPrecision(12, 2);
+                lot.Property(x => x.MoisturePercent).HasPrecision(5, 2);
+                lot.Property(x => x.Grade).HasMaxLength(10).HasDefaultValue(IntakeGrades.Ungraded);
+                lot.Property(x => x.Remarks).HasMaxLength(500);
+                lot.Property(x => x.Status).HasMaxLength(20).HasDefaultValue(IntakeLotStatus.Stored);
+                lot.Property(x => x.ReleasedTo).HasMaxLength(120);
+                lot.Property(x => x.ReleaseRemarks).HasMaxLength(300);
+                lot.Property(x => x.RecordedByUserId).HasMaxLength(450);
+
+                lot.HasIndex(x => x.ReceiptNumber).IsUnique();
+                lot.HasIndex(x => x.GodownBookingId);
+                lot.HasOne(x => x.Booking)
+                    .WithMany(b => b.IntakeLots)
+                    .HasForeignKey(x => x.GodownBookingId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }
