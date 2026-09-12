@@ -125,7 +125,18 @@
                 </span>
             </div>
 
-            <h2 class="fw-bold text-dark mb-3">@Model.Name</h2>
+            <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+                <h2 class="fw-bold text-dark mb-0">@Model.Name</h2>
+                <button type="button" 
+                        class="btn btn-light btn-sm rounded-circle shadow-sm favorite-btn @(Model.IsFavorite ? "active text-danger" : "")" 
+                        style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
+                        data-type="Godown" 
+                        data-id="@Model.Id" 
+                        onclick="KrishiFavorites.toggle(this);" 
+                        title="@(Model.IsFavorite ? L["Remove from favorites"] : L["Add to favorites"])">
+                    <i class="bi @(Model.IsFavorite ? "bi-heart-fill text-danger" : "bi-heart") fs-5"></i>
+                </button>
+            </div>
 
             <!-- Rates & Capacity Highlight Box -->
             <div class="row g-3 p-3 rounded-3 mb-4 bg-light text-dark border">

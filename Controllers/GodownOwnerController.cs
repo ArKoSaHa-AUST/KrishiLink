@@ -13,11 +13,15 @@ namespace KrishiLink.Controllers
     {
         private readonly IGodownService _godowns;
         private readonly IFileStorageService _files;
+        private readonly ISavedSearchService _savedSearches;
+        private readonly ILogger<GodownOwnerController> _logger;
         private readonly IStringLocalizer<SharedResource> _localizer;
 
         public GodownOwnerController(
             IGodownService godowns,
             IFileStorageService files,
+            ISavedSearchService savedSearches,
+            ILogger<GodownOwnerController> logger,
             IGodownRevenueService revenueService,
             UserManager<ApplicationUser> userManager,
             IStringLocalizer<SharedResource> localizer)
@@ -25,6 +29,8 @@ namespace KrishiLink.Controllers
         {
             _godowns = godowns;
             _files = files;
+            _savedSearches = savedSearches;
+            _logger = logger;
             _localizer = localizer;
         }
 
@@ -126,6 +132,18 @@ namespace KrishiLink.Controllers
             var isEdit = model.IsEditMode;
             if (!await _godowns.SaveListingAsync(OwnerId, model))
                 return NotFound();
+
+            if (!isEdit && model.Id > 0)
+            {
+                try
+                {
+                    await _savedSearches.EvaluateForListingAsync(ListingTypes.Godown, model.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to evaluate saved search alerts for newly created godown listing {ListingId}", model.Id);
+                }
+            }
 
             TempData["SuccessMessage"] = $"Storage facility '{model.Name}' successfully {(isEdit ? "updated" : "listed")}!";
             return RedirectToAction(nameof(Index));

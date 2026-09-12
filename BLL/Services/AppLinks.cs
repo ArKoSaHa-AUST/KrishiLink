@@ -48,5 +48,46 @@ namespace KrishiLink.BLL.Services
         public static string HarvestPlans => "/HarvestPlan";
         public static string HarvestPlan(int id) => $"/HarvestPlan/Details/{id}";
         public static string FarmerProfile(string farmerId) => $"/FarmerProfile/{farmerId}";
+        public static string Favorites => "/Favorites";
+        public static string SavedSearches => "/SavedSearches";
+
+        public static string BrowseWith(SavedSearch search)
+        {
+            var isEq = string.Equals(search.ListingType, ListingTypes.Equipment, StringComparison.OrdinalIgnoreCase);
+            var path = isEq ? "/Equipment" : "/Godown";
+            var query = new Dictionary<string, string?>();
+
+            if (!string.IsNullOrWhiteSpace(search.SearchTerm))
+                query["searchTerm"] = search.SearchTerm;
+
+            if (!string.IsNullOrWhiteSpace(search.Category))
+            {
+                if (isEq) query["selectedCategories"] = search.Category;
+                else query["selectedStorageTypes"] = search.Category;
+            }
+
+            if (!string.IsNullOrWhiteSpace(search.District))
+                query["district"] = search.District;
+
+            if (search.MaxRate.HasValue && search.MaxRate.Value > 0)
+                query["selectedMaxPrice"] = search.MaxRate.Value.ToString("0.##");
+
+            if (!isEq && search.MinCapacityTons.HasValue && search.MinCapacityTons.Value > 0)
+                query["selectedMinCapacity"] = search.MinCapacityTons.Value.ToString("0.##");
+
+            if (search.From.HasValue)
+            {
+                if (isEq) query["startDate"] = search.From.Value.ToString("yyyy-MM-dd");
+                else query["availableStartDate"] = search.From.Value.ToString("yyyy-MM-dd");
+            }
+
+            if (search.To.HasValue)
+            {
+                if (isEq) query["endDate"] = search.To.Value.ToString("yyyy-MM-dd");
+                else query["availableEndDate"] = search.To.Value.ToString("yyyy-MM-dd");
+            }
+
+            return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(path, query);
+        }
     }
 }

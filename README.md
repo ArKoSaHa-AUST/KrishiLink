@@ -141,6 +141,13 @@ Pending ──reject──▶ Rejected ──undo──▶ Pending              
 - **Strict Privacy Scoping**: Access is strictly limited to Administrators and Owners who have received at least one booking request from that farmer. Unrelated owners or unknown IDs receive a generic `404 NotFound` response to prevent ID enumeration. Phone numbers are revealed only after a booking is confirmed; email addresses are never exposed.
 - **High-Performance In-Memory Caching**: Summary lookups for request grids are cached per farmer ID for 5 minutes (`IMemoryCache`), preventing redundant database queries while keeping fresh trust metrics available.
 
+### 14. ❤️ Favorites / Wishlist & Saved Searches with Availability Alerts
+- **Farmer Wishlist (`/Favorites`)**: Farmers can bookmark machinery and storage facilities with responsive heart toggles across catalog cards and details pages. The wishlist provides real-time availability hints ("Available today", "Free from ...") and prunes stale or deleted listings automatically.
+- **Saved Searches with Filters (`/SavedSearches`)**: Farmers can save multi-criteria browse queries (keyword, category/type, district, max price, capacity, and date windows) directly from browse filter bars with instant "Run now" links.
+- **Automated Availability Alert Scheduler**: `SavedSearchAlertScheduler` background service continuously re-evaluates active saved searches against canonical `BrowseAsync` availability logic, sending deduplicated notifications and emails (`NotificationTypes.SavedSearchAlert`) when new matching listings appear.
+- **Immediate New Listing Evaluation**: When equipment or godown owners publish new listings, matching saved searches are immediately evaluated to notify interested farmers without delay.
+- **Lifecycle & Spam Guardrails**: Searches with past target dates are automatically retired with notification, while strict user scoping and deduplication keys prevent redundant alerts.
+
 ---
 
 ## 🏗️ Architecture & Project Structure
@@ -154,6 +161,8 @@ KrishiLink/
 │   ├── HomeController.cs          # Public Landing & Overview
 │   ├── AccountController.cs       # Auth, Registration, Login, Profile & Private Verification Docs
 │   ├── FarmerController.cs        # Farmer Hub, Dashboard & Crop Recommendations
+│   ├── FavoritesController.cs     # Wishlist Management & AJAX Heart Toggling
+│   ├── SavedSearchesController.cs # Saved Search Queries, Alert Toggling & Dev Triggers
 │   ├── EquipmentController.cs     # Machinery Catalog, Search, Filtering & Details
 │   ├── GodownController.cs        # Storage Facilities Directory & Booking
 │   ├── HarvestPlanController.cs   # Multi-Item Harvest Plan Cart, Submission & Seasonal Cloning
@@ -170,6 +179,8 @@ KrishiLink/
 │   ├── Home/                      # Landing Page
 │   ├── Account/                   # Login, Register, Profile, Verification UI
 │   ├── Farmer/                    # Farmer Dashboard & Advisory Strips
+│   ├── Favorites/                 # Wishlist & Saved Items Management UI
+│   ├── SavedSearches/             # Saved Searches & Alert Subscriptions UI
 │   ├── Equipment/                 # Equipment Catalog & Details UI
 │   ├── Godown/                    # Storage Directory UI
 │   ├── HarvestPlan/               # Harvest Plan Management & Multi-Item Details UI
@@ -190,6 +201,7 @@ KrishiLink/
 │   │   ├── EmailDispatchService.cs# Asynchronous Background Email Dispatcher
 │   │   ├── EquipmentService.cs    # Equipment Management & Search
 │   │   ├── FarmerProfileService.cs# Farmer Trust Metrics & Privacy Verification
+│   │   ├── FavoriteService.cs     # Wishlist Management & Availability Tracking
 │   │   ├── GodownService.cs       # Godown Space Management & Search
 │   │   ├── HarvestPlanService.cs  # Harvest Plan Cart, Multi-Item Submission & Validation
 │   │   ├── NotificationService.cs # Localized Multi-Channel Alerts
@@ -197,6 +209,8 @@ KrishiLink/
 │   │   ├── OwnerVerificationService.cs # Encrypted NID & Document Verification
 │   │   ├── PestAlertService.cs    # Weather-Driven Outbreak Predictor
 │   │   ├── ReviewService.cs       # Verified Reviews & Atomic Aggregations
+│   │   ├── SavedSearchService.cs  # Saved Queries & Immediate Match Evaluation
+│   │   ├── SavedSearchAlertScheduler.cs # Background Periodic Search Match Dispatcher
 │   │   └── WeatherService.cs      # Open-Meteo Live 7-Day Forecast Integrator
 ├── DAL/                           # Data Access Layer
 │   ├── ApplicationDbContext.cs    # EF Core DbContext with Identity Integration

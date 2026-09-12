@@ -32,6 +32,7 @@ namespace KrishiLink.Models.ViewModels
         public int? LastServicedDaysAgo { get; set; }
         public string? LastServicedText { get; set; }
         public int Quantity { get; set; } = 1;
+        public bool IsFavorite { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
@@ -51,6 +52,9 @@ namespace KrishiLink.Models.ViewModels
         public string SortBy { get; set; } = "newest";
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 24;
+
+        [Microsoft.AspNetCore.Mvc.ModelBinding.BindNever]
+        public string? CurrentUserId { get; set; }
     }
 
     /// <summary>
@@ -75,6 +79,7 @@ namespace KrishiLink.Models.ViewModels
 
         // Results
         public List<EquipmentItemViewModel> EquipmentList { get; set; } = new();
+        public HashSet<int> FavoriteIds { get; set; } = new();
         public int TotalCount { get; set; }
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 24;

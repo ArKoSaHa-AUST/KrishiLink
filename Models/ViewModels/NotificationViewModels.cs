@@ -32,6 +32,7 @@ namespace KrishiLink.Models.ViewModels
             NotificationTypes.ReviewReceived => "warning",
             NotificationTypes.WeatherSuggestion => "warning",
             NotificationTypes.Reminder => "info",
+            NotificationTypes.SavedSearchAlert => "success",
             _ => "secondary"
         };
 
@@ -48,6 +49,7 @@ namespace KrishiLink.Models.ViewModels
             NotificationTypes.ReviewReceived => "bi bi-star-fill",
             NotificationTypes.WeatherSuggestion => "bi bi-cloud-sun-fill",
             NotificationTypes.Reminder => "bi bi-alarm-fill",
+            NotificationTypes.SavedSearchAlert => "bi bi-bell-fill",
             _ => "bi bi-bell-fill"
         };
 
@@ -64,6 +66,7 @@ namespace KrishiLink.Models.ViewModels
             NotificationTypes.ReviewReceived => "bg-warning-subtle",
             NotificationTypes.WeatherSuggestion => "bg-warning-subtle",
             NotificationTypes.Reminder => "bg-info-subtle",
+            NotificationTypes.SavedSearchAlert => "bg-success-subtle",
             _ => "bg-light"
         };
 

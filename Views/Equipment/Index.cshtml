@@ -68,9 +68,15 @@
                     <i class="bi bi-sliders text-success fs-5"></i>
                     <h5 class="fw-bold mb-0 text-dark">@L["Filters"]</h5>
                 </div>
-                <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0 fw-semibold clear-filters-btn @(activeFiltersCount > 0 ? "" : "d-none")" onclick="resetAllFilters()">
-                    <i class="bi bi-x-circle me-1"></i>@L["Clear Filters"]
-                </button>
+                <div class="d-flex align-items-center gap-1.5">
+                    <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-1 d-flex align-items-center gap-1 fw-semibold" onclick="openSaveSearchModal('Equipment')" title="@L["Save this search"]">
+                        <i class="bi bi-bookmark-plus"></i>
+                        <span class="small">@L["Save"]</span>
+                    </button>
+                    <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0 fw-semibold clear-filters-btn @(activeFiltersCount > 0 ? "" : "d-none")" onclick="resetAllFilters()">
+                        <i class="bi bi-x-circle me-1"></i>@L["Clear Filters"]
+                    </button>
+                </div>
             </div>
 
             <!-- 1. Equipment Type / Category Filter -->
@@ -294,8 +300,8 @@
                                 }
                             </div>
 
-                            <!-- Availability Badge (Dashboard consistent) -->
-                            <div class="position-absolute top-0 end-0 m-2.5">
+                            <!-- Availability Badge & Heart Button -->
+                            <div class="position-absolute top-0 end-0 m-2.5 d-flex align-items-center gap-1.5">
                                 @if (item.IsAvailable)
                                 {
                                     <span class="krishi-badge krishi-badge-available shadow-sm">
@@ -308,6 +314,15 @@
                                         <i class="bi bi-clock-fill"></i> @L["Booked"]
                                     </span>
                                 }
+                                <button type="button" 
+                                        class="btn btn-light btn-sm rounded-circle shadow-sm favorite-btn @(item.IsFavorite ? "active text-danger" : "")" 
+                                        style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 2;"
+                                        data-type="Equipment" 
+                                        data-id="@item.Id" 
+                                        onclick="event.stopPropagation(); KrishiFavorites.toggle(this);" 
+                                        title="@(item.IsFavorite ? L["Remove from favorites"] : L["Add to favorites"])">
+                                    <i class="bi @(item.IsFavorite ? "bi-heart-fill text-danger" : "bi-heart")"></i>
+                                </button>
                             </div>
 
                             <!-- Distance Badge -->
@@ -917,11 +932,20 @@
                                     ` : ''}
                                 </div>
 
-                                <div class="position-absolute top-0 end-0 m-2.5">
+                                <div class="position-absolute top-0 end-0 m-2.5 d-flex align-items-center gap-1.5">
                                     ${item.isAvailable 
                                         ? `<span class="krishi-badge krishi-badge-available shadow-sm"><i class="bi bi-check-circle-fill"></i> @L["Available"]</span>`
                                         : `<span class="krishi-badge krishi-badge-unavailable shadow-sm"><i class="bi bi-clock-fill"></i> @L["Booked"]</span>`
                                     }
+                                    <button type="button" 
+                                            class="btn btn-light btn-sm rounded-circle shadow-sm favorite-btn ${item.isFavorite ? 'active text-danger' : ''}" 
+                                            style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 2;"
+                                            data-type="Equipment" 
+                                            data-id="${item.id}" 
+                                            onclick="event.stopPropagation(); KrishiFavorites.toggle(this);" 
+                                            title="${item.isFavorite ? '@L["Remove from favorites"]' : '@L["Add to favorites"]'}">
+                                        <i class="bi ${item.isFavorite ? 'bi-heart-fill text-danger' : 'bi-heart'}"></i>
+                                    </button>
                                 </div>
 
                                 ${item.distanceKm > 0 ? `<div class="position-absolute bottom-0 start-0 m-2">
@@ -1069,6 +1093,51 @@
             container.innerHTML = html;
         }
 
+        // Open Save Search Modal
+        function openSaveSearchModal(type) {
+            const searchTerm = document.getElementById('mainSearchInput')?.value.trim() || '';
+            const selectedCats = Array.from(document.querySelectorAll('.desktop-cat-filter:checked')).map(cb => cb.value);
+            const cat = selectedCats.length > 0 ? selectedCats[0] : '';
+            const district = document.getElementById('desktopLocationSelect')?.value || '';
+            const maxPriceVal = document.getElementById('desktopMaxPriceInput')?.value;
+            const maxPrice = (maxPriceVal && Number(maxPriceVal) < DEFAULT_MAX_PRICE) ? maxPriceVal : '';
+            const startDate = document.getElementById('desktopStartDateInput')?.value || '';
+            const endDate = document.getElementById('desktopEndDateInput')?.value || '';
+
+            document.getElementById('ssModalListingType').value = type;
+            document.getElementById('ssModalSearchTerm').value = searchTerm;
+            document.getElementById('ssModalCategory').value = cat;
+            document.getElementById('ssModalDistrict').value = district;
+            document.getElementById('ssModalMaxRate').value = maxPrice;
+            document.getElementById('ssModalFrom').value = startDate;
+            document.getElementById('ssModalTo').value = endDate;
+            document.getElementById('ssModalReturnUrl').value = window.location.pathname + window.location.search;
+
+            const parts = [];
+            if (cat) parts.push(cat);
+            else if (searchTerm) parts.push(searchTerm);
+            else parts.push('Machinery');
+
+            if (district) parts.push('in ' + district);
+            if (startDate && endDate) parts.push(`(${startDate} to ${endDate})`);
+            else if (startDate) parts.push(`(from ${startDate})`);
+
+            document.getElementById('ssModalName').value = parts.join(' ').substring(0, 80);
+
+            const summaryParts = [];
+            if (searchTerm) summaryParts.push(`Keyword: "${searchTerm}"`);
+            if (cat) summaryParts.push(`Type: ${cat}`);
+            if (district) summaryParts.push(`Location: ${district}`);
+            if (maxPrice) summaryParts.push(`Max: ৳${Number(maxPrice).toLocaleString()}/day`);
+            if (startDate || endDate) summaryParts.push(`Dates: ${startDate || 'Any'} ~ ${endDate || 'Any'}`);
+            document.getElementById('ssModalSummaryText').textContent = summaryParts.length > 0 ? summaryParts.join(' · ') : '@L["All machinery in Bangladesh"]';
+
+            const modalEl = document.getElementById('saveSearchModal');
+            if (modalEl) {
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            }
+        }
+
         // Initialize on load
         document.addEventListener("DOMContentLoaded", function () {
             const searchInput = document.getElementById('mainSearchInput');
@@ -1088,4 +1157,57 @@
             );
         });
     </script>
+
+    <!-- Save Search Modal -->
+    <div class="modal fade" id="saveSearchModal" tabindex="-1" aria-labelledby="saveSearchModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-4 overflow-hidden">
+                <form asp-controller="SavedSearches" asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-header bg-success text-white border-0 px-4 py-3">
+                        <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="saveSearchModalLabel">
+                            <i class="bi bi-bookmark-plus"></i>
+                            <span>@L["Save This Search"]</span>
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <input type="hidden" name="ListingType" id="ssModalListingType" value="Equipment" />
+                        <input type="hidden" name="SearchTerm" id="ssModalSearchTerm" />
+                        <input type="hidden" name="Category" id="ssModalCategory" />
+                        <input type="hidden" name="District" id="ssModalDistrict" />
+                        <input type="hidden" name="MaxRate" id="ssModalMaxRate" />
+                        <input type="hidden" name="MinCapacityTons" id="ssModalMinCapacity" />
+                        <input type="hidden" name="From" id="ssModalFrom" />
+                        <input type="hidden" name="To" id="ssModalTo" />
+                        <input type="hidden" name="ReturnUrl" id="ssModalReturnUrl" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-dark small" for="ssModalName">@L["Search Name"]</label>
+                            <input type="text" class="form-control rounded-3" id="ssModalName" name="Name" maxlength="80" required
+                                   placeholder="@L["e.g. Combine harvester in Bogura"]" />
+                        </div>
+
+                        <div class="p-3 bg-light rounded-3 border small mb-3">
+                            <div class="fw-bold text-dark mb-1">@L["Current Search Criteria:"]</div>
+                            <div id="ssModalSummaryText" class="text-secondary"></div>
+                        </div>
+
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="ssModalAlerts" name="AlertsEnabled" value="true" checked />
+                            <label class="form-check-label text-dark fw-semibold small" for="ssModalAlerts">
+                                @L["Notify me when new matching machinery becomes available"]
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 bg-light px-4 py-3">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">@L["Cancel"]</button>
+                        <button type="submit" class="btn btn-krishi-primary rounded-pill px-4 fw-semibold shadow-sm">
+                            <i class="bi bi-check2 me-1"></i>@L["Save Search"]
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 }

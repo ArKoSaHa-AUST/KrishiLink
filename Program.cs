@@ -77,6 +77,8 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(optio
     options.MultipartBodyLengthLimit = 32 * 1024 * 1024; // 32 MB
 });
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.AddScoped<IFavoriteService, FavoriteService>();
+builder.Services.AddScoped<ISavedSearchService, SavedSearchService>();
 builder.Services.AddScoped<IEquipmentService, EquipmentService>();
 builder.Services.AddScoped<IGodownService, GodownService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
@@ -125,11 +127,13 @@ builder.Services.AddSingleton<IEmailQueue>(sp => sp.GetRequiredService<EmailDisp
 builder.Services.AddHostedService(sp => sp.GetRequiredService<EmailDispatchService>());
 builder.Services.Configure<ReminderOptions>(builder.Configuration.GetSection(ReminderOptions.SectionName));
 builder.Services.AddScoped<IReminderService, ReminderService>();
+builder.Services.Configure<AlertOptions>(builder.Configuration.GetSection(AlertOptions.SectionName));
 
 builder.Services.AddHostedService<MonthlyStatementScheduler>();
 builder.Services.AddHostedService<PayoutSettlementScheduler>();
 builder.Services.AddHostedService<WeatherSuggestionScheduler>();
 builder.Services.AddHostedService<ReminderScheduler>();
+builder.Services.AddHostedService<SavedSearchAlertScheduler>();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();

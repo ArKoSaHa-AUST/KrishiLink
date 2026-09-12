@@ -33,6 +33,8 @@ namespace KrishiLink.DAL
         public DbSet<LedgerEntry> LedgerEntries { get; set; } = null!;
         public DbSet<HarvestPlan> HarvestPlans { get; set; } = null!;
         public DbSet<HarvestPlanItem> HarvestPlanItems { get; set; } = null!;
+        public DbSet<Favorite> Favorites { get; set; } = null!;
+        public DbSet<SavedSearch> SavedSearches { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -369,6 +371,35 @@ namespace KrishiLink.DAL
                 i.Property(x => x.Note).HasMaxLength(300);
 
                 i.HasIndex(x => x.HarvestPlanId);
+            });
+
+            builder.Entity<Favorite>(f =>
+            {
+                f.Property(x => x.ListingType).HasMaxLength(20).IsRequired();
+                f.HasIndex(x => new { x.UserId, x.ListingType, x.ListingId }).IsUnique();
+                f.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<SavedSearch>(s =>
+            {
+                s.Property(x => x.Name).HasMaxLength(80).IsRequired();
+                s.Property(x => x.ListingType).HasMaxLength(20).IsRequired();
+                s.Property(x => x.SearchTerm).HasMaxLength(100);
+                s.Property(x => x.Category).HasMaxLength(50);
+                s.Property(x => x.District).HasMaxLength(60);
+                s.Property(x => x.MaxRate).HasPrecision(18, 2);
+                s.Property(x => x.KnownListingIds).HasMaxLength(2000).HasDefaultValue("");
+
+                s.HasIndex(x => x.UserId);
+                s.HasIndex(x => x.AlertsEnabled);
+
+                s.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

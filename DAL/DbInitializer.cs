@@ -184,7 +184,67 @@ namespace KrishiLink.DAL
 
                 // Seed demo harvest plans
                 await SeedDemoHarvestPlansAsync(db, userManager);
+
+                // Seed demo favorites and saved searches
+                await SeedDemoFavoritesAndSavedSearchesAsync(db, userManager);
             }
+        }
+
+        private static async Task SeedDemoFavoritesAndSavedSearchesAsync(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+        {
+            var farmer = await userManager.FindByEmailAsync("farmer@krishilink.com");
+            if (farmer == null) return;
+
+            if (!await db.Favorites.AnyAsync(f => f.UserId == farmer.Id))
+            {
+                var eq = await db.Equipment.FirstOrDefaultAsync();
+                var gd = await db.Godowns.FirstOrDefaultAsync();
+                if (eq != null)
+                {
+                    db.Favorites.Add(new Favorite
+                    {
+                        UserId = farmer.Id,
+                        ListingType = ListingTypes.Equipment,
+                        ListingId = eq.Id,
+                        CreatedAt = DateTime.UtcNow.AddDays(-3)
+                    });
+                }
+                if (gd != null)
+                {
+                    db.Favorites.Add(new Favorite
+                    {
+                        UserId = farmer.Id,
+                        ListingType = ListingTypes.Godown,
+                        ListingId = gd.Id,
+                        CreatedAt = DateTime.UtcNow.AddDays(-2)
+                    });
+                }
+            }
+
+            if (!await db.SavedSearches.AnyAsync(s => s.UserId == farmer.Id))
+            {
+                var currentYear = DateTime.Today.Year;
+                var novStart = new DateTime(DateTime.Today.Month > 11 ? currentYear + 1 : currentYear, 11, 1);
+                var novEnd = new DateTime(DateTime.Today.Month > 11 ? currentYear + 1 : currentYear, 11, 30);
+
+                db.SavedSearches.Add(new SavedSearch
+                {
+                    UserId = farmer.Id,
+                    Name = "Combine harvester in Bogura, November",
+                    ListingType = ListingTypes.Equipment,
+                    SearchTerm = "harvester",
+                    Category = "Harvester",
+                    District = "Bogura",
+                    MaxRate = 4000m,
+                    From = novStart,
+                    To = novEnd,
+                    AlertsEnabled = true,
+                    KnownListingIds = string.Empty,
+                    CreatedAt = DateTime.UtcNow.AddDays(-1)
+                });
+            }
+
+            await db.SaveChangesAsync();
         }
 
         private static async Task SeedDemoHarvestPlansAsync(ApplicationDbContext db, UserManager<ApplicationUser> userManager)

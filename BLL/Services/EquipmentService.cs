@@ -68,6 +68,7 @@ namespace KrishiLink.BLL.Services
         private readonly ILoyaltyService _loyalty;
         private readonly IFarmerProfileService _farmerProfile;
         private readonly ILedgerRepository _ledger;
+        private readonly IFavoriteService _favoriteService;
         private readonly RevenueOptions _revenue;
         private readonly PricingOptions _pricingOptions;
 
@@ -86,6 +87,7 @@ namespace KrishiLink.BLL.Services
             ILoyaltyService loyalty,
             IFarmerProfileService farmerProfile,
             ILedgerRepository ledger,
+            IFavoriteService favoriteService,
             IOptions<RevenueOptions> revenue,
             IOptions<PricingOptions> pricingOptions)
         {
@@ -103,6 +105,7 @@ namespace KrishiLink.BLL.Services
             _loyalty = loyalty;
             _farmerProfile = farmerProfile;
             _ledger = ledger;
+            _favoriteService = favoriteService;
             _revenue = revenue.Value;
             _pricingOptions = pricingOptions.Value;
         }
@@ -245,6 +248,16 @@ namespace KrishiLink.BLL.Services
                 };
             }).ToList();
 
+            HashSet<int> favoriteIds = new();
+            if (!string.IsNullOrWhiteSpace(c.CurrentUserId))
+            {
+                favoriteIds = await _favoriteService.GetIdsAsync(c.CurrentUserId, ListingTypes.Equipment);
+                foreach (var item in items)
+                {
+                    item.IsFavorite = favoriteIds.Contains(item.Id);
+                }
+            }
+
             var model = new EquipmentBrowseViewModel
             {
                 SearchTerm = c.SearchTerm,
@@ -259,6 +272,7 @@ namespace KrishiLink.BLL.Services
                 Units = c.Units > 0 ? c.Units : 1,
                 SortBy = sort,
                 EquipmentList = items,
+                FavoriteIds = favoriteIds,
                 TotalCount = totalCount,
                 Page = page,
                 PageSize = pageSize,
@@ -444,6 +458,9 @@ namespace KrishiLink.BLL.Services
             // Populate Farmer Loyalty Context if user is authenticated
             if (!string.IsNullOrWhiteSpace(currentUserId))
             {
+                var userFavs = await _favoriteService.GetIdsAsync(currentUserId, ListingTypes.Equipment);
+                model.IsFavorite = userFavs.Contains(id);
+
                 var farmer = await _users.FirstOrDefaultAsync(u => u.Id == currentUserId);
                 if (farmer != null)
                 {

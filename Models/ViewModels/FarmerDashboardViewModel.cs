@@ -34,6 +34,12 @@ namespace KrishiLink.Models.ViewModels
 
         /// <summary>Next active/upcoming submitted harvest plan.</summary>
         public HarvestPlanSummaryViewModel? NextSubmittedHarvestPlan { get; set; }
+
+        /// <summary>Count of active favorite listings saved by farmer.</summary>
+        public int FavoritesCount { get; set; }
+
+        /// <summary>Count of active saved searches configured by farmer.</summary>
+        public int SavedSearchesCount { get; set; }
     }
 
     /// <summary>

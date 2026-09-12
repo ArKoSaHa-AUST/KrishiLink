@@ -14,6 +14,14 @@
         </p>
     </div>
     <div class="d-flex gap-2 align-items-center flex-wrap">
+        <a asp-controller="Favorites" asp-action="Index" class="btn btn-outline-danger rounded-pill px-3 py-2 d-flex align-items-center gap-2 fw-semibold flex-shrink-0">
+            <i class="bi bi-heart-fill"></i>
+            <span>@L["Favorites"]</span>
+            @if (Model.FavoritesCount > 0)
+            {
+                <span class="badge bg-danger rounded-pill">@Model.FavoritesCount</span>
+            }
+        </a>
         <a asp-controller="HarvestPlan" asp-action="Index" class="btn btn-outline-success rounded-pill px-3 py-2 d-flex align-items-center gap-2 fw-semibold flex-shrink-0">
             <i class="bi bi-diagram-3"></i>
             <span>@L["Harvest Plans"]</span>
@@ -36,6 +44,36 @@
     </div>
 }
 <partial name="_OnboardingBanner" />
+
+<!-- Quick Discovery Stats: Favorites & Saved Searches Alerts -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <a asp-controller="Favorites" asp-action="Index" class="card krishi-card border-0 shadow-sm rounded-4 p-3 text-decoration-none h-100 transition-hover bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle p-2.5 bg-danger-subtle text-danger fs-5 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
+                    <i class="bi bi-heart-fill"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark">@Model.FavoritesCount</h5>
+                    <span class="text-muted small">@L["Favorites"]</span>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a asp-controller="SavedSearches" asp-action="Index" class="card krishi-card border-0 shadow-sm rounded-4 p-3 text-decoration-none h-100 transition-hover bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle p-2.5 bg-success-subtle text-success fs-5 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 44px; height: 44px;">
+                    <i class="bi bi-bell-fill"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark">@Model.SavedSearchesCount</h5>
+                    <span class="text-muted small">@L["Saved Searches"]</span>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
 
 @if (Model.NextSubmittedHarvestPlan != null || Model.DraftHarvestPlansCount > 0)
 {

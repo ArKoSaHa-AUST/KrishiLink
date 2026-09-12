@@ -36,6 +36,8 @@ namespace KrishiLink.BLL.Services
         private readonly IPaymentService _payments;
         private readonly IEquipmentService _equipmentService;
         private readonly IGodownService _godownService;
+        private readonly IRepository<Favorite> _favorites;
+        private readonly IRepository<SavedSearch> _savedSearches;
 
         public BookingService(
             IRepository<EquipmentBooking> rentals,
@@ -46,7 +48,9 @@ namespace KrishiLink.BLL.Services
             INotificationService notifications,
             IPaymentService payments,
             IEquipmentService equipmentService,
-            IGodownService godownService)
+            IGodownService godownService,
+            IRepository<Favorite> favorites,
+            IRepository<SavedSearch> savedSearches)
         {
             _rentals = rentals;
             _storage = storage;
@@ -57,6 +61,8 @@ namespace KrishiLink.BLL.Services
             _payments = payments;
             _equipmentService = equipmentService;
             _godownService = godownService;
+            _favorites = favorites;
+            _savedSearches = savedSearches;
         }
 
         public async Task<BookingHistoryViewModel> GetHistoryAsync(string farmerId, string tab, string status, DateTime? from, DateTime? to, string? search)
@@ -154,6 +160,9 @@ namespace KrishiLink.BLL.Services
                 };
             }
 
+            var favoritesCount = await _favorites.Query().CountAsync(f => f.UserId == farmerId);
+            var savedSearchesCount = await _savedSearches.Query().CountAsync(s => s.UserId == farmerId);
+
             return new FarmerDashboardViewModel
             {
                 ActiveBookings = all
@@ -172,7 +181,9 @@ namespace KrishiLink.BLL.Services
                     }).ToList(),
                 RecentActivity = activity.OrderByDescending(a => a.At).Take(6).Select(a => a.Item).ToList(),
                 DraftHarvestPlansCount = draftPlansCount,
-                NextSubmittedHarvestPlan = nextPlanSummary
+                NextSubmittedHarvestPlan = nextPlanSummary,
+                FavoritesCount = favoritesCount,
+                SavedSearchesCount = savedSearchesCount
             };
         }
 

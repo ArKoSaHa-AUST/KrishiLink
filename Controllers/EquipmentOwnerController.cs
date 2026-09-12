@@ -13,11 +13,15 @@ namespace KrishiLink.Controllers
     {
         private readonly IEquipmentService _equipment;
         private readonly IFileStorageService _files;
+        private readonly ISavedSearchService _savedSearches;
+        private readonly ILogger<EquipmentOwnerController> _logger;
         private readonly IStringLocalizer<SharedResource> _localizer;
 
         public EquipmentOwnerController(
             IEquipmentService equipment,
             IFileStorageService files,
+            ISavedSearchService savedSearches,
+            ILogger<EquipmentOwnerController> logger,
             IEquipmentRevenueService revenueService,
             UserManager<ApplicationUser> userManager,
             IStringLocalizer<SharedResource> localizer)
@@ -25,6 +29,8 @@ namespace KrishiLink.Controllers
         {
             _equipment = equipment;
             _files = files;
+            _savedSearches = savedSearches;
+            _logger = logger;
             _localizer = localizer;
         }
 
@@ -135,6 +141,18 @@ namespace KrishiLink.Controllers
             var isEdit = model.IsEditMode;
             if (!await _equipment.SaveListingAsync(OwnerId, model))
                 return NotFound();
+
+            if (!isEdit && model.Id.HasValue)
+            {
+                try
+                {
+                    await _savedSearches.EvaluateForListingAsync(ListingTypes.Equipment, model.Id.Value);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to evaluate saved search alerts for newly created equipment listing {ListingId}", model.Id.Value);
+                }
+            }
 
             TempData["SuccessMessage"] = $"Equipment listing '{model.Name}' successfully {(isEdit ? "updated" : "created")}!";
             return RedirectToAction(nameof(Index));

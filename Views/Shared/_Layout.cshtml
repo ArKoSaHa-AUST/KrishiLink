@@ -204,6 +204,18 @@
                                                 }
                                             </a>
                                         </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="Favorites" asp-action="Index">
+                                                <i class="bi bi-heart text-danger"></i>
+                                                <span>@L["Favorites"]</span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="SavedSearches" asp-action="Index">
+                                                <i class="bi bi-bookmark-heart text-success"></i>
+                                                <span>@L["Saved Searches"]</span>
+                                            </a>
+                                        </li>
                                     }
                                     @if (roleDisplay is "GodownOwner" or "EquipmentOwner")
                                     {
@@ -412,6 +424,9 @@
             </div>
         </div>
     </footer>
+
+    <!-- Global Anti-Forgery Token Form for AJAX -->
+    <form id="antiForgeryForm" class="d-none">@Html.AntiForgeryToken()</form>
 
     <!-- Bootstrap 5 & jQuery JS (via wwwroot/lib) -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>

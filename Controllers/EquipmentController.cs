@@ -19,6 +19,7 @@ namespace KrishiLink.Controllers
         /// <summary>GET: /Equipment — browse & search with server-side filtering.</summary>
         public async Task<IActionResult> Index(EquipmentSearchCriteria criteria)
         {
+            criteria.CurrentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             return View(await _equipment.BrowseAsync(criteria));
         }
 
@@ -26,6 +27,7 @@ namespace KrishiLink.Controllers
         [HttpGet]
         public async Task<IActionResult> FilterData(EquipmentSearchCriteria criteria)
         {
+            criteria.CurrentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var model = await _equipment.BrowseAsync(criteria);
             var items = model.EquipmentList.Select(e => new
             {
@@ -41,6 +43,7 @@ namespace KrishiLink.Controllers
                 district = e.District,
                 distanceKm = e.DistanceKm,
                 isAvailable = e.IsAvailable,
+                isFavorite = e.IsFavorite,
                 status = e.Status,
                 quantity = e.Quantity,
                 imageUrl = e.ImageUrl,

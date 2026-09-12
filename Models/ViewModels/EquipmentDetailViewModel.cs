@@ -20,6 +20,7 @@ namespace KrishiLink.Models.ViewModels
         public string Location { get; set; } = string.Empty;
         public string? District { get; set; }
         public string Status { get; set; } = "Available";
+        public bool IsFavorite { get; set; }
 
         // Geographic Coordinates & Navigation
         public double? Latitude { get; set; }

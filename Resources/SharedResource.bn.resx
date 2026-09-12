@@ -1403,7 +1403,7 @@
     <value>পিএইচ ৬.৫</value>
   </data>
   <data name="storage facilities" xml:space="preserve">
-    <value>স্টোরেজ সুবিধা</value>
+    <value>গুদাম সুবিধাসমূহ</value>
   </data>
   <data name="{0} Available Items" xml:space="preserve">
     <value>{0}?? ?????? ?????</value>
@@ -4318,5 +4318,200 @@
   </data>
   <data name="Reminder" xml:space="preserve">
     <value>রিমাইন্ডার</value>
+  </data>
+  <data name="My Favorites" xml:space="preserve">
+    <value>আমার প্রিয় তালিকা</value>
+  </data>
+  <data name="My Favorites &amp; Wishlist" xml:space="preserve">
+    <value>আমার প্রিয় ও উইশলিস্ট</value>
+  </data>
+  <data name="Favorites" xml:space="preserve">
+    <value>প্রিয় তালিকা</value>
+  </data>
+  <data name="Track and quickly access your saved machinery and storage facilities with real-time availability updates." xml:space="preserve">
+    <value>রিয়েল-টাইম প্রাপ্যতা আপডেটের সাথে আপনার সংরক্ষিত যন্ত্রপাতি এবং গুদামগুলো ট্র্যাক ও দ্রুত অ্যাক্সেস করুন।</value>
+  </data>
+  <data name="Browse Machinery" xml:space="preserve">
+    <value>যন্ত্রপাতি ব্রাউজ করুন</value>
+  </data>
+  <data name="Machinery" xml:space="preserve">
+    <value>যন্ত্রপাতি</value>
+  </data>
+  <data name="No favorite machinery yet" xml:space="preserve">
+    <value>এখনও কোনো যন্ত্রপাতি প্রিয় তালিকায় যোগ করা হয়নি</value>
+  </data>
+  <data name="Click the heart icon on any equipment card or detail page while browsing to save it to your wishlist." xml:space="preserve">
+    <value>উইশলিস্টে সংরক্ষণ করতে ব্রাউজ করার সময় যেকোনো যন্ত্রপাতির কার্ড বা বিস্তারিত পৃষ্ঠায় হার্ট আইকনে ক্লিক করুন।</value>
+  </data>
+  <data name="Explore Equipment Catalog" xml:space="preserve">
+    <value>যন্ত্রপাতির ক্যাটালগ দেখুন</value>
+  </data>
+  <data name="No favorite storage facilities yet" xml:space="preserve">
+    <value>এখনও কোনো গুদাম প্রিয় তালিকায় যোগ করা হয়নি</value>
+  </data>
+  <data name="Click the heart icon on any godown facility card or detail page while browsing to save it to your wishlist." xml:space="preserve">
+    <value>উইশলিস্টে সংরক্ষণ করতে ব্রাউজ করার সময় যেকোনো গুদামের কার্ড বা বিস্তারিত পৃষ্ঠায় হার্ট আইকনে ক্লিক করুন।</value>
+  </data>
+  <data name="Explore Storage Catalog" xml:space="preserve">
+    <value>গুদামের ক্যাটালগ দেখুন</value>
+  </data>
+  <data name="Add to favorites" xml:space="preserve">
+    <value>প্রিয় তালিকায় যোগ করুন</value>
+  </data>
+  <data name="Remove from favorites" xml:space="preserve">
+    <value>প্রিয় তালিকা থেকে সরান</value>
+  </data>
+  <data name="Item removed from your favorites." xml:space="preserve">
+    <value>আইটেমটি আপনার প্রিয় তালিকা থেকে সরানো হয়েছে।</value>
+  </data>
+  <data name="Available today" xml:space="preserve">
+    <value>আজই পাওয়া যাচ্ছে</value>
+  </data>
+  <data name="Free from {0}" xml:space="preserve">
+    <value>{0} থেকে খালি আছে</value>
+  </data>
+  <data name="Check availability" xml:space="preserve">
+    <value>প্রাপ্যতা দেখুন</value>
+  </data>
+  <data name="{0} tons available today" xml:space="preserve">
+    <value>আজ {0} টন ধারণক্ষমতা খালি আছে</value>
+  </data>
+  <data name="Storage Fee" xml:space="preserve">
+    <value>সংরক্ষণ ফি</value>
+  </data>
+  <data name="Saved Searches" xml:space="preserve">
+    <value>সংরক্ষিত অনুসন্ধান</value>
+  </data>
+  <data name="Saved Searches &amp; Alerts" xml:space="preserve">
+    <value>সংরক্ষিত অনুসন্ধান ও সতর্কতা</value>
+  </data>
+  <data name="Automated alerts notify you as soon as new machinery or storage matching your preferences becomes available." xml:space="preserve">
+    <value>আপনার পছন্দের সাথে মিলে এমন নতুন যন্ত্রপাতি বা গুদাম খালি হলেই স্বয়ংক্রিয় সতর্কবার্তা আপনাকে জানিয়ে দেবে।</value>
+  </data>
+  <data name="{0} of {1} Saved" xml:space="preserve">
+    <value>{0}/{1} সংরক্ষিত</value>
+  </data>
+  <data name="[Dev] Run Alerts Now" xml:space="preserve">
+    <value>[Dev] এখনই সতর্কতা চালু করুন</value>
+  </data>
+  <data name="No saved searches yet" xml:space="preserve">
+    <value>এখনও কোনো অনুসন্ধান সংরক্ষিত নেই</value>
+  </data>
+  <data name="Search for machinery or godowns with your desired filters and click 'Save this search' to receive automatic availability alerts." xml:space="preserve">
+    <value>পছন্দসই ফিল্টার দিয়ে যন্ত্রপাতি বা গুদাম অনুসন্ধান করুন এবং স্বয়ংক্রিয় সতর্কতা পেতে 'এই অনুসন্ধান সংরক্ষণ করুন' ক্লিক করুন।</value>
+  </data>
+  <data name="Find Machinery" xml:space="preserve">
+    <value>যন্ত্রপাতি খুঁজুন</value>
+  </data>
+  <data name="Find Godowns" xml:space="preserve">
+    <value>গুদাম খুঁজুন</value>
+  </data>
+  <data name="Alerts Active" xml:space="preserve">
+    <value>সতর্কতা সক্রিয়</value>
+  </data>
+  <data name="Alerts Paused" xml:space="preserve">
+    <value>সতর্কতা স্থগিত</value>
+  </data>
+  <data name="Expired" xml:space="preserve">
+    <value>মেয়াদোত্তীর্ণ</value>
+  </data>
+  <data name="Delete search" xml:space="preserve">
+    <value>অনুসন্ধান মুছুন</value>
+  </data>
+  <data name="Are you sure you want to delete this saved search?" xml:space="preserve">
+    <value>আপনি কি নিশ্চিত যে এই সংরক্ষিত অনুসন্ধানটি মুছে ফেলতে চান?</value>
+  </data>
+  <data name="Matched Listings:" xml:space="preserve">
+    <value>মেলা তালিকা:</value>
+  </data>
+  <data name="{0} listings" xml:space="preserve">
+    <value>{0}টি তালিকা</value>
+  </data>
+  <data name="Last Alert:" xml:space="preserve">
+    <value>শেষ সতর্কতা:</value>
+  </data>
+  <data name="No alerts yet" xml:space="preserve">
+    <value>এখনও কোনো সতর্কতা নেই</value>
+  </data>
+  <data name="Pause Alerts" xml:space="preserve">
+    <value>সতর্কতা স্থগিত করুন</value>
+  </data>
+  <data name="Enable Alerts" xml:space="preserve">
+    <value>সতর্কতা চালু করুন</value>
+  </data>
+  <data name="Run Now" xml:space="preserve">
+    <value>এখনই দেখুন</value>
+  </data>
+  <data name="Search dates have passed" xml:space="preserve">
+    <value>অনুসন্ধানের তারিখ পার হয়ে গেছে</value>
+  </data>
+  <data name="Save This Search" xml:space="preserve">
+    <value>এই অনুসন্ধানটি সংরক্ষণ করুন</value>
+  </data>
+  <data name="Save Search" xml:space="preserve">
+    <value>অনুসন্ধান সংরক্ষণ</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>সংরক্ষণ</value>
+  </data>
+  <data name="Search Name" xml:space="preserve">
+    <value>অনুসন্ধানের নাম</value>
+  </data>
+  <data name="Current Search Criteria:" xml:space="preserve">
+    <value>বর্তমান অনুসন্ধানের শর্তাবলী:</value>
+  </data>
+  <data name="Notify me when new matching machinery becomes available" xml:space="preserve">
+    <value>নতুন মানানসই যন্ত্রপাতি পাওয়া গেলে আমাকে জানান</value>
+  </data>
+  <data name="Notify me when new matching storage becomes available" xml:space="preserve">
+    <value>নতুন মানানসই গুদাম পাওয়া গেলে আমাকে জানান</value>
+  </data>
+  <data name="Search '{0}' has been saved! You will receive alerts when new listings match." xml:space="preserve">
+    <value>অনুসন্ধান '{0}' সংরক্ষিত হয়েছে! নতুন তালিকা মিললে সতর্কতা পাঠানো হবে।</value>
+  </data>
+  <data name="Alert settings updated." xml:space="preserve">
+    <value>সতর্কতা সেটিংস আপডেট করা হয়েছে।</value>
+  </data>
+  <data name="Saved search deleted." xml:space="preserve">
+    <value>সংরক্ষিত অনুসন্ধান মুছে ফেলা হয়েছে।</value>
+  </data>
+  <data name="All machinery in Bangladesh" xml:space="preserve">
+    <value>বাংলাদেশের সকল যন্ত্রপাতি</value>
+  </data>
+  <data name="All storage facilities in Bangladesh" xml:space="preserve">
+    <value>বাংলাদেশের সকল গুদাম</value>
+  </data>
+  <data name="You cannot have more than 100 favorites." xml:space="preserve">
+    <value>আপনি ১০০ টির বেশি প্রিয় তালিকা রাখতে পারবেন না।</value>
+  </data>
+  <data name="You cannot have more than 10 saved searches." xml:space="preserve">
+    <value>আপনি ১০ টির বেশি অনুসন্ধান সংরক্ষণ করতে পারবেন না।</value>
+  </data>
+  <data name="Equipment listing does not exist." xml:space="preserve">
+    <value>যন্ত্রপাতির তালিকাটি বিদ্যমান নেই।</value>
+  </data>
+  <data name="Godown facility does not exist." xml:space="preserve">
+    <value>গুদাম সুবিধাটি বিদ্যমান নেই।</value>
+  </data>
+  <data name="Search name cannot exceed 80 characters" xml:space="preserve">
+    <value>অনুসন্ধানের নাম ৮০ অক্ষরের বেশি হতে পারবে না</value>
+  </data>
+  <data name="Please provide a name for this search" xml:space="preserve">
+    <value>দয়া করে এই অনুসন্ধানের একটি নাম দিন</value>
+  </data>
+  <data name="New match for your saved search" xml:space="preserve">
+    <value>আপনার সংরক্ষিত অনুসন্ধানের নতুন ফলাফল</value>
+  </data>
+  <data name="{0} in {1} matches &quot;{2}&quot;{3}." xml:space="preserve">
+    <value>{1}-এ {0} আপনার &quot;{2}&quot; অনুসন্ধানের সাথে মিলেছে{3}।</value>
+  </data>
+  <data name="Saved search expired" xml:space="preserve">
+    <value>সংরক্ষিত অনুসন্ধানের মেয়াদ শেষ</value>
+  </data>
+  <data name="Your saved search {0} expired — its dates have passed." xml:space="preserve">
+    <value>আপনার সংরক্ষিত অনুসন্ধান {0}-এর মেয়াদ শেষ হয়েছে — এর তারিখ পার হয়ে গেছে।</value>
+  </data>
+  <data name="[Dev] Evaluated saved searches. {0} alert(s) sent." xml:space="preserve">
+    <value>[Dev] সংরক্ষিত অনুসন্ধান মূল্যায়ন করা হয়েছে। {0}টি সতর্কতা পাঠানো হয়েছে।</value>
   </data>
 </root>
