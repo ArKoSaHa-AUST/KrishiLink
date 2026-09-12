@@ -3143,4 +3143,139 @@
   <data name="Top 3 hosts based on trust score, bookings, and verified customer reviews" xml:space="preserve">
     <value>ট্রাস্ট স্কোর, বুকিং ও যাচাইকৃত গ্রাহক পর্যালোচনার ভিত্তিতে শীর্ষ ৩ হোস্ট</value>
   </data>
+  <data name="KrishiPoints &amp; Rewards Hub" xml:space="preserve">
+    <value>কৃষিপয়েন্টস ও রিওয়ার্ডস হাব</value>
+  </data>
+  <data name="KrishiPoints Rewards" xml:space="preserve">
+    <value>কৃষিপয়েন্টস রিওয়ার্ডস</value>
+  </data>
+  <data name="KrishiPoints" xml:space="preserve">
+    <value>কৃষিপয়েন্টস</value>
+  </data>
+  <data name="Points Available" xml:space="preserve">
+    <value>উপলব্ধ পয়েন্টস</value>
+  </data>
+  <data name="Next Tier" xml:space="preserve">
+    <value>পরবর্তী স্তর</value>
+  </data>
+  <data name="Farmer Loyalty Hub" xml:space="preserve">
+    <value>কৃষক লয়্যালটি হাব</value>
+  </data>
+  <data name="Earn KrishiPoints with every booking and convert them into instant rental and storage discounts!" xml:space="preserve">
+    <value>প্রতিটি বুকিংয়ে কৃষিপয়েন্টস অর্জন করুন এবং সরাসরি ভাড়া ও স্টোরেজ ডিসকাউন্টে রূপান্তর করুন!</value>
+  </data>
+  <data name="How to Earn Points" xml:space="preserve">
+    <value>কীভাবে পয়েন্ট অর্জন করবেন</value>
+  </data>
+  <data name="Earn 1 KrishiPoint for every ৳100 spent on completed equipment rentals or godown storage bookings (min. 10 pts)." xml:space="preserve">
+    <value>সম্পূর্ণ হওয়া সরঞ্জাম ভাড়া বা গোডাউন স্টোরেজে প্রতি ৳১০০ খরচে ১ কৃষিপয়েন্ট অর্জন করুন (সর্বনিম্ন ১০ পয়েন্ট)।</value>
+  </data>
+  <data name="Direct Checkout Discounts" xml:space="preserve">
+    <value>সরাসরি চেকআউট ডিসকাউন্ট</value>
+  </data>
+  <data name="Apply your loyalty tier or generated promo code directly during equipment or storage booking checkout." xml:space="preserve">
+    <value>সরঞ্জাম বা স্টোরেজ বুকিং চেকআউটে সরাসরি আপনার লয়্যালটি স্তর বা ভাউচার কোড ব্যবহার করুন।</value>
+  </data>
+  <data name="Auto Refund Protection" xml:space="preserve">
+    <value>স্বয়ংক্রিয় রিফান্ড সুরক্ষা</value>
+  </data>
+  <data name="If a booking request is declined or cancelled, used points and vouchers are automatically restored to your wallet." xml:space="preserve">
+    <value>বুকিং অনুরোধ বাতিল বা প্রত্যাখ্যাত হলে ব্যবহৃত পয়েন্ট ও ভাউচার স্বয়ংক্রিয়ভাবে আপনার ওয়ালেটে ফেরত আসবে।</value>
+  </data>
+  <data name="Fixed Discount Conversion Table" xml:space="preserve">
+    <value>নির্দিষ্ট ডিসকাউন্ট রূপান্তর তালিকা</value>
+  </data>
+  <data name="Choose a conversion tier below to generate a reusable promo discount voucher." xml:space="preserve">
+    <value>একটি পুনঃব্যবহারযোগ্য প্রোমো ডিসকাউন্ট ভাউচার তৈরি করতে নিচের রূপান্তর স্তরটি নির্বাচন করুন।</value>
+  </data>
+  <data name="Points Required" xml:space="preserve">
+    <value>প্রয়োজনীয় পয়েন্ট</value>
+  </data>
+  <data name="Discount Value" xml:space="preserve">
+    <value>ডিসকাউন্টের মান</value>
+  </data>
+  <data name="Bonus Rate" xml:space="preserve">
+    <value>বোনাস হার</value>
+  </data>
+  <data name="Promo Voucher" xml:space="preserve">
+    <value>প্রোমো ভাউচার</value>
+  </data>
+  <data name="pts" xml:space="preserve">
+    <value>পয়েন্ট</value>
+  </data>
+  <data name="Standard (1.0x)" xml:space="preserve">
+    <value>স্ট্যান্ডার্ড (১.০x)</value>
+  </data>
+  <data name="Generate Voucher" xml:space="preserve">
+    <value>ভাউচার তৈরি করুন</value>
+  </data>
+  <data name="Need More Pts" xml:space="preserve">
+    <value>আরও পয়েন্ট দরকার</value>
+  </data>
+  <data name="Active Promo Discount Vouchers" xml:space="preserve">
+    <value>সক্রিয় প্রোমো ডিসকাউন্ট ভাউচার</value>
+  </data>
+  <data name="Copy &amp; use these promo vouchers at checkout for instant savings." xml:space="preserve">
+    <value>তাৎক্ষণিক সাশ্রয়ের জন্য চেকআউটে এই প্রোমো ভাউচার কোডগুলো কপি করে ব্যবহার করুন।</value>
+  </data>
+  <data name="Valid for Equipment &amp; Godown bookings" xml:space="preserve">
+    <value>সরঞ্জাম ও গোডাউন উভয় বুকিংয়ের জন্য প্রযোজ্য</value>
+  </data>
+  <data name="Points &amp; Discount Transaction History" xml:space="preserve">
+    <value>পয়েন্ট ও ডিসকাউন্ট লেনদেনের ইতিহাস</value>
+  </data>
+  <data name="Complete transparent ledger of your points earned, promo codes generated, and booking discounts." xml:space="preserve">
+    <value>আপনার অর্জিত পয়েন্ট, তৈরিকৃত প্রোমো কোড এবং বুকিং ডিসকাউন্টের সম্পূর্ণ স্বচ্ছ ইতিহাস।</value>
+  </data>
+  <data name="Date &amp; Time" xml:space="preserve">
+    <value>তারিখ ও সময়</value>
+  </data>
+  <data name="Booking / Promo Ref" xml:space="preserve">
+    <value>বুকিং / প্রোমো রেফারেন্স</value>
+  </data>
+  <data name="Points Change" xml:space="preserve">
+    <value>পয়েন্ট পরিবর্তন</value>
+  </data>
+  <data name="Discount / Spent" xml:space="preserve">
+    <value>ডিসকাউন্ট / খরচ</value>
+  </data>
+  <data name="No point transactions recorded yet. Complete bookings to start earning KrishiPoints!" xml:space="preserve">
+    <value>এখনো কোনো পয়েন্ট লেনদেনের তথ্য নেই। কৃষিপয়েন্টস অর্জন শুরু করতে বুকিং সম্পন্ন করুন!</value>
+  </data>
+  <data name="KrishiPoints Discount" xml:space="preserve">
+    <value>কৃষিপয়েন্টস ডিসকাউন্ট</value>
+  </data>
+  <data name="Apply loyalty points or promo code for instant savings" xml:space="preserve">
+    <value>তাৎক্ষণিক সাশ্রয়ের জন্য লয়্যালটি পয়েন্ট বা প্রোমো কোড ব্যবহার করুন</value>
+  </data>
+  <data name="Available Balance" xml:space="preserve">
+    <value>উপলব্ধ ব্যালেন্স</value>
+  </data>
+  <data name="Choose Point Redemption Tier" xml:space="preserve">
+    <value>পয়েন্ট রিডেম্পশন স্তর নির্বাচন করুন</value>
+  </data>
+  <data name="Or Enter Promo / Voucher Code" xml:space="preserve">
+    <value>অথবা প্রোমো / ভাউচার কোড লিখুন</value>
+  </data>
+  <data name="Apply Promo" xml:space="preserve">
+    <value>প্রোমো প্রয়োগ করুন</value>
+  </data>
+  <data name="Remove Promo" xml:space="preserve">
+    <value>প্রোমো মুছুন</value>
+  </data>
+  <data name="Applied Promo Discount" xml:space="preserve">
+    <value>প্রয়োগকৃত প্রোমো ডিসকাউন্ট</value>
+  </data>
+  <data name="Bronze Tier" xml:space="preserve">
+    <value>ব্রোঞ্জ স্তর</value>
+  </data>
+  <data name="Silver Tier" xml:space="preserve">
+    <value>সিলভার স্তর</value>
+  </data>
+  <data name="Gold Tier" xml:space="preserve">
+    <value>গোল্ড স্তর</value>
+  </data>
+  <data name="Platinum Tier" xml:space="preserve">
+    <value>প্লাটিনাম স্তর</value>
+  </data>
 </root>
