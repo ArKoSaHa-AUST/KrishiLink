@@ -82,6 +82,9 @@ namespace KrishiLink.DAL
                     }
                     await db.SaveChangesAsync();
                 }
+
+                // Seed demo loyalty points for demo farmers
+                await SeedDemoLoyaltyPointsAsync(db, userManager);
             }
         }
 
@@ -459,6 +462,94 @@ namespace KrishiLink.DAL
                 TransactionDate = date
             });
             repo.MarkBookingsPaid(list.Select(b => b.Id), payoutId);
+        }
+
+        private static async Task SeedDemoLoyaltyPointsAsync(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+        {
+            var farmer = await userManager.FindByEmailAsync("farmer@krishilink.com");
+            if (farmer != null && (!await db.LoyaltyPointTransactions.AnyAsync(t => t.UserId == farmer.Id) || farmer.LoyaltyPoints == 0))
+            {
+                var eqBooking = await db.EquipmentBookings.FirstOrDefaultAsync(b => b.FarmerId == farmer.Id && b.Status == BookingStatus.Completed);
+                var gdBooking = await db.GodownBookings.FirstOrDefaultAsync(b => b.FarmerId == farmer.Id && b.Status == BookingStatus.Completed);
+
+                var transactions = new List<LoyaltyPointTransaction>
+                {
+                    new()
+                    {
+                        UserId = farmer.Id,
+                        Points = 50,
+                        Type = LoyaltyTransactionTypes.Bonus,
+                        Description = "Welcome bonus points for joining KrishiLink",
+                        CreatedAt = DateTime.UtcNow.AddMonths(-2)
+                    }
+                };
+
+                if (eqBooking != null)
+                {
+                    transactions.Add(new()
+                    {
+                        UserId = farmer.Id,
+                        Points = 125,
+                        Type = LoyaltyTransactionTypes.Earned,
+                        Description = $"Earned 125 points for completed Equipment Rental (#EQ-{eqBooking.Id:D4})",
+                        BookingType = "Equipment",
+                        BookingId = eqBooking.Id,
+                        BookingCode = $"#EQ-{eqBooking.Id:D4}",
+                        AmountSpent = 12500m,
+                        CreatedAt = DateTime.UtcNow.AddDays(-28)
+                    });
+                }
+
+                if (gdBooking != null)
+                {
+                    transactions.Add(new()
+                    {
+                        UserId = farmer.Id,
+                        Points = 75,
+                        Type = LoyaltyTransactionTypes.Earned,
+                        Description = $"Earned 75 points for completed Godown Storage (#GD-{gdBooking.Id:D4})",
+                        BookingType = "Godown",
+                        BookingId = gdBooking.Id,
+                        BookingCode = $"#GD-{gdBooking.Id:D4}",
+                        AmountSpent = 7500m,
+                        CreatedAt = DateTime.UtcNow.AddDays(-40)
+                    });
+                }
+
+                farmer.LoyaltyPoints = transactions.Sum(t => t.Points);
+                db.LoyaltyPointTransactions.AddRange(transactions);
+                await db.SaveChangesAsync();
+                await userManager.UpdateAsync(farmer);
+            }
+
+            var karim = await userManager.FindByEmailAsync("karim.mia@krishilink.com");
+            if (karim != null && (!await db.LoyaltyPointTransactions.AnyAsync(t => t.UserId == karim.Id) || karim.LoyaltyPoints == 0))
+            {
+                var transactions = new List<LoyaltyPointTransaction>
+                {
+                    new()
+                    {
+                        UserId = karim.Id,
+                        Points = 50,
+                        Type = LoyaltyTransactionTypes.Bonus,
+                        Description = "Welcome bonus points for joining KrishiLink",
+                        CreatedAt = DateTime.UtcNow.AddMonths(-2)
+                    },
+                    new()
+                    {
+                        UserId = karim.Id,
+                        Points = 85,
+                        Type = LoyaltyTransactionTypes.Earned,
+                        Description = "Earned 85 points for completed Equipment Rental",
+                        AmountSpent = 8500m,
+                        CreatedAt = DateTime.UtcNow.AddDays(-20)
+                    }
+                };
+                karim.LoyaltyPoints = transactions.Sum(t => t.Points);
+                db.LoyaltyPointTransactions.AddRange(transactions);
+                await db.SaveChangesAsync();
+                await userManager.UpdateAsync(karim);
+            }
         }
     }
 }

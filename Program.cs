@@ -77,6 +77,7 @@ builder.Services.AddSingleton<IQrCodeService, QrCodeService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IBadgeService, BadgeService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
+builder.Services.AddScoped<ILoyaltyService, LoyaltyService>();
 
 // Email + scheduled background services
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));

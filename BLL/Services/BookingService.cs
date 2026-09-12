@@ -27,15 +27,18 @@ namespace KrishiLink.BLL.Services
         private readonly IRepository<EquipmentBooking> _rentals;
         private readonly IRepository<GodownBooking> _storage;
         private readonly IQrCodeService _qrCode;
+        private readonly ILoyaltyService _loyalty;
 
         public BookingService(
             IRepository<EquipmentBooking> rentals,
             IRepository<GodownBooking> storage,
-            IQrCodeService qrCode)
+            IQrCodeService qrCode,
+            ILoyaltyService loyalty)
         {
             _rentals = rentals;
             _storage = storage;
             _qrCode = qrCode;
+            _loyalty = loyalty;
         }
 
         public async Task<BookingHistoryViewModel> GetHistoryAsync(string farmerId, string tab, string status, DateTime? from, DateTime? to, string? search)
@@ -130,6 +133,12 @@ namespace KrishiLink.BLL.Services
                 b!.Status = BookingStatus.Cancelled;
                 b.CancelledOn = b.UpdatedOn = DateTime.Now;
                 await _rentals.SaveChangesAsync();
+
+                if (b.PointsUsed > 0 || b.DiscountAmount > 0)
+                {
+                    await _loyalty.RefundPointsForCancelledBookingAsync(farmerId, "Equipment", b.Id, $"#EQ-{b.Id:D4}");
+                }
+
                 return null;
             }
 
@@ -139,6 +148,12 @@ namespace KrishiLink.BLL.Services
             g!.Status = BookingStatus.Cancelled;
             g.CancelledOn = g.UpdatedOn = DateTime.Now;
             await _storage.SaveChangesAsync();
+
+            if (g.PointsUsed > 0 || g.DiscountAmount > 0)
+            {
+                await _loyalty.RefundPointsForCancelledBookingAsync(farmerId, "Godown", g.Id, $"#GD-{g.Id:D4}");
+            }
+
             return null;
         }
 
@@ -238,6 +253,9 @@ namespace KrishiLink.BLL.Services
                     EndDate = b.EndDate,
                     DurationDisplay = days == 1 ? "1 Day" : $"{days} Days",
                     TotalCost = days * b.Equipment.DailyRate,
+                    DiscountAmount = b.DiscountAmount,
+                    AppliedPromoCode = b.AppliedPromoCode,
+                    PointsUsed = b.PointsUsed,
                     RateDescription = $"{ListingFormat.Taka(b.Equipment.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
                     QuantityDisplay = $"1 {b.Equipment.Category}",
                     Status = b.Status,
@@ -319,6 +337,9 @@ namespace KrishiLink.BLL.Services
                     EndDate = g.EndDate,
                     DurationDisplay = $"{months:0.#} Months ({g.StorageTons:N0} Tons)",
                     TotalCost = decimal.Round((decimal)g.StorageTons * g.Godown.PricePerTonPerMonth * (decimal)months, 0),
+                    DiscountAmount = g.DiscountAmount,
+                    AppliedPromoCode = g.AppliedPromoCode,
+                    PointsUsed = g.PointsUsed,
                     RateDescription = $"{ListingFormat.Taka(g.Godown.PricePerTonPerMonth)} / ton / mo × {g.StorageTons:N0} Tons",
                     QuantityDisplay = $"{g.StorageTons:N0} Tons Capacity",
                     Status = g.Status,
@@ -390,12 +411,19 @@ namespace KrishiLink.BLL.Services
                         if (b.Status != BookingStatus.Pending) return "Only pending requests can be rejected.";
                         b.Status = BookingStatus.Rejected;
                         b.UpdatedOn = DateTime.Now;
+                        if (b.PointsUsed > 0 || b.DiscountAmount > 0)
+                        {
+                            await _loyalty.RefundPointsForCancelledBookingAsync(b.FarmerId, "Equipment", b.Id, $"#EQ-{b.Id:D4}");
+                        }
                         break;
                     case "confirm-pickup":
                     case "complete":
                         if (b.Status != BookingStatus.Accepted) return "Only accepted bookings can be confirmed / completed.";
                         b.Status = BookingStatus.Completed;
                         b.UpdatedOn = DateTime.Now;
+                        var days = (b.EndDate - b.StartDate).Days + 1;
+                        decimal grossSpent = Math.Max(0m, (days * b.Equipment.DailyRate) - b.DiscountAmount);
+                        await _loyalty.AwardPointsForCompletedBookingAsync(b.FarmerId, "Equipment", b.Id, grossSpent, $"#EQ-{b.Id:D4}");
                         break;
                     default:
                         return "Unknown action.";
@@ -424,12 +452,21 @@ namespace KrishiLink.BLL.Services
                         if (g.Status != BookingStatus.Pending) return "Only pending requests can be rejected.";
                         g.Status = BookingStatus.Rejected;
                         g.UpdatedOn = DateTime.Now;
+                        if (g.PointsUsed > 0 || g.DiscountAmount > 0)
+                        {
+                            await _loyalty.RefundPointsForCancelledBookingAsync(g.FarmerId, "Godown", g.Id, $"#GD-{g.Id:D4}");
+                        }
                         break;
                     case "confirm-pickup":
                     case "complete":
                         if (g.Status != BookingStatus.Accepted) return "Only accepted bookings can be confirmed / completed.";
                         g.Status = BookingStatus.Completed;
                         g.UpdatedOn = DateTime.Now;
+                        var days = (g.EndDate - g.StartDate).Days + 1;
+                        var months = Math.Max(1.0, (double)days / 30.0);
+                        decimal gross = decimal.Round((decimal)g.StorageTons * g.Godown.PricePerTonPerMonth * (decimal)months, 0);
+                        decimal netSpent = Math.Max(0m, gross - g.DiscountAmount);
+                        await _loyalty.AwardPointsForCompletedBookingAsync(g.FarmerId, "Godown", g.Id, netSpent, $"#GD-{g.Id:D4}");
                         break;
                     default:
                         return "Unknown action.";
@@ -466,6 +503,8 @@ namespace KrishiLink.BLL.Services
             var days = ListingFormat.InclusiveDays(b.StartDate, b.EndDate);
             var code = $"KL-EQ-{b.RequestedOn.Year}-{b.Id:D3}";
             var verUrl = $"{requestHost.TrimEnd('/')}/Verify/{code}";
+            var grossCost = days * e.DailyRate;
+            var netCost = Math.Max(0m, grossCost - b.DiscountAmount);
 
             var vm = new BookingConfirmationViewModel
             {
@@ -481,7 +520,11 @@ namespace KrishiLink.BLL.Services
                 Longitude = e.Longitude,
                 StartDate = b.StartDate,
                 EndDate = b.EndDate,
-                TotalCost = days * e.DailyRate,
+                TotalCost = grossCost,
+                DiscountAmount = b.DiscountAmount,
+                AppliedPromoCode = b.AppliedPromoCode,
+                PointsUsed = b.PointsUsed,
+                PointsEarned = _loyalty.CalculatePointsEarned(netCost),
                 RateDescription = $"{ListingFormat.Taka(e.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
                 QuantityDisplay = $"1 {e.Category}",
                 PaymentStatus = GetPaymentStatus(b.Status),
@@ -518,6 +561,8 @@ namespace KrishiLink.BLL.Services
             var months = ListingFormat.Months(b.StartDate, b.EndDate);
             var code = $"KL-GD-{b.RequestedOn.Year}-{b.Id:D3}";
             var verUrl = $"{requestHost.TrimEnd('/')}/Verify/{code}";
+            var grossCost = decimal.Round((decimal)b.StorageTons * g.PricePerTonPerMonth * (decimal)months, 0);
+            var netCost = Math.Max(0m, grossCost - b.DiscountAmount);
 
             var vm = new BookingConfirmationViewModel
             {
@@ -533,7 +578,11 @@ namespace KrishiLink.BLL.Services
                 Longitude = g.Longitude,
                 StartDate = b.StartDate,
                 EndDate = b.EndDate,
-                TotalCost = decimal.Round((decimal)b.StorageTons * g.PricePerTonPerMonth * (decimal)months, 0),
+                TotalCost = grossCost,
+                DiscountAmount = b.DiscountAmount,
+                AppliedPromoCode = b.AppliedPromoCode,
+                PointsUsed = b.PointsUsed,
+                PointsEarned = _loyalty.CalculatePointsEarned(netCost),
                 RateDescription = $"{ListingFormat.Taka(g.PricePerTonPerMonth)} / ton / mo × {b.StorageTons:N0} Tons × {months:0.#} Months",
                 QuantityDisplay = $"{b.StorageTons:N0} Tons Capacity",
                 PaymentStatus = GetPaymentStatus(b.Status),
