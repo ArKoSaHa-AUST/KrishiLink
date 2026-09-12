@@ -72,14 +72,16 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ICropCalendarService, CropCalendarService>();
 builder.Services.AddScoped<IPestAlertService, PestAlertService>();
 builder.Services.AddScoped<IOwnerVerificationService, OwnerVerificationService>();
+builder.Services.AddScoped<IWeatherSuggestionService, WeatherSuggestionService>();
 
-// Email + scheduled monthly statements (falls back to a logging sender until SMTP is configured)
+// Email + scheduled background services
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));
 if (builder.Configuration.GetSection(EmailOptions.SectionName).Get<EmailOptions>()?.IsConfigured == true)
     builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 else
     builder.Services.AddScoped<IEmailSender, LoggingEmailSender>();
 builder.Services.AddHostedService<MonthlyStatementScheduler>();
+builder.Services.AddHostedService<WeatherSuggestionScheduler>();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
