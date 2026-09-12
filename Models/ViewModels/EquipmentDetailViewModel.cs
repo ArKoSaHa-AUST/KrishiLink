@@ -37,6 +37,8 @@ namespace KrishiLink.Models.ViewModels
         public int TotalReviews { get; set; }
         public string OwnerPhone { get; set; } = string.Empty;
         public string OwnerMemberSince { get; set; } = string.Empty;
+        public List<OwnerBadgeViewModel> OwnerBadges { get; set; } = new();
+        public string? OwnerRankText { get; set; }
 
         // Image Gallery URLs
         public List<string> ImageUrls { get; set; } = new();
