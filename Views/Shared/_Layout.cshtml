@@ -153,6 +153,15 @@
                                             <span>@L["Dashboard"]</span>
                                         </a>
                                     </li>
+                                    @if (roleDisplay == "Farmer")
+                                    {
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="Loyalty" asp-action="Index">
+                                                <i class="bi bi-gift text-success"></i>
+                                                <span>@L["KrishiPoints Hub"]</span>
+                                            </a>
+                                        </li>
+                                    }
                                     @if (roleDisplay is "GodownOwner" or "EquipmentOwner")
                                     {
                                         <li>
@@ -245,6 +254,11 @@
                             </li>
                             @if (SignInManager.IsSignedIn(User))
                             {
+                                <li class="nav-item">
+                                    <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Loyalty" asp-action="Index">
+                                        <i class="bi bi-gift"></i> @L["KrishiPoints Hub"]
+                                    </a>
+                                </li>
                                 <li class="nav-item">
                                     <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center justify-content-between" asp-controller="Notifications" asp-action="Index">
                                         <div class="d-flex align-items-center gap-2">

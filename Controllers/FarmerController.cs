@@ -14,17 +14,20 @@ namespace KrishiLink.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IPestAlertService _pestAlertService;
         private readonly IWeatherSuggestionService _weatherSuggestionService;
+        private readonly ILoyaltyService _loyalty;
 
         public FarmerController(
             IBookingService bookings,
             UserManager<ApplicationUser> userManager,
             IPestAlertService pestAlertService,
-            IWeatherSuggestionService weatherSuggestionService)
+            IWeatherSuggestionService weatherSuggestionService,
+            ILoyaltyService loyalty)
         {
             _bookings = bookings;
             _userManager = userManager;
             _pestAlertService = pestAlertService;
             _weatherSuggestionService = weatherSuggestionService;
+            _loyalty = loyalty;
         }
 
         /// <summary>GET: /Farmer — redirects to Dashboard.</summary>
@@ -45,6 +48,7 @@ namespace KrishiLink.Controllers
             string district = farmer?.District ?? farmer?.Location ?? "Bogra";
             model.WeatherAlert = await _pestAlertService.GetWeatherAlertNoteAsync(district);
             model.WeatherSuggestion = await _weatherSuggestionService.GetProactiveSuggestionForFarmerAsync(farmerId);
+            model.LoyaltyWidget = await _loyalty.GetDashboardWidgetAsync(farmerId);
 
             return View(model);
         }
