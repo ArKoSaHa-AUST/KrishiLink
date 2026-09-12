@@ -14,6 +14,8 @@ namespace KrishiLink.Models.ViewModels
         public decimal DailyRate { get; set; }
         public decimal? HourlyRate { get; set; }
         public string Location { get; set; } = string.Empty;
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
         public double DistanceKm { get; set; }
         public bool IsAvailable { get; set; } = true;
         public string Status => IsAvailable ? "Available" : "Unavailable";

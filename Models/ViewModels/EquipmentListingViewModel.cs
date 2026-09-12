@@ -27,6 +27,14 @@ namespace KrishiLink.Models.ViewModels
         [Display(Name = "Location / District")]
         public string Location { get; set; } = string.Empty;
 
+        [Display(Name = "Latitude")]
+        [Range(-90.0, 90.0, ErrorMessage = "Invalid latitude coordinate.")]
+        public double? Latitude { get; set; }
+
+        [Display(Name = "Longitude")]
+        [Range(-180.0, 180.0, ErrorMessage = "Invalid longitude coordinate.")]
+        public double? Longitude { get; set; }
+
         [Required(ErrorMessage = "Daily rental rate is required.")]
         [Range(1, 500000, ErrorMessage = "Daily rate must be a positive number greater than 0.")]
         [Display(Name = "Daily Rental Rate (৳)")]

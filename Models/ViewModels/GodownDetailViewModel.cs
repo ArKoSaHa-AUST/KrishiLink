@@ -16,6 +16,19 @@ namespace KrishiLink.Models.ViewModels
         public string Status { get; set; } = "Available";
         public string Description { get; set; } = string.Empty;
 
+        // Geographic Coordinates & Navigation
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public string FormattedCoordinates => (Latitude.HasValue && Longitude.HasValue)
+            ? $"{Latitude.Value:F4}° N, {Longitude.Value:F4}° E"
+            : string.Empty;
+        public string GoogleMapsUrl => (Latitude.HasValue && Longitude.HasValue)
+            ? $"https://www.google.com/maps/dir/?api=1&destination={Latitude.Value:F6},{Longitude.Value:F6}"
+            : "https://www.google.com/maps";
+        public string OpenStreetMapUrl => (Latitude.HasValue && Longitude.HasValue)
+            ? $"https://www.openstreetmap.org/?mlat={Latitude.Value:F6}&mlon={Longitude.Value:F6}#map=14/{Latitude.Value:F6}/{Longitude.Value:F6}"
+            : "https://www.openstreetmap.org";
+
         // Owner Details
         public string OwnerName { get; set; } = string.Empty;
         public bool OwnerIsVerified { get; set; } = false;
