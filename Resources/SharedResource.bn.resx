@@ -2500,4 +2500,199 @@
   <data name="Under Review" xml:space="preserve">
     <value>পর্যালোচনাধীন</value>
   </data>
+  <data name="Health Tracker" xml:space="preserve">
+    <value>স্বাস্থ্য ট্র্যাকার</value>
+  </data>
+  <data name="Equipment Health Tracker" xml:space="preserve">
+    <value>যন্ত্রপাতির স্বাস্থ্য ট্র্যাকার</value>
+  </data>
+  <data name="Equipment Health &amp; Service Tracker" xml:space="preserve">
+    <value>যন্ত্রপাতির স্বাস্থ্য ও সার্ভিসিং ট্র্যাকার</value>
+  </data>
+  <data name="Machinery Health &amp; Maintenance History" xml:space="preserve">
+    <value>যন্ত্রের স্বাস্থ্য ও সার্ভিসিং ইতিহাস</value>
+  </data>
+  <data name="Maintenance &amp; Service Log History" xml:space="preserve">
+    <value>রক্ষণাবেক্ষণ ও সার্ভিসিং লগ ইতিহাস</value>
+  </data>
+  <data name="Complete chronological log of repairs, parts replacements, and servicing." xml:space="preserve">
+    <value>মেরামত, যন্ত্রাংশ প্রতিস্থাপন এবং সার্ভিসিংয়ের সম্পূর্ণ সময়ানুক্রমিক লগ।</value>
+  </data>
+  <data name="Total Maintenance Cost" xml:space="preserve">
+    <value>মোট রক্ষণাবেক্ষণ ব্যয়</value>
+  </data>
+  <data name="Recorded Service Events" xml:space="preserve">
+    <value>লিপিবদ্ধ সার্ভিসিং ইভেন্ট</value>
+  </data>
+  <data name="Last Serviced" xml:space="preserve">
+    <value>সর্বশেষ সার্ভিসিং</value>
+  </data>
+  <data name="Last serviced: {0} days ago" xml:space="preserve">
+    <value>সর্বশেষ সার্ভিসিং: {0} দিন আগে</value>
+  </data>
+  <data name="Last serviced: Today" xml:space="preserve">
+    <value>সর্বশেষ সার্ভিসিং: আজ</value>
+  </data>
+  <data name="Last serviced: Yesterday" xml:space="preserve">
+    <value>সর্বশেষ সার্ভিসিং: গতকাল</value>
+  </data>
+  <data name="Last Serviced {0} Days Ago" xml:space="preserve">
+    <value>সর্বশেষ সার্ভিসিং {0} দিন আগে</value>
+  </data>
+  <data name="Serviced today" xml:space="preserve">
+    <value>আজ সার্ভিসিং সম্পন্ন</value>
+  </data>
+  <data name="Serviced yesterday" xml:space="preserve">
+    <value>গতকাল সার্ভিসিং সম্পন্ন</value>
+  </data>
+  <data name="Serviced {0} days ago" xml:space="preserve">
+    <value>গত {0} দিন আগে সার্ভিসিং সম্পন্ন</value>
+  </data>
+  <data name="Serviced {0}d ago" xml:space="preserve">
+    <value>{0} দিন আগে সার্ভিসিং</value>
+  </data>
+  <data name="Serviced Today (Prime Condition)" xml:space="preserve">
+    <value>আজ সার্ভিসিং সম্পন্ন (উৎকৃষ্ট অবস্থা)</value>
+  </data>
+  <data name="Serviced Yesterday (Prime Condition)" xml:space="preserve">
+    <value>গতকাল সার্ভিসিং সম্পন্ন (উৎকৃষ্ট অবস্থা)</value>
+  </data>
+  <data name="Prime Condition" xml:space="preserve">
+    <value>উৎকৃষ্ট অবস্থা</value>
+  </data>
+  <data name="Good Condition" xml:space="preserve">
+    <value>ভালো অবস্থা</value>
+  </data>
+  <data name="Service Due" xml:space="preserve">
+    <value>সার্ভিসিং সময় হয়েছে</value>
+  </data>
+  <data name="No Logs" xml:space="preserve">
+    <value>কোনো লগ নেই</value>
+  </data>
+  <data name="Recently Serviced" xml:space="preserve">
+    <value>সম্প্রতি সার্ভিসিং সম্পন্ন</value>
+  </data>
+  <data name="Regularly Maintained" xml:space="preserve">
+    <value>নিয়মিত রক্ষণাবেক্ষণকৃত</value>
+  </data>
+  <data name="Maintenance Recommended" xml:space="preserve">
+    <value>রক্ষণাবেক্ষণের পরামর্শ দেওয়া হচ্ছে</value>
+  </data>
+  <data name="Log First Service" xml:space="preserve">
+    <value>প্রথম সার্ভিসিং লিপিবদ্ধ করুন</value>
+  </data>
+  <data name="Public Trust Indicator Active" xml:space="preserve">
+    <value>পাবলিক ট্রাস্ট সূচক সক্রিয়</value>
+  </data>
+  <data name="Verified Maintenance Record" xml:space="preserve">
+    <value>যাচাইকৃত রক্ষণাবেক্ষণ রেকর্ড</value>
+  </data>
+  <data name="Verified Owner Maintenance Log" xml:space="preserve">
+    <value>মালিকের যাচাইকৃত রক্ষণাবেক্ষণ লগ</value>
+  </data>
+  <data name="Owner records routine maintenance and inspections on KrishiLink to ensure optimal fieldwork reliability." xml:space="preserve">
+    <value>মাঠের কাজের নির্ভরযোগ্যতা নিশ্চিত করতে মালিক কৃষিলিঙ্কে নিয়মিত রক্ষণাবেক্ষণ ও পরিদর্শন লিপিবদ্ধ করেন।</value>
+  </data>
+  <data name="{0} Service Events Logged" xml:space="preserve">
+    <value>{0}টি সার্ভিসিং ইভেন্ট লিপিবদ্ধ</value>
+  </data>
+  <data name="No Maintenance Logs Available" xml:space="preserve">
+    <value>কোনো রক্ষণাবেক্ষণ লগ পাওয়া যায়নি</value>
+  </data>
+  <data name="The owner has not logged specific servicing history for this equipment yet. You may contact the owner for machinery condition details." xml:space="preserve">
+    <value>মালিক এখনও এই যন্ত্রপাতির নির্দিষ্ট সার্ভিসিং ইতিহাস লিপিবদ্ধ করেননি। যন্ত্রের অবস্থা জানতে আপনি মালিকের সাথে যোগাযোগ করতে পারেন।</value>
+  </data>
+  <data name="Log Service Event" xml:space="preserve">
+    <value>সার্ভিসিং ইভেন্ট লগ করুন</value>
+  </data>
+  <data name="Log Maintenance Event" xml:space="preserve">
+    <value>রক্ষণাবেক্ষণ ইভেন্ট লগ করুন</value>
+  </data>
+  <data name="Log New Service Event" xml:space="preserve">
+    <value>নতুন সার্ভিসিং ইভেন্ট লগ করুন</value>
+  </data>
+  <data name="Log Your First Service Event" xml:space="preserve">
+    <value>আপনার প্রথম সার্ভিসিং ইভেন্ট লগ করুন</value>
+  </data>
+  <data name="Keep a regular maintenance log of your machinery to demonstrate reliability to renting farmers and maintain equipment longevity." xml:space="preserve">
+    <value>ভাড়া গ্রহণকারী কৃষকদের কাছে নির্ভরযোগ্যতা প্রমাণ করতে এবং যন্ত্রপাতির দীর্ঘায়ু বজায় রাখতে নিয়মিত রক্ষণাবেক্ষণ লগ রাখুন।</value>
+  </data>
+  <data name="-- Select Service Category --" xml:space="preserve">
+    <value>-- সার্ভিসিং শ্রেণি নির্বাচন করুন --</value>
+  </data>
+  <data name="Engine Oil &amp; Filter Change" xml:space="preserve">
+    <value>ইঞ্জিন তেল ও ফিল্টার পরিবর্তন</value>
+  </data>
+  <data name="Hydraulic System Maintenance" xml:space="preserve">
+    <value>হাইড্রোলিক সিস্টেম রক্ষণাবেক্ষণ</value>
+  </data>
+  <data name="Blade / Rotavator Replacement" xml:space="preserve">
+    <value>ব্লেড / রোটাভেটর প্রতিস্থাপন</value>
+  </data>
+  <data name="Tire &amp; Track Maintenance" xml:space="preserve">
+    <value>টায়ার ও ট্র্যাক রক্ষণাবেক্ষণ</value>
+  </data>
+  <data name="Electrical &amp; Battery Tune-up" xml:space="preserve">
+    <value>বৈদ্যুতিক ও ব্যাটারি টিউন-আপ</value>
+  </data>
+  <data name="General Servicing &amp; Inspection" xml:space="preserve">
+    <value>সাধারণ সার্ভিসিং ও পরিদর্শন</value>
+  </data>
+  <data name="Fuel System &amp; Injector Cleaning" xml:space="preserve">
+    <value>জ্বালানি ব্যবস্থা ও ইনজেক্টর পরিষ্কার</value>
+  </data>
+  <data name="Brake &amp; Clutch Adjustment" xml:space="preserve">
+    <value>ব্রেক ও ক্লাচ সমন্বয়</value>
+  </data>
+  <data name="Transmission &amp; Gearbox Overhaul" xml:space="preserve">
+    <value>ট্রান্সমিশন ও গিয়ারবক্স ওভারহল</value>
+  </data>
+  <data name="Other Repairs &amp; Maintenance" xml:space="preserve">
+    <value>অন্যান্য মেরামত ও রক্ষণাবেক্ষণ</value>
+  </data>
+  <data name="Maintenance Cost (BDT ৳)" xml:space="preserve">
+    <value>রক্ষণাবেক্ষণ ব্যয় (টাকা ৳)</value>
+  </data>
+  <data name="Parts cost, labor fees, fluids, or workshop invoice amount." xml:space="preserve">
+    <value>যন্ত্রাংশের খরচ, শ্রম ফি, তরল পদার্থ বা ওয়ার্কশপ ইনভয়েসের পরিমাণ।</value>
+  </data>
+  <data name="Serviced By / Workshop" xml:space="preserve">
+    <value>সার্ভিস প্রদানকারী / ওয়ার্কশপ</value>
+  </data>
+  <data name="e.g. Modern Auto Garage, Self, Local Mechanic..." xml:space="preserve">
+    <value>যেমন: আধুনিক অটো গ্যারেজ, নিজে, স্থানীয় মেকানিক...</value>
+  </data>
+  <data name="Describe what work was completed, oil grade used, parts replaced, or general health check remarks..." xml:space="preserve">
+    <value>কী কাজ সম্পন্ন হয়েছে, ব্যবহৃত তেলের গ্রেড, প্রতিস্থাপিত যন্ত্রাংশ বা সাধারণ স্বাস্থ্য পরীক্ষার মন্তব্য বর্ণনা করুন...</value>
+  </data>
+  <data name="Save Service Log" xml:space="preserve">
+    <value>সার্ভিস লগ সংরক্ষণ করুন</value>
+  </data>
+  <data name="Delete Maintenance Record?" xml:space="preserve">
+    <value>রক্ষণাবেক্ষণ রেকর্ড মুছবেন?</value>
+  </data>
+  <data name="Delete Record" xml:space="preserve">
+    <value>রেকর্ড মুছুন</value>
+  </data>
+  <data name="No maintenance logged yet" xml:space="preserve">
+    <value>এখনও কোনো রক্ষণাবেক্ষণ লিপিবদ্ধ হয়নি</value>
+  </data>
+  <data name="Health Log" xml:space="preserve">
+    <value>স্বাস্থ্য লগ</value>
+  </data>
+  <data name="No service logged" xml:space="preserve">
+    <value>সার্ভিসিং লগ নেই</value>
+  </data>
+  <data name="No recent service logged" xml:space="preserve">
+    <value>কোনো সাম্প্রতিক সার্ভিসিং লগ নেই</value>
+  </data>
+  <data name="Verified Maintenance Log Available" xml:space="preserve">
+    <value>যাচাইকৃত রক্ষণাবেক্ষণ লগ উপলব্ধ</value>
+  </data>
+  <data name="Not Logged Yet" xml:space="preserve">
+    <value>এখনও লিপিবদ্ধ হয়নি</value>
+  </data>
+  <data name="Date when maintenance or repair was conducted (cannot be future)." xml:space="preserve">
+    <value>রক্ষণাবেক্ষণ বা মেরামত করার তারিখ (ভবিষ্যতের তারিখ হতে পারবে না)।</value>
+  </data>
 </root>
