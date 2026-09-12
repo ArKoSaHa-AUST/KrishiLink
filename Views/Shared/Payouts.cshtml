@@ -1,4 +1,5 @@
 @model KrishiLink.Models.ViewModels.PayoutHistoryViewModel
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
 @{
     ViewData["Title"] = L["Payouts & Settlement"];
     ViewData["BodyClass"] = "krishi-body-gradient";
@@ -94,7 +95,16 @@
             <h5 class="fw-bold mb-3" style="color: var(--krishi-text-primary);"><i class="bi bi-cash-coin me-2 text-success"></i>@L["Request a payout"]</h5>
             @if (s.Processing > 0)
             {
-                <p class="small mb-0" style="color: var(--krishi-text-muted);">@L["A payout of {0} is being processed. You can request another once it completes.", Money(s.Processing)]</p>
+                <p class="small mb-2" style="color: var(--krishi-text-muted);">@L["A payout of {0} is being processed. You can request another once it completes.", Money(s.Processing)]</p>
+                @if (Env.IsDevelopment())
+                {
+                    <form asp-action="SettlePayoutsNow" method="post" class="mt-2">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-warning rounded-pill fw-semibold">
+                            <i class="bi bi-lightning-charge-fill me-1"></i> [Dev Simulator] Settle Payouts Now
+                        </button>
+                    </form>
+                }
             }
             else if (s.Owed <= 0)
             {
