@@ -1,0 +1,137 @@
+<!-- Reusable Owner QR Scanner Modal Partial -->
+<div class="modal fade" id="ownerQrScannerModal" tabindex="-1" aria-labelledby="ownerQrScannerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 480px;">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header bg-success text-white py-3 border-0">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-qr-code-scan fs-5"></i>
+                    <h6 class="modal-title fw-bold mb-0" id="ownerQrScannerModalLabel">@L["Scan Farmer Booking Pass"]</h6>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="stopQrScannerCamera()"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                
+                <!-- Live Camera Viewfinder Box -->
+                <div class="position-relative bg-dark rounded-4 overflow-hidden mb-3 shadow-inner" style="min-height: 250px; background: #111;">
+                    <video id="qrVideoFeed" playsinline style="width: 100%; height: 250px; object-fit: cover; transform: scaleX(-1);"></video>
+                    <canvas id="qrCanvas" class="d-none"></canvas>
+                    
+                    <!-- Viewfinder Overlay -->
+                    <div id="qrScannerOverlay" class="position-absolute top-50 start-50 translate-middle rounded-4 border border-3 border-success shadow" style="width: 180px; height: 180px; pointer-events: none;">
+                        <div class="position-absolute top-0 start-0 w-100 bg-success opacity-75" style="height: 3px; animation: scanLaser 2s infinite ease-in-out;"></div>
+                    </div>
+
+                    <!-- Camera prompt placeholder -->
+                    <div id="qrCameraPrompt" class="position-absolute top-50 start-50 translate-middle text-white p-3 text-center w-100">
+                        <i class="bi bi-camera-video fs-1 text-success mb-2 d-block"></i>
+                        <span class="small fw-semibold d-block mb-2">@L["Camera ready for live scanning"]</span>
+                        <button type="button" class="btn btn-success btn-sm rounded-pill px-3 py-1.5 fw-semibold" onclick="startQrScannerCamera()">
+                            <i class="bi bi-play-circle me-1"></i> @L["Start Camera Scanner"]
+                        </button>
+                    </div>
+                </div>
+
+                <div id="qrScanStatus" class="alert alert-light border small text-muted mb-3 py-2">
+                    <i class="bi bi-info-circle me-1 text-success"></i>
+                    <span>@L["Align the farmer's QR pass inside the frame, or enter reference below."]</span>
+                </div>
+
+                <!-- Manual Reference Lookup Fallback -->
+                <div class="card p-3 bg-light border rounded-3 text-start">
+                    <label for="manualBookingCodeInput" class="form-label small fw-bold text-dark mb-1">
+                        @L["Or Enter Booking Reference Code:"]
+                    </label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white text-muted"><i class="bi bi-hash"></i></span>
+                        <input type="text" id="manualBookingCodeInput" class="form-control font-monospace" placeholder="KL-EQ-2026-001" onkeydown="if(event.key==='Enter'){event.preventDefault();submitManualQrCode();}" />
+                        <button type="button" class="btn btn-success px-3 fw-semibold" onclick="submitManualQrCode()">
+                            @L["Verify"]
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer bg-light border-0 py-2.5 px-4 justify-content-between">
+                <span class="text-muted small" style="font-size: 0.75rem;">@L["Powered by KrishiLink Verified Handover"]</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal" onclick="stopQrScannerCamera()">
+                    @L["Close"]
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@keyframes scanLaser {
+        0% { top: 0; }
+        50% { top: 97%; }
+        100% { top: 0; }
+    }
+</style>
+
+<script>
+    let qrVideoStream = null;
+    let qrScanInterval = null;
+
+    async function startQrScannerCamera() {
+        const video = document.getElementById('qrVideoFeed');
+        const prompt = document.getElementById('qrCameraPrompt');
+        const status = document.getElementById('qrScanStatus');
+
+        try {
+            qrVideoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            video.srcObject = qrVideoStream;
+            await video.play();
+            prompt.classList.add('d-none');
+            status.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-radar me-1"></i> @L["Scanning for QR Code..."]</span>`;
+
+            // Native BarcodeDetector API if supported by browser
+            if ('BarcodeDetector' in window) {
+                const detector = new BarcodeDetector({ formats: ['qr_code'] });
+                qrScanInterval = setInterval(async () => {
+                    try {
+                        const barcodes = await detector.detect(video);
+                        if (barcodes.length > 0) {
+                            const raw = barcodes[0].rawValue;
+                            handleScannedQrPayload(raw);
+                        }
+                    } catch (e) {}
+                }, 400);
+            }
+        } catch (err) {
+            console.error(err);
+            status.innerHTML = `<span class="text-danger small">@L["Camera access was not granted or not available. Please enter the booking reference code manually below."]</span>`;
+        }
+    }
+
+    function stopQrScannerCamera() {
+        if (qrScanInterval) {
+            clearInterval(qrScanInterval);
+            qrScanInterval = null;
+        }
+        if (qrVideoStream) {
+            qrVideoStream.getTracks().forEach(t => t.stop());
+            qrVideoStream = null;
+        }
+        const prompt = document.getElementById('qrCameraPrompt');
+        if (prompt) prompt.classList.remove('d-none');
+    }
+
+    function handleScannedQrPayload(payload) {
+        if (!payload) return;
+        stopQrScannerCamera();
+        if (payload.startsWith('http://') || payload.startsWith('https://')) {
+            window.location.href = payload;
+        } else {
+            window.location.href = `/Verify/${encodeURIComponent(payload)}`;
+        }
+    }
+
+    function submitManualQrCode() {
+        const input = document.getElementById('manualBookingCodeInput');
+        if (!input || !input.value.trim()) return;
+        const code = input.value.trim();
+        stopQrScannerCamera();
+        window.location.href = `/Verify/${encodeURIComponent(code)}`;
+    }
+</script>

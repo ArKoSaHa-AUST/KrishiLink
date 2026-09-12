@@ -2695,4 +2695,179 @@
   <data name="Date when maintenance or repair was conducted (cannot be future)." xml:space="preserve">
     <value>রক্ষণাবেক্ষণ বা মেরামত করার তারিখ (ভবিষ্যতের তারিখ হতে পারবে না)।</value>
   </data>
+  <data name="Booking Confirmation" xml:space="preserve">
+    <value>বুকিং নিশ্চিতকরণ</value>
+  </data>
+  <data name="Official Confirmation Voucher" xml:space="preserve">
+    <value>অফিসিয়াল নিশ্চিতকরণ ভাউচার</value>
+  </data>
+  <data name="KrishiLink Gate Pass" xml:space="preserve">
+    <value>কৃষিলিঙ্ক গেট পাস</value>
+  </data>
+  <data name="Booking Reference" xml:space="preserve">
+    <value>বুকিং রেফারেন্স</value>
+  </data>
+  <data name="Back to My Bookings" xml:space="preserve">
+    <value>আমার বুকিংয়ে ফিরুন</value>
+  </data>
+  <data name="Print / Save PDF" xml:space="preserve">
+    <value>প্রিন্ট / পিডিএফ সংরক্ষণ</value>
+  </data>
+  <data name="Download QR" xml:space="preserve">
+    <value>কিউআর ডাউনলোড</value>
+  </data>
+  <data name="Scan to Verify Authenticity" xml:space="preserve">
+    <value>সত্যতা যাচাই করতে স্ক্যান করুন</value>
+  </data>
+  <data name="Show this QR code to the owner at pickup or delivery to confirm identity &amp; booking in seconds." xml:space="preserve">
+    <value>হস্তান্তর বা গ্রহণের সময় পরিচয় ও বুকিং দ্রুত যাচাই করতে মালিককে এই কিউআর কোডটি দেখান।</value>
+  </data>
+  <data name="Rental Period:" xml:space="preserve">
+    <value>ভাড়ার মেয়াদ:</value>
+  </data>
+  <data name="Total Payable:" xml:space="preserve">
+    <value>মোট প্রদেয়:</value>
+  </data>
+  <data name="Owner / Provider" xml:space="preserve">
+    <value>মালিক / প্রদানকারী</value>
+  </data>
+  <data name="Farmer / Customer" xml:space="preserve">
+    <value>কৃষক / গ্রাহক</value>
+  </data>
+  <data name="1. Arrive on Schedule" xml:space="preserve">
+    <value>১. নির্ধারিত সময়ে পৌঁছান</value>
+  </data>
+  <data name="Reach the pickup location on {0} with valid ID." xml:space="preserve">
+    <value>বৈধ পরিচয়পত্রসহ {0} তারিখে পিকআপের স্থানে পৌঁছান।</value>
+  </data>
+  <data name="2. QR Handover Scan" xml:space="preserve">
+    <value>২. কিউআর কোড স্ক্যান</value>
+  </data>
+  <data name="Let the owner scan your QR pass to record handover." xml:space="preserve">
+    <value>হস্তান্তর নিশ্চিত করতে মালিককে আপনার কিউআর পাস স্ক্যান করতে দিন।</value>
+  </data>
+  <data name="3. Inspect &amp; Return" xml:space="preserve">
+    <value>৩. পরিদর্শন ও ফেরত</value>
+  </data>
+  <data name="Check machine health and return cleanly by {0}." xml:space="preserve">
+    <value>মেশিনের অবস্থা পরীক্ষা করুন এবং {0} তারিখের মধ্যে সঠিকভাবে ফেরত দিন।</value>
+  </data>
+  <data name="Encrypted Verification:" xml:space="preserve">
+    <value>এনক্রিপ্ট করা যাচাইকরণ:</value>
+  </data>
+  <data name="Generated on {0}" xml:space="preserve">
+    <value>তৈরির সময় {0}</value>
+  </data>
+  <data name="Booking Verification" xml:space="preserve">
+    <value>বুকিং যাচাইকরণ</value>
+  </data>
+  <data name="Verified Authentic Booking" xml:space="preserve">
+    <value>যাচাইকৃত আসল বুকিং</value>
+  </data>
+  <data name="Invalid Booking" xml:space="preserve">
+    <value>অবৈধ বুকিং</value>
+  </data>
+  <data name="Reference:" xml:space="preserve">
+    <value>রেফারেন্স:</value>
+  </data>
+  <data name="Action Completed!" xml:space="preserve">
+    <value>কার্যক্রম সম্পন্ন!</value>
+  </data>
+  <data name="Action Error" xml:space="preserve">
+    <value>কার্যক্রমে ত্রুটি</value>
+  </data>
+  <data name="Owner Verification Actions" xml:space="preserve">
+    <value>মালিকের যাচাইকরণ কার্যক্রম</value>
+  </data>
+  <data name="You Own This Asset" xml:space="preserve">
+    <value>আপনি এই সম্পদের মালিক</value>
+  </data>
+  <data name="You have verified the farmer's QR pass. Select an action below to update booking status immediately:" xml:space="preserve">
+    <value>আপনি কৃষকের কিউআর পাস সফলভাবে যাচাই করেছেন। বুকিং স্ট্যাটাস আপডেট করতে নিচের অপশন নির্বাচন করুন:</value>
+  </data>
+
+  <data name="Reject Request" xml:space="preserve">
+    <value>অনুরোধ প্রত্যাখ্যান করুন</value>
+  </data>
+  <data name="Confirm Pickup &amp; Handover" xml:space="preserve">
+    <value>পিকআপ ও হস্তান্তর নিশ্চিত করুন</value>
+  </data>
+  <data name="Call Farmer" xml:space="preserve">
+    <value>কৃষককে কল করুন</value>
+  </data>
+  <data name="Booking Reference Not Found" xml:space="preserve">
+    <value>বুকিং রেফারেন্স পাওয়া যায়নি</value>
+  </data>
+  <data name="The scanned QR reference does not match any active or past booking records in KrishiLink." xml:space="preserve">
+    <value>স্ক্যান করা কিউআর রেফারেন্সটি কৃষিলিঙ্কের কোনো সক্রিয় বা অতীত বুকিং রেকর্ডের সাথে মেলে না।</value>
+  </data>
+  <data name="Secured with KrishiLink Digital Trust Protocol • Scanned at {0}" xml:space="preserve">
+    <value>কৃষিলিঙ্ক ডিজিটাল ট্রাস্ট প্রোটোকল দ্বারা সুরক্ষিত • স্ক্যান করা হয়েছে {0}</value>
+  </data>
+  <data name="Scan QR Pass" xml:space="preserve">
+    <value>কিউআর পাস স্ক্যান</value>
+  </data>
+  <data name="Scan Farmer Booking Pass" xml:space="preserve">
+    <value>কৃষকের বুকিং পাস স্ক্যান করুন</value>
+  </data>
+  <data name="Camera ready for live scanning" xml:space="preserve">
+    <value>লাইভ স্ক্যানের জন্য ক্যামেরা প্রস্তুত</value>
+  </data>
+  <data name="Start Camera Scanner" xml:space="preserve">
+    <value>ক্যামেরা স্ক্যানার চালু করুন</value>
+  </data>
+  <data name="Align the farmer's QR pass inside the frame, or enter reference below." xml:space="preserve">
+    <value>কৃষকের কিউআর পাসটি ফ্রেমের মধ্যে রাখুন, অথবা নিচে রেফারেন্স কোড লিখুন।</value>
+  </data>
+  <data name="Or Enter Booking Reference Code:" xml:space="preserve">
+    <value>অথবা বুকিং রেফারেন্স কোড লিখুন:</value>
+  </data>
+  <data name="Powered by KrishiLink Verified Handover" xml:space="preserve">
+    <value>কৃষিলিঙ্ক ভেরিফাইড হ্যান্ডওভার দ্বারা চালিত</value>
+  </data>
+  <data name="Show QR Code" xml:space="preserve">
+    <value>কিউআর কোড দেখুন</value>
+  </data>
+  <data name="View Pass &amp; Voucher" xml:space="preserve">
+    <value>পাস ও ভাউচার দেখুন</value>
+  </data>
+  <data name="View Full Voucher Pass" xml:space="preserve">
+    <value>সম্পূর্ণ ভাউচার পাস দেখুন</value>
+  </data>
+  <data name="Booking QR Code Pass" xml:space="preserve">
+    <value>বুকিং কিউআর কোড পাস</value>
+  </data>
+  <data name="Generating QR Pass..." xml:space="preserve">
+    <value>কিউআর পাস তৈরি হচ্ছে...</value>
+  </data>
+  <data name="Present this QR code to the owner upon pickup or delivery to quickly verify your identity." xml:space="preserve">
+    <value>পিকআপ বা ডেলিভারির সময় আপনার পরিচয় দ্রুত নিশ্চিত করতে মালিকের কাছে এই কিউআর কোডটি উপস্থাপন করুন।</value>
+  </data>
+  <data name="Open Full Voucher" xml:space="preserve">
+    <value>সম্পূর্ণ ভাউচার খুলুন</value>
+  </data>
+  <data name="Verified Machinery Host" xml:space="preserve">
+    <value>যাচাইকৃত মেশিন হোস্ট</value>
+  </data>
+  <data name="Authentic &amp; Verified Booking — Confirmed &amp; Active" xml:space="preserve">
+    <value>প্রমাণিত ও আসল বুকিং — নিশ্চিত ও সক্রিয়</value>
+  </data>
+  <data name="Pending Owner Review — Not Yet Confirmed" xml:space="preserve">
+    <value>মালিকের পর্যালোচনার অপেক্ষায় — এখনও নিশ্চিত হয়নি</value>
+  </data>
+  <data name="Completed Booking — Service Finished &amp; Handover Settled" xml:space="preserve">
+    <value>সম্পন্ন বুকিং — সেবা শেষ ও হস্তান্তর নিষ্পত্তি হয়েছে</value>
+  </data>
+  <data name="Booking Cancelled by Farmer" xml:space="preserve">
+    <value>কৃষক কর্তৃক বুকিং বাতিল</value>
+  </data>
+  <data name="Booking Rejected by Owner" xml:space="preserve">
+    <value>মালিক কর্তৃক বুকিং প্রত্যাখ্যাত</value>
+  </data>
+  <data name="Authentic &amp; Verified Storage Booking — Space Allocated &amp; Active" xml:space="preserve">
+    <value>প্রমাণিত ও আসল সংরক্ষণ বুকিং — স্থান বরাদ্দকৃত ও সক্রিয়</value>
+  </data>
+  <data name="Completed Storage — Storage Period Ended &amp; Handover Settled" xml:space="preserve">
+    <value>সম্পন্ন সংরক্ষণ — সংরক্ষণের মেয়াদ শেষ ও নিষ্পত্তি হয়েছে</value>
+  </data>
 </root>
