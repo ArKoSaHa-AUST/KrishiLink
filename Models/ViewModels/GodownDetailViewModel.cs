@@ -12,6 +12,7 @@ namespace KrishiLink.Models.ViewModels
         public double TotalCapacityTons { get; set; }
         public double AvailableCapacityTons { get; set; }
         public string PricePerTonPerMonth { get; set; } = string.Empty;
+        public decimal PricePerTonPerMonthAmount { get; set; }
         public string DailyRatePerTon { get; set; } = string.Empty;
         public string Status { get; set; } = "Available";
         public string Description { get; set; } = string.Empty;
@@ -57,5 +58,13 @@ namespace KrishiLink.Models.ViewModels
         public double AverageRating { get; set; }
         public int ReviewCount { get; set; }
         public ReviewsListViewModel Reviews { get; set; } = new();
+
+        // Farmer Loyalty Points & Promo Discounts
+        public int FarmerLoyaltyPoints { get; set; }
+        public string FarmerTierName { get; set; } = string.Empty;
+        public List<FixedConversionTierViewModel> AvailableConversionTiers { get; set; } = new();
+        public string? AppliedPromoCode { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public int PointsUsed { get; set; }
     }
 }

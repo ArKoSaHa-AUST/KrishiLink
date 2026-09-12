@@ -32,7 +32,13 @@ namespace KrishiLink.Models.ViewModels
 
         // Financials
         public decimal TotalCost { get; set; }
-        public string CostDisplay => $"৳{TotalCost:N0}";
+        public decimal DiscountAmount { get; set; }
+        public string? AppliedPromoCode { get; set; }
+        public int PointsUsed { get; set; }
+        public int PointsEarned { get; set; }
+        public decimal NetCost => Math.Max(0m, TotalCost - DiscountAmount);
+        public string CostDisplay => $"৳{NetCost:N0}";
+        public string OriginalCostDisplay => $"৳{TotalCost:N0}";
         public string RateDescription { get; set; } = string.Empty;
         public string QuantityDisplay { get; set; } = string.Empty;
         public string PaymentStatus { get; set; } = "Unpaid (Awaiting Confirmation)";
@@ -92,7 +98,12 @@ namespace KrishiLink.Models.ViewModels
         public string DurationDisplay { get; set; } = string.Empty;
 
         public decimal TotalCost { get; set; }
-        public string CostDisplay => $"৳{TotalCost:N0}";
+        public decimal DiscountAmount { get; set; }
+        public string? AppliedPromoCode { get; set; }
+        public int PointsUsed { get; set; }
+        public decimal NetCost => Math.Max(0m, TotalCost - DiscountAmount);
+        public string CostDisplay => $"৳{NetCost:N0}";
+        public string OriginalCostDisplay => $"৳{TotalCost:N0}";
         public string RateDescription { get; set; } = string.Empty;
         public string QuantityDisplay { get; set; } = string.Empty;
         public string PaymentStatus { get; set; } = string.Empty;

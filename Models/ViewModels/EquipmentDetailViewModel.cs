@@ -62,5 +62,13 @@ namespace KrishiLink.Models.ViewModels
         public int? LastServicedDaysAgo { get; set; }
         public string? LastServicedText { get; set; }
         public List<EquipmentMaintenanceItemViewModel> MaintenanceHistory { get; set; } = new();
+
+        // Farmer Loyalty Points & Promo Discounts
+        public int FarmerLoyaltyPoints { get; set; }
+        public string FarmerTierName { get; set; } = string.Empty;
+        public List<FixedConversionTierViewModel> AvailableConversionTiers { get; set; } = new();
+        public string? AppliedPromoCode { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public int PointsUsed { get; set; }
     }
 }

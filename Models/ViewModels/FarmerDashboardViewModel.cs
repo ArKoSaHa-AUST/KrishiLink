@@ -22,6 +22,9 @@ namespace KrishiLink.Models.ViewModels
 
         /// <summary>Recent activity feed entries, newest first.</summary>
         public List<ActivityFeedItem> RecentActivity { get; set; } = new();
+
+        /// <summary>Farmer Loyalty Points (KrishiPoints) summary widget.</summary>
+        public FarmerDashboardLoyaltyWidgetViewModel LoyaltyWidget { get; set; } = new();
     }
 
     /// <summary>
