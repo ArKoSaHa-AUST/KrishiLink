@@ -117,19 +117,40 @@
                         <span asp-validation-for="Description" class="text-danger small"></span>
                     </div>
 
-                    <!-- Location Input -->
+                    <!-- District Selection -->
                     <div class="col-12 col-md-6">
-                        <label asp-for="Location" class="form-label fw-semibold text-dark small">
-                            @L["Equipment Base Location / District"] <span class="text-danger">*</span>
+                        <label asp-for="District" class="form-label fw-semibold text-dark small">
+                            @L["District"] <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light text-success border-end-0">
                                 <i class="bi bi-geo-alt-fill"></i>
                             </span>
-                            <input asp-for="Location" class="form-control border-start-0 py-2.5" id="equipmentLocationInput" placeholder="@L["e.g. Bogra Sadar, Bogra"]" required />
+                            <select asp-for="District" class="form-select border-start-0 py-2.5" id="equipmentDistrictSelect" required>
+                                <option value="">@L["-- Select District --"]</option>
+                                @foreach (var d in Model.AvailableDistricts)
+                                {
+                                    <option value="@d" selected="@(Model.District == d ? "selected" : null)">@L[d]</option>
+                                }
+                            </select>
+                        </div>
+                        <span asp-validation-for="District" class="text-danger small"></span>
+                        <div class="form-text small text-muted">@L["Official administrative district for search & filtering."]</div>
+                    </div>
+
+                    <!-- Location Input -->
+                    <div class="col-12 col-md-6">
+                        <label asp-for="Location" class="form-label fw-semibold text-dark small">
+                            @L["Location (Upazila / Village / Road)"] <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-success border-end-0">
+                                <i class="bi bi-signpost-2-fill"></i>
+                            </span>
+                            <input asp-for="Location" class="form-control border-start-0 py-2.5" id="equipmentLocationInput" placeholder="@L["e.g. Shibganj, Bogra"]" required />
                         </div>
                         <span asp-validation-for="Location" class="text-danger small"></span>
-                        <div class="form-text small text-muted">@L["District or Upazila name where the machinery is stored."]</div>
+                        <div class="form-text small text-muted">@L["Upazila or local area address where the machinery is stationed."]</div>
                     </div>
 
                     <!-- Availability Status Toggle -->
@@ -323,7 +344,16 @@
             const alertBox = document.getElementById('imageValidationAlert');
             if (alertBox) alertBox.classList.add('d-none');
 
+            const existingCount = document.querySelectorAll('.existing-image-card').length;
+
             Array.from(files).forEach(file => {
+                if (existingCount + selectedNewFiles.length >= 8) {
+                    if (window.KrishiToast) {
+                        KrishiToast.show(`@L["A listing cannot have more than 8 images."]`, { iconClass: 'bi-exclamation-triangle-fill text-warning' });
+                    }
+                    return;
+                }
+
                 const ext = '.' + file.name.split('.').pop().toLowerCase();
 
                 if (!allowedExtensions.includes(ext) || !file.type.startsWith('image/')) {
@@ -644,7 +674,8 @@
 
             // "Center on District" button
             document.getElementById('btnRecenterDistrict')?.addEventListener('click', () => {
-                const coords = findDistrictCoords(locInput?.value);
+                const districtVal = document.getElementById('equipmentDistrictSelect')?.value;
+                const coords = findDistrictCoords(districtVal || locInput?.value);
                 pickerMap.setView(coords, 12);
                 pickerMarker.setLatLng(coords);
                 updateCoordinates(coords[0], coords[1]);
@@ -653,9 +684,19 @@
                 }
             });
 
-            // On location input change, center on district if user hasn't explicitly set pinpoint
+            // On district select or location input change, center on district
+            const districtSelect = document.getElementById('equipmentDistrictSelect');
+            districtSelect?.addEventListener('change', () => {
+                if (districtSelect.value) {
+                    const coords = findDistrictCoords(districtSelect.value);
+                    pickerMap.setView(coords, 12);
+                    pickerMarker.setLatLng(coords);
+                    updateCoordinates(coords[0], coords[1]);
+                }
+            });
+
             locInput?.addEventListener('blur', () => {
-                if (locInput.value && !ModelHasCustomPin()) {
+                if (locInput.value && !ModelHasCustomPin() && !districtSelect?.value) {
                     const coords = findDistrictCoords(locInput.value);
                     pickerMap.setView(coords, 12);
                     pickerMarker.setLatLng(coords);

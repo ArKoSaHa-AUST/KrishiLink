@@ -82,25 +82,33 @@ namespace KrishiLink.BLL.Services
             {
                 var term = c.SearchTerm.Trim();
                 query = query.Where(g => g.Name.Contains(term) || g.StorageType.Contains(term)
-                    || g.Location.Contains(term) || g.Description.Contains(term) || g.Facilities.Contains(term)
+                    || g.Location.Contains(term) || (g.District != null && g.District.Contains(term))
+                    || g.Description.Contains(term) || g.Facilities.Contains(term)
                     || g.Owner!.FullName.Contains(term));
             }
             if (c.SelectedStorageTypes is { Count: > 0 })
                 query = query.Where(g => c.SelectedStorageTypes.Contains(g.StorageType));
-            if (!string.IsNullOrWhiteSpace(c.Location))
+
+            var rawDistrict = !string.IsNullOrWhiteSpace(c.District) ? c.District : c.Location;
+            if (!string.IsNullOrWhiteSpace(rawDistrict))
             {
-                var loc = c.Location.Trim();
-                var alt = GetDistrictAlias(loc);
-                if (!string.IsNullOrEmpty(alt) && !alt.Equals(loc, StringComparison.OrdinalIgnoreCase))
+                var targetDistrict = OnboardingOptions.GuessDistrict(rawDistrict.Trim()) ?? rawDistrict.Trim();
+                var alt = GetDistrictAlias(targetDistrict);
+                if (!string.IsNullOrEmpty(alt) && !alt.Equals(targetDistrict, StringComparison.OrdinalIgnoreCase))
                 {
-                    query = query.Where(g => g.Location.Contains(loc) || g.Location.Contains(alt));
+                    query = query.Where(g => (g.District != null && (g.District == targetDistrict || g.District == alt))
+                        || (g.District == null && (g.Location.Contains(targetDistrict) || g.Location.Contains(alt))));
                 }
                 else
                 {
-                    query = query.Where(g => g.Location.Contains(loc));
+                    query = query.Where(g => (g.District != null && g.District == targetDistrict)
+                        || (g.District == null && g.Location.Contains(targetDistrict)));
                 }
             }
-            if (c.SelectedMaxPrice.HasValue)
+
+            if (c.SelectedMinPrice.HasValue && c.SelectedMinPrice.Value > 0)
+                query = query.Where(g => g.PricePerTonPerMonth >= c.SelectedMinPrice.Value);
+            if (c.SelectedMaxPrice.HasValue && c.SelectedMaxPrice.Value > 0)
                 query = query.Where(g => g.PricePerTonPerMonth <= c.SelectedMaxPrice.Value);
 
             // Occupancy is measured for the requested window when given, otherwise for today.
@@ -110,34 +118,74 @@ namespace KrishiLink.BLL.Services
             if (c.AvailableStartDate.HasValue || c.AvailableEndDate.HasValue)
                 query = query.Where(g => !g.BlockedDates.Any(d => d.Date >= windowStart && d.Date <= windowEnd));
 
-            var rows = await query.Select(g => new
+            if (c.SelectedMinCapacity is > 0)
             {
-                g.Id,
-                g.Name,
-                g.StorageType,
-                g.Location,
-                g.Latitude,
-                g.Longitude,
-                g.CapacityInTons,
-                g.PricePerTonPerMonth,
-                g.ImageUrls,
-                g.Facilities,
-                g.AverageRating,
-                g.ReviewCount,
-                CreatedAt = g.CreatedAt,
-                OwnerName = g.Owner!.FullName,
-                OwnerIsVerified = g.Owner.IsVerified,
-                Occupied = g.Bookings
+                var minCap = c.SelectedMinCapacity.Value;
+                query = query.Where(g => (g.CapacityInTons - (g.Bookings
                     .Where(b => b.Status == BookingStatus.Accepted && b.StartDate <= windowEnd && windowStart <= b.EndDate)
-                    .Sum(b => (double?)b.StorageTons) ?? 0
-            }).ToListAsync();
+                    .Sum(b => (double?)b.StorageTons) ?? 0)) >= minCap);
+            }
 
-            IEnumerable<GodownItemViewModel> items = rows.Select(g => new GodownItemViewModel
+            if (c.AvailableStartDate.HasValue || c.AvailableEndDate.HasValue)
+            {
+                query = query.Where(g => (g.CapacityInTons - (g.Bookings
+                    .Where(b => b.Status == BookingStatus.Accepted && b.StartDate <= windowEnd && windowStart <= b.EndDate)
+                    .Sum(b => (double?)b.StorageTons) ?? 0)) > 0);
+            }
+
+            var sort = (c.SortBy ?? "newest").ToLowerInvariant();
+            query = sort switch
+            {
+                "price_asc" => query.OrderBy(g => g.PricePerTonPerMonth),
+                "price_desc" => query.OrderByDescending(g => g.PricePerTonPerMonth),
+                "capacity_desc" => query.OrderByDescending(g => g.CapacityInTons - (g.Bookings
+                    .Where(b => b.Status == BookingStatus.Accepted && b.StartDate <= windowEnd && windowStart <= b.EndDate)
+                    .Sum(b => (double?)b.StorageTons) ?? 0)),
+                "location" or "distance" => query.OrderBy(g => g.District).ThenBy(g => g.Location).ThenByDescending(g => g.CreatedAt),
+                "rating_desc" => query.OrderByDescending(g => g.AverageRating).ThenByDescending(g => g.ReviewCount),
+                _ => query.OrderByDescending(g => g.CreatedAt)
+            };
+
+            var totalCount = await query.CountAsync();
+            var page = c.Page > 0 ? c.Page : 1;
+            var pageSize = c.PageSize > 0 ? c.PageSize : 24;
+
+            var rows = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(g => new
+                {
+                    g.Id,
+                    g.Name,
+                    g.StorageType,
+                    g.Location,
+                    g.District,
+                    g.Latitude,
+                    g.Longitude,
+                    g.CapacityInTons,
+                    g.PricePerTonPerMonth,
+                    g.ImageUrls,
+                    g.Facilities,
+                    g.AverageRating,
+                    g.ReviewCount,
+                    CreatedAt = g.CreatedAt,
+                    OwnerName = g.Owner!.FullName,
+                    OwnerIsVerified = g.Owner.IsVerified,
+                    OwnerVerificationStatus = g.Owner.VerificationStatus,
+                    OwnerRating = g.Owner.OwnerAverageRating,
+                    OwnerReviewCount = g.Owner.OwnerReviewCount,
+                    Occupied = g.Bookings
+                        .Where(b => b.Status == BookingStatus.Accepted && b.StartDate <= windowEnd && windowStart <= b.EndDate)
+                        .Sum(b => (double?)b.StorageTons) ?? 0
+                }).ToListAsync();
+
+            var items = rows.Select(g => new GodownItemViewModel
             {
                 Id = g.Id,
                 Name = g.Name,
                 StorageType = g.StorageType,
                 Location = g.Location,
+                District = g.District,
                 Latitude = g.Latitude,
                 Longitude = g.Longitude,
                 TotalCapacityTons = g.CapacityInTons,
@@ -146,39 +194,31 @@ namespace KrishiLink.BLL.Services
                 ImageUrl = ListingFormat.Split(g.ImageUrls).FirstOrDefault() ?? string.Empty,
                 OwnerName = g.OwnerName,
                 OwnerIsVerified = g.OwnerIsVerified,
+                OwnerVerificationStatus = g.OwnerVerificationStatus ?? "Unverified",
                 Rating = g.AverageRating,
                 ReviewCount = g.ReviewCount,
+                OwnerRating = g.OwnerRating,
+                OwnerReviewCount = g.OwnerReviewCount,
                 Facilities = ListingFormat.Split(g.Facilities),
                 CreatedAt = g.CreatedAt
-            });
-
-            if (c.SelectedMinCapacity is > 0)
-                items = items.Where(g => g.AvailableCapacityTons >= c.SelectedMinCapacity.Value);
-            if (c.AvailableStartDate.HasValue || c.AvailableEndDate.HasValue)
-                items = items.Where(g => g.IsAvailable);
-
-            var sort = (c.SortBy ?? "newest").ToLowerInvariant();
-            items = sort switch
-            {
-                "price_asc" => items.OrderBy(g => g.PricePerTonPerMonth),
-                "price_desc" => items.OrderByDescending(g => g.PricePerTonPerMonth),
-                "capacity_desc" => items.OrderByDescending(g => g.AvailableCapacityTons),
-                "distance" => items.OrderBy(g => g.Location).ThenByDescending(g => g.CreatedAt),
-                "rating_desc" => items.OrderByDescending(g => g.Rating).ThenByDescending(g => g.ReviewCount),
-                _ => items.OrderByDescending(g => g.CreatedAt)
-            };
+            }).ToList();
 
             var model = new GodownBrowseViewModel
             {
                 SearchTerm = c.SearchTerm,
                 SelectedStorageTypes = c.SelectedStorageTypes ?? new List<string>(),
-                Location = c.Location,
+                District = rawDistrict,
+                Location = rawDistrict,
                 SelectedMinCapacity = c.SelectedMinCapacity,
+                SelectedMinPrice = c.SelectedMinPrice,
                 SelectedMaxPrice = c.SelectedMaxPrice ?? 2500,
                 AvailableStartDate = c.AvailableStartDate,
                 AvailableEndDate = c.AvailableEndDate,
                 SortBy = sort,
-                GodownList = items.ToList(),
+                GodownList = items,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize,
                 AvailableStorageTypes = new List<string>(OnboardingOptions.StorageTypes),
                 AvailableLocations = new List<string>(OnboardingOptions.Districts)
             };
@@ -245,6 +285,7 @@ namespace KrishiLink.BLL.Services
                 Name = g.Name,
                 StorageType = g.StorageType,
                 Location = g.Location,
+                District = g.District ?? OnboardingOptions.GuessDistrict(g.Location),
                 Latitude = lat,
                 Longitude = lng,
                 Description = g.Description,
@@ -260,8 +301,8 @@ namespace KrishiLink.BLL.Services
                 OwnerVerificationStatus = g.Owner?.VerificationStatus ?? "Unverified",
                 OwnerPhone = g.Owner?.PhoneNumber ?? string.Empty,
                 OwnerMemberSince = ListingFormat.MemberSince(g.Owner?.CreatedAt ?? g.CreatedAt),
-                OwnerRating = g.AverageRating,
-                TotalReviews = g.ReviewCount,
+                OwnerRating = g.Owner?.OwnerAverageRating ?? 0.0,
+                TotalReviews = g.Owner?.OwnerReviewCount ?? 0,
                 AverageRating = g.AverageRating,
                 ReviewCount = g.ReviewCount,
                 ImageUrls = ListingFormat.Split(g.ImageUrls),
@@ -377,13 +418,17 @@ namespace KrishiLink.BLL.Services
             // Notify godown owner of new pending storage request
             var farmer = await _users.FirstOrDefaultAsync(u => u.Id == farmerId);
             var farmerName = farmer?.FullName ?? "A farmer";
-            await _notifications.CreateAsync(
-                g.OwnerId,
-                NotificationTypes.BookingRequest,
-                "New Godown Storage Request",
-                $"{farmerName} requested storage for {r.RequestedCapacityTons} tons in {g.Name} from {s:dd MMM yyyy} to {t:dd MMM yyyy}.",
-                "/Godown/OwnerDashboard#booking-requests"
-            );
+            await _notifications.NotifyAsync(new NotificationRequest
+            {
+                UserId = g.OwnerId,
+                Type = NotificationTypes.BookingRequest,
+                TitleKey = "New Godown Storage Request",
+                MessageKey = "{0} requested storage for {1} tons in {2} from {3} to {4}.",
+                Args = new object[] { farmerName, r.RequestedCapacityTons, g.Name, $"{s:dd MMM yyyy}", $"{t:dd MMM yyyy}" },
+                LinkUrl = AppLinks.OwnerRequests("godown", newBooking.Id),
+                DedupeKey = $"booking:godown:{newBooking.Id}:Requested",
+                SendEmail = false
+            });
 
             return (null, newBooking.Id);
         }
@@ -432,6 +477,15 @@ namespace KrishiLink.BLL.Services
             var next = BookingWorkflow.Next(booking.Status, decision);
             if (next is null) return DecisionResult.Fail($"A {booking.Status.ToLowerInvariant()} request cannot be {decision.ToLowerInvariant()}ed.");
 
+            if (string.Equals(decision, "undo", StringComparison.OrdinalIgnoreCase) && booking.Status == BookingStatus.Completed)
+            {
+                var existingReview = await _reviews.GetReviewByBookingAsync("Godown", booking.Id);
+                if (existingReview != null)
+                {
+                    return DecisionResult.Fail("This booking has been reviewed by the farmer and can no longer be reopened.");
+                }
+            }
+
             var autoRejected = new List<int>();
             if (next == BookingStatus.Accepted)
             {
@@ -461,22 +515,18 @@ namespace KrishiLink.BLL.Services
 
                     // Notify auto-rejected farmer
                     var otherUser = await _users.FirstOrDefaultAsync(u => u.Id == other.FarmerId);
-                    await _notifications.CreateAsync(
-                        other.FarmerId,
-                        NotificationTypes.BookingRejected,
-                        "Storage Request Declined",
-                        $"Your storage request for {other.StorageTons} tons in {godown.Name} ({other.StartDate:dd MMM yyyy} - {other.EndDate:dd MMM yyyy}) was declined due to capacity constraints.",
-                        "/Farmer/GodownBookings"
-                    );
-
-                    if (!string.IsNullOrEmpty(otherUser?.Email))
+                    await _notifications.NotifyAsync(new NotificationRequest
                     {
-                        await _notifications.SendEmailNotificationAsync(
-                            otherUser.Email,
-                            "Storage Request Update - KrishiLink",
-                            $"<h3>Hello, {otherUser.FullName}</h3><p>Your storage request for <strong>{other.StorageTons} tons</strong> in <strong>{godown.Name}</strong> from {other.StartDate:dd MMM yyyy} to {other.EndDate:dd MMM yyyy} could not be confirmed due to storage capacity limits.</p><p><a href=\"https://krishilink.com/Godown/Browse\">Explore other storage facilities on KrishiLink</a></p>"
-                        );
-                    }
+                        UserId = other.FarmerId,
+                        Type = NotificationTypes.BookingRejected,
+                        TitleKey = "Storage Request Declined",
+                        MessageKey = "Your storage request for {0} tons in {1} ({2} - {3}) was declined due to capacity constraints.",
+                        Args = new object[] { other.StorageTons, godown.Name, $"{other.StartDate:dd MMM yyyy}", $"{other.EndDate:dd MMM yyyy}" },
+                        LinkUrl = AppLinks.FarmerBookings("godown", other.Id),
+                        DedupeKey = $"booking:godown:{other.Id}:AutoRejected",
+                        SendEmail = true,
+                        RecipientEmail = otherUser?.Email
+                    });
                 }
             }
 
@@ -489,42 +539,38 @@ namespace KrishiLink.BLL.Services
             var farmer = await _users.FirstOrDefaultAsync(u => u.Id == booking.FarmerId);
             if (next == BookingStatus.Accepted)
             {
-                await _notifications.CreateAsync(
-                    booking.FarmerId,
-                    NotificationTypes.BookingAccepted,
-                    "Storage Request Accepted",
-                    $"Your storage request for {booking.StorageTons} tons in {booking.Godown!.Name} ({booking.StartDate:dd MMM yyyy} - {booking.EndDate:dd MMM yyyy}) was accepted by the owner.",
-                    "/Farmer/GodownBookings"
-                );
-
-                if (!string.IsNullOrEmpty(farmer?.Email))
+                await _notifications.NotifyAsync(new NotificationRequest
                 {
-                    await _notifications.SendEmailNotificationAsync(
-                        farmer.Email,
-                        "Storage Request Accepted - KrishiLink",
-                        $"<h3>Good news, {farmer.FullName}!</h3><p>Your storage request for <strong>{booking.StorageTons} tons</strong> in <strong>{booking.Godown!.Name}</strong> from {booking.StartDate:dd MMM yyyy} to {booking.EndDate:dd MMM yyyy} has been <strong>accepted</strong> by the owner.</p><p><a href=\"https://krishilink.com/Farmer/GodownBookings\">View your storage bookings on KrishiLink</a></p>"
-                    );
-                }
+                    UserId = booking.FarmerId,
+                    Type = NotificationTypes.BookingAccepted,
+                    TitleKey = "Storage Request Accepted",
+                    MessageKey = "Your storage request for {0} tons in {1} ({2} - {3}) was accepted by the owner.",
+                    Args = new object[] { booking.StorageTons, booking.Godown!.Name, $"{booking.StartDate:dd MMM yyyy}", $"{booking.EndDate:dd MMM yyyy}" },
+                    LinkUrl = AppLinks.FarmerBookings("godown", booking.Id),
+                    DedupeKey = $"booking:godown:{booking.Id}:Accepted",
+                    SendEmail = true,
+                    RecipientEmail = farmer?.Email
+                });
             }
             else if (next == BookingStatus.Rejected)
             {
-                var reasonText = !string.IsNullOrWhiteSpace(booking.RejectReason) ? $" Reason: {booking.RejectReason}" : string.Empty;
-                await _notifications.CreateAsync(
-                    booking.FarmerId,
-                    NotificationTypes.BookingRejected,
-                    "Storage Request Declined",
-                    $"Your storage request for {booking.StorageTons} tons in {booking.Godown!.Name} ({booking.StartDate:dd MMM yyyy} - {booking.EndDate:dd MMM yyyy}) was declined.{reasonText}",
-                    "/Farmer/GodownBookings"
-                );
-
-                if (!string.IsNullOrEmpty(farmer?.Email))
+                var hasReason = !string.IsNullOrWhiteSpace(booking.RejectReason);
+                await _notifications.NotifyAsync(new NotificationRequest
                 {
-                    await _notifications.SendEmailNotificationAsync(
-                        farmer.Email,
-                        "Storage Request Declined - KrishiLink",
-                        $"<h3>Hello, {farmer.FullName}</h3><p>Your storage request for <strong>{booking.StorageTons} tons</strong> in <strong>{booking.Godown!.Name}</strong> from {booking.StartDate:dd MMM yyyy} to {booking.EndDate:dd MMM yyyy} was declined by the owner.{(!string.IsNullOrWhiteSpace(booking.RejectReason) ? $"<br/><strong>Reason:</strong> {booking.RejectReason}" : "")}</p><p><a href=\"https://krishilink.com/Godown/Browse\">Browse other storage options on KrishiLink</a></p>"
-                    );
-                }
+                    UserId = booking.FarmerId,
+                    Type = NotificationTypes.BookingRejected,
+                    TitleKey = "Storage Request Declined",
+                    MessageKey = hasReason
+                        ? "Your storage request for {0} tons in {1} ({2} - {3}) was declined. Reason: {4}"
+                        : "Your storage request for {0} tons in {1} ({2} - {3}) was declined.",
+                    Args = hasReason
+                        ? new object[] { booking.StorageTons, booking.Godown!.Name, $"{booking.StartDate:dd MMM yyyy}", $"{booking.EndDate:dd MMM yyyy}", booking.RejectReason! }
+                        : new object[] { booking.StorageTons, booking.Godown!.Name, $"{booking.StartDate:dd MMM yyyy}", $"{booking.EndDate:dd MMM yyyy}" },
+                    LinkUrl = AppLinks.FarmerBookings("godown", booking.Id),
+                    DedupeKey = $"booking:godown:{booking.Id}:Rejected",
+                    SendEmail = true,
+                    RecipientEmail = farmer?.Email
+                });
 
                 // Refund points if promo/points were redeemed
                 if (booking.PointsUsed > 0 || booking.DiscountAmount > 0)
@@ -534,13 +580,17 @@ namespace KrishiLink.BLL.Services
             }
             else if (next == BookingStatus.Completed)
             {
-                await _notifications.CreateAsync(
-                    booking.FarmerId,
-                    NotificationTypes.BookingCompleted,
-                    "Storage Booking Completed",
-                    $"Your storage booking at {booking.Godown!.Name} is completed. Please take a moment to rate and review your experience!",
-                    "/Farmer/GodownBookings"
-                );
+                await _notifications.NotifyAsync(new NotificationRequest
+                {
+                    UserId = booking.FarmerId,
+                    Type = NotificationTypes.BookingCompleted,
+                    TitleKey = "Storage Booking Completed",
+                    MessageKey = "Your storage booking at {0} is completed. Please take a moment to rate and review your experience!",
+                    Args = new object[] { booking.Godown!.Name },
+                    LinkUrl = AppLinks.FarmerBookingsReview("godown", booking.Id),
+                    DedupeKey = $"booking:godown:{booking.Id}:Completed",
+                    SendEmail = false
+                });
 
                 // Award loyalty points for completed storage
                 var days = (booking.EndDate - booking.StartDate).Days + 1;
@@ -570,6 +620,7 @@ namespace KrishiLink.BLL.Services
                 Name = g.Name,
                 Category = g.StorageType,
                 Location = g.Location,
+                District = g.District ?? OnboardingOptions.GuessDistrict(g.Location) ?? string.Empty,
                 Latitude = g.Latitude,
                 Longitude = g.Longitude,
                 TotalCapacity = g.CapacityInTons,
@@ -587,19 +638,18 @@ namespace KrishiLink.BLL.Services
         public async Task<bool> SaveListingAsync(string ownerId, GodownListingViewModel model)
         {
             Godown entity;
+            List<string> previousImagesToDelete = new();
+
             if (model.IsEditMode)
             {
                 var existing = await _godowns.QueryTracked().FirstOrDefaultAsync(x => x.Id == model.Id && x.OwnerId == ownerId);
                 if (existing is null) return false;
                 entity = existing;
 
-                // Delete any removed images from disk
+                // Identify removed images to delete after successful save
                 var previousImages = ListingFormat.Split(entity.ImageUrls);
                 var retainedExisting = model.ExistingImageUrls ?? new List<string>();
-                foreach (var removed in previousImages.Where(img => !retainedExisting.Contains(img, StringComparer.OrdinalIgnoreCase)))
-                {
-                    _files.DeleteImage(removed);
-                }
+                previousImagesToDelete = previousImages.Where(img => !retainedExisting.Contains(img, StringComparer.OrdinalIgnoreCase)).ToList();
             }
             else
             {
@@ -608,37 +658,53 @@ namespace KrishiLink.BLL.Services
             }
 
             var savedNewImages = await _files.SaveImagesAsync(model.ImageFiles, UploadFolder);
-            var retainedUrls = model.ExistingImageUrls ?? new List<string>();
-            var orderedImages = ArrangeImagesWithPrimary(retainedUrls, savedNewImages, model.PrimaryImageKey);
-
-            entity.Name = model.Name.Trim();
-            entity.StorageType = model.Category.Trim();
-            entity.Location = model.Location.Trim();
-
-            if (model.Latitude.HasValue && model.Longitude.HasValue)
+            try
             {
-                entity.Latitude = model.Latitude.Value;
-                entity.Longitude = model.Longitude.Value;
+                var retainedUrls = model.ExistingImageUrls ?? new List<string>();
+                var orderedImages = ArrangeImagesWithPrimary(retainedUrls, savedNewImages, model.PrimaryImageKey);
+
+                entity.Name = model.Name.Trim();
+                entity.StorageType = model.Category.Trim();
+                entity.Location = model.Location.Trim();
+                entity.District = string.IsNullOrWhiteSpace(model.District)
+                    ? OnboardingOptions.GuessDistrict(model.Location)
+                    : model.District.Trim();
+
+                if (model.Latitude.HasValue && model.Longitude.HasValue)
+                {
+                    entity.Latitude = model.Latitude.Value;
+                    entity.Longitude = model.Longitude.Value;
+                }
+                else
+                {
+                    var (fallbackLat, fallbackLng) = GeoLocationHelper.GetDistrictCoordinates(model.Location);
+                    entity.Latitude = fallbackLat;
+                    entity.Longitude = fallbackLng;
+                }
+
+                entity.Description = model.Description.Trim();
+                entity.CapacityInTons = ToTons(model.TotalCapacity, model.CapacityUnit);
+                entity.PricePerTonPerMonth = model.PricePeriod == "Day" ? model.PriceAmount * 30 : model.PriceAmount;
+                entity.IsActive = model.IsAvailable;
+                entity.Facilities = ListingFormat.Join(model.SelectedFacilities);
+                entity.ImageUrls = ListingFormat.Join(orderedImages);
+
+                await _godowns.SaveChangesAsync();
+
+                // On successful commit, delete previously removed images from disk
+                _files.DeleteFiles(previousImagesToDelete);
+
+                model.Id = entity.Id;
+                model.Latitude = entity.Latitude;
+                model.Longitude = entity.Longitude;
+                return true;
             }
-            else
+            catch
             {
-                var (fallbackLat, fallbackLng) = GeoLocationHelper.GetDistrictCoordinates(model.Location);
-                entity.Latitude = fallbackLat;
-                entity.Longitude = fallbackLng;
+                // Rollback: clean up newly saved images so orphaned files are not left on disk
+                _files.DeleteFiles(savedNewImages);
+                throw;
             }
-
-            entity.Description = model.Description.Trim();
-            entity.CapacityInTons = ToTons(model.TotalCapacity, model.CapacityUnit);
-            entity.PricePerTonPerMonth = model.PricePeriod == "Day" ? model.PriceAmount * 30 : model.PriceAmount;
-            entity.IsActive = model.IsAvailable;
-            entity.Facilities = ListingFormat.Join(model.SelectedFacilities);
-            entity.ImageUrls = ListingFormat.Join(orderedImages);
-
-            await _godowns.SaveChangesAsync();
-            model.Id = entity.Id;
-            model.Latitude = entity.Latitude;
-            model.Longitude = entity.Longitude;
-            return true;
         }
 
         private static List<string> ArrangeImagesWithPrimary(List<string> existingUrls, List<string> newUrls, string? primaryKey)

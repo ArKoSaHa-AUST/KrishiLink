@@ -39,14 +39,27 @@
                 </span>
                 @if (Model != null && Model.ReviewCount > 0)
                 {
-                    <span class="text-warning small fw-bold d-inline-flex align-items-center gap-1">
+                    var ratingTooltip = Model.OwnerReviewCount > 0
+                        ? $"{Model.Rating:0.0} ({Model.ReviewCount} reviews) · {L["Owner"]}: {Model.OwnerRating:0.0} ({Model.OwnerReviewCount})"
+                        : $"{Model.Rating:0.0} ({Model.ReviewCount} reviews)";
+                    <span class="text-warning small fw-bold d-inline-flex align-items-center gap-1" title="@ratingTooltip">
                         <i class="bi bi-star-fill"></i> @Model.Rating.ToString("0.0") <span class="text-muted fw-normal">(@Model.ReviewCount)</span>
                     </span>
                 }
             </div>
             <h5 class="card-title fw-bold text-dark mb-2 text-truncate" title="@name">@name</h5>
             <p class="card-text text-muted small mb-3 d-flex align-items-center">
-                <span class="text-truncate">@L[location]</span>
+                <i class="bi bi-geo-alt text-success me-1"></i>
+                <span class="text-truncate" title="@location">
+                    @if (!string.IsNullOrWhiteSpace(Model?.District))
+                    {
+                        <strong>@L[Model.District]</strong>@(!string.IsNullOrWhiteSpace(location) && !location.Equals(Model.District, StringComparison.OrdinalIgnoreCase) ? $" · {location}" : "")
+                    }
+                    else
+                    {
+                        @L[location]
+                    }
+                </span>
             </p>
         </div>
 

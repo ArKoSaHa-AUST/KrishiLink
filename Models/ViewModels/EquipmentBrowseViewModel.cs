@@ -14,6 +14,7 @@ namespace KrishiLink.Models.ViewModels
         public decimal DailyRate { get; set; }
         public decimal? HourlyRate { get; set; }
         public string Location { get; set; } = string.Empty;
+        public string? District { get; set; }
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
         public double DistanceKm { get; set; }
@@ -25,6 +26,8 @@ namespace KrishiLink.Models.ViewModels
         public string OwnerVerificationStatus { get; set; } = "Unverified";
         public double Rating { get; set; }
         public int ReviewCount { get; set; }
+        public double OwnerRating { get; set; }
+        public int OwnerReviewCount { get; set; }
         public int? LastServicedDaysAgo { get; set; }
         public string? LastServicedText { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -35,12 +38,16 @@ namespace KrishiLink.Models.ViewModels
     {
         public string? SearchTerm { get; set; }
         public List<string>? SelectedCategories { get; set; }
+        public string? District { get; set; }
         public string? Location { get; set; }
+        public decimal? SelectedMinPrice { get; set; }
         public decimal? SelectedMaxPrice { get; set; }
         public DateTime? AvailabilityDate { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public string SortBy { get; set; } = "newest";
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 24;
     }
 
     /// <summary>
@@ -51,18 +58,25 @@ namespace KrishiLink.Models.ViewModels
         // Filter & Search Parameters
         public string? SearchTerm { get; set; }
         public List<string> SelectedCategories { get; set; } = new();
+        public string? District { get; set; }
         public string? Location { get; set; }
         public decimal MinPrice { get; set; } = 200;
         public decimal MaxPrice { get; set; } = 5000;
+        public decimal? SelectedMinPrice { get; set; }
         public decimal? SelectedMaxPrice { get; set; }
         public DateTime? AvailabilityDate { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
-        public string SortBy { get; set; } = "newest"; // "price_asc", "price_desc", "distance", "rating_desc", "newest"
+        public string SortBy { get; set; } = "newest"; // "price_asc", "price_desc", "location", "rating_desc", "newest"
 
         // Results
         public List<EquipmentItemViewModel> EquipmentList { get; set; } = new();
-        public int TotalCount => EquipmentList.Count;
+        public int TotalCount { get; set; }
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 24;
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalCount / PageSize) : 0;
+        public bool HasPreviousPage => Page > 1;
+        public bool HasNextPage => Page < TotalPages;
 
         // Meta lists for filters
         public List<string> AvailableCategories { get; set; } = new(OnboardingOptions.EquipmentCategories);

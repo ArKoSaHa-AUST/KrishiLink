@@ -12,6 +12,7 @@ namespace KrishiLink.Models.ViewModels
         public string Name { get; set; } = string.Empty;
         public string StorageType { get; set; } = "Grain Warehouse"; // Cold Storage, Grain Warehouse, Silo Facility, Dry Godown, Pest Controlled
         public string Location { get; set; } = string.Empty;
+        public string? District { get; set; }
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
         public double DistanceKm { get; set; }
@@ -27,6 +28,8 @@ namespace KrishiLink.Models.ViewModels
         public string OwnerVerificationStatus { get; set; } = "Unverified";
         public double Rating { get; set; }
         public int ReviewCount { get; set; }
+        public double OwnerRating { get; set; }
+        public int OwnerReviewCount { get; set; }
         public List<string> Facilities { get; set; } = new();
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
@@ -36,12 +39,16 @@ namespace KrishiLink.Models.ViewModels
     {
         public string? SearchTerm { get; set; }
         public List<string>? SelectedStorageTypes { get; set; }
+        public string? District { get; set; }
         public string? Location { get; set; }
         public double? SelectedMinCapacity { get; set; }
+        public decimal? SelectedMinPrice { get; set; }
         public decimal? SelectedMaxPrice { get; set; }
         public DateTime? AvailableStartDate { get; set; }
         public DateTime? AvailableEndDate { get; set; }
         public string SortBy { get; set; } = "newest";
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 24;
     }
 
     /// <summary>
@@ -52,6 +59,7 @@ namespace KrishiLink.Models.ViewModels
         // Filter & Search Parameters
         public string? SearchTerm { get; set; }
         public List<string> SelectedStorageTypes { get; set; } = new();
+        public string? District { get; set; }
         public string? Location { get; set; }
         public double MinCapacityTons { get; set; } = 1;
         public double MaxCapacityTons { get; set; } = 500;
@@ -59,15 +67,21 @@ namespace KrishiLink.Models.ViewModels
 
         public decimal MinPrice { get; set; } = 100;
         public decimal MaxPrice { get; set; } = 2500;
+        public decimal? SelectedMinPrice { get; set; }
         public decimal? SelectedMaxPrice { get; set; }
 
         public DateTime? AvailableStartDate { get; set; }
         public DateTime? AvailableEndDate { get; set; }
-        public string SortBy { get; set; } = "newest"; // "price_asc", "price_desc", "distance", "capacity_desc", "rating_desc", "newest"
+        public string SortBy { get; set; } = "newest"; // "price_asc", "price_desc", "location", "capacity_desc", "rating_desc", "newest"
 
         // Results
         public List<GodownItemViewModel> GodownList { get; set; } = new();
-        public int TotalCount => GodownList.Count;
+        public int TotalCount { get; set; }
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 24;
+        public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalCount / PageSize) : 0;
+        public bool HasPreviousPage => Page > 1;
+        public bool HasNextPage => Page < TotalPages;
 
         // Filter Metadata
         public List<string> AvailableStorageTypes { get; set; } = new(OnboardingOptions.StorageTypes);

@@ -33,6 +33,7 @@ namespace KrishiLink.Controllers
                 name = g.Name,
                 storageType = g.StorageType,
                 location = g.Location,
+                district = g.District,
                 distanceKm = g.DistanceKm,
                 totalCapacityTons = g.TotalCapacityTons,
                 availableCapacityTons = g.AvailableCapacityTons,
@@ -48,11 +49,22 @@ namespace KrishiLink.Controllers
                 ownerVerificationStatus = g.OwnerVerificationStatus,
                 rating = g.Rating,
                 reviewCount = g.ReviewCount,
+                ownerRating = g.OwnerRating,
+                ownerReviewCount = g.OwnerReviewCount,
                 facilities = g.Facilities,
                 detailsUrl = Url.Action(nameof(Details), "Godown", new { id = g.Id })
             });
 
-            return Json(new { totalCount = model.TotalCount, items });
+            return Json(new
+            {
+                totalCount = model.TotalCount,
+                page = model.Page,
+                pageSize = model.PageSize,
+                totalPages = model.TotalPages,
+                hasPreviousPage = model.HasPreviousPage,
+                hasNextPage = model.HasNextPage,
+                items
+            });
         }
 
         /// <summary>GET: /Godown/Details/3</summary>

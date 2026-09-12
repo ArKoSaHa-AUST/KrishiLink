@@ -7,6 +7,7 @@ namespace KrishiLink.Models.Entities
         public string StorageType { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
+        public string? District { get; set; }
 
         /// <summary>Geographic latitude coordinate for map pin location.</summary>
         public double? Latitude { get; set; }

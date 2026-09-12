@@ -9,6 +9,7 @@ namespace KrishiLink.Models.ViewModels
         public string Name { get; set; } = string.Empty;
         public string StorageType { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
+        public string? District { get; set; }
         public double TotalCapacityTons { get; set; }
         public double AvailableCapacityTons { get; set; }
         public string PricePerTonPerMonth { get; set; } = string.Empty;

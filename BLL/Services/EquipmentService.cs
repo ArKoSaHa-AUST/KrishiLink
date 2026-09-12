@@ -88,24 +88,32 @@ namespace KrishiLink.BLL.Services
             {
                 var term = c.SearchTerm.Trim();
                 query = query.Where(e => e.Name.Contains(term) || e.Category.Contains(term)
-                    || e.Location.Contains(term) || e.Description.Contains(term) || e.Owner!.FullName.Contains(term));
+                    || e.Location.Contains(term) || (e.District != null && e.District.Contains(term))
+                    || e.Description.Contains(term) || e.Owner!.FullName.Contains(term));
             }
             if (c.SelectedCategories is { Count: > 0 })
                 query = query.Where(e => c.SelectedCategories.Contains(e.Category));
-            if (!string.IsNullOrWhiteSpace(c.Location))
+
+            var rawDistrict = !string.IsNullOrWhiteSpace(c.District) ? c.District : c.Location;
+            if (!string.IsNullOrWhiteSpace(rawDistrict))
             {
-                var loc = c.Location.Trim();
-                var alt = GetDistrictAlias(loc);
-                if (!string.IsNullOrEmpty(alt) && !alt.Equals(loc, StringComparison.OrdinalIgnoreCase))
+                var targetDistrict = OnboardingOptions.GuessDistrict(rawDistrict.Trim()) ?? rawDistrict.Trim();
+                var alt = GetDistrictAlias(targetDistrict);
+                if (!string.IsNullOrEmpty(alt) && !alt.Equals(targetDistrict, StringComparison.OrdinalIgnoreCase))
                 {
-                    query = query.Where(e => e.Location.Contains(loc) || e.Location.Contains(alt));
+                    query = query.Where(e => (e.District != null && (e.District == targetDistrict || e.District == alt))
+                        || (e.District == null && (e.Location.Contains(targetDistrict) || e.Location.Contains(alt))));
                 }
                 else
                 {
-                    query = query.Where(e => e.Location.Contains(loc));
+                    query = query.Where(e => (e.District != null && e.District == targetDistrict)
+                        || (e.District == null && e.Location.Contains(targetDistrict)));
                 }
             }
-            if (c.SelectedMaxPrice.HasValue)
+
+            if (c.SelectedMinPrice.HasValue && c.SelectedMinPrice.Value > 0)
+                query = query.Where(e => e.DailyRate >= c.SelectedMinPrice.Value);
+            if (c.SelectedMaxPrice.HasValue && c.SelectedMaxPrice.Value > 0)
                 query = query.Where(e => e.DailyRate <= c.SelectedMaxPrice.Value);
 
             var hasStartDate = c.StartDate.HasValue || c.AvailabilityDate.HasValue;
@@ -125,31 +133,41 @@ namespace KrishiLink.BLL.Services
             {
                 "price_asc" => query.OrderBy(e => e.DailyRate),
                 "price_desc" => query.OrderByDescending(e => e.DailyRate),
-                "distance" => query.OrderBy(e => e.Location).ThenByDescending(e => e.CreatedAt),
+                "location" or "distance" => query.OrderBy(e => e.District).ThenBy(e => e.Location).ThenByDescending(e => e.CreatedAt),
                 "rating_desc" => query.OrderByDescending(e => e.AverageRating).ThenByDescending(e => e.ReviewCount),
                 _ => query.OrderByDescending(e => e.CreatedAt)
             };
 
-            var rawItems = await query.Select(e => new
-            {
-                e.Id,
-                e.Name,
-                e.Category,
-                e.DailyRate,
-                e.HourlyRate,
-                e.Location,
-                e.Latitude,
-                e.Longitude,
-                e.IsAvailable,
-                ImageUrl = e.ImageUrls,
-                OwnerName = e.Owner!.FullName,
-                OwnerIsVerified = e.Owner.IsVerified,
-                OwnerVerificationStatus = e.Owner.VerificationStatus,
-                Rating = e.AverageRating,
-                ReviewCount = e.ReviewCount,
-                CreatedAt = e.CreatedAt,
-                LatestServiceDate = e.MaintenanceRecords.OrderByDescending(m => m.ServiceDate).Select(m => (DateTime?)m.ServiceDate).FirstOrDefault()
-            }).ToListAsync();
+            var totalCount = await query.CountAsync();
+            var page = c.Page > 0 ? c.Page : 1;
+            var pageSize = c.PageSize > 0 ? c.PageSize : 24;
+
+            var rawItems = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new
+                {
+                    e.Id,
+                    e.Name,
+                    e.Category,
+                    e.DailyRate,
+                    e.HourlyRate,
+                    e.Location,
+                    e.District,
+                    e.Latitude,
+                    e.Longitude,
+                    e.IsAvailable,
+                    ImageUrl = e.ImageUrls,
+                    OwnerName = e.Owner!.FullName,
+                    OwnerIsVerified = e.Owner.IsVerified,
+                    OwnerVerificationStatus = e.Owner.VerificationStatus,
+                    OwnerRating = e.Owner.OwnerAverageRating,
+                    OwnerReviewCount = e.Owner.OwnerReviewCount,
+                    Rating = e.AverageRating,
+                    ReviewCount = e.ReviewCount,
+                    CreatedAt = e.CreatedAt,
+                    LatestServiceDate = e.MaintenanceRecords.OrderByDescending(m => m.ServiceDate).Select(m => (DateTime?)m.ServiceDate).FirstOrDefault()
+                }).ToListAsync();
 
             var items = rawItems.Select(e =>
             {
@@ -173,6 +191,7 @@ namespace KrishiLink.BLL.Services
                     DailyRate = e.DailyRate,
                     HourlyRate = e.HourlyRate,
                     Location = e.Location,
+                    District = e.District,
                     Latitude = e.Latitude,
                     Longitude = e.Longitude,
                     IsAvailable = e.IsAvailable,
@@ -180,6 +199,8 @@ namespace KrishiLink.BLL.Services
                     OwnerName = e.OwnerName,
                     OwnerIsVerified = e.OwnerIsVerified,
                     OwnerVerificationStatus = e.OwnerVerificationStatus ?? "Unverified",
+                    OwnerRating = e.OwnerRating,
+                    OwnerReviewCount = e.OwnerReviewCount,
                     Rating = e.Rating,
                     ReviewCount = e.ReviewCount,
                     LastServicedDaysAgo = daysAgo,
@@ -192,13 +213,18 @@ namespace KrishiLink.BLL.Services
             {
                 SearchTerm = c.SearchTerm,
                 SelectedCategories = c.SelectedCategories ?? new List<string>(),
-                Location = c.Location,
+                District = rawDistrict,
+                Location = rawDistrict,
+                SelectedMinPrice = c.SelectedMinPrice,
                 SelectedMaxPrice = c.SelectedMaxPrice ?? 5000,
                 AvailabilityDate = c.AvailabilityDate ?? c.StartDate,
                 StartDate = c.StartDate ?? c.AvailabilityDate,
                 EndDate = c.EndDate,
                 SortBy = sort,
                 EquipmentList = items,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize,
                 AvailableCategories = new List<string>(OnboardingOptions.EquipmentCategories),
                 AvailableLocations = new List<string>(OnboardingOptions.Districts)
             };
@@ -297,6 +323,7 @@ namespace KrishiLink.BLL.Services
                 DailyRateAmount = e.DailyRate,
                 HourlyRate = e.HourlyRate.HasValue ? $"{ListingFormat.Taka(e.HourlyRate.Value)} / Hour" : string.Empty,
                 Location = e.Location,
+                District = e.District ?? OnboardingOptions.GuessDistrict(e.Location),
                 Latitude = lat,
                 Longitude = lng,
                 Status = e.IsAvailable ? "Available" : "Unavailable",
@@ -305,8 +332,8 @@ namespace KrishiLink.BLL.Services
                 OwnerVerificationStatus = e.Owner?.VerificationStatus ?? "Unverified",
                 OwnerPhone = e.Owner?.PhoneNumber ?? string.Empty,
                 OwnerMemberSince = ListingFormat.MemberSince(e.Owner?.CreatedAt ?? e.CreatedAt),
-                OwnerRating = e.AverageRating,
-                TotalReviews = e.ReviewCount,
+                OwnerRating = e.Owner?.OwnerAverageRating ?? 0.0,
+                TotalReviews = e.Owner?.OwnerReviewCount ?? 0,
                 AverageRating = e.AverageRating,
                 ReviewCount = e.ReviewCount,
                 ImageUrls = ListingFormat.Split(e.ImageUrls),
@@ -427,13 +454,17 @@ namespace KrishiLink.BLL.Services
             // Notify equipment owner of new pending rental request
             var farmer = await _users.FirstOrDefaultAsync(u => u.Id == farmerId);
             var farmerName = farmer?.FullName ?? "A farmer";
-            await _notifications.CreateAsync(
-                e.OwnerId,
-                NotificationTypes.BookingRequest,
-                "New Equipment Booking Request",
-                $"{farmerName} requested to rent {e.Name} from {s:dd MMM yyyy} to {t:dd MMM yyyy}.",
-                "/Equipment/OwnerDashboard#rental-requests"
-            );
+            await _notifications.NotifyAsync(new NotificationRequest
+            {
+                UserId = e.OwnerId,
+                Type = NotificationTypes.BookingRequest,
+                TitleKey = "New Equipment Booking Request",
+                MessageKey = "{0} requested to rent {1} from {2} to {3}.",
+                Args = new object[] { farmerName, e.Name, $"{s:dd MMM yyyy}", $"{t:dd MMM yyyy}" },
+                LinkUrl = AppLinks.OwnerRequests("equipment", newBooking.Id),
+                DedupeKey = $"booking:equipment:{newBooking.Id}:Requested",
+                SendEmail = false
+            });
 
             return (null, newBooking.Id);
         }
@@ -533,6 +564,15 @@ namespace KrishiLink.BLL.Services
             var next = BookingWorkflow.Next(booking.Status, decision);
             if (next is null) return DecisionResult.Fail($"A {booking.Status.ToLowerInvariant()} request cannot be {decision.ToLowerInvariant()}ed.");
 
+            if (string.Equals(decision, "undo", StringComparison.OrdinalIgnoreCase) && booking.Status == BookingStatus.Completed)
+            {
+                var existingReview = await _reviews.GetReviewByBookingAsync("Equipment", booking.Id);
+                if (existingReview != null)
+                {
+                    return DecisionResult.Fail("This booking has been reviewed by the farmer and can no longer be reopened.");
+                }
+            }
+
             var autoRejected = new List<int>();
             if (next == BookingStatus.Accepted)
             {
@@ -553,22 +593,18 @@ namespace KrishiLink.BLL.Services
 
                     // Notify conflicting farmer of auto-rejection
                     var loserUser = await _users.FirstOrDefaultAsync(u => u.Id == loser.FarmerId);
-                    await _notifications.CreateAsync(
-                        loser.FarmerId,
-                        NotificationTypes.BookingRejected,
-                        "Rental Request Declined",
-                        $"Your rental request for {booking.Equipment!.Name} ({loser.StartDate:dd MMM yyyy} - {loser.EndDate:dd MMM yyyy}) was declined due to an overlapping confirmed booking.",
-                        "/Farmer/EquipmentBookings"
-                    );
-
-                    if (!string.IsNullOrEmpty(loserUser?.Email))
+                    await _notifications.NotifyAsync(new NotificationRequest
                     {
-                        await _notifications.SendEmailNotificationAsync(
-                            loserUser.Email,
-                            "Rental Request Update - KrishiLink",
-                            $"<h3>Hello, {loserUser.FullName}</h3><p>Your rental request for <strong>{booking.Equipment!.Name}</strong> from {loser.StartDate:dd MMM yyyy} to {loser.EndDate:dd MMM yyyy} could not be confirmed because another booking was accepted for overlapping dates.</p><p><a href=\"https://krishilink.com/Equipment/Browse\">Explore alternative equipment listings on KrishiLink</a></p>"
-                        );
-                    }
+                        UserId = loser.FarmerId,
+                        Type = NotificationTypes.BookingRejected,
+                        TitleKey = "Rental Request Declined",
+                        MessageKey = "Your rental request for {0} ({1} - {2}) was declined due to an overlapping confirmed booking.",
+                        Args = new object[] { booking.Equipment!.Name, $"{loser.StartDate:dd MMM yyyy}", $"{loser.EndDate:dd MMM yyyy}" },
+                        LinkUrl = AppLinks.FarmerBookings("equipment", loser.Id),
+                        DedupeKey = $"booking:equipment:{loser.Id}:AutoRejected",
+                        SendEmail = true,
+                        RecipientEmail = loserUser?.Email
+                    });
                 }
             }
 
@@ -581,42 +617,38 @@ namespace KrishiLink.BLL.Services
             var farmer = await _users.FirstOrDefaultAsync(u => u.Id == booking.FarmerId);
             if (next == BookingStatus.Accepted)
             {
-                await _notifications.CreateAsync(
-                    booking.FarmerId,
-                    NotificationTypes.BookingAccepted,
-                    "Rental Request Accepted",
-                    $"Your rental request for {booking.Equipment!.Name} ({booking.StartDate:dd MMM yyyy} - {booking.EndDate:dd MMM yyyy}) was accepted by the owner.",
-                    "/Farmer/EquipmentBookings"
-                );
-
-                if (!string.IsNullOrEmpty(farmer?.Email))
+                await _notifications.NotifyAsync(new NotificationRequest
                 {
-                    await _notifications.SendEmailNotificationAsync(
-                        farmer.Email,
-                        "Rental Request Accepted - KrishiLink",
-                        $"<h3>Good news, {farmer.FullName}!</h3><p>Your rental request for <strong>{booking.Equipment!.Name}</strong> from {booking.StartDate:dd MMM yyyy} to {booking.EndDate:dd MMM yyyy} has been <strong>accepted</strong> by the owner.</p><p><a href=\"https://krishilink.com/Farmer/EquipmentBookings\">View your bookings on KrishiLink</a></p>"
-                    );
-                }
+                    UserId = booking.FarmerId,
+                    Type = NotificationTypes.BookingAccepted,
+                    TitleKey = "Rental Request Accepted",
+                    MessageKey = "Your rental request for {0} ({1} - {2}) was accepted by the owner.",
+                    Args = new object[] { booking.Equipment!.Name, $"{booking.StartDate:dd MMM yyyy}", $"{booking.EndDate:dd MMM yyyy}" },
+                    LinkUrl = AppLinks.FarmerBookings("equipment", booking.Id),
+                    DedupeKey = $"booking:equipment:{booking.Id}:Accepted",
+                    SendEmail = true,
+                    RecipientEmail = farmer?.Email
+                });
             }
             else if (next == BookingStatus.Rejected)
             {
-                var reasonText = !string.IsNullOrWhiteSpace(booking.RejectReason) ? $" Reason: {booking.RejectReason}" : string.Empty;
-                await _notifications.CreateAsync(
-                    booking.FarmerId,
-                    NotificationTypes.BookingRejected,
-                    "Rental Request Declined",
-                    $"Your rental request for {booking.Equipment!.Name} ({booking.StartDate:dd MMM yyyy} - {booking.EndDate:dd MMM yyyy}) was declined.{reasonText}",
-                    "/Farmer/EquipmentBookings"
-                );
-
-                if (!string.IsNullOrEmpty(farmer?.Email))
+                var hasReason = !string.IsNullOrWhiteSpace(booking.RejectReason);
+                await _notifications.NotifyAsync(new NotificationRequest
                 {
-                    await _notifications.SendEmailNotificationAsync(
-                        farmer.Email,
-                        "Rental Request Declined - KrishiLink",
-                        $"<h3>Hello, {farmer.FullName}</h3><p>Your rental request for <strong>{booking.Equipment!.Name}</strong> from {booking.StartDate:dd MMM yyyy} to {booking.EndDate:dd MMM yyyy} was declined by the owner.{(!string.IsNullOrWhiteSpace(booking.RejectReason) ? $"<br/><strong>Reason:</strong> {booking.RejectReason}" : "")}</p><p><a href=\"https://krishilink.com/Equipment/Browse\">Browse other listings on KrishiLink</a></p>"
-                    );
-                }
+                    UserId = booking.FarmerId,
+                    Type = NotificationTypes.BookingRejected,
+                    TitleKey = "Rental Request Declined",
+                    MessageKey = hasReason
+                        ? "Your rental request for {0} ({1} - {2}) was declined. Reason: {3}"
+                        : "Your rental request for {0} ({1} - {2}) was declined.",
+                    Args = hasReason
+                        ? new object[] { booking.Equipment!.Name, $"{booking.StartDate:dd MMM yyyy}", $"{booking.EndDate:dd MMM yyyy}", booking.RejectReason! }
+                        : new object[] { booking.Equipment!.Name, $"{booking.StartDate:dd MMM yyyy}", $"{booking.EndDate:dd MMM yyyy}" },
+                    LinkUrl = AppLinks.FarmerBookings("equipment", booking.Id),
+                    DedupeKey = $"booking:equipment:{booking.Id}:Rejected",
+                    SendEmail = true,
+                    RecipientEmail = farmer?.Email
+                });
 
                 // Refund points if promo/points were redeemed
                 if (booking.PointsUsed > 0 || booking.DiscountAmount > 0)
@@ -626,13 +658,17 @@ namespace KrishiLink.BLL.Services
             }
             else if (next == BookingStatus.Completed)
             {
-                await _notifications.CreateAsync(
-                    booking.FarmerId,
-                    NotificationTypes.BookingCompleted,
-                    "Rental Completed",
-                    $"Your rental of {booking.Equipment!.Name} is completed. Please take a moment to rate and review your experience!",
-                    "/Farmer/EquipmentBookings"
-                );
+                await _notifications.NotifyAsync(new NotificationRequest
+                {
+                    UserId = booking.FarmerId,
+                    Type = NotificationTypes.BookingCompleted,
+                    TitleKey = "Rental Completed",
+                    MessageKey = "Your rental of {0} is completed. Please take a moment to rate and review your experience!",
+                    Args = new object[] { booking.Equipment!.Name },
+                    LinkUrl = AppLinks.FarmerBookingsReview("equipment", booking.Id),
+                    DedupeKey = $"booking:equipment:{booking.Id}:Completed",
+                    SendEmail = false
+                });
 
                 // Award loyalty points for completed rental
                 int days = (booking.EndDate - booking.StartDate).Days + 1;
@@ -661,6 +697,7 @@ namespace KrishiLink.BLL.Services
                 Category = e.Category,
                 Description = e.Description,
                 Location = e.Location,
+                District = e.District ?? OnboardingOptions.GuessDistrict(e.Location) ?? string.Empty,
                 Latitude = e.Latitude,
                 Longitude = e.Longitude,
                 DailyRate = e.DailyRate,
@@ -673,19 +710,18 @@ namespace KrishiLink.BLL.Services
         public async Task<bool> SaveListingAsync(string ownerId, EquipmentListingViewModel model)
         {
             Equipment entity;
+            List<string> previousImagesToDelete = new();
+
             if (model.IsEditMode)
             {
                 var existing = await _equipment.QueryTracked().FirstOrDefaultAsync(x => x.Id == model.Id && x.OwnerId == ownerId);
                 if (existing is null) return false;
                 entity = existing;
 
-                // Delete any removed images from disk
+                // Identify removed images to delete after successful save
                 var previousImages = ListingFormat.Split(entity.ImageUrls);
                 var retainedExisting = model.ExistingImageUrls ?? new List<string>();
-                foreach (var removed in previousImages.Where(img => !retainedExisting.Contains(img, StringComparer.OrdinalIgnoreCase)))
-                {
-                    _files.DeleteImage(removed);
-                }
+                previousImagesToDelete = previousImages.Where(img => !retainedExisting.Contains(img, StringComparer.OrdinalIgnoreCase)).ToList();
             }
             else
             {
@@ -694,36 +730,52 @@ namespace KrishiLink.BLL.Services
             }
 
             var savedNewImages = await _files.SaveImagesAsync(model.ImageFiles, UploadFolder);
-            var retainedUrls = model.ExistingImageUrls ?? new List<string>();
-            var orderedImages = ArrangeImagesWithPrimary(retainedUrls, savedNewImages, model.PrimaryImageKey);
-
-            entity.Name = model.Name.Trim();
-            entity.Category = model.Category.Trim();
-            entity.Description = model.Description.Trim();
-            entity.Location = model.Location.Trim();
-
-            if (model.Latitude.HasValue && model.Longitude.HasValue)
+            try
             {
-                entity.Latitude = model.Latitude.Value;
-                entity.Longitude = model.Longitude.Value;
+                var retainedUrls = model.ExistingImageUrls ?? new List<string>();
+                var orderedImages = ArrangeImagesWithPrimary(retainedUrls, savedNewImages, model.PrimaryImageKey);
+
+                entity.Name = model.Name.Trim();
+                entity.Category = model.Category.Trim();
+                entity.Description = model.Description.Trim();
+                entity.Location = model.Location.Trim();
+                entity.District = !string.IsNullOrWhiteSpace(model.District)
+                    ? (OnboardingOptions.GuessDistrict(model.District.Trim()) ?? model.District.Trim())
+                    : (OnboardingOptions.GuessDistrict(model.Location) ?? model.Location.Trim());
+
+                if (model.Latitude.HasValue && model.Longitude.HasValue)
+                {
+                    entity.Latitude = model.Latitude.Value;
+                    entity.Longitude = model.Longitude.Value;
+                }
+                else
+                {
+                    var (fallbackLat, fallbackLng) = GeoLocationHelper.GetDistrictCoordinates(model.Location);
+                    entity.Latitude = fallbackLat;
+                    entity.Longitude = fallbackLng;
+                }
+
+                entity.DailyRate = model.DailyRate;
+                entity.HourlyRate = model.HourlyRate is > 0 ? model.HourlyRate : null;
+                entity.IsAvailable = model.IsAvailable;
+                entity.ImageUrls = ListingFormat.Join(orderedImages);
+
+                await _equipment.SaveChangesAsync();
+
+                // On successful commit, delete previously removed images from disk
+                _files.DeleteFiles(previousImagesToDelete);
+
+                model.Id = entity.Id;
+                model.Latitude = entity.Latitude;
+                model.Longitude = entity.Longitude;
+                return true;
             }
-            else
+            catch
             {
-                var (fallbackLat, fallbackLng) = GeoLocationHelper.GetDistrictCoordinates(model.Location);
-                entity.Latitude = fallbackLat;
-                entity.Longitude = fallbackLng;
+                // Rollback: clean up newly saved images so orphaned files are not left on disk
+                _files.DeleteFiles(savedNewImages);
+                throw;
             }
-
-            entity.DailyRate = model.DailyRate;
-            entity.HourlyRate = model.HourlyRate is > 0 ? model.HourlyRate : null;
-            entity.IsAvailable = model.IsAvailable;
-            entity.ImageUrls = ListingFormat.Join(orderedImages);
-
-            await _equipment.SaveChangesAsync();
-            model.Id = entity.Id;
-            model.Latitude = entity.Latitude;
-            model.Longitude = entity.Longitude;
-            return true;
         }
 
         private static List<string> ArrangeImagesWithPrimary(List<string> existingUrls, List<string> newUrls, string? primaryKey)
