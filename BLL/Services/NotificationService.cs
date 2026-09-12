@@ -246,7 +246,7 @@ namespace KrishiLink.BLL.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to send transactional email to {Email}", email);
+                _logger.LogWarning(ex, "Failed to send transactional email notification.");
             }
         }
 

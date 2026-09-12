@@ -62,7 +62,13 @@ namespace KrishiLink.Controllers
             double? humidity = null,
             string? condition = null)
         {
-            var model = await _pestAlertService.GetPestAlertsDashboardAsync(district, crop, temp, humidity, condition);
+            var safeDistrict = SanitizeDistrict(district);
+            var safeCrop = SanitizeCrop(crop);
+            var safeCondition = SanitizeCondition(condition);
+            double? safeTemp = temp.HasValue ? Math.Clamp(temp.Value, -10.0, 60.0) : null;
+            double? safeHumidity = humidity.HasValue ? Math.Clamp(humidity.Value, 0.0, 100.0) : null;
+
+            var model = await _pestAlertService.GetPestAlertsDashboardAsync(safeDistrict, safeCrop, safeTemp, safeHumidity, safeCondition);
             return View(model);
         }
 
@@ -71,9 +77,10 @@ namespace KrishiLink.Controllers
         /// JSON endpoint returning live weather and triggered disease alerts for a district.
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> WeatherAlertsJson(string district)
+        public async Task<IActionResult> WeatherAlertsJson(string? district)
         {
-            var weather = await _pestAlertService.GetRegionalWeatherAsync(district);
+            var safeDistrict = SanitizeDistrict(district);
+            var weather = await _pestAlertService.GetRegionalWeatherAsync(safeDistrict);
             var alerts = await _pestAlertService.EvaluateAlertsAsync(weather);
             return Json(new { success = true, weather, alerts });
         }
@@ -178,6 +185,86 @@ namespace KrishiLink.Controllers
                     }
                 }
             };
+        }
+
+        private static readonly Dictionary<string, string> AllowedDistricts = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Bogra", "Bogra" },
+            { "Bogura", "Bogra" },
+            { "Dinajpur", "Dinajpur" },
+            { "Rangpur", "Rangpur" },
+            { "Rajshahi", "Rajshahi" },
+            { "Jessore", "Jessore" },
+            { "Barisal", "Barisal" },
+            { "Mymensingh", "Mymensingh" },
+            { "Comilla", "Comilla" },
+            { "Sylhet", "Sylhet" },
+            { "Dhaka", "Dhaka" }
+        };
+
+        private static readonly Dictionary<string, string> AllowedCrops = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "All", "All" },
+            { "Rice", "Rice" },
+            { "Potato", "Potato" },
+            { "Wheat", "Wheat" },
+            { "Maize", "Maize" },
+            { "Mustard", "Mustard" },
+            { "Tomato", "Tomato" },
+            { "Brinjal", "Brinjal" },
+            { "Chili", "Chili" }
+        };
+
+        private static readonly Dictionary<string, string> AllowedConditions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Cloudy with Showers", "Cloudy with Showers" },
+            { "Dense Fog & High Moisture", "Dense Fog & High Moisture" },
+            { "Monsoon Rain & High Humidity", "Monsoon Rain & High Humidity" },
+            { "Overcast with Light Drizzle", "Overcast with Light Drizzle" },
+            { "Warm & Humid with Stagnant Air", "Warm & Humid with Stagnant Air" },
+            { "Clear & Dry Skies", "Clear & Dry Skies" }
+        };
+
+        private static string SanitizeDistrict(string? input)
+        {
+            if (!string.IsNullOrWhiteSpace(input))
+            {
+                var trimmed = input.Trim();
+                foreach (var entry in AllowedDistricts)
+                {
+                    if (trimmed.Contains(entry.Key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return entry.Value;
+                    }
+                }
+            }
+            return "Bogra";
+        }
+
+        private static string SanitizeCrop(string? input)
+        {
+            if (!string.IsNullOrWhiteSpace(input))
+            {
+                var trimmed = input.Trim();
+                if (AllowedCrops.TryGetValue(trimmed, out var matchedCrop))
+                {
+                    return matchedCrop;
+                }
+            }
+            return "All";
+        }
+
+        private static string? SanitizeCondition(string? input)
+        {
+            if (!string.IsNullOrWhiteSpace(input))
+            {
+                var trimmed = input.Trim();
+                if (AllowedConditions.TryGetValue(trimmed, out var matchedCondition))
+                {
+                    return matchedCondition;
+                }
+            }
+            return null;
         }
     }
 }

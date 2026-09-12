@@ -38,7 +38,7 @@ namespace KrishiLink.Controllers
 
             var farmer = await _userManager.GetUserAsync(User);
             model.FarmerName = string.IsNullOrWhiteSpace(farmer?.FullName) ? User.Identity?.Name ?? "Farmer" : farmer.FullName;
-            
+
             string district = farmer?.District ?? farmer?.Location ?? "Bogra";
             model.WeatherAlert = await _pestAlertService.GetWeatherAlertNoteAsync(district);
 

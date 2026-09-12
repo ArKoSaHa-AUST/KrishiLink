@@ -81,7 +81,7 @@ namespace KrishiLink.BLL.Services
                         $"<p>Dear {owner.FullName},</p><p>Your revenue statement for <strong>{lastMonth:MMMM yyyy}</strong> is attached. " +
                         "You can also download it any time from the Revenue page.</p><p>— KrishiLink</p>",
                         new EmailAttachment(fileName, content, "application/pdf"), ct);
-                    _logger.LogInformation("Sent {Month:yyyy-MM} statement to {Email}.", lastMonth, owner.Email);
+                    _logger.LogInformation("Sent {Month:yyyy-MM} statement to owner {OwnerId}.", lastMonth, owner.Id);
                 }
 
                 owner.LastStatementSentMonth = lastMonth;

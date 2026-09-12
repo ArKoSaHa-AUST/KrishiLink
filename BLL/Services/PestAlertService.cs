@@ -589,14 +589,14 @@ namespace KrishiLink.BLL.Services
         public Task<RegionalWeatherForecast> GetRegionalWeatherAsync(string district)
         {
             string key = string.IsNullOrWhiteSpace(district) ? "Bogra" : district.Trim();
-            
+
             // Handle Bogra / Bogura alternate spelling
             if (key.Contains("Bogura", StringComparison.OrdinalIgnoreCase) || key.Contains("Bogra", StringComparison.OrdinalIgnoreCase))
             {
                 var baseF = DistrictForecasts["Bogra"];
                 return Task.FromResult(new RegionalWeatherForecast
                 {
-                    District = district ?? "Bogra",
+                    District = "Bogra",
                     Division = baseF.Division,
                     Temperature = baseF.Temperature,
                     MinTemp = baseF.MinTemp,
@@ -625,7 +625,7 @@ namespace KrishiLink.BLL.Services
             var defaultF = DistrictForecasts["Bogra"];
             return Task.FromResult(new RegionalWeatherForecast
             {
-                District = string.IsNullOrWhiteSpace(district) ? "Bogra" : district,
+                District = "Bogra",
                 Division = defaultF.Division,
                 Temperature = defaultF.Temperature,
                 MinTemp = defaultF.MinTemp,
@@ -712,7 +712,21 @@ namespace KrishiLink.BLL.Services
             string distName = string.IsNullOrWhiteSpace(district) ? "Bogra" : district;
             var baseWeather = await GetRegionalWeatherAsync(distName);
 
-            bool isSimulated = customTemp.HasValue || customHumidity.HasValue || !string.IsNullOrWhiteSpace(customCondition);
+            string safeCrop = "All";
+            if (!string.IsNullOrWhiteSpace(crop))
+            {
+                var match = GetCropFilterOptions().FirstOrDefault(c => c.Value.Equals(crop.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (match != null) safeCrop = match.Value;
+            }
+
+            string? safeCondition = null;
+            if (!string.IsNullOrWhiteSpace(customCondition))
+            {
+                var match = Presets.FirstOrDefault(p => p.Condition.Equals(customCondition.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (match != null) safeCondition = match.Condition;
+            }
+
+            bool isSimulated = customTemp.HasValue || customHumidity.HasValue || !string.IsNullOrWhiteSpace(safeCondition);
 
             var activeWeather = new RegionalWeatherForecast
             {
@@ -724,23 +738,23 @@ namespace KrishiLink.BLL.Services
                 Humidity = customHumidity ?? baseWeather.Humidity,
                 RainProbability = baseWeather.RainProbability,
                 WindSpeedKmh = baseWeather.WindSpeedKmh,
-                Condition = !string.IsNullOrWhiteSpace(customCondition) ? customCondition : baseWeather.Condition,
-                BanglaCondition = !string.IsNullOrWhiteSpace(customCondition) ? customCondition : baseWeather.BanglaCondition,
+                Condition = safeCondition ?? baseWeather.Condition,
+                BanglaCondition = safeCondition != null ? (Presets.FirstOrDefault(p => p.Condition == safeCondition)?.BanglaCondition ?? safeCondition) : baseWeather.BanglaCondition,
                 ConditionIcon = baseWeather.ConditionIcon,
                 ForecastDate = DateTime.Today,
                 FiveDayForecast = baseWeather.FiveDayForecast
             };
 
-            var alerts = await EvaluateAlertsAsync(activeWeather, crop);
+            var alerts = await EvaluateAlertsAsync(activeWeather, safeCrop);
 
             return new PestAlertsIndexViewModel
             {
                 SelectedDistrict = activeWeather.District,
-                SelectedCrop = crop ?? "All",
+                SelectedCrop = safeCrop,
                 IsCustomSimulated = isSimulated,
                 CustomTemp = customTemp,
                 CustomHumidity = customHumidity,
-                CustomCondition = customCondition,
+                CustomCondition = safeCondition,
                 Weather = activeWeather,
                 ActiveAlerts = alerts,
                 AllRulesEncyclopedia = DiseaseRules,
@@ -786,7 +800,7 @@ namespace KrishiLink.BLL.Services
             double humScore = Math.Clamp(0.70 + (humExcess / 30.0) * 0.30, 0.70, 1.0);
 
             double baseScore = (tempScore * 0.40 + humScore * 0.60) * 100.0;
-            
+
             // Ensure critical/high alerts reflect urgent threshold breaches
             if (r.Severity == "Critical")
             {
