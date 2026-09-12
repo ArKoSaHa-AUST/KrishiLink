@@ -181,25 +181,25 @@ namespace KrishiLink.BLL.Services
 
             // Apply Category Filtering
             var filtered = entries.AsEnumerable();
-            if (cleanCategory.Equals("Equipment", StringComparison.OrdinalIgnoreCase))
+            if (safeCategory.Equals("Equipment", StringComparison.OrdinalIgnoreCase))
             {
                 filtered = filtered.Where(e => e.UserRole == "EquipmentOwner" || e.UserRole == "Both");
             }
-            else if (cleanCategory.Equals("Godown", StringComparison.OrdinalIgnoreCase))
+            else if (safeCategory.Equals("Godown", StringComparison.OrdinalIgnoreCase))
             {
                 filtered = filtered.Where(e => e.UserRole == "GodownOwner" || e.UserRole == "Both");
             }
 
             // Apply District Filtering
-            if (!string.IsNullOrWhiteSpace(cleanDistrict))
+            if (!string.IsNullOrWhiteSpace(safeDistrict) && !safeDistrict.Equals("all", StringComparison.OrdinalIgnoreCase))
             {
                 filtered = filtered.Where(e =>
-                    e.District.Equals(cleanDistrict, StringComparison.OrdinalIgnoreCase) ||
-                    e.Location.IndexOf(cleanDistrict, StringComparison.OrdinalIgnoreCase) >= 0);
+                    e.District.Equals(safeDistrict, StringComparison.OrdinalIgnoreCase) ||
+                    e.Location.IndexOf(safeDistrict, StringComparison.OrdinalIgnoreCase) >= 0);
             }
 
             // Apply Sorting
-            filtered = cleanSortBy switch
+            filtered = safeSortBy switch
             {
                 "bookings" => filtered
                     .OrderByDescending(e => e.CompletedBookingsCount)
@@ -228,9 +228,9 @@ namespace KrishiLink.BLL.Services
 
             var viewModel = new LeaderboardPageViewModel
             {
-                Category = cleanCategory,
-                SortBy = cleanSortBy,
-                District = cleanDistrict,
+                Category = safeCategory,
+                SortBy = safeSortBy,
+                District = safeDistrict.Equals("all", StringComparison.OrdinalIgnoreCase) ? "" : safeDistrict,
                 TopPodium = topPodium,
                 RankedList = remainingList,
                 AllEntries = rankedEntries,
