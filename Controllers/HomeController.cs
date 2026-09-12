@@ -1,3 +1,4 @@
+using KrishiLink.BLL.Services;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -5,6 +6,13 @@ namespace KrishiLink.Controllers
 {
     public class HomeController : Controller
     {
+        private readonly IWebHostEnvironment _env;
+
+        public HomeController(IWebHostEnvironment env)
+        {
+            _env = env;
+        }
+
         [Route("")]
         [Route("Home")]
         [Route("Home/Index")]
@@ -36,6 +44,16 @@ namespace KrishiLink.Controllers
             }
 
             return LocalRedirect(string.IsNullOrEmpty(returnUrl) ? "/" : returnUrl);
+        }
+
+        /// <summary>GET: /Home/LedgerCheck — Development-only escrow conservation check for manual verification.</summary>
+        [HttpGet]
+        [Route("Home/LedgerCheck")]
+        public IActionResult LedgerCheck([FromServices] ILedgerService ledger)
+        {
+            if (!_env.IsDevelopment()) return NotFound();
+            var check = ledger.CheckConservation();
+            return Json(new { ok = check.Ok, lhs = check.Lhs, rhs = check.Rhs, detail = check.Detail });
         }
     }
 }

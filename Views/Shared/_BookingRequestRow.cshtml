@@ -13,10 +13,12 @@
     var badgeClass = Model.Status switch
     {
         "Accepted" => "krishi-badge-available",
+        "Paid" => "krishi-badge-paid",
         "Rejected" or "Cancelled" => "krishi-badge-unavailable",
         "Completed" => "krishi-badge-completed",
         _ => "krishi-badge-pending"
     };
+    var gross = "৳" + Model.AgreedGross.ToString("N0");
 }
 <div class="request-row border-bottom pending-request-row" data-request-id="@Model.Id"
      data-farmer-name="@Model.FarmerName" data-godown-id="@Model.GodownId" data-capacity="@Model.RequestedCapacityTons"
@@ -72,13 +74,25 @@
                     </button>
                 </div>
             }
-            else if (expandable && Model.Status == "Accepted")
+            else if (expandable && Model.Status == "Paid")
             {
-                <div class="request-actions" onclick="event.stopPropagation()">
+                <div class="request-actions d-flex align-items-center gap-2" onclick="event.stopPropagation()">
+                    <span class="krishi-badge krishi-badge-paid payment-chip" title="@Model.PaymentReference"><i class="bi bi-shield-check"></i> @L["Paid {0}", gross]</span>
                     <button type="button" class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold btn-complete"
                             onclick="markCompleted(@Model.Id, this)">
                         <i class="bi bi-check2-all"></i> @L["Mark Completed"]
                     </button>
+                </div>
+            }
+            else if (expandable && Model.Status == "Accepted")
+            {
+                <div class="request-actions d-flex align-items-center gap-2" onclick="event.stopPropagation()">
+                    <span class="krishi-badge krishi-badge-pending payment-chip"><i class="bi bi-hourglass-split"></i> @L["Unpaid"]</span>
+                    <span class="d-inline-block" tabindex="0" title="@L["Awaiting farmer payment"]">
+                        <button type="button" class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold btn-complete" disabled style="pointer-events: none;">
+                            <i class="bi bi-check2-all"></i> @L["Mark Completed"]
+                        </button>
+                    </span>
                 </div>
             }
             @if (expandable)
@@ -103,7 +117,7 @@
                     <div class="col-12 col-md-6">
                         <span class="small fw-semibold text-uppercase d-block mb-1" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L["Capacity vs. Availability"]</span>
                         <ul class="list-unstyled small mb-0 d-flex flex-column gap-1" style="color: var(--krishi-text-primary);">
-                            <li><i class="bi bi-box-seam text-success me-1"></i> @L["Requested:"] @L["{0} Tons", Model.RequestedCapacityTons.ToString("N0")]</li>
+                            <li><i class="bi bi-box-seam text-success me-1"></i> @L["Requested:"] @L["{0} Tons", Model.RequestedCapacityTons.ToString("N0")] <span style="color: var(--krishi-text-muted);">· @L["Total"] @gross</span></li>
                             <li><i class="bi bi-building text-success me-1"></i> <span class="detail-availability">—</span></li>
                             <li><i class="bi bi-calendar-range text-success me-1"></i> @Model.DateRange</li>
                         </ul>

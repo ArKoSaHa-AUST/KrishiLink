@@ -59,14 +59,18 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     };
 });
 
-// Data access: generic EF repositories + revenue reporting repositories
+// Data access: generic EF repositories + revenue reporting repositories + money ledger
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IGodownRevenueRepository, GodownRevenueRepository>();
 builder.Services.AddScoped<IEquipmentRevenueRepository, EquipmentRevenueRepository>();
+builder.Services.AddScoped<ILedgerRepository, LedgerRepository>();
 
 // Business logic
 builder.Services.Configure<RevenueOptions>(builder.Configuration.GetSection(RevenueOptions.SectionName));
 builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection(UploadOptions.SectionName));
+builder.Services.Configure<PaymentsOptions>(builder.Configuration.GetSection(PaymentsOptions.SectionName));
+builder.Services.PostConfigure<PaymentsOptions>(o =>
+    o.SettlementDelay ??= builder.Environment.IsDevelopment() ? TimeSpan.FromMinutes(2) : TimeSpan.FromMinutes(30));
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = 32 * 1024 * 1024; // 32 MB
@@ -95,6 +99,16 @@ builder.Services.AddHttpClient();
 builder.Services.AddDataProtection();
 
 builder.Services.AddScoped<IPayoutSettlementService, PayoutSettlementService>();
+
+// Money flow: simulated gateway behind IPaymentGateway; swap providers by adding a class and a case here
+var paymentProvider = builder.Configuration[$"{PaymentsOptions.SectionName}:Provider"] ?? SimulatedPaymentGateway.ProviderName;
+builder.Services.AddScoped<IPaymentGateway>(sp => paymentProvider switch
+{
+    SimulatedPaymentGateway.ProviderName => ActivatorUtilities.CreateInstance<SimulatedPaymentGateway>(sp),
+    _ => throw new InvalidOperationException($"Unknown payment provider '{paymentProvider}'. Supported: {SimulatedPaymentGateway.ProviderName}.")
+});
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<ILedgerService, LedgerService>();
 
 // Email + scheduled background services
 builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection(EmailOptions.SectionName));

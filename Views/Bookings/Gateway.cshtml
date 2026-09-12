@@ -1,0 +1,45 @@
+@model KrishiLink.Models.ViewModels.PaymentSummary
+@{
+    ViewData["Title"] = $"{Model.Method} Checkout";
+    ViewData["BodyClass"] = "krishi-body-gradient";
+    string Money(decimal v) => "৳" + v.ToString("N0");
+}
+
+<div class="mx-auto my-4" style="max-width: 460px;">
+    <div class="card border-0 shadow overflow-hidden" style="border-radius: var(--krishi-radius-lg);">
+        <div class="text-center text-white py-3 position-relative" style="background: linear-gradient(135deg, #1f4e3d, #2f855a);">
+            <span class="position-absolute top-0 start-0 m-2 badge rounded-pill bg-warning text-dark fw-bold"><i class="bi bi-cone-striped me-1"></i>@L["SANDBOX — no real money"]</span>
+            <div class="fs-4 fw-bold mt-3">@Model.Method</div>
+            <div class="small opacity-75">@L["Secure checkout (simulated)"]</div>
+        </div>
+        <div class="p-4">
+            <dl class="row small mb-3 gy-2">
+                <dt class="col-5 fw-normal text-muted">@L["Merchant"]</dt>
+                <dd class="col-7 mb-0 fw-semibold">KrishiLink</dd>
+                <dt class="col-5 fw-normal text-muted">@L["Item"]</dt>
+                <dd class="col-7 mb-0">@Model.ItemName</dd>
+                <dt class="col-5 fw-normal text-muted">@L["Payment reference"]</dt>
+                <dd class="col-7 mb-0"><code>@Model.Reference</code></dd>
+                <dt class="col-5 fw-normal text-muted">@L["Transaction ID"]</dt>
+                <dd class="col-7 mb-0"><code>@Model.GatewayReference</code></dd>
+                <dt class="col-5 fw-normal text-muted">@L["Paying from"]</dt>
+                <dd class="col-7 mb-0">@Model.PayerAccount</dd>
+            </dl>
+            <div class="text-center py-3 mb-3 rounded-3" style="background-color: var(--krishi-primary-light);">
+                <div class="small text-muted">@L["Amount"]</div>
+                <div class="display-6 fw-bold" style="color: var(--krishi-primary);">@Money(Model.Amount)</div>
+            </div>
+
+            <form asp-action="PaymentCallback" method="post" class="d-grid gap-2">
+                <input type="hidden" name="ref" value="@Model.GatewayReference" />
+                <button type="submit" name="outcome" value="success" class="btn btn-krishi-primary rounded-pill fw-bold py-2">
+                    <i class="bi bi-check-circle-fill me-1"></i>@L["Confirm payment"]
+                </button>
+                <button type="submit" name="outcome" value="fail" class="btn btn-outline-danger rounded-pill fw-semibold">
+                    <i class="bi bi-x-circle me-1"></i>@L["Simulate failure"]
+                </button>
+            </form>
+            <p class="small text-center text-muted mt-3 mb-0">@L["This page stands in for the bank or wallet app. A real provider would redirect here and post the result back."]</p>
+        </div>
+    </div>
+</div>

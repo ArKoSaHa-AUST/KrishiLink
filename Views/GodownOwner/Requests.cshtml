@@ -4,7 +4,7 @@
     ViewData["Title"] = "Godown Booking Requests";
     ViewData["BodyClass"] = "krishi-body-gradient";
     ViewData["Expandable"] = true;
-    var tabs = new[] { "Pending", "Accepted", "Rejected", "Completed", "Cancelled" };
+    var tabs = new[] { "Pending", "Accepted", "Paid", "Rejected", "Completed", "Cancelled" };
     var godownsJson = JsonSerializer.Serialize(Model.Godowns.ToDictionary(
         g => g.Id,
         g => new { name = g.Name, total = g.TotalCapacityTons, available = g.AvailableCapacityTons }));

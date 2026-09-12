@@ -94,7 +94,8 @@
                 <select class="form-select form-select-sm py-2" name="status" onchange="this.form.submit()">
                     <option value="all" selected="@(Model.StatusFilter == "all" ? "selected" : null)">@L["All Statuses"]</option>
                     <option value="pending" selected="@(Model.StatusFilter == "pending" ? "selected" : null)">@L["Pending Approval ({0})", Model.PendingCount]</option>
-                    <option value="accepted" selected="@(Model.StatusFilter == "accepted" ? "selected" : null)">@L["Accepted / Active ({0})", Model.AcceptedCount]</option>
+                    <option value="accepted" selected="@(Model.StatusFilter == "accepted" ? "selected" : null)">@L["Accepted / Awaiting Payment ({0})", Model.AcceptedCount]</option>
+                    <option value="paid" selected="@(Model.StatusFilter == "paid" ? "selected" : null)">@L["Paid / Confirmed ({0})", Model.PaidCount]</option>
                     <option value="completed" selected="@(Model.StatusFilter == "completed" ? "selected" : null)">@L["Completed ({0})", Model.CompletedCount]</option>
                     <option value="rejected" selected="@(Model.StatusFilter == "rejected" ? "selected" : null)">@L["Rejected ({0})", Model.RejectedCount]</option>
                     <option value="cancelled" selected="@(Model.StatusFilter == "cancelled" ? "selected" : null)">@L["Cancelled ({0})", Model.CancelledCount]</option>
@@ -235,7 +236,13 @@
                                                     <div class="col-5 text-muted">@L["Requested On:"]</div>
                                                     <div class="col-7 text-dark">@b.RequestedAt.ToString("dd MMM yyyy, hh:mm tt")</div>
                                                     <div class="col-5 text-muted">@L["Payment Status:"]</div>
-                                                    <div class="col-7"><span class="badge bg-light text-dark border">@L[b.PaymentStatus]</span></div>
+                                                    <div class="col-7">
+                                                        <span class="badge @(b.Status == "Paid" || b.Status == "Completed" ? "bg-success-subtle text-success-emphasis border border-success-subtle" : "bg-light text-dark border")">@L[b.PaymentStatus]</span>
+                                                        @if (b.PaymentReference is not null)
+                                                        {
+                                                            <code class="small d-block mt-1">@b.PaymentReference</code>
+                                                        }
+                                                    </div>
                                                 </div>
                                             @if (!string.IsNullOrWhiteSpace(b.FarmerNotes))
                                                 {
@@ -347,18 +354,24 @@
                                                     <i class="bi bi-ticket-perforated-fill text-success"></i>
                                                     <span>@L["View Pass & Voucher"]</span>
                                                 </a>
+                                                @if (b.CanPay)
+                                                {
+                                                    <a href="@b.PayUrl" class="btn btn-krishi-primary btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-sm">
+                                                        <i class="bi bi-credit-card-fill me-1"></i>@L["Pay now {0}", b.CostDisplay]
+                                                    </a>
+                                                }
                                                 @if (b.CanCancel)
                                                 {
-                                                    <form asp-action="Cancel" method="post" onsubmit="return confirm('@L["Cancel this booking? The dates will be released to other farmers."]');">
+                                                    <form asp-action="Cancel" method="post" onsubmit="return confirm('@(b.Status == "Paid" ? L["Cancel this booking? Your payment will be refunded and the dates released."] : L["Cancel this booking? The dates will be released to other farmers."])');">
                                                         <input type="hidden" name="type" value="@b.BookingType" />
                                                         <input type="hidden" name="id" value="@b.Id" />
                                                         <input type="hidden" name="returnUrl" value="@currentUrl" />
                                                         <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3.5 py-1.5 fw-semibold">
-                                                            <i class="bi bi-x-circle me-1"></i>@L["Cancel Booking"]
+                                                            <i class="bi bi-x-circle me-1"></i>@(b.Status == "Paid" ? L["Cancel & Refund"] : L["Cancel Booking"])
                                                         </button>
                                                     </form>
                                                 }
-                                                <a href="@b.ListingDetailUrl" class="btn btn-krishi-primary btn-sm rounded-pill px-3.5 py-1.5 fw-semibold">
+                                                <a href="@b.ListingDetailUrl" class="btn @(b.CanPay ? "btn-outline-success" : "btn-krishi-primary") btn-sm rounded-pill px-3.5 py-1.5 fw-semibold">
                                                     <span>@L["View Listing"]</span>
                                                     <i class="bi bi-arrow-right small ms-1"></i>
                                                 </a>
@@ -480,6 +493,12 @@
                         }
 
                         <div class="d-grid gap-2 mt-2">
+                            @if (b.CanPay)
+                            {
+                                <a href="@b.PayUrl" class="btn btn-krishi-primary btn-sm rounded-pill py-2 fw-bold shadow-sm">
+                                    <i class="bi bi-credit-card-fill me-1"></i>@L["Pay now {0}", b.CostDisplay]
+                                </a>
+                            }
                             <button type="button" class="btn btn-outline-success btn-sm rounded-pill py-2 fw-semibold d-flex align-items-center justify-content-center gap-1.5" onclick="openBookingQrModal('@b.BookingType', @b.Id)">
                                 <i class="bi bi-qr-code"></i>
                                 <span>@L["Show QR Code"]</span>
@@ -494,11 +513,11 @@
                         </div>
                         @if (b.CanCancel)
                         {
-                            <form asp-action="Cancel" method="post" class="mt-2" onsubmit="return confirm('@L["Cancel this booking? The dates will be released to other farmers."]');">
+                            <form asp-action="Cancel" method="post" class="mt-2" onsubmit="return confirm('@(b.Status == "Paid" ? L["Cancel this booking? Your payment will be refunded and the dates released."] : L["Cancel this booking? The dates will be released to other farmers."])');">
                                 <input type="hidden" name="type" value="@b.BookingType" />
                                 <input type="hidden" name="id" value="@b.Id" />
                                 <input type="hidden" name="returnUrl" value="@currentUrl" />
-                                <button type="submit" class="btn btn-outline-danger btn-sm w-100 rounded-pill py-2 fw-semibold"><i class="bi bi-x-circle me-1"></i>@L["Cancel Booking"]</button>
+                                <button type="submit" class="btn btn-outline-danger btn-sm w-100 rounded-pill py-2 fw-semibold"><i class="bi bi-x-circle me-1"></i>@(b.Status == "Paid" ? L["Cancel & Refund"] : L["Cancel Booking"])</button>
                             </form>
                         }
                     </div>

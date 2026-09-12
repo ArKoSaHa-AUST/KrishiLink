@@ -331,20 +331,27 @@ window.KrishiRequests = {
  */
 window.KrishiRequestsPage = {
     init: function (cfg) {
-        const TABS = ['Pending', 'Accepted', 'Rejected', 'Completed', 'Cancelled'];
+        const TABS = ['Pending', 'Accepted', 'Paid', 'Rejected', 'Completed', 'Cancelled'];
         const BADGE = {
             Pending: 'krishi-badge-pending d-none d-md-inline-flex',
             Accepted: 'krishi-badge-available',
+            Paid: 'krishi-badge-paid',
             Rejected: 'krishi-badge-unavailable',
             Completed: 'krishi-badge-completed',
             Cancelled: 'krishi-badge-unavailable'
         };
+        // Completion is only offered on Paid rows — an Accepted (unpaid) booking must be paid by the farmer first.
         const MOVES = {
             accept: { from: 'Pending', to: 'Accepted' },
             reject: { from: 'Pending', to: 'Rejected' },
-            complete: { from: 'Accepted', to: 'Completed' }
+            complete: { from: 'Paid', to: 'Completed' }
         };
         const msgs = cfg.messages || {};
+        // Rendered in place of the action buttons right after an accept: the row now waits for the farmer to pay.
+        const AWAITING_PAYMENT_HTML = `<span class="krishi-badge krishi-badge-pending payment-chip"><i class="bi bi-hourglass-split"></i> ${msgs.unpaidLabel || 'Unpaid'}</span>
+            <span class="d-inline-block" tabindex="0" title="${msgs.awaitingPaymentTitle || 'Awaiting farmer payment'}">
+                <button type="button" class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold btn-complete" disabled style="pointer-events: none;"><i class="bi bi-check2-all"></i> ${msgs.markCompletedLabel || 'Mark Completed'}</button>
+            </span>`;
         const searchInput = document.getElementById('requestSearch');
         const filterSelect = cfg.filterSelectId ? document.getElementById(cfg.filterSelectId) : null;
 
@@ -452,8 +459,8 @@ window.KrishiRequestsPage = {
                     if (state.undone) return; // undone before the move — leave the row in place
                     if (decision === 'accept') {
                         row.querySelector('.fit-indicator')?.classList.add('d-none');
-                        actions.innerHTML = `<button type="button" class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold btn-complete"
-                                                     onclick="markCompleted(${id}, this)"><i class="bi bi-check2-all"></i> Mark Completed</button>`;
+                        actions.classList.add('d-flex', 'align-items-center', 'gap-2');
+                        actions.innerHTML = AWAITING_PAYMENT_HTML;
                     } else if (decision === 'reject') {
                         row.querySelector('.fit-indicator')?.classList.add('d-none');
                         actions.classList.add('d-none');
@@ -490,6 +497,7 @@ window.KrishiRequestsPage = {
                         if (cfg.onReverted) cfg.onReverted(row, decision);
                         if (state.moved) {
                             actions.classList.remove('d-none');
+                            if (decision === 'accept') actions.classList.remove('d-flex', 'align-items-center', 'gap-2');
                             actions.innerHTML = originalActionsHtml;
                             row.querySelector('.fit-indicator')?.classList.remove('d-none');
                             if (decision === 'reject') row.querySelector('.reject-reason-block')?.classList.add('d-none');
@@ -543,7 +551,7 @@ window.KrishiRequestsPage = {
         };
 
         // Deep-linking: #accepted etc. selects the tab; tab changes update the hash (keeping ?q=)
-        const hashMap = { pending: 'Pending', accepted: 'Accepted', rejected: 'Rejected', completed: 'Completed', cancelled: 'Cancelled' };
+        const hashMap = { pending: 'Pending', accepted: 'Accepted', paid: 'Paid', rejected: 'Rejected', completed: 'Completed', cancelled: 'Cancelled' };
         const hash = location.hash.replace('#', '').toLowerCase();
         if (hashMap[hash]) bootstrap.Tab.getOrCreateInstance(document.getElementById('tab-' + hashMap[hash])).show();
         document.querySelectorAll('#requestTabs [data-bs-toggle="pill"]').forEach(t =>

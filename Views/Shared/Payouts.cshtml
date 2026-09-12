@@ -5,6 +5,8 @@
     ViewData["BodyClass"] = "krishi-body-gradient";
     var s = Model.Settlement;
     var ratePercent = (s.CommissionRate * 100).ToString("0.#");
+    var delayText = KrishiLink.Controllers.OwnerRevenueControllerBase.DelayText(Model.SettlementDelay);
+    var hasProcessing = s.Payouts.Any(p => p.Status == "Processing");
     string Money(decimal v) => "৳" + v.ToString("N0");
 }
 
@@ -42,7 +44,14 @@
         <div class="card border-0 shadow-sm h-100 p-3" style="border-radius: var(--krishi-radius-lg);">
             <span class="small" style="color: var(--krishi-text-muted);">@L["Processing"]</span>
             <span class="fs-3 fw-bold" style="color: var(--krishi-status-pending-text);">@Money(s.Processing)</span>
-            <span class="small" style="color: var(--krishi-text-muted);">@L["Requested, transfer in progress"]</span>
+            <span class="small" style="color: var(--krishi-text-muted);">@(hasProcessing ? L["Settling automatically within ~{0}", delayText] : L["Requested, transfer in progress"])</span>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100 p-3" style="border-radius: var(--krishi-radius-lg);">
+            <span class="small" style="color: var(--krishi-text-muted);">@L["In escrow"]</span>
+            <span class="fs-3 fw-bold" style="color: #0f766e;">@Money(s.InEscrow)</span>
+            <span class="small" style="color: var(--krishi-text-muted);">@L["Farmer payments held for bookings you haven't completed yet"]</span>
         </div>
     </div>
     <div class="col-12 col-md-6 col-xl-3">
@@ -95,7 +104,7 @@
             <h5 class="fw-bold mb-3" style="color: var(--krishi-text-primary);"><i class="bi bi-cash-coin me-2 text-success"></i>@L["Request a payout"]</h5>
             @if (s.Processing > 0)
             {
-                <p class="small mb-2" style="color: var(--krishi-text-muted);">@L["A payout of {0} is being processed. You can request another once it completes.", Money(s.Processing)]</p>
+                <p class="small mb-2" style="color: var(--krishi-text-muted);">@L["A payout of {0} is being processed. It settles automatically within ~{1}; you can request another once it completes.", Money(s.Processing), delayText]</p>
                 @if (Env.IsDevelopment())
                 {
                     <form asp-action="SettlePayoutsNow" method="post" class="mt-2">
@@ -128,7 +137,7 @@
                         <input id="payoutAccount" name="account" class="form-control" required minlength="6" maxlength="40" placeholder="01XXXXXXXXX" autocomplete="off" />
                     </div>
                     <button type="submit" class="btn btn-krishi-primary w-100 rounded-pill fw-bold">@L["Request Payout of {0}", Money(s.Owed)]</button>
-                    <p class="small mt-2 mb-0" style="color: var(--krishi-text-muted);">@L["No payment gateway is connected yet — the platform team completes transfers manually."]</p>
+                    <p class="small mt-2 mb-0" style="color: var(--krishi-text-muted);">@L["Payouts settle automatically within ~{0}. Sandbox: an account ending in 0000 will be rejected.", delayText]</p>
                 </form>
             }
         </div>
@@ -190,16 +199,36 @@
                                     <span class="d-block" style="color: var(--krishi-text-muted);">•••• @(p.Account.Length > 4 ? p.Account[^4..] : p.Account)</span>
                                 }
                             </td>
-                            <td><span class="krishi-badge @(p.Status == "Completed" ? "krishi-badge-available" : "krishi-badge-pending")">@L[p.Status]</span></td>
+                            <td>
+                                @if (p.Status == "Processing")
+                                {
+                                    <span class="krishi-badge krishi-badge-pending"><span class="spinner-border spinner-border-sm" style="width: .7rem; height: .7rem; border-width: .12em;"></span> @L["Settling… (auto)"]</span>
+                                    <div class="small text-nowrap" style="color: var(--krishi-text-muted);">@L["by {0}", p.Date.Add(Model.SettlementDelay).ToString("dd MMM HH:mm")]</div>
+                                }
+                                else if (p.Status == "Failed")
+                                {
+                                    <span class="krishi-badge krishi-badge-unavailable" title="@p.FailureReason"><i class="bi bi-x-circle"></i>@L["Failed"]</span>
+                                    <div class="small" style="color: var(--krishi-text-muted); max-width: 200px; white-space: normal;">@p.FailureReason</div>
+                                }
+                                else
+                                {
+                                    <span class="krishi-badge krishi-badge-available">@L[p.Status]</span>
+                                    @if (p.SettledOn is not null)
+                                    {
+                                        <div class="small text-nowrap" style="color: var(--krishi-text-muted);">@p.SettledOn.Value.ToString("dd MMM HH:mm")</div>
+                                    }
+                                }
+                            </td>
                         </tr>
                     }
                 </tbody>
                 <tfoot class="table-light fw-semibold">
+                    @{ var settled = s.Payouts.Where(p => p.Status != "Failed").ToList(); }
                     <tr>
-                        <td colspan="3">@L["Total"]</td>
-                        <td class="text-end">@Money(s.Payouts.Sum(p => p.Gross))</td>
-                        <td class="text-end text-danger">− @Money(s.Payouts.Sum(p => p.Commission))</td>
-                        <td class="text-end">@Money(s.Payouts.Sum(p => p.Amount))</td>
+                        <td colspan="3">@L["Total"] <span class="fw-normal small" style="color: var(--krishi-text-muted);">(@L["excluding failed"])</span></td>
+                        <td class="text-end">@Money(settled.Sum(p => p.Gross))</td>
+                        <td class="text-end text-danger">− @Money(settled.Sum(p => p.Commission))</td>
+                        <td class="text-end">@Money(settled.Sum(p => p.Amount))</td>
                         <td colspan="2"></td>
                     </tr>
                 </tfoot>
@@ -207,3 +236,13 @@
         </div>
     }
 </div>
+
+@section Scripts {
+    @if (hasProcessing)
+    {
+        <script>
+            // A transfer is in flight: poll so the row flips to Completed/Failed without a manual refresh.
+            setTimeout(() => location.reload(), 30000);
+        </script>
+    }
+}

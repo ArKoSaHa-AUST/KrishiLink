@@ -356,6 +356,13 @@ a:hover {
     border-color: var(--krishi-status-completed-border);
 }
 
+/* Paid: farmer's money is in escrow, service not yet completed */
+.krishi-badge-paid {
+    background-color: #e0f5f1;
+    color: #0f766e;
+    border-color: #99e0d3;
+}
+
 .krishi-badge-unavailable {
     background-color: var(--krishi-status-rejected-bg);
     color: var(--krishi-status-rejected-text);

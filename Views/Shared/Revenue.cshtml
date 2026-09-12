@@ -4,7 +4,7 @@
     ViewData["BodyClass"] = "krishi-body-gradient";
     var f = Model.Filter;
     var s = Model.Settlement;
-    var statuses = new[] { "Completed", "Accepted", "Pending", "Cancelled", "Rejected" };
+    var statuses = new[] { "Completed", "Paid", "Accepted", "Pending", "Cancelled", "Rejected" };
     var currentUrl = Context.Request.Path + Context.Request.QueryString;
     var rangeText = $"{Model.RangeStart:dd MMM yyyy} – {Model.RangeEnd:dd MMM yyyy}";
     var isEquipment = Model.ListingLabel == "Equipment";
@@ -122,7 +122,7 @@
             </div>
             <div>
                 <span class="fs-3 fw-bold d-block lh-1 krishi-summary-value">@Money(Model.UpcomingRevenue)</span>
-                <span class="small krishi-summary-label">@L["Upcoming Revenue (accepted)"]</span>
+                <span class="small krishi-summary-label">@L["Upcoming Revenue (accepted & paid)"]</span>
             </div>
         </div>
     </div>
@@ -237,6 +237,10 @@
             </dl>
 
             <div class="rounded-3 p-3 mb-3" style="background-color: var(--krishi-primary-light);">
+                @if (s.InEscrow > 0)
+                {
+                    <div class="d-flex justify-content-between small mb-1" title="@L["Farmer payments KrishiLink is holding for your paid bookings; released to your balance when you mark them completed."]"><span><i class="bi bi-safe2 me-1"></i>@L["In escrow (paid, awaiting completion)"]</span><strong style="color: #0f766e;">@Money(s.InEscrow)</strong></div>
+                }
                 <div class="d-flex justify-content-between small mb-1"><span>@L["Paid out"]</span><strong>@Money(s.PaidOut)</strong></div>
                 @if (s.Processing > 0)
                 {
@@ -259,9 +263,9 @@
                     @foreach (var p in s.Payouts.Take(5))
                     {
                         <li class="d-flex align-items-center gap-2">
-                            <i class="bi @(p.Status == "Completed" ? "bi-check-circle-fill text-success" : "bi-clock-history") flex-shrink-0" style="@(p.Status != "Completed" ? "color: var(--krishi-status-pending-text);" : "")"></i>
+                            <i class="bi @(p.Status == "Completed" ? "bi-check-circle-fill text-success" : p.Status == "Failed" ? "bi-x-circle-fill text-danger" : "bi-clock-history") flex-shrink-0" style="@(p.Status == "Processing" ? "color: var(--krishi-status-pending-text);" : "")"></i>
                             <span class="flex-grow-1">
-                                @(p.Status == "Completed" ? L["Paid on {0}", p.Date.ToString("dd MMM")] : L["Processing since {0}", p.Date.ToString("dd MMM")])
+                                @(p.Status == "Completed" ? L["Paid on {0}", (p.SettledOn ?? p.Date).ToString("dd MMM")] : p.Status == "Failed" ? L["Failed on {0}", (p.SettledOn ?? p.Date).ToString("dd MMM")] : L["Processing since {0}", p.Date.ToString("dd MMM")])
                                 <span class="d-block" style="color: var(--krishi-text-muted);">@p.Method · <code>@p.Reference</code></span>
                             </span>
                             <strong>@Money(p.Amount)</strong>
@@ -283,11 +287,12 @@
             </div>
             @{
                 var fn = Model.Funnel;
-                var pending = fn.Requested - fn.Accepted - fn.Completed - fn.Cancelled - fn.Rejected;
+                var pending = fn.Requested - fn.Accepted - fn.Paid - fn.Completed - fn.Cancelled - fn.Rejected;
                 var stages = new (string Label, int Count, string Bg, string Fg)[]
                 {
                     ("Pending", pending, "var(--krishi-status-pending-bg)", "var(--krishi-status-pending-text)"),
                     ("Accepted", fn.Accepted, "var(--krishi-status-accepted-bg)", "var(--krishi-status-accepted-text)"),
+                    ("Paid", fn.Paid, "#e0f5f1", "#0f766e"),
                     ("Ongoing", fn.Ongoing, "var(--krishi-primary-subtle)", "var(--krishi-primary-hover)"),
                     ("Completed", fn.Completed, "var(--krishi-status-completed-bg)", "var(--krishi-status-completed-text)"),
                     ("Cancelled", fn.Cancelled, "var(--krishi-status-rejected-bg)", "var(--krishi-status-rejected-text)"),
@@ -482,7 +487,7 @@
                 <tbody>
                     @foreach (var t in Model.Transactions)
                     {
-                        var canExpense = t.Status is "Completed" or "Accepted";
+                        var canExpense = t.Status is "Completed" or "Accepted" or "Paid";
                         <tr>
                             <td class="ps-4 text-nowrap">
                                 @t.StartDate.ToString("dd MMM yyyy")
@@ -525,15 +530,27 @@
                             <td class="text-nowrap">
                                 @if (t.Status == "Completed")
                                 {
-                                    if (t.IsPaid)
+                                    if (t.IsPaidOut)
                                     {
-                                        <span class="krishi-badge krishi-badge-available" title="@t.PayoutReference"><i class="bi bi-check2-circle"></i>@L["Paid"]</span>
+                                        <span class="krishi-badge krishi-badge-available" title="@t.PayoutReference"><i class="bi bi-check2-circle"></i>@L["Paid out"]</span>
                                         <div class="small" style="color: var(--krishi-text-muted);"><code>@t.PayoutReference</code></div>
                                     }
                                     else
                                     {
-                                        <span class="krishi-badge krishi-badge-pending"><i class="bi bi-hourglass"></i>@L["Unpaid"]</span>
+                                        <span class="krishi-badge krishi-badge-pending"><i class="bi bi-hourglass"></i>@L["Owed to you"]</span>
                                     }
+                                }
+                                else if (t.IsPaid)
+                                {
+                                    <span class="krishi-badge krishi-badge-paid" title="@t.PaymentReference"><i class="bi bi-safe2"></i>@L["In escrow"]</span>
+                                }
+                                else if (t.Status == "Accepted")
+                                {
+                                    <span class="small" style="color: var(--krishi-text-muted);">@L["Awaiting farmer payment"]</span>
+                                }
+                                @if (t.PaymentReference is not null && t.Status != "Completed")
+                                {
+                                    <div class="small" style="color: var(--krishi-text-muted);"><code>@t.PaymentReference</code></div>
                                 }
                             </td>
                             <td class="pe-4 text-end text-nowrap d-print-none">

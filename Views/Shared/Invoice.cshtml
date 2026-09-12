@@ -88,6 +88,10 @@
     </table>
 
     <p class="small mb-0" style="color: var(--krishi-text-muted);">
-        @L["Charged at the listed rate for the booked period. Settled through KrishiLink; keep this receipt for your records."]
+        @if (Model.PaymentReference is not null)
+        {
+            <span class="d-block mb-1"><i class="bi bi-shield-check text-success me-1"></i>@L["Paid by farmer via {0} on {1}, ref {2}", Model.PaymentMethod ?? "—", Model.PaidOn?.ToString("dd MMM yyyy") ?? "—", Model.PaymentReference]</span>
+        }
+        @L["Charged at the rate agreed at acceptance for the booked period. Collected into KrishiLink escrow and settled to the provider net of commission; keep this receipt for your records."]
     </p>
 </div>
