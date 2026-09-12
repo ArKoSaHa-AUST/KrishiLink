@@ -14,6 +14,9 @@ namespace KrishiLink.Models.ViewModels
         /// <summary>Last crop advisory recommendation (null if the farmer has never used the service).</summary>
         public CropRecommendation? SavedRecommendation { get; set; }
 
+        /// <summary>Active real-time agrometeorological disease/weather warning for the farmer's district.</summary>
+        public WeatherNoteItem? WeatherAlert { get; set; }
+
         /// <summary>Recent activity feed entries, newest first.</summary>
         public List<ActivityFeedItem> RecentActivity { get; set; } = new();
     }
