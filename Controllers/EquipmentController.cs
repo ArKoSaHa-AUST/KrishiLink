@@ -71,12 +71,15 @@ namespace KrishiLink.Controllers
         public async Task<IActionResult> SubmitRequest(EquipmentDetailViewModel model)
         {
             var farmerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            var error = await _equipment.RequestRentalAsync(farmerId, model.Id, model.StartDate, model.EndDate, model.Note);
+            var (error, bookingId) = await _equipment.RequestRentalWithResultAsync(farmerId, model.Id, model.StartDate, model.EndDate, model.Note);
 
-            if (error is null)
-                return RedirectToAction(nameof(Details), new { id = model.Id, requestSent = true });
+            if (error is null && bookingId.HasValue)
+            {
+                TempData["SuccessMessage"] = "Rental request sent successfully! Here is your official booking confirmation pass.";
+                return RedirectToAction("Confirmation", "Bookings", new { type = "Equipment", id = bookingId.Value, justCreated = true });
+            }
 
-            TempData["ErrorMessage"] = error;
+            TempData["ErrorMessage"] = error ?? "Failed to submit rental request.";
             return RedirectToAction(nameof(Details), new { id = model.Id });
         }
     }
