@@ -62,6 +62,7 @@ namespace KrishiLink.DAL
                 e.Property(x => x.DailyRate).HasPrecision(18, 2);
                 e.Property(x => x.HourlyRate).HasPrecision(18, 2);
                 e.Property(x => x.MinRentalDays).HasDefaultValue(1);
+                e.Property(x => x.Quantity).HasDefaultValue(1);
                 e.Property(x => x.AverageRating).HasDefaultValue(0.0);
                 e.Property(x => x.ReviewCount).HasDefaultValue(0);
                 e.HasIndex(x => x.OwnerId);
@@ -73,6 +74,7 @@ namespace KrishiLink.DAL
             builder.Entity<EquipmentBooking>(b =>
             {
                 b.Property(x => x.Status).HasMaxLength(20);
+                b.Property(x => x.Units).HasDefaultValue(1);
                 b.Property(x => x.DiscountAmount).HasPrecision(18, 2);
                 b.Property(x => x.AppliedPromoCode).HasMaxLength(50);
                 b.Property(x => x.QuotedGross).HasPrecision(18, 2).HasDefaultValue(0m);

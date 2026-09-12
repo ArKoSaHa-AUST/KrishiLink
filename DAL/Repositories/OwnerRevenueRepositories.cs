@@ -139,7 +139,7 @@ namespace KrishiLink.DAL.Repositories
         public override IReadOnlyList<RevenueListing> GetListings(string ownerId) =>
             Db.Equipment.AsNoTracking()
                 .Where(e => e.OwnerId == ownerId)
-                .Select(e => new RevenueListing(e.Id, e.Name, e.Location, 1))
+                .Select(e => new RevenueListing(e.Id, e.Name, e.Location, e.Quantity))
                 .ToList();
 
         public override IReadOnlyList<RevenueBooking> GetBookings(string ownerId) =>
@@ -152,6 +152,7 @@ namespace KrishiLink.DAL.Repositories
                     b.Equipment!.Name,
                     b.Equipment.Location,
                     b.Equipment.DailyRate,
+                    b.Units,
                     b.FarmerId,
                     FarmerName = b.Farmer!.FullName,
                     FarmerLocation = b.Farmer.Location,
@@ -176,9 +177,9 @@ namespace KrishiLink.DAL.Repositories
                     var days = ListingFormat.InclusiveDays(b.StartDate, b.EndDate);
                     return new RevenueBooking(b.Id, b.EquipmentId, b.Name, b.Location, b.FarmerId, b.FarmerName, b.FarmerLocation,
                         b.StartDate, b.EndDate, b.Status,
-                        Gross: BookingPricing.EquipmentGrossOf(b.AgreedGross, b.QuotedGross, b.StartDate, b.EndDate, rate),
-                        CapacityUsed: 1,
-                        QuantityText: days == 1 ? "1 day" : $"{days} days",
+                        Gross: BookingPricing.EquipmentGrossOf(b.AgreedGross, b.QuotedGross, b.StartDate, b.EndDate, rate, b.Units),
+                        CapacityUsed: b.Units,
+                        QuantityText: b.Units > 1 ? $"{b.Units} × {days} days" : (days == 1 ? "1 day" : $"{days} days"),
                         RateText: $"৳{rate:N0} / day",
                         PayoutId: b.PayoutId,
                         PayoutReference: b.PayoutReference,

@@ -9,6 +9,9 @@ namespace KrishiLink.Models.Entities
         public ApplicationUser? Farmer { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
+
+        /// <summary>Number of units requested / booked for this date range (1..Equipment.Quantity).</summary>
+        public int Units { get; set; } = 1;
         public string? Note { get; set; }
         public string Status { get; set; } = BookingStatus.Pending;
         public string? RejectReason { get; set; }

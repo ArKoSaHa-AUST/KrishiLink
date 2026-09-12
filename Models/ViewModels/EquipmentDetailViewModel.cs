@@ -50,8 +50,13 @@ namespace KrishiLink.Models.ViewModels
 
         // Already booked dates (for visual calendar blocking)
         public List<DateTime> BookedDates { get; set; } = new();
+        public List<DateTime> PartiallyBookedDates { get; set; } = new();
+
+        public int Quantity { get; set; } = 1;
+        public string? UnitsAvailableText { get; set; }
 
         // Form inputs & submission state
+        public int Units { get; set; } = 1;
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public string? Note { get; set; }

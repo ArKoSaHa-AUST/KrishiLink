@@ -66,6 +66,9 @@ namespace KrishiLink.Models.ViewModels
         public int Days { get; set; }
         public decimal Gross { get; set; }
         public int MinDays { get; set; }
+        public int Units { get; set; } = 1;
+        public int FreeUnits { get; set; } = 1;
+        public int Quantity { get; set; } = 1;
         public List<RateSegmentBreakdown> Breakdown { get; set; } = new();
         public string Description { get; set; } = string.Empty;
     }

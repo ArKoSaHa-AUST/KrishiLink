@@ -31,6 +31,7 @@ namespace KrishiLink.Models.ViewModels
         public int OwnerReviewCount { get; set; }
         public int? LastServicedDaysAgo { get; set; }
         public string? LastServicedText { get; set; }
+        public int Quantity { get; set; } = 1;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
@@ -46,6 +47,7 @@ namespace KrishiLink.Models.ViewModels
         public DateTime? AvailabilityDate { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
+        public int Units { get; set; } = 1;
         public string SortBy { get; set; } = "newest";
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 24;
@@ -68,6 +70,7 @@ namespace KrishiLink.Models.ViewModels
         public DateTime? AvailabilityDate { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
+        public int Units { get; set; } = 1;
         public string SortBy { get; set; } = "newest"; // "price_asc", "price_desc", "location", "rating_desc", "newest"
 
         // Results

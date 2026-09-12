@@ -55,6 +55,11 @@ namespace KrishiLink.Models.ViewModels
         [Display(Name = "Minimum Rental Days")]
         public int MinRentalDays { get; set; } = 1;
 
+        [Required(ErrorMessage = "Quantity is required.")]
+        [Range(1, 50, ErrorMessage = "Quantity must be between 1 and 50.")]
+        [Display(Name = "Total Available Units")]
+        public int Quantity { get; set; } = 1;
+
         [Display(Name = "Active Availability Status")]
         public bool IsAvailable { get; set; } = true;
 

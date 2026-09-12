@@ -40,20 +40,21 @@ namespace KrishiLink.BLL.Services
     /// </summary>
     public static class BookingPricing
     {
-        public static decimal EquipmentGross(DateTime start, DateTime end, decimal dailyRate) =>
-            ListingFormat.InclusiveDays(start, end) * dailyRate;
+        public static decimal EquipmentGross(DateTime start, DateTime end, decimal dailyRate, int units = 1) =>
+            ListingFormat.InclusiveDays(start, end) * dailyRate * units;
 
         /// <summary>
         /// Rule-aware dynamic equipment gross calculation honoring seasonal rules (highest precedence),
         /// weekend rules (medium precedence), and listing base daily rate (fallback).
-        /// Consecutive identical-rate segments are grouped together.
+        /// Consecutive identical-rate segments are grouped together. Scaled by units requested.
         /// </summary>
         public static (decimal Gross, List<RateSegment> Segments) EquipmentGross(
             DateTime start,
             DateTime end,
             decimal baseRate,
             IReadOnlyList<EquipmentRateRule> activeRules,
-            IReadOnlySet<DayOfWeek> weekendDays)
+            IReadOnlySet<DayOfWeek> weekendDays,
+            int units = 1)
         {
             var s = start.Date;
             var t = end.Date;
@@ -107,35 +108,40 @@ namespace KrishiLink.BLL.Services
                 segments.Add(new RateSegment(currentRate, currentDays, currentLabel));
             }
 
-            decimal gross = segments.Sum(seg => seg.Rate * seg.Days);
+            decimal gross = segments.Sum(seg => seg.Rate * seg.Days) * units;
             return (gross, segments);
         }
 
-        public static string Describe(IEnumerable<RateSegment> segments)
+        public static string Describe(IEnumerable<RateSegment> segments, int units = 1)
         {
             var list = segments.ToList();
             if (list.Count == 0) return string.Empty;
 
+            string baseDesc;
             if (list.Count == 1)
             {
                 var s = list[0];
                 var dayUnit = s.Days == 1 ? "day" : "days";
-                return s.Label == "Base"
+                baseDesc = s.Label == "Base"
                     ? $"৳{s.Rate:N0} / day × {s.Days} {dayUnit}"
                     : $"৳{s.Rate:N0} / day × {s.Days} {dayUnit} ({s.Label})";
             }
+            else
+            {
+                baseDesc = string.Join(" + ", list.Select(s =>
+                    s.Label == "Base"
+                        ? $"৳{s.Rate:N0} × {s.Days} {(s.Days == 1 ? "day" : "days")}"
+                        : $"৳{s.Rate:N0} × {s.Days} {(s.Days == 1 ? "day" : "days")} ({s.Label})"));
+            }
 
-            return string.Join(" + ", list.Select(s =>
-                s.Label == "Base"
-                    ? $"৳{s.Rate:N0} × {s.Days} {(s.Days == 1 ? "day" : "days")}"
-                    : $"৳{s.Rate:N0} × {s.Days} {(s.Days == 1 ? "day" : "days")} ({s.Label})"));
+            return units > 1 ? $"{baseDesc} × {units} units" : baseDesc;
         }
 
         public static decimal EquipmentGrossOf(EquipmentBooking b, decimal dailyRate) =>
-            b.AgreedGross ?? (b.QuotedGross > 0 ? b.QuotedGross : EquipmentGross(b.StartDate, b.EndDate, dailyRate));
+            b.AgreedGross ?? (b.QuotedGross > 0 ? b.QuotedGross : EquipmentGross(b.StartDate, b.EndDate, dailyRate, b.Units));
 
-        public static decimal EquipmentGrossOf(decimal? agreedGross, decimal quotedGross, DateTime start, DateTime end, decimal dailyRate) =>
-            agreedGross ?? (quotedGross > 0 ? quotedGross : EquipmentGross(start, end, dailyRate));
+        public static decimal EquipmentGrossOf(decimal? agreedGross, decimal quotedGross, DateTime start, DateTime end, decimal dailyRate, int units = 1) =>
+            agreedGross ?? (quotedGross > 0 ? quotedGross : EquipmentGross(start, end, dailyRate, units));
 
         public static decimal GodownGross(DateTime start, DateTime end, double tons, decimal pricePerTonPerMonth) =>
             decimal.Round((decimal)tons * pricePerTonPerMonth * (decimal)ListingFormat.Months(start, end), 0);

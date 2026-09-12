@@ -42,6 +42,7 @@ namespace KrishiLink.Controllers
                 distanceKm = e.DistanceKm,
                 isAvailable = e.IsAvailable,
                 status = e.Status,
+                quantity = e.Quantity,
                 imageUrl = e.ImageUrl,
                 ownerName = e.OwnerName,
                 ownerIsVerified = e.OwnerIsVerified,
@@ -67,11 +68,11 @@ namespace KrishiLink.Controllers
             });
         }
 
-        /// <summary>GET: /Equipment/Quote?id=&start=&end= — Live rule-aware rental price quote.</summary>
+        /// <summary>GET: /Equipment/Quote?id=&start=&end=&units=1 — Live rule-aware rental price quote.</summary>
         [HttpGet]
-        public async Task<IActionResult> Quote(int id, DateTime? start, DateTime? end)
+        public async Task<IActionResult> Quote(int id, DateTime? start, DateTime? end, int units = 1)
         {
-            var quote = await _equipment.QuoteAsync(id, start, end);
+            var quote = await _equipment.QuoteAsync(id, start, end, units);
             if (quote is null) return NotFound();
 
             return Json(new
@@ -81,6 +82,9 @@ namespace KrishiLink.Controllers
                 days = quote.Days,
                 gross = quote.Gross,
                 minDays = quote.MinDays,
+                units = quote.Units,
+                freeUnits = quote.FreeUnits,
+                quantity = quote.Quantity,
                 breakdown = quote.Breakdown.Select(b => new
                 {
                     rate = b.Rate,
@@ -90,6 +94,22 @@ namespace KrishiLink.Controllers
                 }),
                 description = quote.Description
             });
+        }
+
+        /// <summary>GET: /Equipment/FreeUnits?id=&start=&end= — returns free units for range.</summary>
+        [HttpGet]
+        public async Task<IActionResult> FreeUnits(int id, DateTime? start, DateTime? end)
+        {
+            var eq = await _equipment.GetDetailsAsync(id);
+            if (eq == null) return NotFound();
+
+            if (!start.HasValue || !end.HasValue)
+            {
+                return Json(new { free = eq.Quantity, quantity = eq.Quantity });
+            }
+
+            var free = await _equipment.FreeUnitsAsync(id, start.Value, end.Value);
+            return Json(new { free, quantity = eq.Quantity });
         }
 
         /// <summary>GET: /Equipment/Details/5 — details & rental request form.</summary>
@@ -116,6 +136,7 @@ namespace KrishiLink.Controllers
                 model.StartDate,
                 model.EndDate,
                 model.Note,
+                model.Units,
                 model.AppliedPromoCode,
                 model.PointsUsed
             );

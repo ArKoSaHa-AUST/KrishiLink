@@ -290,7 +290,14 @@
         </div>
 
         <!-- Availability Calendar Component -->
-        <partial name="_AvailabilityCalendar" model="Model.BookedDates" />
+        @{
+            var calViewData = new ViewDataDictionary(ViewData)
+            {
+                { "PartiallyBookedDates", Model.PartiallyBookedDates },
+                { "Quantity", Model.Quantity }
+            };
+        }
+        <partial name="_AvailabilityCalendar" model="Model.BookedDates" view-data="calViewData" />
 
         <!-- =========================================================================
              EQUIPMENT HEALTH & MAINTENANCE HISTORY SECTION
@@ -529,6 +536,32 @@
 
                 <form id="rentalRequestForm" asp-controller="Equipment" asp-action="SubmitRequest" method="post" onsubmit="handleFormSubmit(event)">
                     <input type="hidden" asp-for="Id" />
+                    @if (Model.Quantity > 1)
+                    {
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="unitsInput" class="form-label small fw-bold text-dark mb-0">
+                                    @L["Quantity / Units Needed"] <span class="text-danger">*</span>
+                                </label>
+                                <span id="freeUnitsBadge" class="badge bg-success-subtle text-success border border-success-subtle small fw-medium">
+                                    @Model.UnitsAvailableText
+                                </span>
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted"><i class="bi bi-boxes"></i></span>
+                                <input type="number" class="form-control form-control-lg rounded-end-3" id="unitsInput" name="Units"
+                                       value="1" min="1" max="@Model.Quantity" required onchange="onUnitsChanged()" oninput="onUnitsChanged()" />
+                            </div>
+                            <div class="form-text text-muted small mt-1">
+                                @L["Up to {0} units available concurrently.", Model.Quantity]
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <input type="hidden" name="Units" id="unitsInput" value="1" />
+                    }
+
                     <!-- Start Date -->
                     <div class="mb-3">
                         <label for="startDateInput" class="form-label small fw-bold text-dark">
@@ -562,6 +595,13 @@
                             <span>@L["Total Rental Duration:"]</span>
                             <span id="summaryDaysCount">@L["0 Days"]</span>
                         </div>
+                        @if (Model.Quantity > 1)
+                        {
+                            <div class="d-flex justify-content-between small fw-medium mt-1">
+                                <span>@L["Units:"]</span>
+                                <span id="summaryUnitsCount">1 @L["Unit"]</span>
+                            </div>
+                        }
                         <div class="d-flex justify-content-between small fw-medium mt-1">
                             <span>@L["Gross Rental Fee:"]</span>
                             <span id="summaryGrossFee">৳0</span>
@@ -674,6 +714,7 @@
         const dailyRate = @Model.DailyRateAmount.ToString(System.Globalization.CultureInfo.InvariantCulture);
         const minRentalDays = @Model.MinRentalDays;
         const equipmentId = @Model.Id;
+        const equipmentQuantity = @Model.Quantity;
         const isAuthenticated = @(User.Identity?.IsAuthenticated == true ? "true" : "false");
         const loginUrl = '@Url.Action("Login", "Account", new { returnUrl = Url.Action("Details", "Equipment", new { id = Model.Id }) })';
 
@@ -694,6 +735,10 @@
                 btnElement.classList.remove('border-light-subtle');
                 btnElement.classList.add('border-success', 'border-2');
             }
+        }
+
+        function onUnitsChanged() {
+            validateDates();
         }
 
         function onStartDateChanged() {
@@ -811,25 +856,25 @@
                     if (tierSelect) tierSelect.value = "0";
                     currentPointsUsed = data.pointsRequired || 0;
                     currentAppliedDiscount = data.discountAmount || 0;
-                    currentAppliedPromo = data.promoCode || code;
-
-                    document.getElementById('hiddenAppliedPromoCode').value = currentAppliedPromo;
+                    currentAppliedPromo = code;
+                    document.getElementById('hiddenAppliedPromoCode').value = code;
                     document.getElementById('hiddenPointsUsed').value = currentPointsUsed;
 
                     if (feedback) {
-                        feedback.textContent = `@L["Promo Applied!"] ${data.message}`;
-                        feedback.className = 'form-text small mt-1 text-success fw-semibold';
+                        feedback.textContent = `@L["Promo code applied:"] ৳${currentAppliedDiscount.toLocaleString()} @L["off"]`;
+                        feedback.className = 'form-text small mt-1 text-success fw-medium';
                         feedback.classList.remove('d-none');
                     }
                     if (clearBtn) clearBtn.classList.remove('d-none');
                 } else {
                     currentAppliedDiscount = 0;
                     currentAppliedPromo = '';
+                    currentPointsUsed = 0;
                     document.getElementById('hiddenAppliedPromoCode').value = '';
                     document.getElementById('hiddenPointsUsed').value = 0;
 
                     if (feedback) {
-                        feedback.textContent = data.message || '@L["Invalid or expired promo code."]';
+                        feedback.textContent = data.message || '@L["Invalid or inapplicable promo code."]';
                         feedback.className = 'form-text small mt-1 text-danger';
                         feedback.classList.remove('d-none');
                     }
@@ -867,6 +912,7 @@
         function recalculateSummary() {
             const costBox = document.getElementById('costSummaryBox');
             const summaryDaysCount = document.getElementById('summaryDaysCount');
+            const summaryUnitsCount = document.getElementById('summaryUnitsCount');
             const summaryGrossFee = document.getElementById('summaryGrossFee');
             const summaryDiscountRow = document.getElementById('summaryDiscountRow');
             const summaryDiscountAmount = document.getElementById('summaryDiscountAmount');
@@ -883,6 +929,13 @@
                 summaryDaysCount.textContent = currentDaysCount > 1
                     ? '@L["{0} Days", "__COUNT__"]'.replace('__COUNT__', currentDaysCount)
                     : '@L["{0} Day", "__COUNT__"]'.replace('__COUNT__', currentDaysCount);
+            }
+
+            if (summaryUnitsCount) {
+                const u = parseInt(document.getElementById('unitsInput')?.value || '1') || 1;
+                summaryUnitsCount.textContent = u > 1
+                    ? `${u} @L["Units"]`
+                    : `1 @L["Unit"]`;
             }
 
             if (summaryGrossFee) {
@@ -921,6 +974,7 @@
         function validateDates() {
             const startInput = document.getElementById('startDateInput');
             const endInput = document.getElementById('endDateInput');
+            const unitsInput = document.getElementById('unitsInput');
             const errorDiv = document.getElementById('dateValidationError');
             const costBox = document.getElementById('costSummaryBox');
             const submitBtn = document.getElementById('submitRequestBtn');
@@ -990,13 +1044,14 @@
             // Trigger debounced quote calculation from server
             if (quoteDebounceTimer) clearTimeout(quoteDebounceTimer);
             quoteDebounceTimer = setTimeout(() => {
-                fetchQuote(startInput.value, endInput.value);
+                const u = parseInt(unitsInput?.value || '1') || 1;
+                fetchQuote(startInput.value, endInput.value, u);
             }, 250);
 
             return true;
         }
 
-        async function fetchQuote(startDateStr, endDateStr) {
+        async function fetchQuote(startDateStr, endDateStr, units = 1) {
             if (quoteAbortController) {
                 quoteAbortController.abort();
             }
@@ -1007,9 +1062,11 @@
             const breakdownContainer = document.getElementById('summaryBreakdownContainer');
             const breakdownRows = document.getElementById('summaryBreakdownRows');
             const noteEl = document.getElementById('summaryPricingNote');
+            const unitsInput = document.getElementById('unitsInput');
+            const freeUnitsBadge = document.getElementById('freeUnitsBadge');
 
             try {
-                const url = `/Equipment/Quote?id=${equipmentId}&start=${encodeURIComponent(startDateStr)}&end=${encodeURIComponent(endDateStr)}`;
+                const url = `/Equipment/Quote?id=${equipmentId}&start=${encodeURIComponent(startDateStr)}&end=${encodeURIComponent(endDateStr)}&units=${encodeURIComponent(units)}`;
                 const res = await fetch(url, { signal: quoteAbortController.signal });
                 if (!res.ok) {
                     throw new Error('Failed to fetch quote');
@@ -1018,6 +1075,21 @@
                 if (data.ok) {
                     currentGrossFee = data.gross;
                     currentDaysCount = data.days;
+
+                    if (freeUnitsBadge && data.freeUnits !== undefined && data.quantity !== undefined) {
+                        freeUnitsBadge.textContent = `${data.freeUnits} of ${data.quantity} @L["units free"]`;
+                    }
+                    if (unitsInput && data.freeUnits !== undefined) {
+                        unitsInput.max = data.freeUnits;
+                        if (units > data.freeUnits) {
+                            errorDiv.textContent = '@L["Only {0} of {1} units are available for the selected dates.", "__FREE__", "__QTY__"]'
+                                .replace('__FREE__', data.freeUnits)
+                                .replace('__QTY__', data.quantity);
+                            errorDiv.classList.remove('d-none');
+                            submitBtn.disabled = true;
+                            return;
+                        }
+                    }
 
                     if (breakdownRows) {
                         if (data.breakdown && data.breakdown.length > 0) {
@@ -1056,7 +1128,8 @@
             } catch (err) {
                 if (err.name !== 'AbortError') {
                     currentDaysCount = Math.round((new Date(endDateStr) - new Date(startDateStr)) / (1000 * 60 * 60 * 24)) + 1;
-                    currentGrossFee = currentDaysCount * dailyRate;
+                    const u = parseInt(unitsInput?.value || '1') || 1;
+                    currentGrossFee = currentDaysCount * dailyRate * u;
                     if (breakdownContainer) breakdownContainer.classList.add('d-none');
                     if (noteEl) noteEl.classList.add('d-none');
                     recalculateSummary();
@@ -1078,10 +1151,12 @@
 
             const startVal = document.getElementById('startDateInput').value;
             const endVal = document.getElementById('endDateInput').value;
+            const unitsVal = parseInt(document.getElementById('unitsInput')?.value || '1') || 1;
+            const unitText = unitsVal > 1 ? ` (${unitsVal} @L["Units"])` : '';
 
             window.KrishiModal.confirm({
                 title: '@L["Confirm Rental Request"]',
-                body: `@L["Are you sure you want to send a rental request for"] <strong>@Model.Name</strong> @L["From"] <strong>${startVal}</strong> @L["To"] <strong>${endVal}</strong>?`,
+                body: `@L["Are you sure you want to send a rental request for"] <strong>@Model.Name${unitText}</strong> @L["From"] <strong>${startVal}</strong> @L["To"] <strong>${endVal}</strong>?`,
                 confirmText: '@L["Send Request"]',
                 cancelText: '@L["Cancel"]',
                 confirmClass: 'btn-krishi-primary',

@@ -31,6 +31,10 @@
                 <span class="fw-semibold d-block" style="color: var(--krishi-text-primary);">@Model.FarmerName</span>
                 <span class="small d-block" style="color: var(--krishi-text-muted);">
                     <i class="bi bi-tools me-1 text-success"></i>@Model.EquipmentName
+                    @if (Model.Units > 1)
+                    {
+                        <span class="badge bg-secondary-subtle text-secondary border font-monospace ms-1" style="font-size: 0.72rem;">@Model.Units @L["Units"]</span>
+                    }
                     <span class="mx-1">·</span>
                     <i class="bi bi-calendar-range me-1 text-success"></i>@Model.DateRange
                     @if (!string.IsNullOrEmpty(Model.TimeAgo))
@@ -113,7 +117,7 @@
                     <div class="col-12 col-md-6">
                         <span class="small fw-semibold text-uppercase d-block mb-1" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L["Equipment Recap"]</span>
                         <ul class="list-unstyled small mb-0 d-flex flex-column gap-1" style="color: var(--krishi-text-primary);">
-                            <li><i class="bi bi-tag text-success me-1"></i> @L[Model.EquipmentCategory]</li>
+                            <li><i class="bi bi-tag text-success me-1"></i> @(Model.Units > 1 ? $"{Model.Units} × {L[Model.EquipmentCategory]}" : L[Model.EquipmentCategory].Value)</li>
                             <li><i class="bi bi-cash-coin text-success me-1"></i> @Model.DailyRate <span style="color: var(--krishi-text-muted);">· @L["Total"] @gross</span></li>
                             @if (!string.IsNullOrEmpty(Model.PricingNote))
                             {

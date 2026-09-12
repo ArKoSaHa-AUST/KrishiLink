@@ -173,6 +173,14 @@ namespace KrishiLink.DAL
 
                 // Seed demo equipment rate rules and min rental days
                 await SeedDemoRateRulesAsync(db);
+
+                // Ensure demo tiller has Quantity = 3 for multi-unit testing
+                var demoTiller = await db.Equipment.FirstOrDefaultAsync(e => e.Name.Contains("ACI Power Tiller 12HP"));
+                if (demoTiller != null && demoTiller.Quantity == 1)
+                {
+                    demoTiller.Quantity = 3;
+                    await db.SaveChangesAsync();
+                }
             }
         }
 
@@ -267,7 +275,7 @@ namespace KrishiLink.DAL
                     "https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&w=800&q=80", -35),
                 Machine("ACI Power Tiller 12HP", "Power Tiller", 800, 150, yard,
                     "12 HP diesel power tiller with rotary attachment. Suitable for small and medium plots and puddling before transplanting.",
-                    "https://images.unsplash.com/photo-1530267981375-f0de937f5f13?auto=format&fit=crop&w=800&q=80", -30),
+                    "https://images.unsplash.com/photo-1530267981375-f0de937f5f13?auto=format&fit=crop&w=800&q=80", -30, quantity: 3),
                 Machine("Honda WB30X Irrigation Pump", "Irrigation Pump", 350, 60, yard,
                     "3-inch centrifugal petrol pump, 1,100 L/min. Includes 20 m of delivery hose for shallow tube-well irrigation.",
                     "https://images.unsplash.com/photo-1628352081506-83c43123ed6d?auto=format&fit=crop&w=800&q=80", -25),
@@ -310,6 +318,8 @@ namespace KrishiLink.DAL
                 // Live
                 Rental(equipment[0], farmer, -1, 4, BookingStatus.Accepted, -5, "Need standard disc plough attachment for deep tilling."),
                 Rental(equipment[4], motaleb, 3, 4, BookingStatus.Accepted, -2),
+                Rental(equipment[2], motaleb, 5, 8, BookingStatus.Accepted, -3, units: 1),
+                Rental(equipment[2], salma, 6, 9, BookingStatus.Accepted, -2, units: 1),
                 Rental(equipment[1], farmer, 6, 10, BookingStatus.Pending, 0, "Need it for 5 acres of Aman paddy harvest."),
                 Rental(equipment[2], karim, 9, 11, BookingStatus.Pending, 0),
                 Rental(equipment[0], fatema, 14, 16, BookingStatus.Pending, -1, "Land preparation before potato season."));
@@ -555,7 +565,7 @@ namespace KrishiLink.DAL
             return user;
         }
 
-        private static Equipment Machine(string name, string category, decimal daily, decimal hourly, string location, string description, string image, int createdDaysAgo, double? lat = null, double? lng = null, string? district = null)
+        private static Equipment Machine(string name, string category, decimal daily, decimal hourly, string location, string description, string image, int createdDaysAgo, double? lat = null, double? lng = null, string? district = null, int quantity = 1)
         {
             var (defaultLat, defaultLng) = GeoLocationHelper.GetDistrictCoordinates(location);
             return new()
@@ -564,6 +574,7 @@ namespace KrishiLink.DAL
                 Category = category,
                 DailyRate = daily,
                 HourlyRate = hourly,
+                Quantity = quantity,
                 Location = location,
                 District = district ?? OnboardingOptions.GuessDistrict(location),
                 Latitude = lat ?? defaultLat,
@@ -594,12 +605,13 @@ namespace KrishiLink.DAL
             };
         }
 
-        private static EquipmentBooking Rental(Equipment e, ApplicationUser farmer, int startOffset, int endOffset, string status, int requestedOffset, string? note = null, string? reject = null)
+        private static EquipmentBooking Rental(Equipment e, ApplicationUser farmer, int startOffset, int endOffset, string status, int requestedOffset, string? note = null, string? reject = null, int units = 1)
         {
             var b = new EquipmentBooking
             {
                 EquipmentId = e.Id,
                 FarmerId = farmer.Id,
+                Units = units,
                 Status = status,
                 Note = note,
                 RejectReason = reject,
@@ -608,7 +620,7 @@ namespace KrishiLink.DAL
                 RequestedOn = DateTime.Now.AddDays(requestedOffset).AddHours(-2),
                 UpdatedOn = status == BookingStatus.Pending ? null : DateTime.Now.AddDays(requestedOffset).AddHours(4)
             };
-            Snapshot(b, e.DailyRate, BookingPricing.EquipmentGross(b.StartDate, b.EndDate, e.DailyRate));
+            Snapshot(b, e.DailyRate, BookingPricing.EquipmentGross(b.StartDate, b.EndDate, e.DailyRate, units));
             return b;
         }
 

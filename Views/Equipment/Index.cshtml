@@ -171,6 +171,18 @@
                 </div>
             </div>
 
+            <!-- 5. Units Needed Filter -->
+            <div class="mb-4">
+                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="desktopUnitsInput">
+                    @L["Units Needed"]
+                </label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light text-muted"><i class="bi bi-boxes"></i></span>
+                    <input type="number" class="form-control form-control-sm filter-input" id="desktopUnitsInput"
+                           min="1" max="50" value="@(Model.Units > 1 ? Model.Units : 1)" onchange="syncUnits(this.value); onFilterChanged(1);" />
+                </div>
+            </div>
+
             <!-- Clear Filters Link -->
             <div class="pt-2">
                 <button type="button" class="btn btn-outline-secondary w-100 btn-sm py-2 rounded-3" onclick="resetAllFilters()">
@@ -269,11 +281,17 @@
                         <div class="krishi-equipment-img-box">
                             <img src="@item.ImageUrl" alt="@item.Name" loading="lazy" />
                             
-                            <!-- Category Pill -->
-                            <div class="position-absolute top-0 start-0 m-2.5">
+                            <!-- Category Pill & Quantity Badge -->
+                            <div class="position-absolute top-0 start-0 m-2.5 d-flex flex-column gap-1 align-items-start">
                                 <span class="badge bg-white text-dark shadow-sm rounded-pill px-2.5 py-1 small fw-semibold opacity-95">
                                     @L[item.Category]
                                 </span>
+                                @if (item.Quantity > 1)
+                                {
+                                    <span class="badge bg-primary text-white shadow-sm rounded-pill px-2.5 py-1 small fw-semibold">
+                                        <i class="bi bi-boxes me-1"></i>@item.Quantity @L["Units"]
+                                    </span>
+                                }
                             </div>
 
                             <!-- Availability Badge (Dashboard consistent) -->
@@ -564,6 +582,18 @@
             </div>
         </div>
 
+        <!-- Mobile: Units Needed -->
+        <div class="mb-4">
+            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="mobileUnitsInput">
+                @L["Units Needed"]
+            </label>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light text-muted"><i class="bi bi-boxes"></i></span>
+                <input type="number" class="form-control form-control-sm" id="mobileUnitsInput"
+                       min="1" max="50" value="@(Model.Units > 1 ? Model.Units : 1)" onchange="syncUnits(this.value); onFilterChanged(1);" />
+            </div>
+        </div>
+
         <!-- Bottom Sheet Actions -->
         <div class="d-grid gap-2 pt-2 pb-3">
             <button type="button" class="btn btn-krishi-primary py-2.5 fw-bold rounded-pill" data-bs-dismiss="offcanvas">
@@ -660,6 +690,14 @@
             if (eDesk) eDesk.value = eMob;
         }
 
+        function syncUnits(val) {
+            const u = Math.max(1, parseInt(val) || 1);
+            const desk = document.getElementById('desktopUnitsInput');
+            const mob = document.getElementById('mobileUnitsInput');
+            if (desk && desk.value != u) desk.value = u;
+            if (mob && mob.value != u) mob.value = u;
+        }
+
         function syncMobileToDesktopCategory() {
             const mobileChecked = Array.from(document.querySelectorAll('.mobile-cat-filter:checked')).map(cb => cb.value);
             document.querySelectorAll('.desktop-cat-filter').forEach(cb => {
@@ -715,6 +753,11 @@
             if (eDesk) eDesk.value = '';
             syncDates();
 
+            const deskUnits = document.getElementById('desktopUnitsInput');
+            const mobUnits = document.getElementById('mobileUnitsInput');
+            if (deskUnits) deskUnits.value = '1';
+            if (mobUnits) mobUnits.value = '1';
+
             const sortSelect = document.getElementById('mainSortSelect');
             if (sortSelect) sortSelect.value = 'newest';
 
@@ -745,6 +788,7 @@
             const maxPrice = Number(document.getElementById('desktopMaxPriceInput')?.value || DEFAULT_MAX_PRICE);
             const startDate = document.getElementById('desktopStartDateInput')?.value || '';
             const endDate = document.getElementById('desktopEndDateInput')?.value || '';
+            const units = parseInt(document.getElementById('desktopUnitsInput')?.value || '1') || 1;
             const sortBy = document.getElementById('mainSortSelect')?.value || 'newest';
 
             const grid = document.getElementById('equipmentResultsGrid');
@@ -764,6 +808,7 @@
             if (maxPrice < DEFAULT_MAX_PRICE) params.append('selectedMaxPrice', maxPrice);
             if (startDate) params.append('startDate', startDate);
             if (endDate) params.append('endDate', endDate);
+            if (units > 1) params.append('units', units);
             if (sortBy && sortBy !== 'newest') params.append('sortBy', sortBy);
             if (currentPage > 1) params.append('page', currentPage);
 
@@ -808,6 +853,7 @@
             const maxPrice = Number(document.getElementById('desktopMaxPriceInput')?.value || DEFAULT_MAX_PRICE);
             const startDate = document.getElementById('desktopStartDateInput')?.value || '';
             const endDate = document.getElementById('desktopEndDateInput')?.value || '';
+            const units = parseInt(document.getElementById('desktopUnitsInput')?.value || '1') || 1;
 
             let activeCount = 0;
             if (searchTerm.trim()) activeCount++;
@@ -816,6 +862,7 @@
             if (minPrice > DEFAULT_MIN_PRICE) activeCount++;
             if (maxPrice < DEFAULT_MAX_PRICE) activeCount++;
             if (startDate || endDate) activeCount++;
+            if (units > 1) activeCount++;
 
             if (mobileFilterBadge) {
                 mobileFilterBadge.innerText = activeCount > 0 ? '@L["{0} active", "__COUNT__"]'.replace('__COUNT__', activeCount) : '@L["Filters"]';
@@ -826,7 +873,7 @@
                 else btn.classList.add('d-none');
             });
 
-            renderActiveTags(searchTerm, selectedCategories, location, minPrice, maxPrice, startDate, endDate);
+            renderActiveTags(searchTerm, selectedCategories, location, minPrice, maxPrice, startDate, endDate, units);
 
             if (count === 0) {
                 if (grid) {
@@ -858,10 +905,16 @@
                             <div class="krishi-equipment-img-box">
                                 <img src="${item.imageUrl}" alt="${item.name}" loading="lazy" />
                                 
-                                <div class="position-absolute top-0 start-0 m-2.5">
+                                <!-- Category Pill & Quantity Badge -->
+                                <div class="position-absolute top-0 start-0 m-2.5 d-flex flex-column gap-1 align-items-start">
                                     <span class="badge bg-white text-dark shadow-sm rounded-pill px-2.5 py-1 small fw-semibold opacity-95">
                                         ${localizedCategories[item.category] || item.category}
                                     </span>
+                                    ${item.quantity > 1 ? `
+                                        <span class="badge bg-primary text-white shadow-sm rounded-pill px-2.5 py-1 small fw-semibold">
+                                            <i class="bi bi-boxes me-1"></i>${item.quantity} @L["Units"]
+                                        </span>
+                                    ` : ''}
                                 </div>
 
                                 <div class="position-absolute top-0 end-0 m-2.5">
@@ -975,7 +1028,7 @@
             list.innerHTML = html;
         }
 
-        function renderActiveTags(search, categories, location, minPrice, maxPrice, startDate, endDate) {
+        function renderActiveTags(search, categories, location, minPrice, maxPrice, startDate, endDate, units = 1) {
             const container = document.getElementById('activeFilterTagsContainer');
             if (!container) return;
 
@@ -1008,6 +1061,11 @@
                     <i class="bi bi-calendar3 me-1"></i>${dateText}
                 </span>`;
             }
+            if (units > 1) {
+                html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small">
+                    <i class="bi bi-boxes me-1"></i>${units} @L["Units"]
+                </span>`;
+            }
             container.innerHTML = html;
         }
 
@@ -1025,7 +1083,8 @@
                 Number(document.getElementById('desktopMinPriceInput')?.value || DEFAULT_MIN_PRICE),
                 Number(document.getElementById('desktopMaxPriceInput')?.value || DEFAULT_MAX_PRICE),
                 document.getElementById('desktopStartDateInput')?.value || '',
-                document.getElementById('desktopEndDateInput')?.value || ''
+                document.getElementById('desktopEndDateInput')?.value || '',
+                parseInt(document.getElementById('desktopUnitsInput')?.value || '1') || 1
             );
         });
     </script>

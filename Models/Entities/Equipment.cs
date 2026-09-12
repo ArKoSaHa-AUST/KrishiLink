@@ -35,6 +35,9 @@ namespace KrishiLink.Models.Entities
         /// <summary>Minimum consecutive rental days required by the owner (1 to 90).</summary>
         public int MinRentalDays { get; set; } = 1;
 
+        /// <summary>Total identical units available under this single listing (1–50).</summary>
+        public int Quantity { get; set; } = 1;
+
         public ICollection<EquipmentBooking> Bookings { get; set; } = new List<EquipmentBooking>();
         public ICollection<EquipmentBlockedDate> BlockedDates { get; set; } = new List<EquipmentBlockedDate>();
         public ICollection<Review> Reviews { get; set; } = new List<Review>();

@@ -54,6 +54,9 @@ namespace KrishiLink.Models.ViewModels
         public bool HasConflict { get; set; }
         public string? ConflictHint { get; set; }
 
+        public int Units { get; set; } = 1;
+        public int Quantity { get; set; } = 1;
+
         /// <summary>Owner's reason shown on rejected requests.</summary>
         public string? RejectReason { get; set; }
 

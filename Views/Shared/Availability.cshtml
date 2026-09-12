@@ -138,11 +138,13 @@
 
                     if (isBookedByFarmer)
                     {
+                        var bookedCount = Model.BookedUnitsByDate.TryGetValue(dateStr, out var bUnits) ? bUnits : 1;
+                        var bookedBadgeText = Model.Quantity > 1 ? $"{bookedCount}/{Model.Quantity}" : L["Booked"].Value;
                         <div class="col p-2 p-sm-3 rounded-3 bg-primary-subtle border border-primary text-primary fw-bold calendar-day-cell position-relative opacity-90 cursor-not-allowed"
                              title="@L["Booked by Farmer (Locked)"]">
                             <div class="small">@day</div>
                             <span class="badge bg-primary text-white rounded-pill font-monospace" style="font-size: 0.65rem;">
-                                @L["Booked"]
+                                @bookedBadgeText
                             </span>
                         </div>
                     }

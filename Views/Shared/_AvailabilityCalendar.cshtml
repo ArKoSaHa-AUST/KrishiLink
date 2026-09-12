@@ -4,16 +4,27 @@
     (accepted bookings, owner blackout dates, or — for godowns — days already at full capacity).
     Clicking an available day calls selectCalendarDate(yyyy-MM-dd), defined by the host page.
 *@
+@{
+    var partialDates = (ViewData["PartiallyBookedDates"] as IEnumerable<DateTime>)?.Select(d => d.Date).ToHashSet() ?? new HashSet<DateTime>();
+    var totalQuantity = ViewData["Quantity"] as int? ?? 1;
+}
 <div class="card krishi-card p-4 mb-4 border-0 shadow-sm">
     <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
         <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
             @L["Current Availability Calendar"]
         </h5>
-        <div class="d-flex gap-3 small">
+        <div class="d-flex gap-3 small flex-wrap">
             <span class="d-flex align-items-center gap-1">
                 <span class="d-inline-block rounded-circle bg-success" style="width: 10px; height: 10px;"></span>
                 @L["Available"]
             </span>
+            @if (totalQuantity > 1)
+            {
+                <span class="d-flex align-items-center gap-1">
+                    <span class="d-inline-block rounded-circle cal-partial-indicator" style="width: 10px; height: 10px;"></span>
+                    @L["Partially Booked"]
+                </span>
+            }
             <span class="d-flex align-items-center gap-1">
                 <span class="d-inline-block rounded-circle bg-secondary" style="width: 10px; height: 10px;"></span>
                 @L["Booked / Blocked"]
@@ -58,6 +69,12 @@
                     if (isPast || unavailable.Contains(currentDate))
                     {
                         <div class="col p-2 rounded bg-secondary-subtle text-secondary text-decoration-line-through fw-medium" title="@(isPast ? L["Past Date"] : L["Already Booked"])">
+                            @day
+                        </div>
+                    }
+                    else if (partialDates.Contains(currentDate))
+                    {
+                        <div class="col p-2 rounded cal-partial fw-bold calendar-day-available" onclick="selectCalendarDate('@currentDate.ToString("yyyy-MM-dd")')" title="@L["Partially booked - units still available"]">
                             @day
                         </div>
                     }

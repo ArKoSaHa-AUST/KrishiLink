@@ -116,6 +116,15 @@ namespace KrishiLink.Controllers
                 ModelState.AddModelError("ImageFiles", "A listing cannot have more than 8 images.");
             }
 
+            if (model.IsEditMode && model.Id.HasValue)
+            {
+                var qtyErr = await _equipment.ValidateQuantityAsync(OwnerId, model.Id.Value, model.Quantity);
+                if (qtyErr != null)
+                {
+                    ModelState.AddModelError("Quantity", qtyErr);
+                }
+            }
+
             if (!ModelState.IsValid)
                 return View("Create", model);
 

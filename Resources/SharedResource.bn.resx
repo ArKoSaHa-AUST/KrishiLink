@@ -3722,4 +3722,43 @@
   <data name="Gross Rental Fee:" xml:space="preserve">
     <value>মোট ভাড়ার ফি:</value>
   </data>
+  <data name="Unit" xml:space="preserve">
+    <value>ইউনিট</value>
+  </data>
+  <data name="Units" xml:space="preserve">
+    <value>ইউনিট</value>
+  </data>
+  <data name="Units:" xml:space="preserve">
+    <value>ইউনিট সংখ্যা:</value>
+  </data>
+  <data name="Available Units" xml:space="preserve">
+    <value>উপলব্ধ ইউনিট</value>
+  </data>
+  <data name="Units Needed" xml:space="preserve">
+    <value>প্রয়োজনীয় ইউনিট</value>
+  </data>
+  <data name="Quantity / Units Needed" xml:space="preserve">
+    <value>প্রয়োজনীয় ইউনিট / সংখ্যা</value>
+  </data>
+  <data name="Partially Booked" xml:space="preserve">
+    <value>আংশিক বুক করা</value>
+  </data>
+  <data name="units available" xml:space="preserve">
+    <value>টি ইউনিট উপলব্ধ</value>
+  </data>
+  <data name="units free" xml:space="preserve">
+    <value>টি ইউনিট খালি</value>
+  </data>
+  <data name="Up to {0} units available concurrently." xml:space="preserve">
+    <value>একসাথে সর্বোচ্চ {0}টি ইউনিট পর্যন্ত ভাড়া নেওয়া যাবে।</value>
+  </data>
+  <data name="Only {0} of {1} units are available for the selected dates." xml:space="preserve">
+    <value>নির্বাচিত তারিখের জন্য {1}টি ইউনিটের মধ্যে কেবল {0}টি ইউনিট উপলব্ধ রয়েছে।</value>
+  </data>
+  <data name="Reduce the quantity or choose different dates." xml:space="preserve">
+    <value>ইউনিটের সংখ্যা কমান বা অন্য তারিখ নির্বাচন করুন।</value>
+  </data>
+  <data name="Cannot reduce quantity below {0} because {1} units are already booked on {2}." xml:space="preserve">
+    <value>যন্ত্রপাতির সংখ্যা {0} এর নিচে নামানো যাবে না কারণ {2} তারিখে ইতোমধ্যে {1}টি ইউনিট বুক করা আছে।</value>
+  </data>
 </root>

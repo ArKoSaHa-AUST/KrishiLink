@@ -22,6 +22,9 @@ namespace KrishiLink.Models.ViewModels
         public List<DateTime> OwnerBlockedDates { get; set; } = new();
         public List<DateTime> FarmerBookedDates { get; set; } = new();
 
+        public int Quantity { get; set; } = 1;
+        public Dictionary<string, int> BookedUnitsByDate { get; set; } = new();
+
         public bool IsSaved { get; set; } = false;
     }
 }
