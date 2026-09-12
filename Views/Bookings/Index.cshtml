@@ -638,6 +638,25 @@ else
                 loading.innerHTML = `<p class="text-danger small mb-0">@L["Failed to load QR code. Please open full voucher."]`;
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const reviewParam = urlParams.get('review');
+            if (reviewParam) {
+                let parts = reviewParam.split(':');
+                let type = parts.length > 1 ? parts[0] : '@Model.ActiveTab';
+                let id = parts.length > 1 ? parts[1] : parts[0];
+
+                const container = document.getElementById(`reviewActionContainer_${type}_${id}`) ||
+                                  document.getElementById(`reviewActionContainer_${type.charAt(0).toUpperCase() + type.slice(1)}_${id}`);
+                if (container) {
+                    const btn = container.querySelector('button');
+                    if (btn) {
+                        btn.click();
+                    }
+                }
+            }
+        });
     </script>
 }
 

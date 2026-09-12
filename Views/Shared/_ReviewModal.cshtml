@@ -203,8 +203,14 @@
                             body: formData
                         });
 
-                        const data = await response.json();
-                        if (data.success) {
+                        let data;
+                        try {
+                            data = await response.json();
+                        } catch (e) {
+                            data = { success: false, message: '@L["An error occurred while submitting your review."]' };
+                        }
+
+                        if (response.ok && data.success) {
                             const modalEl = document.getElementById('reviewModal');
                             const modal = bootstrap.Modal.getInstance(modalEl);
                             if (modal) modal.hide();
@@ -217,16 +223,14 @@
                                 actionContainer.innerHTML = `
                                     <div class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle small fw-bold">
                                         <i class="bi bi-star-fill text-warning"></i>
-                                        <span>★ ${data.rating}/5 Reviewed</span>
+                                        <span>★ ${data.rating}/5 @L["Reviewed"]</span>
                                     </div>
                                 `;
                             }
 
-                            // Show toast or alert if KrishiToast exists
-                            if (window.showToast) {
-                                window.showToast(data.message || '@L["Review submitted successfully!"]', 'success');
-                            } else {
-                                location.reload();
+                            // Show toast if KrishiToast exists
+                            if (window.KrishiToast && KrishiToast.show) {
+                                KrishiToast.show(data.message || '@L["Review submitted successfully!"]', 'success');
                             }
                         } else {
                             errorAlert.textContent = data.message || '@L["An error occurred while submitting your review."]';

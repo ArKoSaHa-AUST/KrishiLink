@@ -32,9 +32,22 @@ namespace KrishiLink.Models.ViewModels
         public int Rating { get; set; }
         public string? Comment { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string? OwnerReply { get; set; }
+        public DateTime? OwnerRepliedAt { get; set; }
+        public string? OwnerRepliedTimeAgo => OwnerRepliedAt.HasValue ? TimeAgoFormatter.Format(OwnerRepliedAt.Value) : null;
         public string FormattedDate => CreatedAt.ToString("dd MMM yyyy");
         public string TimeAgo { get; set; } = string.Empty;
         public string UserInitial => !string.IsNullOrWhiteSpace(FarmerName) ? FarmerName[0].ToString().ToUpperInvariant() : "F";
+    }
+
+    public class ReplyReviewViewModel
+    {
+        [Required]
+        public int ReviewId { get; set; }
+
+        [Required]
+        [MaxLength(1000, ErrorMessage = "Reply cannot exceed 1000 characters.")]
+        public string Reply { get; set; } = string.Empty;
     }
 
     public class RatingBreakdownViewModel
@@ -59,5 +72,6 @@ namespace KrishiLink.Models.ViewModels
         public int TotalReviews { get; set; } = 0;
         public RatingBreakdownViewModel Breakdown { get; set; } = new();
         public List<ReviewItemViewModel> Reviews { get; set; } = new();
+        public bool HasMoreReviews => TotalReviews > Reviews.Count;
     }
 }
