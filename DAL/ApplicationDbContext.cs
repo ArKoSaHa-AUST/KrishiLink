@@ -24,6 +24,7 @@ namespace KrishiLink.DAL
         public DbSet<Transaction> Transactions { get; set; } = null!;
         public DbSet<Review> Reviews { get; set; } = null!;
         public DbSet<Notification> Notifications { get; set; } = null!;
+        public DbSet<OwnerVerificationRequest> VerificationRequests { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -33,6 +34,15 @@ namespace KrishiLink.DAL
             {
                 u.Property(x => x.District).HasMaxLength(60);
                 u.Property(x => x.Specialization).HasMaxLength(60);
+                u.Property(x => x.VerificationStatus).HasMaxLength(30).HasDefaultValue("Unverified");
+                u.Property(x => x.NidNumber).HasMaxLength(30);
+                u.Property(x => x.NidFrontImagePath).HasMaxLength(255);
+                u.Property(x => x.NidBackImagePath).HasMaxLength(255);
+                u.Property(x => x.TradeLicenseImagePath).HasMaxLength(255);
+                u.Property(x => x.VerificationRejectionReason).HasMaxLength(500);
+                u.Property(x => x.VerificationNotes).HasMaxLength(500);
+                u.HasIndex(x => x.IsVerified);
+                u.HasIndex(x => x.VerificationStatus);
             });
 
             builder.Entity<Equipment>(e =>
@@ -137,6 +147,22 @@ namespace KrishiLink.DAL
                 n.HasIndex(x => new { x.UserId, x.CreatedAt });
 
                 n.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<OwnerVerificationRequest>(v =>
+            {
+                v.Property(x => x.NidNumber).HasMaxLength(30);
+                v.Property(x => x.NidFrontImagePath).HasMaxLength(255);
+                v.Property(x => x.NidBackImagePath).HasMaxLength(255);
+                v.Property(x => x.TradeLicenseImagePath).HasMaxLength(255);
+                v.Property(x => x.Status).HasMaxLength(30).HasDefaultValue("Pending");
+                v.Property(x => x.RejectionReason).HasMaxLength(500);
+                v.Property(x => x.AdminNotes).HasMaxLength(500);
+                v.Property(x => x.ReviewedByAdminId).HasMaxLength(450);
+
+                v.HasIndex(x => new { x.UserId, x.Status });
+                v.HasIndex(x => x.SubmittedAt);
+                v.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

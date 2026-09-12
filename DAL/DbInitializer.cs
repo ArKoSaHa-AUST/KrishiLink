@@ -30,6 +30,33 @@ namespace KrishiLink.DAL
                 await SeedDemoDataAsync(db, services.GetRequiredService<UserManager<ApplicationUser>>());
             else if (seedDemoData && !await db.Reviews.AnyAsync())
                 await SeedDemoReviewsAsync(db);
+
+            // Ensure demo owner accounts have verified badges
+            if (seedDemoData)
+            {
+                var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+                var demoEq = await userManager.FindByEmailAsync("equipment@krishilink.com");
+                if (demoEq != null && !demoEq.IsVerified)
+                {
+                    demoEq.IsVerified = true;
+                    demoEq.VerificationStatus = "Verified";
+                    demoEq.NidNumber = "19882692012345";
+                    demoEq.VerificationReviewedAt = DateTime.UtcNow.AddMonths(-6);
+                    demoEq.VerificationNotes = "Verified owner account.";
+                    await userManager.UpdateAsync(demoEq);
+                }
+
+                var demoGd = await userManager.FindByEmailAsync("godown@krishilink.com");
+                if (demoGd != null && !demoGd.IsVerified)
+                {
+                    demoGd.IsVerified = true;
+                    demoGd.VerificationStatus = "Verified";
+                    demoGd.NidNumber = "19752718098765";
+                    demoGd.VerificationReviewedAt = DateTime.UtcNow.AddMonths(-6);
+                    demoGd.VerificationNotes = "Verified owner account.";
+                    await userManager.UpdateAsync(demoGd);
+                }
+            }
         }
 
         private static async Task SeedDemoDataAsync(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
@@ -40,8 +67,8 @@ namespace KrishiLink.DAL
             var salma = await CreateUserAsync(userManager, "salma@krishilink.com", "01711000004", "Salma Akter", AppRoles.Farmer, "Bochaganj, Dinajpur", "Rice (Aman)");
             var motaleb = await CreateUserAsync(userManager, "motaleb@krishilink.com", "01711000005", "Motaleb Hossain", AppRoles.Farmer, "Birol, Dinajpur", "Wheat");
 
-            var eqOwner = await CreateUserAsync(userManager, "equipment@krishilink.com", "01712000001", "Abdul Karim", AppRoles.EquipmentOwner, "Bogra Sadar, Bogra", "Tractor", "Karim Agro Machinery");
-            var gdOwner = await CreateUserAsync(userManager, "godown@krishilink.com", "01713000001", "Abdul Mannan", AppRoles.GodownOwner, "Dinajpur Sadar, Dinajpur", "Cold Storage", "Green Grain Storage Ltd.");
+            var eqOwner = await CreateUserAsync(userManager, "equipment@krishilink.com", "01712000001", "Abdul Karim", AppRoles.EquipmentOwner, "Bogra Sadar, Bogra", "Tractor", "Karim Agro Machinery", isVerified: true, nid: "19882692012345");
+            var gdOwner = await CreateUserAsync(userManager, "godown@krishilink.com", "01713000001", "Abdul Mannan", AppRoles.GodownOwner, "Dinajpur Sadar, Dinajpur", "Cold Storage", "Green Grain Storage Ltd.", isVerified: true, nid: "19752718098765");
 
             var yard = eqOwner.Location!;
             var equipment = new List<Equipment>
@@ -284,7 +311,7 @@ namespace KrishiLink.DAL
         }
 
         private static async Task<ApplicationUser> CreateUserAsync(UserManager<ApplicationUser> userManager, string email, string phone,
-            string fullName, string role, string location, string specialization, string? business = null)
+            string fullName, string role, string location, string specialization, string? business = null, bool isVerified = false, string? nid = null)
         {
             var existing = await userManager.FindByEmailAsync(email);
             if (existing is not null) return existing;
@@ -301,6 +328,11 @@ namespace KrishiLink.DAL
                 BusinessOrFarmName = business,
                 District = OnboardingOptions.GuessDistrict(location),
                 Specialization = specialization,
+                IsVerified = isVerified,
+                VerificationStatus = isVerified ? "Verified" : "Unverified",
+                NidNumber = nid,
+                VerificationReviewedAt = isVerified ? DateTime.UtcNow.AddMonths(-6) : null,
+                VerificationNotes = isVerified ? "Verified demo owner account." : null,
                 OnboardingCompletedAt = DateTime.UtcNow.AddMonths(-8),
                 CreatedAt = DateTime.UtcNow.AddMonths(-8)
             };
