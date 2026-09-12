@@ -29,6 +29,11 @@ namespace KrishiLink.BLL.Services
         Task<bool> SaveListingAsync(string ownerId, EquipmentListingViewModel model);
         Task<ManageAvailabilityViewModel?> GetAvailabilityAsync(string ownerId, int equipmentId, DateTime? month);
         Task<bool> SaveAvailabilityAsync(string ownerId, int equipmentId, DateTime month, IEnumerable<DateTime> blockedDates);
+
+        // Maintenance & Health Tracker
+        Task<EquipmentMaintenanceDashboardViewModel?> GetMaintenanceDashboardAsync(string ownerId, int equipmentId);
+        Task<(bool Success, string? Error)> AddMaintenanceRecordAsync(string ownerId, int equipmentId, EquipmentMaintenanceRecordInputModel model);
+        Task<bool> DeleteMaintenanceRecordAsync(string ownerId, int recordId);
     }
 
     public class EquipmentService : IEquipmentService
@@ -38,6 +43,7 @@ namespace KrishiLink.BLL.Services
         private readonly IRepository<EquipmentBooking> _bookings;
         private readonly IRepository<EquipmentBlockedDate> _blockedDates;
         private readonly IRepository<ApplicationUser> _users;
+        private readonly IRepository<EquipmentMaintenanceRecord> _maintenanceRecords;
         private readonly IFileStorageService _files;
         private readonly IReviewService _reviews;
         private readonly INotificationService _notifications;
@@ -47,6 +53,7 @@ namespace KrishiLink.BLL.Services
             IRepository<EquipmentBooking> bookings,
             IRepository<EquipmentBlockedDate> blockedDates,
             IRepository<ApplicationUser> users,
+            IRepository<EquipmentMaintenanceRecord> maintenanceRecords,
             IFileStorageService files,
             IReviewService reviews,
             INotificationService notifications)
@@ -55,6 +62,7 @@ namespace KrishiLink.BLL.Services
             _bookings = bookings;
             _blockedDates = blockedDates;
             _users = users;
+            _maintenanceRecords = maintenanceRecords;
             _files = files;
             _reviews = reviews;
             _notifications = notifications;
@@ -112,25 +120,63 @@ namespace KrishiLink.BLL.Services
                 _ => query.OrderByDescending(e => e.CreatedAt)
             };
 
-            var items = await query.Select(e => new EquipmentItemViewModel
+            var rawItems = await query.Select(e => new
             {
-                Id = e.Id,
-                Name = e.Name,
-                Category = e.Category,
-                DailyRate = e.DailyRate,
-                HourlyRate = e.HourlyRate,
-                Location = e.Location,
-                Latitude = e.Latitude,
-                Longitude = e.Longitude,
-                IsAvailable = e.IsAvailable,
+                e.Id,
+                e.Name,
+                e.Category,
+                e.DailyRate,
+                e.HourlyRate,
+                e.Location,
+                e.Latitude,
+                e.Longitude,
+                e.IsAvailable,
                 ImageUrl = e.ImageUrls,
                 OwnerName = e.Owner!.FullName,
                 OwnerIsVerified = e.Owner.IsVerified,
+                OwnerVerificationStatus = e.Owner.VerificationStatus,
                 Rating = e.AverageRating,
                 ReviewCount = e.ReviewCount,
-                CreatedAt = e.CreatedAt
+                CreatedAt = e.CreatedAt,
+                LatestServiceDate = e.MaintenanceRecords.OrderByDescending(m => m.ServiceDate).Select(m => (DateTime?)m.ServiceDate).FirstOrDefault()
             }).ToListAsync();
-            items.ForEach(i => i.ImageUrl = ListingFormat.Split(i.ImageUrl).FirstOrDefault() ?? string.Empty);
+
+            var items = rawItems.Select(e =>
+            {
+                int? daysAgo = e.LatestServiceDate.HasValue
+                    ? Math.Max(0, (DateTime.Today - e.LatestServiceDate.Value.Date).Days)
+                    : null;
+
+                string? lastServicedText = daysAgo switch
+                {
+                    null => null,
+                    0 => "Serviced today",
+                    1 => "Serviced yesterday",
+                    _ => $"Serviced {daysAgo} days ago"
+                };
+
+                return new EquipmentItemViewModel
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Category = e.Category,
+                    DailyRate = e.DailyRate,
+                    HourlyRate = e.HourlyRate,
+                    Location = e.Location,
+                    Latitude = e.Latitude,
+                    Longitude = e.Longitude,
+                    IsAvailable = e.IsAvailable,
+                    ImageUrl = ListingFormat.Split(e.ImageUrl).FirstOrDefault() ?? string.Empty,
+                    OwnerName = e.OwnerName,
+                    OwnerIsVerified = e.OwnerIsVerified,
+                    OwnerVerificationStatus = e.OwnerVerificationStatus ?? "Unverified",
+                    Rating = e.Rating,
+                    ReviewCount = e.ReviewCount,
+                    LastServicedDaysAgo = daysAgo,
+                    LastServicedText = lastServicedText,
+                    CreatedAt = e.CreatedAt
+                };
+            }).ToList();
 
             var model = new EquipmentBrowseViewModel
             {
@@ -192,6 +238,36 @@ namespace KrishiLink.BLL.Services
             var bookedDates = accepted.SelectMany(b => EachDay(b.StartDate, b.EndDate)).Concat(blocked).Distinct().OrderBy(d => d).ToList();
             var reviewsList = await _reviews.GetReviewsForEquipmentAsync(id);
 
+            var maintenanceLogs = await _maintenanceRecords.Query()
+                .Where(m => m.EquipmentId == id)
+                .OrderByDescending(m => m.ServiceDate)
+                .ThenByDescending(m => m.CreatedAt)
+                .Select(m => new EquipmentMaintenanceItemViewModel
+                {
+                    Id = m.Id,
+                    EquipmentId = m.EquipmentId,
+                    ServiceDate = m.ServiceDate,
+                    ServiceType = m.ServiceType,
+                    Description = m.Description,
+                    Cost = m.Cost,
+                    ServicedBy = m.ServicedBy,
+                    CreatedAt = m.CreatedAt
+                })
+                .ToListAsync();
+
+            var latestService = maintenanceLogs.FirstOrDefault();
+            int? lastServicedDaysAgo = latestService != null
+                ? Math.Max(0, (DateTime.Today - latestService.ServiceDate.Date).Days)
+                : null;
+
+            string? lastServicedText = lastServicedDaysAgo switch
+            {
+                null => null,
+                0 => "Serviced today",
+                1 => "Serviced yesterday",
+                _ => $"Serviced {lastServicedDaysAgo} days ago"
+            };
+
             var lat = e.Latitude;
             var lng = e.Longitude;
             if (!lat.HasValue || !lng.HasValue)
@@ -225,7 +301,11 @@ namespace KrishiLink.BLL.Services
                 ReviewCount = e.ReviewCount,
                 ImageUrls = ListingFormat.Split(e.ImageUrls),
                 BookedDates = bookedDates,
-                Reviews = reviewsList
+                Reviews = reviewsList,
+                LastServicedDate = latestService?.ServiceDate,
+                LastServicedDaysAgo = lastServicedDaysAgo,
+                LastServicedText = lastServicedText,
+                MaintenanceHistory = maintenanceLogs
             };
         }
 
@@ -276,7 +356,7 @@ namespace KrishiLink.BLL.Services
         public async Task<EquipmentOwnerDashboardViewModel> GetOwnerDashboardAsync(string ownerId)
         {
             var today = DateTime.Today;
-            var listings = await _equipment.Query()
+            var rawListings = await _equipment.Query()
                 .Where(e => e.OwnerId == ownerId)
                 .OrderByDescending(e => e.CreatedAt)
                 .Select(e => new
@@ -287,25 +367,45 @@ namespace KrishiLink.BLL.Services
                     e.DailyRate,
                     e.ImageUrls,
                     e.IsAvailable,
-                    RentedToday = e.Bookings.Any(b => b.Status == BookingStatus.Accepted && b.StartDate <= today && today <= b.EndDate)
+                    RentedToday = e.Bookings.Any(b => b.Status == BookingStatus.Accepted && b.StartDate <= today && today <= b.EndDate),
+                    LatestServiceDate = e.MaintenanceRecords.OrderByDescending(m => m.ServiceDate).Select(m => (DateTime?)m.ServiceDate).FirstOrDefault()
                 })
                 .ToListAsync();
 
             var requests = await OwnerBookingsQuery(ownerId).Where(b => b.Status == BookingStatus.Pending).ToListAsync();
 
-            return new EquipmentOwnerDashboardViewModel
+            var listings = rawListings.Select(l =>
             {
-                TotalListings = listings.Count,
-                ActiveRentals = listings.Count(l => l.RentedToday),
-                Listings = listings.Select(l => new OwnerListingItem
+                int? daysAgo = l.LatestServiceDate.HasValue
+                    ? Math.Max(0, (today - l.LatestServiceDate.Value.Date).Days)
+                    : null;
+
+                string? lastServicedText = daysAgo switch
+                {
+                    null => null,
+                    0 => "Serviced today",
+                    1 => "Serviced yesterday",
+                    _ => $"Serviced {daysAgo}d ago"
+                };
+
+                return new OwnerListingItem
                 {
                     Id = l.Id,
                     Name = l.Name,
                     Category = l.Category,
                     DailyRate = $"{ListingFormat.Taka(l.DailyRate)} / Day",
                     ImageUrl = ListingFormat.Split(l.ImageUrls).FirstOrDefault() ?? string.Empty,
-                    Status = l.RentedToday ? "Rented" : l.IsAvailable ? "Available" : "Unavailable"
-                }).ToList(),
+                    Status = l.RentedToday ? "Rented" : l.IsAvailable ? "Available" : "Unavailable",
+                    LastServicedDaysAgo = daysAgo,
+                    LastServicedText = lastServicedText
+                };
+            }).ToList();
+
+            return new EquipmentOwnerDashboardViewModel
+            {
+                TotalListings = listings.Count,
+                ActiveRentals = rawListings.Count(l => l.RentedToday),
+                Listings = listings,
                 PendingRequestItems = requests.Select(ToRequestItem).OrderByDescending(r => r.RequestedOn).ToList()
             };
         }
@@ -609,6 +709,103 @@ namespace KrishiLink.BLL.Services
                 await _blockedDates.AddAsync(new EquipmentBlockedDate { EquipmentId = equipmentId, Date = date });
 
             await _blockedDates.SaveChangesAsync();
+            return true;
+        }
+
+        // ---------------------------------------------------------------- Equipment Health Tracker
+
+        public async Task<EquipmentMaintenanceDashboardViewModel?> GetMaintenanceDashboardAsync(string ownerId, int equipmentId)
+        {
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == equipmentId && x.OwnerId == ownerId);
+            if (e is null) return null;
+
+            var records = await _maintenanceRecords.Query()
+                .Where(m => m.EquipmentId == equipmentId)
+                .OrderByDescending(m => m.ServiceDate)
+                .ThenByDescending(m => m.CreatedAt)
+                .Select(m => new EquipmentMaintenanceItemViewModel
+                {
+                    Id = m.Id,
+                    EquipmentId = m.EquipmentId,
+                    ServiceDate = m.ServiceDate,
+                    ServiceType = m.ServiceType,
+                    Description = m.Description,
+                    Cost = m.Cost,
+                    ServicedBy = m.ServicedBy,
+                    CreatedAt = m.CreatedAt
+                })
+                .ToListAsync();
+
+            var totalCost = records.Sum(r => r.Cost);
+            var latest = records.FirstOrDefault();
+            int? daysSince = latest != null ? Math.Max(0, (DateTime.Today - latest.ServiceDate.Date).Days) : null;
+
+            var (statusText, badgeClass) = daysSince switch
+            {
+                null => ("No maintenance logged yet", "bg-secondary"),
+                <= 30 => ($"Serviced {daysSince} days ago (Prime Condition)", "bg-success"),
+                <= 90 => ($"Serviced {daysSince} days ago (Good Condition)", "bg-info"),
+                _ => ($"Serviced {daysSince} days ago (Service Recommended)", "bg-warning text-dark")
+            };
+
+            return new EquipmentMaintenanceDashboardViewModel
+            {
+                EquipmentId = e.Id,
+                EquipmentName = e.Name,
+                Category = e.Category,
+                Location = e.Location,
+                PrimaryImageUrl = ListingFormat.Split(e.ImageUrls).FirstOrDefault() ?? string.Empty,
+                DailyRate = $"{ListingFormat.Taka(e.DailyRate)} / Day",
+                IsAvailable = e.IsAvailable,
+                TotalMaintenanceCost = totalCost,
+                LastServicedDate = latest?.ServiceDate,
+                DaysSinceLastService = daysSince,
+                LastServicedStatusText = statusText,
+                HealthBadgeClass = badgeClass,
+                Records = records,
+                NewRecord = new EquipmentMaintenanceRecordInputModel
+                {
+                    EquipmentId = e.Id,
+                    ServiceDate = DateTime.Today
+                }
+            };
+        }
+
+        public async Task<(bool Success, string? Error)> AddMaintenanceRecordAsync(string ownerId, int equipmentId, EquipmentMaintenanceRecordInputModel model)
+        {
+            var isOwner = await _equipment.Query().AnyAsync(e => e.Id == equipmentId && e.OwnerId == ownerId);
+            if (!isOwner) return (false, "Equipment listing not found or access denied.");
+
+            if (model.ServiceDate.Date > DateTime.Today)
+                return (false, "Service date cannot be in the future.");
+
+            var record = new EquipmentMaintenanceRecord
+            {
+                EquipmentId = equipmentId,
+                ServiceDate = model.ServiceDate.Date,
+                ServiceType = model.ServiceType.Trim(),
+                Description = model.Description.Trim(),
+                Cost = Math.Max(0, model.Cost),
+                ServicedBy = string.IsNullOrWhiteSpace(model.ServicedBy) ? null : model.ServicedBy.Trim(),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _maintenanceRecords.AddAsync(record);
+            await _maintenanceRecords.SaveChangesAsync();
+
+            return (true, null);
+        }
+
+        public async Task<bool> DeleteMaintenanceRecordAsync(string ownerId, int recordId)
+        {
+            var record = await _maintenanceRecords.QueryTracked()
+                .Include(m => m.Equipment)
+                .FirstOrDefaultAsync(m => m.Id == recordId && m.Equipment!.OwnerId == ownerId);
+
+            if (record is null) return false;
+
+            _maintenanceRecords.Remove(record);
+            await _maintenanceRecords.SaveChangesAsync();
             return true;
         }
 
