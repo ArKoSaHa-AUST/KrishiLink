@@ -20,15 +20,12 @@ namespace KrishiLink.DAL.Migrations
                 oldType: "nvarchar(30)",
                 oldMaxLength: 30);
 
-            migrationBuilder.AlterColumn<string>(
-                name: "NidLast4",
-                table: "VerificationRequests",
-                type: "nvarchar(10)",
-                maxLength: 10,
-                nullable: true,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(max)",
-                oldNullable: true);
+            // NidLast4 was introduced without an AddColumn, so a fresh database has no column to alter.
+            migrationBuilder.Sql(@"
+IF COL_LENGTH(N'[VerificationRequests]', N'NidLast4') IS NULL
+    ALTER TABLE [VerificationRequests] ADD [NidLast4] nvarchar(10) NULL;
+ELSE
+    ALTER TABLE [VerificationRequests] ALTER COLUMN [NidLast4] nvarchar(10) NULL;");
         }
 
         /// <inheritdoc />

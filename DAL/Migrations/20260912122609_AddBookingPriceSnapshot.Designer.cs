@@ -4,6 +4,7 @@ using KrishiLink.DAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace KrishiLink.DAL.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260912122609_AddBookingPriceSnapshot")]
+    partial class AddBookingPriceSnapshot
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -523,12 +526,6 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<string>("Note")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("PaidOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("PaymentId")
-                        .HasColumnType("int");
-
                     b.Property<int?>("PayoutId")
                         .HasColumnType("int");
 
@@ -561,8 +558,6 @@ namespace KrishiLink.DAL.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FarmerId");
-
-                    b.HasIndex("PaymentId");
 
                     b.HasIndex("PayoutId");
 
@@ -767,12 +762,6 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<string>("Note")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("PaidOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("PaymentId")
-                        .HasColumnType("int");
-
                     b.Property<int?>("PayoutId")
                         .HasColumnType("int");
 
@@ -809,80 +798,11 @@ namespace KrishiLink.DAL.Migrations
 
                     b.HasIndex("FarmerId");
 
-                    b.HasIndex("PaymentId");
-
                     b.HasIndex("PayoutId");
 
                     b.HasIndex("GodownId", "Status");
 
                     b.ToTable("GodownBookings");
-                });
-
-            modelBuilder.Entity("KrishiLink.Models.Entities.LedgerEntry", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int?>("BookingId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("BookingType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("CreditAccount")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("DebitAccount")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("Note")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime>("OccurredOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("PaymentId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("PayoutId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("UserId")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreditAccount");
-
-                    b.HasIndex("DebitAccount");
-
-                    b.HasIndex("PaymentId");
-
-                    b.HasIndex("PayoutId");
-
-                    b.HasIndex("BookingType", "BookingId");
-
-                    b.ToTable("LedgerEntries");
                 });
 
             modelBuilder.Entity("KrishiLink.Models.Entities.LoyaltyPointTransaction", b =>
@@ -1082,80 +1002,6 @@ namespace KrishiLink.DAL.Migrations
                     b.ToTable("VerificationRequests");
                 });
 
-            modelBuilder.Entity("KrishiLink.Models.Entities.Payment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("Amount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("BookingId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("BookingType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FailureReason")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("FarmerId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("GatewayReference")
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)");
-
-                    b.Property<string>("Method")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<DateTime?>("PaidOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("PayerAccount")
-                        .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)");
-
-                    b.Property<string>("Reference")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<DateTime?>("RefundedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FarmerId");
-
-                    b.HasIndex("GatewayReference");
-
-                    b.HasIndex("Reference")
-                        .IsUnique();
-
-                    b.HasIndex("BookingType", "BookingId");
-
-                    b.ToTable("Payments");
-                });
-
             modelBuilder.Entity("KrishiLink.Models.Entities.Review", b =>
                 {
                     b.Property<int>("Id")
@@ -1236,10 +1082,6 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<decimal>("Commission")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("FailureReason")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
 
                     b.Property<decimal>("GrossAmount")
                         .HasPrecision(18, 2)
@@ -1513,11 +1355,6 @@ namespace KrishiLink.DAL.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("KrishiLink.Models.Entities.Payment", "Payment")
-                        .WithMany()
-                        .HasForeignKey("PaymentId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
                     b.HasOne("KrishiLink.Models.Entities.Transaction", "Payout")
                         .WithMany()
                         .HasForeignKey("PayoutId")
@@ -1526,8 +1363,6 @@ namespace KrishiLink.DAL.Migrations
                     b.Navigation("Equipment");
 
                     b.Navigation("Farmer");
-
-                    b.Navigation("Payment");
 
                     b.Navigation("Payout");
                 });
@@ -1579,11 +1414,6 @@ namespace KrishiLink.DAL.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("KrishiLink.Models.Entities.Payment", "Payment")
-                        .WithMany()
-                        .HasForeignKey("PaymentId")
-                        .OnDelete(DeleteBehavior.NoAction);
-
                     b.HasOne("KrishiLink.Models.Entities.Transaction", "Payout")
                         .WithMany()
                         .HasForeignKey("PayoutId")
@@ -1592,8 +1422,6 @@ namespace KrishiLink.DAL.Migrations
                     b.Navigation("Farmer");
 
                     b.Navigation("Godown");
-
-                    b.Navigation("Payment");
 
                     b.Navigation("Payout");
                 });
@@ -1629,17 +1457,6 @@ namespace KrishiLink.DAL.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("KrishiLink.Models.Entities.Payment", b =>
-                {
-                    b.HasOne("KrishiLink.Models.Entities.ApplicationUser", "Farmer")
-                        .WithMany()
-                        .HasForeignKey("FarmerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Farmer");
                 });
 
             modelBuilder.Entity("KrishiLink.Models.Entities.Review", b =>

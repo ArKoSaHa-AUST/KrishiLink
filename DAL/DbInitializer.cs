@@ -1,9 +1,11 @@
 using KrishiLink.BLL.Helpers;
+using KrishiLink.BLL.Services;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace KrishiLink.DAL
 {
@@ -31,6 +33,20 @@ namespace KrishiLink.DAL
                 await SeedDemoDataAsync(db, services.GetRequiredService<UserManager<ApplicationUser>>());
             else if (seedDemoData && !await db.Reviews.AnyAsync())
                 await SeedDemoReviewsAsync(db);
+
+            var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(DbInitializer));
+            var commissionRate = services.GetRequiredService<IOptions<RevenueOptions>>().Value.PlatformCommissionRate;
+            var backfilled = await BackfillPriceSnapshotsAsync(db, commissionRate);
+            if (backfilled > 0) logger.LogInformation("Backfilled price snapshots on {Count} legacy booking(s).", backfilled);
+
+            var conservation = services.GetRequiredService<ILedgerService>().CheckConservation();
+            if (conservation.Ok)
+                logger.LogInformation("Ledger conservation OK: {Detail}", conservation.Detail);
+            else
+            {
+                logger.LogWarning("Ledger conservation FAILED (lhs={Lhs}, rhs={Rhs}): {Detail}", conservation.Lhs, conservation.Rhs, conservation.Detail);
+                if (seedDemoData) throw new InvalidOperationException($"Seeded ledger does not conserve money: {conservation.Detail}");
+            }
 
             // Idempotent migration of legacy verification uploads from wwwroot to App_Data
             var env = services.GetService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
@@ -283,17 +299,19 @@ namespace KrishiLink.DAL
             await db.SaveChangesAsync();
 
             // Payouts settle specific completed bookings (oldest first); the newest completed booking is left unpaid
-            // so the demo owners have a visible pending balance.
+            // so the demo owners have a visible pending balance. Processing payouts are dated so the settlement
+            // service completes them shortly after startup, and one failed transfer shows the retry path.
             var eqRepo = new EquipmentRevenueRepository(db);
             var eqCompleted = eqRepo.GetBookings(eqOwner.Id).Where(b => b.Status == BookingStatus.Completed).OrderBy(b => b.EndDate).ToList();
-            Settle(eqRepo, eqOwner, eqCompleted.Take(2), "bKash", -95, "Completed");
-            Settle(eqRepo, eqOwner, eqCompleted.Skip(2).Take(1), "Nagad", -35, "Completed");
-            Settle(eqRepo, eqOwner, eqCompleted.Skip(3).Take(1), "bKash", -3, "Processing");
+            Settle(eqRepo, eqOwner, "Equipment", eqCompleted.Take(2), "bKash", -95, PayoutStatus.Completed);
+            Settle(eqRepo, eqOwner, "Equipment", eqCompleted.Skip(2).Take(1), "Nagad", -36, PayoutStatus.Failed, account: "01700000000");
+            Settle(eqRepo, eqOwner, "Equipment", eqCompleted.Skip(2).Take(1), "Nagad", -35, PayoutStatus.Completed);
+            Settle(eqRepo, eqOwner, "Equipment", eqCompleted.Skip(3).Take(1), "bKash", 0, PayoutStatus.Processing);
 
             var gdRepo = new GodownRevenueRepository(db);
             var gdCompleted = gdRepo.GetBookings(gdOwner.Id).Where(b => b.Status == BookingStatus.Completed).OrderBy(b => b.EndDate).ToList();
-            Settle(gdRepo, gdOwner, gdCompleted.Take(1), "Bank Transfer", -60, "Completed");
-            Settle(gdRepo, gdOwner, gdCompleted.Skip(1).Take(1), "bKash", -2, "Processing");
+            Settle(gdRepo, gdOwner, "Godown", gdCompleted.Take(1), "Bank Transfer", -60, PayoutStatus.Completed);
+            Settle(gdRepo, gdOwner, "Godown", gdCompleted.Skip(1).Take(1), "bKash", 0, PayoutStatus.Processing);
 
             var completedRental = await db.EquipmentBookings.FirstAsync(b => b.EquipmentId == equipment[1].Id && b.Status == BookingStatus.Completed);
             var completedStorage = await db.GodownBookings.FirstAsync(b => b.GodownId == godowns[1].Id && b.Status == BookingStatus.Completed);
@@ -301,6 +319,8 @@ namespace KrishiLink.DAL
                 new BookingExpense { BookingType = "Equipment", BookingId = completedRental.Id, OwnerId = eqOwner.Id, Amount = 2500, Note = "Diesel for harvester", RecordedOn = today.AddDays(-113) },
                 new BookingExpense { BookingType = "Godown", BookingId = completedStorage.Id, OwnerId = gdOwner.Id, Amount = 4500, Note = "Fumigation before intake", RecordedOn = today.AddDays(-149) });
             await db.SaveChangesAsync();
+
+            await SeedDemoPaymentsAndLedgerAsync(db);
 
             // Seed initial reviews for completed bookings
             await SeedDemoReviewsAsync(db);
@@ -537,8 +557,9 @@ namespace KrishiLink.DAL
             };
         }
 
-        private static EquipmentBooking Rental(Equipment e, ApplicationUser farmer, int startOffset, int endOffset, string status, int requestedOffset, string? note = null, string? reject = null) =>
-            new()
+        private static EquipmentBooking Rental(Equipment e, ApplicationUser farmer, int startOffset, int endOffset, string status, int requestedOffset, string? note = null, string? reject = null)
+        {
+            var b = new EquipmentBooking
             {
                 EquipmentId = e.Id,
                 FarmerId = farmer.Id,
@@ -550,9 +571,13 @@ namespace KrishiLink.DAL
                 RequestedOn = DateTime.Now.AddDays(requestedOffset).AddHours(-2),
                 UpdatedOn = status == BookingStatus.Pending ? null : DateTime.Now.AddDays(requestedOffset).AddHours(4)
             };
+            Snapshot(b, e.DailyRate, BookingPricing.EquipmentGross(b.StartDate, b.EndDate, e.DailyRate));
+            return b;
+        }
 
-        private static GodownBooking StorageBooking(Godown g, ApplicationUser farmer, double tons, int startOffset, int endOffset, string status, int requestedOffset, string? note = null, string? reject = null) =>
-            new()
+        private static GodownBooking StorageBooking(Godown g, ApplicationUser farmer, double tons, int startOffset, int endOffset, string status, int requestedOffset, string? note = null, string? reject = null)
+        {
+            var b = new GodownBooking
             {
                 GodownId = g.Id,
                 FarmerId = farmer.Id,
@@ -565,29 +590,139 @@ namespace KrishiLink.DAL
                 RequestedOn = DateTime.Now.AddDays(requestedOffset).AddHours(-3),
                 UpdatedOn = status == BookingStatus.Pending ? null : DateTime.Now.AddDays(requestedOffset).AddHours(5)
             };
+            Snapshot(b, g.PricePerTonPerMonth, BookingPricing.GodownGross(b.StartDate, b.EndDate, tons, g.PricePerTonPerMonth));
+            return b;
+        }
 
-        /// <summary>Creates one payout covering the given bookings (5% commission) and links them to it.</summary>
-        private static void Settle(IOwnerRevenueRepository repo, ApplicationUser owner, IEnumerable<RevenueBooking> bookings, string method, int daysAgo, string status)
+        /// <summary>Mirrors what RespondAsync records at acceptance, so seeded history obeys the same rules as live data.</summary>
+        private static void Snapshot(IPayableBooking b, decimal rate, decimal gross)
+        {
+            if (b.Status is BookingStatus.Pending or BookingStatus.Rejected) return;
+            b.AgreedRate = rate;
+            b.AgreedGross = gross;
+            b.CommissionRate = SeedCommissionRate;
+            if (b.Status == BookingStatus.Completed) b.CompletedOn = b.EndDate.AddHours(17);
+        }
+
+        /// <summary>Creates one payout covering the given bookings (commission from each booking's snapshot) and links them to it.</summary>
+        private static void Settle(IOwnerRevenueRepository repo, ApplicationUser owner, string listingType, IEnumerable<RevenueBooking> bookings, string method, int daysAgo, string status, string? account = null)
         {
             var list = bookings.ToList();
             if (list.Count == 0) return;
 
             var gross = list.Sum(b => b.Gross);
-            var commission = list.Sum(b => decimal.Round(b.Gross * 0.05m, 0));
-            var date = DateTime.Today.AddDays(daysAgo);
+            var commission = list.Sum(b => BookingPricing.Commission(b.Gross, b.CommissionRateSnapshot));
+            var date = daysAgo == 0 ? DateTime.Now.AddSeconds(-90) : DateTime.Today.AddDays(daysAgo);
             var payoutId = repo.AddPayout(new Transaction
             {
                 UserId = owner.Id,
                 Reference = $"KL-PO-{date:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
+                ListingType = listingType,
                 GrossAmount = gross,
                 Commission = commission,
                 Amount = gross - commission,
                 PaymentMethod = method,
-                PayoutAccount = method == "Bank Transfer" ? "0123456789012" : owner.PhoneNumber,
+                PayoutAccount = account ?? (method == "Bank Transfer" ? "0123456789012" : owner.PhoneNumber),
                 Status = status,
-                TransactionDate = date
+                TransactionDate = date,
+                SettledOn = status == PayoutStatus.Processing ? null : date.AddHours(6),
+                FailureReason = status == PayoutStatus.Failed ? BLL.Services.PayoutSettlementService.RejectedAccountReason : null
             });
-            repo.MarkBookingsPaid(list.Select(b => b.Id), payoutId);
+            // A failed transfer leaves its bookings in the owed balance, exactly as the settlement service does.
+            if (status != PayoutStatus.Failed) repo.MarkBookingsPaid(list.Select(b => b.Id), payoutId);
+        }
+
+        private const decimal SeedCommissionRate = 0.05m;
+
+        /// <summary>
+        /// Gives every seeded Completed booking (and one Accepted booking per type) a succeeded escrow payment, adds one failed
+        /// attempt for history, then writes the ledger rows that the live flow would have produced for each event.
+        /// </summary>
+        private static async Task SeedDemoPaymentsAndLedgerAsync(ApplicationDbContext db)
+        {
+            var rentals = await db.EquipmentBookings.Include(b => b.Equipment).Where(b => b.Status != BookingStatus.Pending).ToListAsync();
+            var storage = await db.GodownBookings.Include(b => b.Godown).Where(b => b.Status != BookingStatus.Pending).ToListAsync();
+
+            var methods = PaymentMethods.All;
+            var i = 0;
+            Payment Pay(IPayableBooking b, string type, string status, DateTime on, string? failure = null) => new()
+            {
+                BookingType = type,
+                BookingId = b.Id,
+                FarmerId = b.FarmerId,
+                Amount = b.AgreedGross ?? 0,
+                Method = methods[i++ % methods.Length],
+                PayerAccount = "017" + (10000000 + b.Id * 7919).ToString()[..8],
+                Reference = $"KL-PM-{on:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
+                GatewayReference = "SIM-" + Guid.NewGuid().ToString("N")[..10].ToUpperInvariant(),
+                Status = status,
+                CreatedOn = on.AddMinutes(-3),
+                PaidOn = status == PaymentStatus.Succeeded ? on : null,
+                FailureReason = failure
+            };
+
+            var payments = new List<(Payment Payment, IPayableBooking Booking)>();
+            foreach (var b in rentals.Where(b => b.Status == BookingStatus.Completed))
+                payments.Add((Pay(b, "Equipment", PaymentStatus.Succeeded, b.StartDate.AddDays(-1).AddHours(10)), b));
+            foreach (var b in storage.Where(b => b.Status == BookingStatus.Completed))
+                payments.Add((Pay(b, "Godown", PaymentStatus.Succeeded, b.StartDate.AddDays(-1).AddHours(11)), b));
+
+            // One paid + one unpaid Accepted booking per type so the demo shows both "Payment required" and "Paid".
+            var paidRental = rentals.Where(b => b.Status == BookingStatus.Accepted).OrderBy(b => b.StartDate).First();
+            var paidStorage = storage.Where(b => b.Status == BookingStatus.Accepted).OrderBy(b => b.StartDate).First();
+            payments.Add((Pay(paidRental, "Equipment", PaymentStatus.Succeeded, paidRental.UpdatedOn!.Value.AddHours(3)), paidRental));
+            payments.Add((Pay(paidStorage, "Godown", PaymentStatus.Succeeded, paidStorage.UpdatedOn!.Value.AddHours(2)), paidStorage));
+
+            var failedOn = rentals.Where(b => b.Status == BookingStatus.Accepted && b.Id != paidRental.Id).First();
+            db.Payments.Add(Pay(failedOn, "Equipment", PaymentStatus.Failed, failedOn.UpdatedOn!.Value.AddHours(1), "Insufficient balance (simulated)"));
+
+            foreach (var (p, b) in payments)
+            {
+                db.Payments.Add(p);
+                b.Payment = p;
+                b.PaidOn = p.PaidOn;
+                if (b.Status == BookingStatus.Accepted) b.Status = BookingStatus.Paid;
+            }
+            await db.SaveChangesAsync();
+
+            // Ledger: PaymentIn per succeeded payment, CommissionEarned per completed booking, PayoutOut per completed payout.
+            foreach (var (p, _) in payments) db.LedgerEntries.Add(LedgerPostings.PaymentIn(p));
+            foreach (var b in rentals.Where(b => b.Status == BookingStatus.Completed)) db.LedgerEntries.Add(LedgerPostings.CommissionEarned("Equipment", b, b.Equipment!.OwnerId));
+            foreach (var b in storage.Where(b => b.Status == BookingStatus.Completed)) db.LedgerEntries.Add(LedgerPostings.CommissionEarned("Godown", b, b.Godown!.OwnerId));
+            foreach (var t in await db.Transactions.Where(t => t.Status == PayoutStatus.Completed).ToListAsync()) db.LedgerEntries.Add(LedgerPostings.PayoutOut(t));
+            await db.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Idempotent: bookings accepted before price snapshots existed get one computed from the current listing price,
+        /// so revenue, invoices and payouts stop depending on live rates. Returns how many rows were updated.
+        /// </summary>
+        private static async Task<int> BackfillPriceSnapshotsAsync(ApplicationDbContext db, decimal commissionRate)
+        {
+            var priced = new[] { BookingStatus.Accepted, BookingStatus.Paid, BookingStatus.Completed };
+            var rentals = await db.EquipmentBookings.Include(b => b.Equipment)
+                .Where(b => b.AgreedGross == null && priced.Contains(b.Status))
+                .ToListAsync();
+            foreach (var b in rentals)
+            {
+                b.AgreedRate = b.Equipment!.DailyRate;
+                b.AgreedGross = BookingPricing.EquipmentGross(b.StartDate, b.EndDate, b.Equipment.DailyRate);
+                b.CommissionRate = commissionRate;
+            }
+
+            var storage = await db.GodownBookings.Include(b => b.Godown)
+                .Where(b => b.AgreedGross == null && priced.Contains(b.Status))
+                .ToListAsync();
+            foreach (var b in storage)
+            {
+                b.AgreedRate = b.Godown!.PricePerTonPerMonth;
+                b.AgreedGross = BookingPricing.GodownGross(b.StartDate, b.EndDate, b.StorageTons, b.Godown.PricePerTonPerMonth);
+                b.CommissionRate = commissionRate;
+            }
+
+            var count = rentals.Count + storage.Count;
+            if (count > 0) await db.SaveChangesAsync();
+            return count;
         }
 
         private static async Task SeedDemoLoyaltyPointsAsync(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
@@ -806,7 +941,7 @@ namespace KrishiLink.DAL
                     GrowingMonths = new List<int> { 11, 12, 1 },
                     HarvestingMonths = new List<int> { 1, 2, 3 },
                     DurationDays = "85 – 100 Days",
-                    OptimalTemperature = "15°C – 22°C (Cool nights essential for tuberization)",
+                    OptimalTemperature = "15°C – 22°C (Cool nights needed for tuberization)",
                     SoilTypes = "Sandy Loam, Silt Loam with organic matter (বেলে-দোআঁশ)",
                     WaterRequirement = "Medium — 3-4 light irrigations; strictly avoid waterlogging",
                     PopularVarieties = "Diamant, Cardinal, Granola, Asterix, BARI Alu 7, BARI Alu 41",
@@ -1026,7 +1161,7 @@ namespace KrishiLink.DAL
                     GrowingMonths = new List<int> { 11, 12 },
                     HarvestingMonths = new List<int> { 1, 2, 3 },
                     DurationDays = "90 – 110 Days",
-                    OptimalTemperature = "18°C – 27°C (Night temp 15°C-18°C triggers flowering)",
+                    OptimalTemperature = "18°C – 27°C (Nights of 15–18°C trigger flowering)",
                     SoilTypes = "Rich Loam, Sandy Loam (উর্বর দোআঁশ)",
                     WaterRequirement = "Medium — regular furrow irrigation; avoid splashing leaves to prevent blight",
                     PopularVarieties = "BARI Tomato 14, BARI Tomato 15, Ratan, Bahar, Beautiful",
@@ -1114,7 +1249,7 @@ namespace KrishiLink.DAL
                     GrowingMonths = new List<int> { 1, 2 },
                     HarvestingMonths = new List<int> { 3, 4, 5 },
                     DurationDays = "80 – 95 Days",
-                    OptimalTemperature = "24°C – 35°C (Warm sunshine promotes high sugar content)",
+                    OptimalTemperature = "24°C – 35°C (Warm sun raises sugar content)",
                     SoilTypes = "Sandy Loam, River Char lands (বেলে-দোআঁশ ও নদীর চর)",
                     WaterRequirement = "Medium — pit method with localized basin watering; avoid flooding vines",
                     PopularVarieties = "Dragon, Black Diamond, Pakiza, Sweet Miracle, Big Top",

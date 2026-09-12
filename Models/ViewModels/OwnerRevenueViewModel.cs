@@ -90,6 +90,9 @@ namespace KrishiLink.Models.ViewModels
         public decimal PaidOut { get; set; }
         public decimal Processing { get; set; }
 
+        /// <summary>Farmer money the platform holds for this owner's Paid (not yet completed) bookings.</summary>
+        public decimal InEscrow { get; set; }
+
         /// <summary>Running "pending payout": net revenue of completed bookings not yet linked to any payout.</summary>
         public decimal Owed { get; set; }
         public int UnpaidBookings { get; set; }
@@ -108,7 +111,11 @@ namespace KrishiLink.Models.ViewModels
         public decimal Amount { get; set; }
         public string Method { get; set; } = string.Empty;
         public string? Account { get; set; }
+
+        /// <summary>Processing | Completed | Failed</summary>
         public string Status { get; set; } = "Completed";
+        public DateTime? SettledOn { get; set; }
+        public string? FailureReason { get; set; }
 
         /// <summary>How many completed bookings this payout settled.</summary>
         public int BookingCount { get; set; }
@@ -120,6 +127,9 @@ namespace KrishiLink.Models.ViewModels
         public string ListingLabel { get; set; } = string.Empty;
         public RevenueSettlement Settlement { get; set; } = new();
         public int CompletedBookings { get; set; }
+
+        /// <summary>How long a requested payout takes to settle automatically (for the note under the form).</summary>
+        public TimeSpan SettlementDelay { get; set; }
         public static readonly string[] PayoutMethods = { "bKash", "Nagad", "Rocket", "Bank Transfer" };
     }
 
@@ -158,17 +168,18 @@ namespace KrishiLink.Models.ViewModels
     {
         public int Requested { get; set; }
         public int Accepted { get; set; }
+        public int Paid { get; set; }
         public int Ongoing { get; set; }
         public int Completed { get; set; }
         public int Cancelled { get; set; }
         public int Rejected { get; set; }
 
-        /// <summary>Cancelled ÷ (Accepted + Completed + Cancelled), as a percentage.</summary>
+        /// <summary>Cancelled ÷ (Accepted + Paid + Completed + Cancelled), as a percentage.</summary>
         public int CancellationRatePercent
         {
             get
             {
-                var confirmed = Accepted + Completed + Cancelled;
+                var confirmed = Accepted + Paid + Completed + Cancelled;
                 return confirmed > 0 ? (int)Math.Round(Cancelled * 100.0 / confirmed) : 0;
             }
         }
@@ -191,7 +202,11 @@ namespace KrishiLink.Models.ViewModels
 
         /// <summary>Reference of the payout that settled this booking; null while unpaid.</summary>
         public string? PayoutReference { get; set; }
-        public bool IsPaid => PayoutReference is not null;
+        public bool IsPaidOut => PayoutReference is not null;
+
+        /// <summary>True once the farmer's escrow payment succeeded.</summary>
+        public bool IsPaid { get; set; }
+        public string? PaymentReference { get; set; }
         public List<ExpenseLine> ExpenseLines { get; set; } = new();
     }
 
@@ -243,5 +258,10 @@ namespace KrishiLink.Models.ViewModels
         public decimal Commission { get; set; }
         public decimal NetPayable => Gross - Commission;
         public string Status { get; set; } = string.Empty;
+
+        // Farmer's escrow payment
+        public string? PaymentMethod { get; set; }
+        public string? PaymentReference { get; set; }
+        public DateTime? PaidOn { get; set; }
     }
 }

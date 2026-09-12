@@ -29,7 +29,14 @@ namespace KrishiLink.DAL.Repositories
         string RateText,
         // Payout that settled this booking (null = still unpaid)
         int? PayoutId = null,
-        string? PayoutReference = null);
+        string? PayoutReference = null,
+        // Farmer payment into escrow (null until the farmer has paid)
+        bool IsPaid = false,
+        DateTime? PaidOn = null,
+        string? PaymentReference = null,
+        string? PaymentMethod = null,
+        // Commission rate captured at acceptance; 0 for legacy rows without a snapshot
+        decimal CommissionRateSnapshot = 0m);
 
     /// <summary>
     /// Data access for an owner's revenue reporting (godown or equipment), backed by EF Core.

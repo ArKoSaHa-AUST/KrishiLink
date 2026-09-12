@@ -30,8 +30,15 @@ namespace KrishiLink.Models.ViewModels
         public string DateRange { get; set; } = string.Empty;
         public string? Note { get; set; }
 
-        /// <summary>Pending | Accepted | Rejected | Completed</summary>
+        /// <summary>Pending | Accepted | Paid | Rejected | Completed | Cancelled</summary>
         public string Status { get; set; } = "Pending";
+
+        /// <summary>Total the farmer pays (snapshot at acceptance).</summary>
+        public decimal AgreedGross { get; set; }
+
+        /// <summary>Set once the farmer's payment has succeeded; drives the "Paid ৳X" chip and the Mark Completed gate.</summary>
+        public string? PaymentReference { get; set; }
+        public bool IsPaid => PaymentReference is not null;
 
         /// <summary>When the farmer submitted the request (drives sorting and "time ago").</summary>
         public DateTime RequestedOn { get; set; }
