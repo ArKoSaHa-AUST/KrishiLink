@@ -1,0 +1,189 @@
+@model KrishiLink.Models.ViewModels.PaginatedNotificationsViewModel
+@{
+    ViewData["Title"] = "Notifications";
+    var currentUrl = Context.Request.Path + Context.Request.QueryString;
+}
+
+<!-- Page Header & Overview -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4 pb-3 border-bottom">
+    <div>
+        <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">
+            <i class="bi bi-bell-fill text-success me-2"></i>Notifications
+        </h2>
+        <p class="text-muted mb-0">
+            Stay updated with your rental requests, booking decisions, reviews, and platform activity.
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        @if (Model.UnreadCount > 0)
+        {
+            <form asp-controller="Notifications" asp-action="MarkAllAsRead" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="returnUrl" value="@currentUrl" />
+                <button type="submit" class="btn btn-outline-success btn-sm rounded-pill px-3 py-2 fw-semibold">
+                    <i class="bi bi-check2-all me-1"></i> Mark All as Read
+                </button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2">
+        <i class="bi bi-check-circle-fill text-success"></i>
+        <span class="small">@TempData["SuccessMessage"]</span>
+    </div>
+}
+
+<!-- Tabs Navigation: All | Unread -->
+<div class="card krishi-card border-0 shadow-sm rounded-4 p-2.5 mb-4">
+    <ul class="nav nav-pills krishi-nav-pills d-flex gap-1" role="tablist">
+        <li class="nav-item flex-fill text-center" role="presentation">
+            <a class="nav-link @(!Model.UnreadOnly ? "active" : "") d-flex align-items-center justify-content-center gap-2" 
+               href="@Url.Action("Index", "Notifications", new { unreadOnly = false })">
+                <i class="bi bi-bell"></i>
+                <span>All Notifications</span>
+                <span class="badge @(!Model.UnreadOnly ? "bg-white text-success" : "bg-light text-muted border") rounded-pill">@Model.TotalCount</span>
+            </a>
+        </li>
+        <li class="nav-item flex-fill text-center" role="presentation">
+            <a class="nav-link @(Model.UnreadOnly ? "active" : "") d-flex align-items-center justify-content-center gap-2" 
+               href="@Url.Action("Index", "Notifications", new { unreadOnly = true })">
+                <i class="bi bi-envelope-open"></i>
+                <span>Unread Only</span>
+                <span class="badge @(Model.UnreadOnly ? "bg-white text-success" : (Model.UnreadCount > 0 ? "bg-danger text-white" : "bg-light text-muted border")) rounded-pill">@Model.UnreadCount</span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<!-- Notifications List -->
+@if (Model.Items.Count == 0)
+{
+    <div class="card krishi-card border-0 shadow-sm rounded-4 p-5 text-center my-4">
+        <div class="py-4">
+            <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                <i class="bi bi-bell-slash text-muted" style="font-size: 2.5rem;"></i>
+            </div>
+            <h5 class="fw-bold text-dark mb-1">
+                @(Model.UnreadOnly ? "No unread notifications" : "No notifications yet")
+            </h5>
+            <p class="text-muted small mb-3">
+                @(Model.UnreadOnly ? "You're all caught up! There are no unread notifications at the moment." : "When you receive booking updates, rental requests, or reviews, they will appear here.")
+            </p>
+            @if (Model.UnreadOnly && Model.TotalCount > 0)
+            {
+                <a asp-action="Index" asp-route-unreadOnly="false" class="btn btn-outline-success btn-sm rounded-pill px-4">
+                    View All Notifications
+                </a>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="list-group gap-2 mb-4">
+        @foreach (var item in Model.Items)
+        {
+            <div class="card border-0 shadow-sm rounded-3 p-3 transition-all @(!item.IsRead ? "border-start border-4 border-success bg-white shadow-sm" : "bg-light bg-opacity-50")"
+                 style="@(!item.IsRead ? "border-left-color: var(--krishi-primary) !important; background-color: #f8faf8 !important;" : "")">
+                <div class="d-flex align-items-start gap-3">
+                    <!-- Icon / Type Indicator -->
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width: 44px; height: 44px; background-color: var(--bs-@item.BadgeColor-bg-subtle, #e8f5e9);">
+                        <i class="@item.IconClass fs-5 text-@item.BadgeColor"></i>
+                    </div>
+
+                    <!-- Notification Body -->
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-1 mb-1">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <h6 class="fw-bold mb-0 text-dark @(!item.IsRead ? "text-success fw-bolder" : "")">
+                                    @item.Title
+                                </h6>
+                                <span class="badge bg-@item.BadgeColor bg-opacity-10 text-@item.BadgeColor border border-@item.BadgeColor border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 0.7rem;">
+                                    @item.Type
+                                </span>
+                                @if (!item.IsRead)
+                                {
+                                    <span class="badge bg-success rounded-pill px-2" style="font-size: 0.65rem;">NEW</span>
+                                }
+                            </div>
+                            <small class="text-muted text-nowrap" title="@item.CreatedAt.ToString("f")">
+                                <i class="bi bi-clock me-1"></i>@item.TimeAgo
+                            </small>
+                        </div>
+
+                        <p class="mb-2 text-secondary text-break" style="font-size: 0.925rem; line-height: 1.45;">
+                            @item.Message
+                        </p>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-1 border-top border-light">
+                            <div>
+                                @if (!string.IsNullOrWhiteSpace(item.LinkUrl))
+                                {
+                                    <a asp-action="Open" asp-route-id="@item.Id" class="btn btn-sm btn-link text-decoration-none p-0 fw-semibold text-success d-inline-flex align-items-center gap-1">
+                                        <span>View Details</span>
+                                        <i class="bi bi-arrow-right small"></i>
+                                    </a>
+                                }
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2">
+                                @if (!item.IsRead)
+                                {
+                                    <form asp-action="MarkAsRead" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <input type="hidden" name="returnUrl" value="@currentUrl" />
+                                        <button type="submit" class="btn btn-sm btn-light border rounded-pill px-2.5 py-1 text-muted small hover-success" title="Mark as read">
+                                            <i class="bi bi-check2 text-success me-1"></i> Mark read
+                                        </button>
+                                    </form>
+                                }
+
+                                <form asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('Delete this notification?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <input type="hidden" name="returnUrl" value="@currentUrl" />
+                                    <button type="submit" class="btn btn-sm btn-light border rounded-circle p-1 text-muted text-hover-danger" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;" title="Delete notification">
+                                        <i class="bi bi-trash small"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Pagination Controls -->
+    @if (Model.TotalPages > 1)
+    {
+        <nav aria-label="Notifications pagination" class="d-flex justify-content-center mt-4">
+            <ul class="pagination pagination-sm">
+                <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                    <a class="page-link rounded-pill px-3 me-1" href="@Url.Action("Index", new { unreadOnly = Model.UnreadOnly, page = Model.CurrentPage - 1 })">
+                        <i class="bi bi-chevron-left me-1"></i> Previous
+                    </a>
+                </li>
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                        <a class="page-link rounded-circle mx-0.5 text-center" style="width: 32px; height: 32px; line-height: 18px;" href="@Url.Action("Index", new { unreadOnly = Model.UnreadOnly, page = p })">
+                            @p
+                        </a>
+                    </li>
+                }
+                <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                    <a class="page-link rounded-pill px-3 ms-1" href="@Url.Action("Index", new { unreadOnly = Model.UnreadOnly, page = Model.CurrentPage + 1 })">
+                        Next <i class="bi bi-chevron-right ms-1"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+}

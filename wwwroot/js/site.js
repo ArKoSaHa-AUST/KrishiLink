@@ -627,4 +627,198 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    // Initialize notification polling & dropdown
+    if (window.KrishiNotifications) {
+        window.KrishiNotifications.init();
+    }
 });
+
+/**
+ * KrishiLink Notification Bell, Badge & Dropdown System
+ */
+window.KrishiNotifications = {
+    pollingInterval: 30000, // 30 seconds
+    timerId: null,
+
+    init: function () {
+        const bellBtn = document.getElementById('notificationBellBtn');
+        const mobileBadge = document.getElementById('mobileNotificationBadge');
+        if (!bellBtn && !mobileBadge) return;
+
+        // Fetch initial unread count
+        this.fetchUnreadCount();
+
+        // Start background polling
+        this.startPolling();
+
+        // Setup dropdown open event
+        const dropdownContainer = document.getElementById('notificationDropdownContainer');
+        if (dropdownContainer) {
+            dropdownContainer.addEventListener('show.bs.dropdown', () => {
+                this.loadRecentNotifications();
+            });
+        }
+
+        // Mark all as read button in dropdown
+        const markAllBtn = document.getElementById('markAllReadDropdownBtn');
+        if (markAllBtn) {
+            markAllBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.markAllAsRead();
+            });
+        }
+    },
+
+    startPolling: function () {
+        if (this.timerId) clearInterval(this.timerId);
+        this.timerId = setInterval(() => {
+            this.fetchUnreadCount();
+        }, this.pollingInterval);
+    },
+
+    fetchUnreadCount: function () {
+        fetch('/Notifications/UnreadCount', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+            if (data && typeof data.count === 'number') {
+                this.updateBadges(data.count);
+            }
+        })
+        .catch(() => { /* silent fail on network errors */ });
+    },
+
+    updateBadges: function (count) {
+        const desktopBadge = document.getElementById('notificationBadge');
+        const mobileBadge = document.getElementById('mobileNotificationBadge');
+        const headerBadge = document.getElementById('notificationUnreadHeaderBadge');
+        const markAllBtn = document.getElementById('markAllReadDropdownBtn');
+
+        const displayCount = count > 99 ? '99+' : count.toString();
+
+        if (desktopBadge) {
+            if (count > 0) {
+                desktopBadge.textContent = displayCount;
+                desktopBadge.style.display = 'inline-block';
+            } else {
+                desktopBadge.style.display = 'none';
+            }
+        }
+
+        if (mobileBadge) {
+            if (count > 0) {
+                mobileBadge.textContent = displayCount;
+                mobileBadge.style.display = 'inline-block';
+            } else {
+                mobileBadge.style.display = 'none';
+            }
+        }
+
+        if (headerBadge) {
+            if (count > 0) {
+                headerBadge.textContent = `${count} new`;
+                headerBadge.style.display = 'inline-block';
+            } else {
+                headerBadge.style.display = 'none';
+            }
+        }
+
+        if (markAllBtn) {
+            markAllBtn.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+    },
+
+    loadRecentNotifications: function () {
+        const listContainer = document.getElementById('notificationListDropdown');
+        if (!listContainer) return;
+
+        fetch('/Notifications/Recent?take=5', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+            if (!data) {
+                listContainer.innerHTML = '<div class="p-3 text-center text-muted small">Could not load notifications.</div>';
+                return;
+            }
+
+            this.updateBadges(data.unreadCount || 0);
+
+            if (!data.items || data.items.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="p-4 text-center text-muted">
+                        <i class="bi bi-bell-slash text-secondary fs-3 d-block mb-2"></i>
+                        <span class="small">No notifications yet</span>
+                    </div>`;
+                return;
+            }
+
+            let html = '<div class="list-group list-group-flush">';
+            data.items.forEach(item => {
+                const unreadClass = !item.isRead ? 'unread' : '';
+                const openUrl = `/Notifications/Open/${item.id}`;
+                html += `
+                    <a href="${openUrl}" class="list-group-item list-group-item-action notification-dropdown-item ${unreadClass} p-3 border-bottom">
+                        <div class="d-flex align-items-start gap-2">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                 style="width: 32px; height: 32px; background-color: var(--bs-${item.badgeColor}-bg-subtle, #e8f5e9);">
+                                <i class="${item.iconClass} small text-${item.badgeColor}"></i>
+                            </div>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="d-flex align-items-center justify-content-between gap-1 mb-0.5">
+                                    <h6 class="mb-0 fw-bold text-dark text-truncate small ${!item.isRead ? 'text-success' : ''}" style="max-width: 180px;">
+                                        ${this.escapeHtml(item.title)}
+                                    </h6>
+                                    <span class="text-muted text-nowrap" style="font-size: 0.7rem;">
+                                        ${this.escapeHtml(item.timeAgo)}
+                                    </span>
+                                </div>
+                                <p class="mb-0 text-secondary text-truncate small" style="font-size: 0.8rem;">
+                                    ${this.escapeHtml(item.message)}
+                                </p>
+                            </div>
+                            ${!item.isRead ? '<span class="notification-unread-dot flex-shrink-0 mt-1"></span>' : ''}
+                        </div>
+                    </a>`;
+            });
+            html += '</div>';
+            listContainer.innerHTML = html;
+        })
+        .catch(() => {
+            listContainer.innerHTML = '<div class="p-3 text-center text-muted small">Could not load notifications.</div>';
+        });
+    },
+
+    markAllAsRead: function () {
+        const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+        const token = tokenInput ? tokenInput.value : '';
+
+        const formData = new FormData();
+        formData.append('__RequestVerificationToken', token);
+
+        fetch('/Notifications/MarkAllAsRead', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+            if (data && data.success) {
+                this.updateBadges(0);
+                this.loadRecentNotifications();
+            }
+        })
+        .catch(() => { /* silent */ });
+    },
+
+    escapeHtml: function (str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+};
+

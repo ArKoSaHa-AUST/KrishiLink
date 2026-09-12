@@ -752,3 +752,52 @@ a:hover {
         max-width: 100% !important;
     }
 }
+
+/* ==========================================================================
+   Notification System Styles
+   ========================================================================== */
+
+#notificationBellBtn {
+    transition: all 0.2s ease-in-out;
+}
+
+#notificationBellBtn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+.notification-dropdown-item {
+    transition: background-color 0.15s ease-in-out;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+}
+
+.notification-dropdown-item:hover {
+    background-color: #f3f8f4 !important;
+}
+
+.notification-dropdown-item.unread {
+    background-color: #f7faf8;
+    border-left: 3px solid var(--krishi-primary);
+}
+
+.notification-unread-dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--krishi-primary);
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.text-hover-danger:hover {
+    color: #dc3545 !important;
+    background-color: #fdf2f2 !important;
+}
+
+.hover-success:hover {
+    color: var(--krishi-primary) !important;
+    border-color: var(--krishi-primary) !important;
+    background-color: var(--krishi-primary-light) !important;
+}
+
