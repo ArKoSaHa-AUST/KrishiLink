@@ -1,0 +1,171 @@
+@model List<KrishiLink.Models.Entities.OwnerVerificationRequest>
+@{
+    ViewData["Title"] = L["Pending Owner Verifications"].Value;
+}
+
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                <i class="bi bi-shield-check text-success"></i> @L["Owner Verification Review"]
+            </h2>
+            <p class="text-muted small mb-0">@L["Review submitted government ID documents and verify owner accounts."]</p>
+        </div>
+        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill px-3 py-2 fs-6">
+            @L["{0} Pending Requests", Model.Count]
+        </span>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4 d-flex align-items-center gap-2" role="alert">
+            <i class="bi bi-check-circle-fill fs-5 text-success"></i>
+            <div>@TempData["SuccessMessage"]</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-4 border-0 shadow-sm mb-4 d-flex align-items-center gap-2" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-5 text-danger"></i>
+            <div>@TempData["ErrorMessage"]</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="card krishi-card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
+            <div class="p-3 bg-light rounded-circle d-inline-flex mx-auto mb-3 text-muted">
+                <i class="bi bi-check2-all fs-1"></i>
+            </div>
+            <h5 class="fw-bold text-dark mb-1">@L["No Pending Verifications"]</h5>
+            <p class="text-muted small mb-0">@L["All owner verification requests have been processed."]</p>
+        </div>
+    }
+    else
+    {
+        <div class="card krishi-card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light text-muted small">
+                        <tr>
+                            <th class="ps-4">@L["Owner"]</th>
+                            <th>@L["Role"]</th>
+                            <th>@L["NID Number"]</th>
+                            <th>@L["Documents"]</th>
+                            <th>@L["Submitted"]</th>
+                            <th class="text-end pe-4">@L["Actions"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark">@(item.User?.FullName ?? "Unknown User")</div>
+                                    <div class="text-muted small">@(item.User?.PhoneNumber ?? item.UserId)</div>
+                                    @if (!string.IsNullOrWhiteSpace(item.User?.BusinessOrFarmName))
+                                    {
+                                        <div class="text-secondary small fst-italic">@item.User.BusinessOrFarmName</div>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border rounded-pill px-2.5 py-1 small">
+                                        @(item.User?.UserRole ?? "Owner")
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(item.NidLast4))
+                                    {
+                                        <span class="font-monospace fw-semibold text-dark">***-***-@item.NidLast4</span>
+                                    }
+                                    else if (!string.IsNullOrWhiteSpace(item.NidNumber) && item.NidNumber.Length <= 20)
+                                    {
+                                        <span class="font-monospace fw-semibold text-dark">@item.NidNumber</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="font-monospace fw-semibold text-dark">***-***-****</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        @if (!string.IsNullOrWhiteSpace(item.NidFrontImagePath))
+                                        {
+                                            <a href="@Url.Action("VerificationDocument", "Account", new { kind = "front", userId = item.UserId })" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 small">
+                                                <i class="bi bi-card-image me-1"></i> @L["Front"]
+                                            </a>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(item.NidBackImagePath))
+                                        {
+                                            <a href="@Url.Action("VerificationDocument", "Account", new { kind = "back", userId = item.UserId })" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 small">
+                                                <i class="bi bi-card-image me-1"></i> @L["Back"]
+                                            </a>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(item.TradeLicenseImagePath))
+                                        {
+                                            <a href="@Url.Action("VerificationDocument", "Account", new { kind = "trade", userId = item.UserId })" target="_blank" class="btn btn-sm btn-outline-info rounded-pill px-2.5 py-1 small">
+                                                <i class="bi bi-file-earmark-text me-1"></i> @L["Trade"]
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="text-muted small">@item.SubmittedAt.ToString("dd MMM yyyy, hh:mm tt")</span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="d-inline-flex gap-2">
+                                        <form asp-controller="Verifications" asp-action="Approve" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@item.UserId" />
+                                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold">
+                                                <i class="bi bi-check-lg me-1"></i> @L["Approve"]
+                                            </button>
+                                        </form>
+
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#rejectModal_@item.Id">
+                                            <i class="bi bi-x-lg me-1"></i> @L["Reject"]
+                                        </button>
+                                    </div>
+
+                                    <!-- Reject Modal -->
+                                    <div class="modal fade text-start" id="rejectModal_@item.Id" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content border-0 rounded-4 shadow">
+                                                <div class="modal-header border-0 pb-0">
+                                                    <h5 class="modal-title fw-bold text-danger">
+                                                        <i class="bi bi-exclamation-triangle-fill me-1"></i> @L["Reject Verification Request"]
+                                                    </h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <form asp-controller="Verifications" asp-action="Reject" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@item.UserId" />
+                                                    <div class="modal-body py-3">
+                                                        <p class="text-muted small mb-3">
+                                                            @L["Please specify a reason for rejecting the verification request for {0}.", item.User?.FullName ?? "this user"]
+                                                        </p>
+                                                        <div class="mb-3">
+                                                            <label class="form-label small fw-semibold text-dark">@L["Rejection Reason"]</label>
+                                                            <textarea name="reason" class="form-control" rows="3" required placeholder='@L["e.g. Photo is blurry; NID number does not match name; document expired."]'>Photo is blurry; NID number is not legible.</textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer border-0 pt-0">
+                                                        <button type="button" class="btn btn-light rounded-pill px-3" data-bs-dismiss="modal">@L["Cancel"]</button>
+                                                        <button type="submit" class="btn btn-danger rounded-pill px-4 fw-semibold">@L["Confirm Reject"]</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

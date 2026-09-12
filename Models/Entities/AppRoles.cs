@@ -5,8 +5,9 @@ namespace KrishiLink.Models.Entities
         public const string Farmer = "Farmer";
         public const string EquipmentOwner = "EquipmentOwner";
         public const string GodownOwner = "GodownOwner";
+        public const string Admin = "Admin";
 
-        public static readonly string[] All = { Farmer, EquipmentOwner, GodownOwner };
+        public static readonly string[] All = { Farmer, EquipmentOwner, GodownOwner, Admin };
     }
 
     public static class BookingStatus

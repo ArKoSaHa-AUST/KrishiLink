@@ -23,6 +23,8 @@ namespace KrishiLink.Models.ViewModels
         [RegularExpression(@"^(?:\d{10}|\d{13}|\d{17})$", ErrorMessage = "Please enter a valid Bangladeshi NID Number (10-digit Smart NID, or 13/17-digit legacy NID).")]
         [Display(Name = "National ID (NID) Number")]
         public string NidNumber { get; set; } = string.Empty;
+        public string? MaskedNidNumber { get; set; }
+        public string? NidLast4 { get; set; }
 
         // Document Uploads
         [Display(Name = "NID Card Front Photo")]

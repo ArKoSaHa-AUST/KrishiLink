@@ -1,6 +1,4 @@
 @model KrishiLink.Models.ViewModels.OwnerVerificationViewModel
-@using Microsoft.AspNetCore.Mvc.Localization
-@inject IViewLocalizer L
 
 <form asp-controller="Account" asp-action="Verification" method="post" enctype="multipart/form-data" class="needs-validation">
     @Html.AntiForgeryToken()
@@ -40,7 +38,7 @@
         <!-- Preview Thumbnail -->
         <div id="nidFrontPreviewContainer" class="mt-2 @(string.IsNullOrWhiteSpace(Model.ExistingNidFrontUrl) ? "d-none" : "")">
             <div class="p-2 border rounded-3 bg-light d-inline-block text-center" style="max-width: 200px;">
-                <img id="nidFrontPreview" src="@(Model.ExistingNidFrontUrl ?? "#")" class="img-fluid rounded" style="max-height: 120px; object-fit: cover;" alt="Front Preview" />
+                <img id="nidFrontPreview" src="@(string.IsNullOrWhiteSpace(Model.ExistingNidFrontUrl) ? "#" : Url.Action("VerificationDocument", "Account", new { kind = "front" }))" class="img-fluid rounded" style="max-height: 120px; object-fit: cover;" alt="Front Preview" />
                 <span class="small text-muted d-block mt-1">@L["Front Preview"]</span>
             </div>
         </div>
@@ -59,7 +57,7 @@
         <!-- Preview Thumbnail -->
         <div id="nidBackPreviewContainer" class="mt-2 @(string.IsNullOrWhiteSpace(Model.ExistingNidBackUrl) ? "d-none" : "")">
             <div class="p-2 border rounded-3 bg-light d-inline-block text-center" style="max-width: 200px;">
-                <img id="nidBackPreview" src="@(Model.ExistingNidBackUrl ?? "#")" class="img-fluid rounded" style="max-height: 120px; object-fit: cover;" alt="Back Preview" />
+                <img id="nidBackPreview" src="@(string.IsNullOrWhiteSpace(Model.ExistingNidBackUrl) ? "#" : Url.Action("VerificationDocument", "Account", new { kind = "back" }))" class="img-fluid rounded" style="max-height: 120px; object-fit: cover;" alt="Back Preview" />
                 <span class="small text-muted d-block mt-1">@L["Back Preview"]</span>
             </div>
         </div>
@@ -73,12 +71,12 @@
         <input asp-for="TradeLicenseImage" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp"
                onchange="previewImage(this, 'tradeLicensePreview', 'tradeLicensePreviewContainer')" />
         <span asp-validation-for="TradeLicenseImage" class="text-danger small"></span>
-        <div class="form-text small">@L["If operating as an agro-machinery rental firm or commercial godown facility."]}</div>
+        <div class="form-text small">@L["If operating as an agro-machinery rental firm or commercial godown facility."]</div>
 
         <!-- Preview Thumbnail -->
         <div id="tradeLicensePreviewContainer" class="mt-2 @(string.IsNullOrWhiteSpace(Model.ExistingTradeLicenseUrl) ? "d-none" : "")">
             <div class="p-2 border rounded-3 bg-light d-inline-block text-center" style="max-width: 200px;">
-                <img id="tradeLicensePreview" src="@(Model.ExistingTradeLicenseUrl ?? "#")" class="img-fluid rounded" style="max-height: 120px; object-fit: cover;" alt="Trade License Preview" />
+                <img id="tradeLicensePreview" src="@(string.IsNullOrWhiteSpace(Model.ExistingTradeLicenseUrl) ? "#" : Url.Action("VerificationDocument", "Account", new { kind = "trade" }))" class="img-fluid rounded" style="max-height: 120px; object-fit: cover;" alt="Trade License Preview" />
                 <span class="small text-muted d-block mt-1">@L["Trade License Preview"]</span>
             </div>
         </div>

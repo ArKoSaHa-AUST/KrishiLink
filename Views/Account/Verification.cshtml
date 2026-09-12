@@ -1,6 +1,5 @@
 @model KrishiLink.Models.ViewModels.OwnerVerificationViewModel
-@using Microsoft.AspNetCore.Mvc.Localization
-@inject IViewLocalizer L
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment AppEnv
 @{
     ViewData["Title"] = L["Owner Identity Verification"].Value;
     var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
@@ -208,7 +207,7 @@
                                 {
                                     <div class="col-6 col-md-4">
                                         <div class="border rounded-3 p-2 text-center bg-light">
-                                            <img src="@Model.ExistingNidFrontUrl" class="img-fluid rounded mb-1" style="max-height: 120px; object-fit: cover;" alt="NID Front" />
+                                            <img src="@Url.Action("VerificationDocument", "Account", new { kind = "front" })" class="img-fluid rounded mb-1" style="max-height: 120px; object-fit: cover;" alt="NID Front" />
                                             <span class="small text-muted d-block">@L["NID Front"]</span>
                                         </div>
                                     </div>
@@ -217,7 +216,7 @@
                                 {
                                     <div class="col-6 col-md-4">
                                         <div class="border rounded-3 p-2 text-center bg-light">
-                                            <img src="@Model.ExistingNidBackUrl" class="img-fluid rounded mb-1" style="max-height: 120px; object-fit: cover;" alt="NID Back" />
+                                            <img src="@Url.Action("VerificationDocument", "Account", new { kind = "back" })" class="img-fluid rounded mb-1" style="max-height: 120px; object-fit: cover;" alt="NID Back" />
                                             <span class="small text-muted d-block">@L["NID Back"]</span>
                                         </div>
                                     </div>
@@ -258,7 +257,7 @@
                                 {
                                     <div class="col-6 col-md-4">
                                         <div class="border rounded-3 p-2 text-center bg-light">
-                                            <img src="@Model.ExistingNidFrontUrl" class="img-fluid rounded mb-1" style="max-height: 120px; object-fit: cover;" alt="NID Front" />
+                                            <img src="@Url.Action("VerificationDocument", "Account", new { kind = "front" })" class="img-fluid rounded mb-1" style="max-height: 120px; object-fit: cover;" alt="NID Front" />
                                             <span class="small text-muted d-block">@L["Submitted NID Front"]</span>
                                         </div>
                                     </div>
@@ -267,7 +266,7 @@
                                 {
                                     <div class="col-6 col-md-4">
                                         <div class="border rounded-3 p-2 text-center bg-light">
-                                            <img src="@Model.ExistingNidBackUrl" class="img-fluid rounded mb-1" style="max-height: 120px; object-fit: cover;" alt="NID Back" />
+                                            <img src="@Url.Action("VerificationDocument", "Account", new { kind = "back" })" class="img-fluid rounded mb-1" style="max-height: 120px; object-fit: cover;" alt="NID Back" />
                                             <span class="small text-muted d-block">@L["Submitted NID Back"]</span>
                                         </div>
                                     </div>
@@ -316,49 +315,49 @@
                 </div>
             }
 
-            <!-- SIMULATOR / DEMO ACTION PANEL FOR EVALUATION -->
-            <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 mb-4 bg-light border border-secondary-subtle">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-2 border-bottom">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-tools text-primary fs-5"></i>
-                        <h6 class="fw-bold text-dark mb-0">@L["Developer & Testing Simulator"]</h6>
+            @if (AppEnv.IsDevelopment())
+            {
+                <!-- SIMULATOR / DEMO ACTION PANEL FOR EVALUATION (DEVELOPMENT ONLY) -->
+                <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 mb-4 bg-light border border-secondary-subtle">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2 pb-2 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-tools text-primary fs-5"></i>
+                            <h6 class="fw-bold text-dark mb-0">@L["Developer & Testing Simulator"]</h6>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1 small">@L["Simulate Admin Review"]</span>
                     </div>
-                    <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1 small">@L["Simulate Admin Review"]</span>
+                    <p class="small text-muted mb-3">
+                        @L["Use these quick buttons to instantly test how your owner badge and status appear when approved or rejected by an administrator."]
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <form asp-controller="Account" asp-action="DevSimulateVerificationDecision" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="Decision" value="Approve" />
+                            <button type="submit" class="btn btn-success btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-xs">
+                                <i class="bi bi-check-circle-fill me-1"></i> @L["Instant Approve (Mark Verified)"]
+                            </button>
+                        </form>
+
+                        <form asp-controller="Account" asp-action="DevSimulateVerificationDecision" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="Decision" value="Reject" />
+                            <input type="hidden" name="Reason" value="Photo is blurry; NID number is not legible." />
+                            <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-xs">
+                                <i class="bi bi-x-circle me-1"></i> @L["Instant Reject (With Reason)"]
+                            </button>
+                        </form>
+
+                        <form asp-controller="Account" asp-action="DevSimulateVerificationDecision" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="Decision" value="Reset" />
+                            <button type="submit" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-xs">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> @L["Reset Status"]
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                <p class="small text-muted mb-3">
-                    @L["Use these quick buttons to instantly test how your owner badge and status appear when approved or rejected by an administrator."]
-                </p>
-
-                <div class="d-flex flex-wrap gap-2">
-                    <form asp-controller="Account" asp-action="SimulateVerificationApproval" method="post" class="d-inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="UserId" value="@Model.UserId" />
-                        <input type="hidden" name="Decision" value="Approve" />
-                        <button type="submit" class="btn btn-success btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-xs">
-                            <i class="bi bi-check-circle-fill me-1"></i> @L["Instant Approve (Mark Verified)"]
-                        </button>
-                    </form>
-
-                    <form asp-controller="Account" asp-action="SimulateVerificationApproval" method="post" class="d-inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="UserId" value="@Model.UserId" />
-                        <input type="hidden" name="Decision" value="Reject" />
-                        <input type="hidden" name="Reason" value="Photo is blurry; NID number is not legible." />
-                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-xs">
-                            <i class="bi bi-x-circle me-1"></i> @L["Instant Reject (With Reason)"]
-                        </button>
-                    </form>
-
-                    <form asp-controller="Account" asp-action="SimulateVerificationApproval" method="post" class="d-inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="UserId" value="@Model.UserId" />
-                        <input type="hidden" name="Decision" value="Reset" />
-                        <button type="submit" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-xs">
-                            <i class="bi bi-arrow-counterclockwise me-1"></i> @L["Reset Status"]
-                        </button>
-                    </form>
-                </div>
-            </div>
+            }
 
         </div>
 

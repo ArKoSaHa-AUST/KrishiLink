@@ -6,6 +6,7 @@ using KrishiLink.DAL;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,6 +20,8 @@ namespace KrishiLink.BLL.Services
         Task<bool> RejectVerificationAsync(string userId, string reason, string? adminId = null);
         Task<bool> ResetVerificationAsync(string userId);
         Task<List<OwnerVerificationRequest>> GetPendingVerificationsAsync();
+        string MaskNid(string? nidOrEncrypted);
+        string DecryptNid(string cipherText);
     }
 
     public class OwnerVerificationService : IOwnerVerificationService
@@ -28,17 +31,54 @@ namespace KrishiLink.BLL.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IFileStorageService _files;
         private readonly INotificationService _notifications;
+        private readonly IDataProtector _protector;
 
         public OwnerVerificationService(
             ApplicationDbContext db,
             UserManager<ApplicationUser> userManager,
             IFileStorageService files,
-            INotificationService notifications)
+            INotificationService notifications,
+            IDataProtectionProvider dataProtectionProvider)
         {
             _db = db;
             _userManager = userManager;
             _files = files;
             _notifications = notifications;
+            _protector = dataProtectionProvider.CreateProtector("KrishiLink.Nid");
+        }
+
+        public string MaskNid(string? nidOrEncrypted)
+        {
+            if (string.IsNullOrWhiteSpace(nidOrEncrypted)) return string.Empty;
+            var raw = nidOrEncrypted.Trim();
+            if (raw.StartsWith("CfDJ8") || raw.Length > 30)
+            {
+                try
+                {
+                    raw = _protector.Unprotect(raw);
+                }
+                catch
+                {
+                    return "***-***-****";
+                }
+            }
+            if (raw.Length <= 4) return raw;
+            var last4 = raw[^4..];
+            return $"***-***-{last4}";
+        }
+
+        public string DecryptNid(string cipherText)
+        {
+            if (string.IsNullOrWhiteSpace(cipherText)) return string.Empty;
+            if (!cipherText.StartsWith("CfDJ8") && cipherText.Length <= 20) return cipherText;
+            try
+            {
+                return _protector.Unprotect(cipherText);
+            }
+            catch
+            {
+                return cipherText;
+            }
         }
 
         public async Task<OwnerVerificationViewModel?> GetVerificationStatusAsync(string userId)
@@ -53,6 +93,10 @@ namespace KrishiLink.BLL.Services
                 .OrderByDescending(r => r.SubmittedAt)
                 .FirstOrDefaultAsync();
 
+            var rawOrEncryptedNid = latestRequest?.NidNumber ?? user.NidNumber;
+            var masked = MaskNid(rawOrEncryptedNid);
+            var last4 = latestRequest?.NidLast4 ?? (masked.Length >= 4 ? masked[^4..] : null);
+
             return new OwnerVerificationViewModel
             {
                 UserId = user.Id,
@@ -62,7 +106,9 @@ namespace KrishiLink.BLL.Services
                 Email = user.Email,
                 BusinessOrFarmName = user.BusinessOrFarmName,
                 Location = user.Location,
-                NidNumber = user.NidNumber ?? latestRequest?.NidNumber ?? string.Empty,
+                NidNumber = masked,
+                MaskedNidNumber = masked,
+                NidLast4 = last4,
                 ExistingNidFrontUrl = user.NidFrontImagePath ?? latestRequest?.NidFrontImagePath,
                 ExistingNidBackUrl = user.NidBackImagePath ?? latestRequest?.NidBackImagePath,
                 ExistingTradeLicenseUrl = user.TradeLicenseImagePath ?? latestRequest?.TradeLicenseImagePath,
@@ -97,6 +143,19 @@ namespace KrishiLink.BLL.Services
             if (user is null)
                 return (false, "Owner user record not found.");
 
+            // Guard: Check if a request is already pending
+            var hasPending = await _db.VerificationRequests.AnyAsync(r => r.UserId == userId && r.Status == "Pending");
+            if (hasPending)
+            {
+                return (false, "You already have an active verification request under review. Please wait for administrator approval.");
+            }
+
+            // Guard: If already verified
+            if (user.IsVerified && user.VerificationStatus == "Verified")
+            {
+                return (false, "Your owner account is already verified.");
+            }
+
             // 1. Validate NID format
             var (isValidNid, nidError) = ValidateNidFormat(model.NidNumber);
             if (!isValidNid)
@@ -104,16 +163,20 @@ namespace KrishiLink.BLL.Services
                 return (false, nidError);
             }
             var cleanNid = model.NidNumber!.Trim();
+            var last4 = cleanNid.Length >= 4 ? cleanNid[^4..] : cleanNid;
+            var protectedNid = _protector.Protect(cleanNid);
+            var maskedNid = $"***-***-{last4}";
 
             // 2. Validate Front Image
             string? frontPath = user.NidFrontImagePath;
+            var userUploadFolder = $"verifications/{user.Id}";
             if (model.NidFrontImage is not null && model.NidFrontImage.Length > 0)
             {
                 var validationErrors = _files.ValidateFiles(new[] { model.NidFrontImage });
                 if (validationErrors.Any())
                     return (false, string.Join(" ", validationErrors));
 
-                var savedFront = await _files.SaveImagesAsync(new[] { model.NidFrontImage }, UploadFolder);
+                var savedFront = await _files.SavePrivateFilesAsync(new[] { model.NidFrontImage }, userUploadFolder);
                 if (savedFront.Any())
                 {
                     frontPath = savedFront.First();
@@ -133,7 +196,7 @@ namespace KrishiLink.BLL.Services
                 if (validationErrors.Any())
                     return (false, string.Join(" ", validationErrors));
 
-                var savedBack = await _files.SaveImagesAsync(new[] { model.NidBackImage }, UploadFolder);
+                var savedBack = await _files.SavePrivateFilesAsync(new[] { model.NidBackImage }, userUploadFolder);
                 if (savedBack.Any())
                 {
                     backPath = savedBack.First();
@@ -148,15 +211,15 @@ namespace KrishiLink.BLL.Services
                 if (validationErrors.Any())
                     return (false, string.Join(" ", validationErrors));
 
-                var savedTrade = await _files.SaveImagesAsync(new[] { model.TradeLicenseImage }, UploadFolder);
+                var savedTrade = await _files.SavePrivateFilesAsync(new[] { model.TradeLicenseImage }, userUploadFolder);
                 if (savedTrade.Any())
                 {
                     tradeLicensePath = savedTrade.First();
                 }
             }
 
-            // 5. Update ApplicationUser
-            user.NidNumber = cleanNid;
+            // 5. Update ApplicationUser with masked NID to prevent plain-text PII storage
+            user.NidNumber = maskedNid;
             user.NidFrontImagePath = frontPath;
             user.NidBackImagePath = backPath;
             user.TradeLicenseImagePath = tradeLicensePath;
@@ -168,11 +231,12 @@ namespace KrishiLink.BLL.Services
 
             await _userManager.UpdateAsync(user);
 
-            // 6. Record Verification Request in audit log
+            // 6. Record Verification Request in audit log with encrypted NID
             var request = new OwnerVerificationRequest
             {
                 UserId = user.Id,
-                NidNumber = cleanNid,
+                NidNumber = protectedNid,
+                NidLast4 = last4,
                 NidFrontImagePath = frontPath,
                 NidBackImagePath = backPath,
                 TradeLicenseImagePath = tradeLicensePath,
@@ -184,13 +248,17 @@ namespace KrishiLink.BLL.Services
             await _db.SaveChangesAsync();
 
             // 7. Send user in-app notification
-            await _notifications.CreateNotificationAsync(
-                userId: user.Id,
-                title: "NID Verification Submitted",
-                message: $"Your National ID verification request ({cleanNid}) has been submitted and is currently under review.",
-                linkUrl: "/Account/Verification",
-                type: "Verification"
-            );
+            await _notifications.NotifyAsync(new NotificationRequest
+            {
+                UserId = user.Id,
+                Type = NotificationTypes.Verification,
+                TitleKey = "NID Verification Submitted",
+                MessageKey = "Your National ID verification request ({0}) has been submitted and is currently under review.",
+                Args = new object[] { maskedNid },
+                LinkUrl = AppLinks.Verification(),
+                DedupeKey = $"verify:{user.Id}:Submitted:{request.SubmittedAt.Ticks}",
+                SendEmail = false
+            });
 
             return (true, null);
         }
@@ -222,13 +290,17 @@ namespace KrishiLink.BLL.Services
 
             await _db.SaveChangesAsync();
 
-            await _notifications.CreateNotificationAsync(
-                userId: user.Id,
-                title: "Congratulations! Account Verified",
-                message: "Your identity verification has been approved. A 'Verified Owner' trust badge is now displayed on all your listings.",
-                linkUrl: "/Account/Verification",
-                type: "Verification"
-            );
+            await _notifications.NotifyAsync(new NotificationRequest
+            {
+                UserId = user.Id,
+                Type = NotificationTypes.Verification,
+                TitleKey = "Congratulations! Account Verified",
+                MessageKey = "Your identity verification has been approved. A 'Verified Owner' trust badge is now displayed on all your listings.",
+                LinkUrl = AppLinks.Verification(),
+                DedupeKey = $"verify:{user.Id}:Approved:{DateTime.UtcNow.Ticks}",
+                SendEmail = true,
+                RecipientEmail = user.Email
+            });
 
             return true;
         }
@@ -259,13 +331,18 @@ namespace KrishiLink.BLL.Services
 
             await _db.SaveChangesAsync();
 
-            await _notifications.CreateNotificationAsync(
-                userId: user.Id,
-                title: "Verification Request Update",
-                message: $"Your identity verification could not be approved. Reason: {reason}. Please re-submit clear documents.",
-                linkUrl: "/Account/Verification",
-                type: "Verification"
-            );
+            await _notifications.NotifyAsync(new NotificationRequest
+            {
+                UserId = user.Id,
+                Type = NotificationTypes.Verification,
+                TitleKey = "Verification Request Update",
+                MessageKey = "Your identity verification could not be approved. Reason: {0}. Please re-submit clear documents.",
+                Args = new object[] { reason },
+                LinkUrl = AppLinks.Verification(),
+                DedupeKey = $"verify:{user.Id}:Rejected:{DateTime.UtcNow.Ticks}",
+                SendEmail = true,
+                RecipientEmail = user.Email
+            });
 
             return true;
         }

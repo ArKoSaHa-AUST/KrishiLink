@@ -12,15 +12,21 @@ namespace KrishiLink.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IOwnerVerificationService _verificationService;
+        private readonly IWebHostEnvironment _env;
+        private readonly ILogger<AccountController> _logger;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            IOwnerVerificationService verificationService)
+            IOwnerVerificationService verificationService,
+            IWebHostEnvironment env,
+            ILogger<AccountController> logger)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _verificationService = verificationService;
+            _env = env;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -361,7 +367,7 @@ namespace KrishiLink.Controllers
         // ==========================================
 
         [HttpGet]
-        [Authorize]
+        [Authorize(Roles = $"{AppRoles.EquipmentOwner},{AppRoles.GodownOwner}")]
         public async Task<IActionResult> Verification()
         {
             var currentUser = await _userManager.GetUserAsync(User);
@@ -374,7 +380,7 @@ namespace KrishiLink.Controllers
         }
 
         [HttpPost]
-        [Authorize]
+        [Authorize(Roles = $"{AppRoles.EquipmentOwner},{AppRoles.GodownOwner}")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Verification(OwnerVerificationViewModel model)
         {
@@ -393,30 +399,113 @@ namespace KrishiLink.Controllers
             return RedirectToAction(nameof(Verification));
         }
 
-        [HttpPost]
+        /// <summary>
+        /// Serves identity verification documents securely from private storage (App_Data).
+        /// Only accessible to the document owner or an Admin.
+        /// </summary>
+        [HttpGet]
         [Authorize]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SimulateVerificationApproval(VerificationReviewSubmitModel model)
+        public async Task<IActionResult> VerificationDocument(string kind, string? userId = null)
         {
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser is null) return Challenge();
 
-            var targetUserId = string.IsNullOrWhiteSpace(model.UserId) ? currentUser.Id : model.UserId;
+            var isAdmin = await _userManager.IsInRoleAsync(currentUser, AppRoles.Admin);
+            var targetUserId = (isAdmin && !string.IsNullOrWhiteSpace(userId)) ? userId : currentUser.Id;
+
+            if (!isAdmin && !string.IsNullOrWhiteSpace(userId) && !string.Equals(userId, currentUser.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                return Forbid();
+            }
+
+            var status = await _verificationService.GetVerificationStatusAsync(targetUserId);
+            if (status is null) return NotFound();
+
+            string? relativePath = kind?.ToLowerInvariant() switch
+            {
+                "front" => status.ExistingNidFrontUrl,
+                "back" => status.ExistingNidBackUrl,
+                "trade" => status.ExistingTradeLicenseUrl,
+                _ => null
+            };
+
+            if (string.IsNullOrWhiteSpace(relativePath)) return NotFound();
+
+            var cleanRelative = relativePath.TrimStart('~', '/');
+            if (cleanRelative.StartsWith("App_Data/", StringComparison.OrdinalIgnoreCase))
+            {
+                cleanRelative = cleanRelative.Substring("App_Data/".Length);
+            }
+            else if (cleanRelative.StartsWith("uploads/", StringComparison.OrdinalIgnoreCase))
+            {
+                // Fallback for any legacy file in wwwroot
+                var legacyPath = Path.Combine(_env.WebRootPath, cleanRelative.Replace('/', Path.DirectorySeparatorChar));
+                if (System.IO.File.Exists(legacyPath))
+                {
+                    Response.Headers["Cache-Control"] = "private, no-store";
+                    var legacyMime = GetMimeType(legacyPath);
+                    return PhysicalFile(legacyPath, legacyMime);
+                }
+            }
+
+            var fullPath = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "App_Data", cleanRelative.Replace('/', Path.DirectorySeparatorChar)));
+            var appDataDir = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "App_Data"));
+
+            if (!fullPath.StartsWith(appDataDir, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(fullPath))
+            {
+                return NotFound();
+            }
+
+            Response.Headers["Cache-Control"] = "private, no-store";
+            var mimeType = GetMimeType(fullPath);
+            return PhysicalFile(fullPath, mimeType);
+        }
+
+        private static string GetMimeType(string path)
+        {
+            var ext = Path.GetExtension(path).ToLowerInvariant();
+            return ext switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                _ => "application/octet-stream"
+            };
+        }
+
+        /// <summary>
+        /// Development-only helper to simulate admin verification decisions on the current user.
+        /// Returns 404 in production environments and strictly ignores external user IDs.
+        /// </summary>
+        [HttpPost]
+        [Authorize(Roles = $"{AppRoles.EquipmentOwner},{AppRoles.GodownOwner}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DevSimulateVerificationDecision(VerificationReviewSubmitModel model)
+        {
+            if (!_env.IsDevelopment())
+            {
+                return NotFound();
+            }
+
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser is null) return Challenge();
+
             string decision = model.Decision?.ToLowerInvariant() ?? "approve";
+            _logger.LogWarning("DevSimulateVerificationDecision executed by user {UserId} with decision {Decision}", currentUser.Id, decision);
 
             if (decision == "approve")
             {
-                await _verificationService.ApproveVerificationAsync(targetUserId, adminId: currentUser.Id, notes: model.Notes ?? "Demo instant verification approval.");
+                await _verificationService.ApproveVerificationAsync(currentUser.Id, adminId: currentUser.Id, notes: model.Notes ?? "Demo instant verification approval.");
                 TempData["SuccessMessage"] = "Verification successfully APPROVED! The 'Verified Owner' trust badge is now active on all your listings.";
             }
             else if (decision == "reject")
             {
-                await _verificationService.RejectVerificationAsync(targetUserId, reason: model.Reason ?? "Document photo is unclear or blurred.", adminId: currentUser.Id);
+                await _verificationService.RejectVerificationAsync(currentUser.Id, reason: model.Reason ?? "Document photo is unclear or blurred.", adminId: currentUser.Id);
                 TempData["ErrorMessage"] = "Verification status set to REJECTED. Reason recorded.";
             }
             else if (decision == "reset")
             {
-                await _verificationService.ResetVerificationAsync(targetUserId);
+                await _verificationService.ResetVerificationAsync(currentUser.Id);
                 TempData["SuccessMessage"] = "Verification status RESET to Unverified.";
             }
 
