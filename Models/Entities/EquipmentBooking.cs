@@ -23,5 +23,8 @@ namespace KrishiLink.Models.Entities
         /// <summary>The payout that settled this booking's revenue; null while still unpaid.</summary>
         public int? PayoutId { get; set; }
         public Transaction? Payout { get; set; }
+
+        /// <summary>The farmer's review for this completed booking; null if not yet reviewed.</summary>
+        public Review? Review { get; set; }
     }
 }

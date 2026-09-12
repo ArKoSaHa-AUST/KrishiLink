@@ -22,6 +22,7 @@ namespace KrishiLink.DAL
         public DbSet<CropRecommendation> CropRecommendations { get; set; } = null!;
         public DbSet<WeatherData> WeatherData { get; set; } = null!;
         public DbSet<Transaction> Transactions { get; set; } = null!;
+        public DbSet<Review> Reviews { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -40,6 +41,8 @@ namespace KrishiLink.DAL
                 e.Property(x => x.Location).HasMaxLength(150);
                 e.Property(x => x.DailyRate).HasPrecision(18, 2);
                 e.Property(x => x.HourlyRate).HasPrecision(18, 2);
+                e.Property(x => x.AverageRating).HasDefaultValue(0.0);
+                e.Property(x => x.ReviewCount).HasDefaultValue(0);
                 e.HasIndex(x => x.OwnerId);
                 e.HasOne(x => x.Owner).WithMany().HasForeignKey(x => x.OwnerId).OnDelete(DeleteBehavior.Cascade);
             });
@@ -65,6 +68,8 @@ namespace KrishiLink.DAL
                 g.Property(x => x.StorageType).HasMaxLength(50);
                 g.Property(x => x.Location).HasMaxLength(150);
                 g.Property(x => x.PricePerTonPerMonth).HasPrecision(18, 2);
+                g.Property(x => x.AverageRating).HasDefaultValue(0.0);
+                g.Property(x => x.ReviewCount).HasDefaultValue(0);
                 g.HasIndex(x => x.OwnerId);
                 g.HasOne(x => x.Owner).WithMany().HasForeignKey(x => x.OwnerId).OnDelete(DeleteBehavior.Cascade);
             });
@@ -103,6 +108,22 @@ namespace KrishiLink.DAL
                 t.Property(x => x.Amount).HasPrecision(18, 2);
                 t.HasIndex(x => x.UserId);
                 t.HasIndex(x => x.Reference).IsUnique();
+            });
+
+            builder.Entity<Review>(r =>
+            {
+                r.Property(x => x.Comment).HasMaxLength(1000);
+                r.Property(x => x.BookingType).HasMaxLength(20);
+                r.HasIndex(x => new { x.EquipmentId, x.CreatedAt });
+                r.HasIndex(x => new { x.GodownId, x.CreatedAt });
+                r.HasIndex(x => x.EquipmentBookingId).IsUnique();
+                r.HasIndex(x => x.GodownBookingId).IsUnique();
+
+                r.HasOne(x => x.Farmer).WithMany().HasForeignKey(x => x.FarmerId).OnDelete(DeleteBehavior.NoAction);
+                r.HasOne(x => x.Equipment).WithMany(e => e.Reviews).HasForeignKey(x => x.EquipmentId).OnDelete(DeleteBehavior.NoAction);
+                r.HasOne(x => x.Godown).WithMany(g => g.Reviews).HasForeignKey(x => x.GodownId).OnDelete(DeleteBehavior.NoAction);
+                r.HasOne(x => x.EquipmentBooking).WithOne(b => b.Review).HasForeignKey<Review>(x => x.EquipmentBookingId).OnDelete(DeleteBehavior.NoAction);
+                r.HasOne(x => x.GodownBooking).WithOne(b => b.Review).HasForeignKey<Review>(x => x.GodownBookingId).OnDelete(DeleteBehavior.NoAction);
             });
         }
     }

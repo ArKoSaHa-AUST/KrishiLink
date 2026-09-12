@@ -21,7 +21,14 @@ namespace KrishiLink.Models.Entities
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        /// <summary>Cached average star rating (1.0 to 5.0); 0 when no reviews yet.</summary>
+        public double AverageRating { get; set; } = 0.0;
+
+        /// <summary>Total number of reviews received.</summary>
+        public int ReviewCount { get; set; } = 0;
+
         public ICollection<GodownBooking> Bookings { get; set; } = new List<GodownBooking>();
         public ICollection<GodownBlockedDate> BlockedDates { get; set; } = new List<GodownBlockedDate>();
+        public ICollection<Review> Reviews { get; set; } = new List<Review>();
     }
 }
