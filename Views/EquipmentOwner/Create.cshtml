@@ -3,6 +3,31 @@
     ViewData["Title"] = L[Model.FormTitle];
 }
 
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+        .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+        .krishi-map-card { position: relative; border-radius: 16px; overflow: hidden; }
+        .custom-map-pin {
+            background-color: #198754;
+            color: white;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .custom-map-pin i {
+            transform: rotate(45deg);
+            font-size: 14px;
+        }
+    </style>
+}
+
 <!-- Breadcrumb Navigation -->
 <nav aria-label="@L["breadcrumb"]" class="mb-3">
     <ol class="breadcrumb small">
@@ -36,6 +61,8 @@
         <form asp-controller="EquipmentOwner" asp-action="Save" method="post" id="equipmentListingForm" enctype="multipart/form-data" onsubmit="return validateListingForm(event)">
             <input type="hidden" asp-for="Id" id="equipmentId" />
             <input type="hidden" asp-for="PrimaryImageKey" id="primaryImageKeyInput" />
+            <input type="hidden" asp-for="Latitude" id="equipmentLatitude" />
+            <input type="hidden" asp-for="Longitude" id="equipmentLongitude" />
 
             <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4">
                 
@@ -102,17 +129,46 @@
                             <input asp-for="Location" class="form-control border-start-0 py-2.5" id="equipmentLocationInput" placeholder="@L["e.g. Bogra Sadar, Bogra"]" required />
                         </div>
                         <span asp-validation-for="Location" class="text-danger small"></span>
+                        <div class="form-text small text-muted">@L["District or Upazila name where the machinery is stored."]</div>
                     </div>
 
                     <!-- Availability Status Toggle -->
                     <div class="col-12 col-md-6 d-flex align-items-center">
-                        <div class="p-3 bg-light rounded-3 border w-100 mt-md-3">
+                        <div class="p-3 bg-light rounded-3 border w-100 mt-md-1">
                             <div class="form-check form-switch d-flex align-items-center justify-content-between p-0 m-0">
                                 <label class="form-check-label fw-semibold text-dark small mb-0" for="isAvailableSwitch">
                                     <i class="bi bi-toggle-on text-success me-1.5"></i> @L["Mark Listing as Active & Available"]
                                 </label>
                                 <input class="form-check-input ms-0" type="checkbox" role="switch" id="isAvailableSwitch" asp-for="IsAvailable" style="cursor: pointer;" />
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Map Pin Picker -->
+                    <div class="col-12">
+                        <div class="p-3.5 bg-light rounded-4 border">
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-2 pb-2 border-bottom">
+                                <div>
+                                    <label class="form-label fw-bold text-dark mb-0 small d-flex align-items-center gap-1.5">
+                                        <i class="bi bi-pin-map-fill text-success"></i>
+                                        <span>@L["Map Pin Location (Drop Pin for Exact Location)"]</span>
+                                    </label>
+                                    <div class="small text-muted">@L["Click anywhere on the map or drag the green marker to pinpoint your equipment base yard."]</div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-semibold shadow-xs" id="btnDetectGPS" title="@L["Detect My Current GPS Location"]">
+                                        <i class="bi bi-crosshair me-1"></i> @L["Use Current GPS"]
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold shadow-xs" id="btnRecenterDistrict" title="@L["Center on District"]">
+                                        <i class="bi bi-arrow-clockwise me-1"></i> @L["Center on District"]
+                                    </button>
+                                    <span class="badge bg-success text-white px-3 py-1.5 rounded-pill font-monospace small shadow-xs" id="coordBadge">
+                                        <i class="bi bi-geo-alt-fill me-1"></i> <span id="coordBadgeText">@(Model.Latitude.HasValue && Model.Longitude.HasValue ? $"{Model.Latitude.Value:F4}° N, {Model.Longitude.Value:F4}° E" : "24.8465° N, 89.3777° E")</span>
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div id="equipmentLocationPickerMap" class="rounded-3 shadow-xs border bg-white" style="height: 320px; width: 100%; z-index: 1;"></div>
                         </div>
                     </div>
 
@@ -459,6 +515,162 @@
         // Initialize primary selection state on page load
         document.addEventListener('DOMContentLoaded', () => {
             ensurePrimarySelected();
+            initLocationPickerMap();
         });
+
+        // -------------------------------------------------------------------------
+        // LEAFLET MAP LOCATION PICKER
+        // -------------------------------------------------------------------------
+        const districtCentroids = {
+            "Dhaka": [23.8103, 90.4125], "Gazipur": [24.0023, 90.4264], "Kishoreganj": [24.4449, 90.7766], "Manikganj": [23.8617, 90.0003],
+            "Munshiganj": [23.5422, 90.5305], "Narayanganj": [23.6238, 90.5000], "Narsingdi": [23.9193, 90.7176], "Tangail": [24.2513, 89.9167],
+            "Faridpur": [23.6071, 89.8429], "Gopalganj": [23.0051, 89.8266], "Madaripur": [23.1641, 90.1897], "Rajbari": [23.7574, 89.6445],
+            "Shariatpur": [23.2423, 90.4348], "Bogra": [24.8465, 89.3777], "Bogura": [24.8465, 89.3777], "Joypurhat": [25.0968, 89.0227],
+            "Naogaon": [24.8103, 88.9416], "Natore": [24.4206, 88.9322], "Nawabganj": [24.5965, 88.2775], "Chapai Nawabganj": [24.5965, 88.2775],
+            "Pabna": [24.0064, 89.2372], "Rajshahi": [24.3636, 88.6241], "Sirajganj": [24.4534, 89.7008], "Dinajpur": [25.6279, 88.6332],
+            "Gaibandha": [25.3288, 89.5406], "Kurigram": [25.8054, 89.6362], "Lalmonirhat": [25.9923, 89.2847], "Nilphamari": [25.9318, 88.8560],
+            "Panchagarh": [26.3411, 88.5542], "Rangpur": [25.7439, 89.2752], "Thakurgaon": [26.0337, 88.4617], "Chittagong": [22.3569, 91.7832],
+            "Chattogram": [22.3569, 91.7832], "Bandarban": [22.1953, 92.2184], "Brahmanbaria": [23.9571, 91.1119], "Chandpur": [23.2333, 90.6667],
+            "Comilla": [23.4607, 91.1809], "Cumilla": [23.4607, 91.1809], "Cox's Bazar": [21.4272, 92.0058], "Feni": [23.0186, 91.3966],
+            "Khagrachhari": [23.1193, 91.9847], "Lakshmipur": [22.9425, 90.8412], "Noakhali": [22.8696, 91.0993], "Rangamati": [22.7324, 92.2985],
+            "Khulna": [22.8456, 89.5403], "Bagerhat": [22.6516, 89.7859], "Chuadanga": [23.6402, 88.8418], "Jessore": [23.1664, 89.2081],
+            "Jashore": [23.1664, 89.2081], "Jhenaidah": [23.5448, 89.1539], "Kushtia": [23.9013, 89.1205], "Magura": [23.4873, 89.4198],
+            "Meherpur": [23.7622, 88.6318], "Narail": [23.1725, 89.5127], "Satkhira": [22.7185, 89.0705], "Barisal": [22.7010, 90.3535],
+            "Barishal": [22.7010, 90.3535], "Barguna": [22.0953, 90.0768], "Bhola": [22.6859, 90.6481], "Jhalokati": [22.6406, 90.1987],
+            "Patuakhali": [22.3596, 90.3298], "Pirojpur": [22.5841, 89.9720], "Sylhet": [24.8949, 91.8687], "Habiganj": [24.3749, 91.4155],
+            "Moulvibazar": [24.4829, 91.7774], "Sunamganj": [25.0658, 91.3950], "Mymensingh": [24.7471, 90.4203], "Jamalpur": [24.9375, 89.9378],
+            "Netrokona": [24.8709, 90.7279], "Sherpur": [25.0205, 90.0153]
+        };
+
+        let pickerMap = null;
+        let pickerMarker = null;
+
+        function findDistrictCoords(locationText) {
+            if (!locationText) return districtCentroids["Bogra"];
+            const clean = locationText.trim();
+            for (const key in districtCentroids) {
+                if (clean.toLowerCase().includes(key.toLowerCase())) {
+                    return districtCentroids[key];
+                }
+            }
+            return districtCentroids["Bogra"];
+        }
+
+        function updateCoordinates(lat, lng) {
+            document.getElementById('equipmentLatitude').value = lat.toFixed(6);
+            document.getElementById('equipmentLongitude').value = lng.toFixed(6);
+            
+            const badgeText = document.getElementById('coordBadgeText');
+            if (badgeText) {
+                badgeText.textContent = `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lng).toFixed(4)}° ${lng >= 0 ? 'E' : 'W'}`;
+            }
+        }
+
+        function initLocationPickerMap() {
+            const mapEl = document.getElementById('equipmentLocationPickerMap');
+            if (!mapEl) return;
+
+            const latInput = document.getElementById('equipmentLatitude');
+            const lngInput = document.getElementById('equipmentLongitude');
+            const locInput = document.getElementById('equipmentLocationInput');
+
+            let initialLat = parseFloat(latInput.value);
+            let initialLng = parseFloat(lngInput.value);
+
+            if (isNaN(initialLat) || isNaN(initialLng)) {
+                const defaultCoords = findDistrictCoords(locInput?.value);
+                initialLat = defaultCoords[0];
+                initialLng = defaultCoords[1];
+                updateCoordinates(initialLat, initialLng);
+            }
+
+            pickerMap = L.map('equipmentLocationPickerMap', {
+                scrollWheelZoom: true
+            }).setView([initialLat, initialLng], 12);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(pickerMap);
+
+            // Custom green tractor marker icon
+            const tractorIcon = L.divIcon({
+                className: 'custom-leaflet-marker',
+                html: `<div class="custom-map-pin"><i class="bi bi-gear-wide-connected"></i></div>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 32],
+                popupAnchor: [0, -32]
+            });
+
+            pickerMarker = L.marker([initialLat, initialLng], {
+                draggable: true,
+                icon: tractorIcon
+            }).addTo(pickerMap);
+
+            pickerMarker.bindPopup(`<strong>@L["Machinery Location"]</strong><br><small class="text-muted">@L["Drag marker or click map to adjust."]</small>`).openPopup();
+
+            pickerMarker.on('dragend', function (e) {
+                const pos = e.target.getLatLng();
+                updateCoordinates(pos.lat, pos.lng);
+            });
+
+            pickerMap.on('click', function (e) {
+                pickerMarker.setLatLng(e.latlng);
+                updateCoordinates(e.latlng.lat, e.latlng.lng);
+            });
+
+            // "Use Current GPS" button
+            document.getElementById('btnDetectGPS')?.addEventListener('click', () => {
+                if ('geolocation' in navigator) {
+                    if (window.KrishiToast) {
+                        KrishiToast.show('@L["Detecting your current location..."]', { iconClass: 'bi-crosshair text-success' });
+                    }
+                    navigator.geolocation.getCurrentPosition((pos) => {
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        pickerMap.setView([lat, lng], 15);
+                        pickerMarker.setLatLng([lat, lng]);
+                        updateCoordinates(lat, lng);
+                        if (window.KrishiToast) {
+                            KrishiToast.show('@L["Location updated to your GPS position!"]', { iconClass: 'bi-check-circle-fill text-success' });
+                        }
+                    }, (err) => {
+                        if (window.KrishiToast) {
+                            KrishiToast.show('@L["Unable to retrieve GPS location. Please drop a pin on the map."]', { iconClass: 'bi-exclamation-triangle-fill text-warning' });
+                        }
+                    }, { enableHighAccuracy: true, timeout: 8000 });
+                }
+            });
+
+            // "Center on District" button
+            document.getElementById('btnRecenterDistrict')?.addEventListener('click', () => {
+                const coords = findDistrictCoords(locInput?.value);
+                pickerMap.setView(coords, 12);
+                pickerMarker.setLatLng(coords);
+                updateCoordinates(coords[0], coords[1]);
+                if (window.KrishiToast) {
+                    KrishiToast.show('@L["Map centered on district."]', { iconClass: 'bi-geo-alt-fill text-info' });
+                }
+            });
+
+            // On location input change, center on district if user hasn't explicitly set pinpoint
+            locInput?.addEventListener('blur', () => {
+                if (locInput.value && !ModelHasCustomPin()) {
+                    const coords = findDistrictCoords(locInput.value);
+                    pickerMap.setView(coords, 12);
+                    pickerMarker.setLatLng(coords);
+                    updateCoordinates(coords[0], coords[1]);
+                }
+            });
+
+            function ModelHasCustomPin() {
+                const lat = parseFloat(document.getElementById('equipmentLatitude').value);
+                return !isNaN(lat) && lat !== 0;
+            }
+
+            // Invalidate size in case of tab or card layout resizing
+            setTimeout(() => { pickerMap.invalidateSize(); }, 300);
+        }
     </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 }

@@ -5,6 +5,30 @@
     var bookedDatesJson = System.Text.Json.JsonSerializer.Serialize(Model.BookedDates.Select(d => d.ToString("yyyy-MM-dd")).ToList());
 }
 
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+        .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+        .custom-map-pin {
+            background-color: #198754;
+            color: white;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .custom-map-pin i {
+            transform: rotate(45deg);
+            font-size: 15px;
+        }
+    </style>
+}
+
 <!-- Breadcrumb Navigation -->
 <nav aria-label="@L["breadcrumb"]" class="mb-3">
     <ol class="breadcrumb small">
@@ -133,6 +157,38 @@
                         <i class="bi bi-shield text-muted me-1"></i> @L["Unverified"]
                     </span>
                 }
+            </div>
+
+            <!-- Machinery Location & Map Directions Card -->
+            <div class="card p-3.5 mt-4 border rounded-4 bg-light shadow-xs">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 pb-2 border-bottom">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                            <i class="bi bi-geo-alt-fill text-success"></i>
+                            <span>@L["Location & Map Directions"]</span>
+                        </h6>
+                        <div class="text-muted small d-flex align-items-center flex-wrap gap-2">
+                            <span class="fw-semibold text-dark"><i class="bi bi-pin-map text-success me-1"></i>@Model.Location</span>
+                            @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+                            {
+                                <span class="badge bg-white text-muted border font-monospace">@Model.FormattedCoordinates</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+                        {
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold shadow-xs" onclick="copyCoordinates('@Model.Latitude.Value.ToString("F6")', '@Model.Longitude.Value.ToString("F6")')">
+                                <i class="bi bi-clipboard me-1"></i> @L["Copy GPS"]
+                            </button>
+                            <a href="@Model.GoogleMapsUrl" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm rounded-pill px-3 fw-semibold shadow-xs">
+                                <i class="bi bi-signpost-2-fill me-1"></i> @L["Get Directions"]
+                            </a>
+                        }
+                    </div>
+                </div>
+
+                <div id="equipmentDetailMap" class="rounded-3 border shadow-xs bg-white" style="height: 260px; width: 100%; z-index: 1;"></div>
             </div>
         </div>
 
@@ -522,5 +578,57 @@
                 }
             });
         }
+
+        // -------------------------------------------------------------------------
+        // LEAFLET MAP DISPLAY
+        // -------------------------------------------------------------------------
+        function copyCoordinates(lat, lng) {
+            const text = `${lat}, ${lng}`;
+            navigator.clipboard.writeText(text).then(() => {
+                if (window.KrishiToast) {
+                    KrishiToast.show('@L["Coordinates copied to clipboard!"]', { iconClass: 'bi-clipboard-check-fill text-success' });
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const mapEl = document.getElementById('equipmentDetailMap');
+            if (!mapEl) return;
+
+            const lat = @(Model.Latitude.HasValue ? Model.Latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "24.8465");
+            const lng = @(Model.Longitude.HasValue ? Model.Longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "89.3777");
+
+            const map = L.map('equipmentDetailMap', {
+                scrollWheelZoom: false
+            }).setView([lat, lng], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            const tractorIcon = L.divIcon({
+                className: 'custom-leaflet-marker',
+                html: `<div class="custom-map-pin"><i class="bi bi-gear-wide-connected"></i></div>`,
+                iconSize: [34, 34],
+                iconAnchor: [17, 34],
+                popupAnchor: [0, -34]
+            });
+
+            const marker = L.marker([lat, lng], { icon: tractorIcon }).addTo(map);
+            marker.bindPopup(`
+                <div class="p-1">
+                    <h6 class="fw-bold text-dark mb-1">@Model.Name</h6>
+                    <p class="small text-muted mb-1"><i class="bi bi-geo-alt text-success me-1"></i>@Model.Location</p>
+                    <div class="d-flex align-items-center justify-content-between gap-2 mt-2">
+                        <span class="badge bg-success-subtle text-success fw-bold">@Model.DailyRate</span>
+                        <a href="@Model.GoogleMapsUrl" target="_blank" class="btn btn-xs btn-outline-success rounded-pill px-2 py-0.5 small">@L["Directions"]</a>
+                    </div>
+                </div>
+            `);
+
+            setTimeout(() => { map.invalidateSize(); }, 300);
+        });
     </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 }
