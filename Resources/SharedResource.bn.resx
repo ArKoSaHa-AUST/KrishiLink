@@ -1,9 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <root>
-  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
-  <resheader name="version"><value>2.0</value></resheader>
-  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
-  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
   <data name="(Decimal / Shatangsho)" xml:space="preserve">
     <value>(ডেসিমাল / শতাংশ)</value>
   </data>
@@ -427,7 +435,7 @@
   <data name="Distance: Nearest" xml:space="preserve">
     <value>দূরত্ব: নিকটতম</value>
   </data>
-  <data name="Don&#x27;t know / Not sure" xml:space="preserve">
+  <data name="Don't know / Not sure" xml:space="preserve">
     <value>জানি না / নিশ্চিত নই</value>
   </data>
   <data name="Drag &amp; drop equipment photos here, or" xml:space="preserve">
@@ -523,7 +531,7 @@
   <data name="Farmer Dashboard Placeholder" xml:space="preserve">
     <value>কৃষক ড্যাশবোর্ডের স্থানধারক</value>
   </data>
-  <data name="Farmer&#x27;s Note" xml:space="preserve">
+  <data name="Farmer's Note" xml:space="preserve">
     <value>কৃষকের নোট</value>
   </data>
   <data name="Featured Listings" xml:space="preserve">
@@ -646,7 +654,7 @@
   <data name="Heavy Clay (Atel)" xml:space="preserve">
     <value>ভারী কাদামাটি (এঁটেল)</value>
   </data>
-  <data name="Here&#x27;s your farming overview for today. Manage bookings, explore equipment, and get crop advice." xml:space="preserve">
+  <data name="Here's your farming overview for today. Manage bookings, explore equipment, and get crop advice." xml:space="preserve">
     <value>আজকের জন্য আপনার কৃষি সারসংক্ষেপ। বুকিং পরিচালনা করুন, যন্ত্রপাতি দেখুন এবং ফসল পরামর্শ নিন।</value>
   </data>
   <data name="High-quality photos of the front, side, and engine bay increase rental bookings." xml:space="preserve">
@@ -1300,7 +1308,7 @@
   <data name="Unsaved changes will revert if you leave without saving." xml:space="preserve">
     <value>সংরক্ষণ না করে চলে গেলে অসংরক্ষিত পরিবর্তন বাতিল হবে।</value>
   </data>
-  <data name="Use this page to detail your site&#x27;s privacy policy." xml:space="preserve">
+  <data name="Use this page to detail your site's privacy policy." xml:space="preserve">
     <value>আপনার সাইটের গোপনীয়তা নীতি বর্ণনা করতে এই পাতাটি ব্যবহার করুন।</value>
   </data>
   <data name="User Profile Placeholder" xml:space="preserve">
@@ -1354,10 +1362,10 @@
   <data name="Yes (Pump / Canal)" xml:space="preserve">
     <value>হ্যাঁ (পাম্প / খাল)</value>
   </data>
-  <data name="You haven&#x27;t booked any crop or grain storage facilities yet. Discover nearby warehouses and cold storage rooms." xml:space="preserve">
+  <data name="You haven't booked any crop or grain storage facilities yet. Discover nearby warehouses and cold storage rooms." xml:space="preserve">
     <value>আপনি এখনও কোনো ফসল বা শস্য সংরক্ষণাগার বুক করেননি। কাছাকাছি গুদাম ও কোল্ড স্টোরেজ খুঁজে দেখুন।</value>
   </data>
-  <data name="You haven&#x27;t requested any machinery rentals yet. Explore tractors, harvesters, and tillers available in your area." xml:space="preserve">
+  <data name="You haven't requested any machinery rentals yet. Explore tractors, harvesters, and tillers available in your area." xml:space="preserve">
     <value>আপনি এখনও কোনো যন্ত্রপাতি ভাড়ার অনুরোধ করেননি। আপনার এলাকায় উপলব্ধ ট্রাক্টর, হারভেস্টার ও টিলার দেখুন।</value>
   </data>
   <data name="Your Note:" xml:space="preserve">
@@ -1403,7 +1411,7 @@
     <value>পিএইচ ৬.৫</value>
   </data>
   <data name="storage facilities" xml:space="preserve">
-    <value>স্টোরেজ সুবিধা</value>
+    <value>গুদাম সুবিধাসমূহ</value>
   </data>
   <data name="{0} Available Items" xml:space="preserve">
     <value>{0}?? ?????? ?????</value>
@@ -2788,7 +2796,6 @@
   <data name="You have verified the farmer's QR pass. Select an action below to update booking status immediately:" xml:space="preserve">
     <value>আপনি কৃষকের কিউআর পাস সফলভাবে যাচাই করেছেন। বুকিং স্ট্যাটাস আপডেট করতে নিচের অপশন নির্বাচন করুন:</value>
   </data>
-
   <data name="Reject Request" xml:space="preserve">
     <value>অনুরোধ প্রত্যাখ্যান করুন</value>
   </data>
@@ -3059,8 +3066,8 @@
   <data name="Service Records" xml:space="preserve">
     <value>সার্ভিস রেকর্ড</value>
   </data>
-  <data name="Expired (>90d)" xml:space="preserve">
-    <value>মেয়াদোত্তীর্ণ (>৯০ দিন)</value>
+  <data name="Expired (&gt;90d)" xml:space="preserve">
+    <value>মেয়াদোত্তীর্ণ (&gt;৯০ দিন)</value>
   </data>
   <data name="No badges unlocked yet. Complete bookings and maintain high ratings to earn recognition!" xml:space="preserve">
     <value>এখনও কোনো ব্যাজ আনলক হয়নি। বুকিং সম্পন্ন করুন এবং উচ্চ রেটিং বজায় রেখে স্বীকৃতি অর্জন করুন!</value>
@@ -3515,7 +3522,7 @@
   <data name="Settling automatically within ~{0}" xml:space="preserve">
     <value>প্রায় {0}-এর মধ্যে স্বয়ংক্রিয়ভাবে নিষ্পত্তি হবে</value>
   </data>
-  <data name="Farmer payments held for bookings you haven&apos;t completed yet" xml:space="preserve">
+  <data name="Farmer payments held for bookings you haven't completed yet" xml:space="preserve">
     <value>এখনও সম্পন্ন না হওয়া বুকিংয়ের জন্য সংরক্ষিত কৃষকের পেমেন্ট</value>
   </data>
   <data name="A payout of {0} is being processed. It settles automatically within ~{1}; you can request another once it completes." xml:space="preserve">
@@ -3602,4 +3609,1141 @@
   <data name="Your storage request for {0} tons in {1} ({2} - {3}) was accepted. Please pay ৳{4} to confirm." xml:space="preserve">
     <value>{1}-এ {0} টন সংরক্ষণের অনুরোধ ({2} - {3}) গৃহীত হয়েছে। নিশ্চিত করতে অনুগ্রহ করে ৳{4} পরিশোধ করুন।</value>
   </data>
-</root>
+  <data name="Pricing" xml:space="preserve">
+    <value>মূল্য নির্ধারণ</value>
+  </data>
+  <data name="Pricing Rules" xml:space="preserve">
+    <value>মূল্য নির্ধারণ বিধি</value>
+  </data>
+  <data name="Rate Rules" xml:space="preserve">
+    <value>ভাড়ার নিয়মাবলী</value>
+  </data>
+  <data name="Dynamic &amp; Seasonal Pricing" xml:space="preserve">
+    <value>ডাইনামিক ও মৌসুমী মূল্য</value>
+  </data>
+  <data name="Manage dynamic rate rules for seasonal peaks, harvest periods, and weekends." xml:space="preserve">
+    <value>মৌসুমী শীর্ষ সময়, ফসল তোলার সময় এবং সাপ্তাহিক ছুটির জন্য পরিবর্তনশীল ভাড়ার নিয়ম পরিচালনা করুন।</value>
+  </data>
+  <data name="Add Rate Rule" xml:space="preserve">
+    <value>নতুন ভাড়ার নিয়ম যোগ করুন</value>
+  </data>
+  <data name="Rule Name" xml:space="preserve">
+    <value>নিয়মের নাম</value>
+  </data>
+  <data name="e.g. Boro Harvest Peak, Monsoon Discount" xml:space="preserve">
+    <value>যেমন: বোরো ফসল তোলার মৌসুম, বর্ষা ছাড়</value>
+  </data>
+  <data name="Rule Type" xml:space="preserve">
+    <value>নিয়মের ধরণ</value>
+  </data>
+  <data name="Season (Date Range)" xml:space="preserve">
+    <value>মৌসুম (নির্দিষ্ট সময়কাল)</value>
+  </data>
+  <data name="Weekend (Fri &amp; Sat)" xml:space="preserve">
+    <value>সাপ্তাহিক ছুটি (শুক্র ও শনি)</value>
+  </data>
+  <data name="Daily Rate (৳)" xml:space="preserve">
+    <value>দৈনিক ভাড়া (৳)</value>
+  </data>
+  <data name="Active / Enabled" xml:space="preserve">
+    <value>সক্রিয় / চালু</value>
+  </data>
+  <data name="Rule Priority" xml:space="preserve">
+    <value>নিয়মের অগ্রাধিকার</value>
+  </data>
+  <data name="Season rules take precedence over Weekend rules, which take precedence over the base daily rate." xml:space="preserve">
+    <value>মৌসুমী নিয়ম সাপ্তাহিক নিয়মের চেয়ে অগ্রাধিকার পাবে, এবং সাপ্তাহিক নিয়ম সাধারণ দৈনিক ভাড়ার চেয়ে অগ্রাধিকার পাবে।</value>
+  </data>
+  <data name="No rate rules configured yet." xml:space="preserve">
+    <value>এখনও কোনো ভাড়ার নিয়ম যুক্ত করা হয়নি।</value>
+  </data>
+  <data name="Minimum Rental Days" xml:space="preserve">
+    <value>সর্বনিম্ন ভাড়ার দিন</value>
+  </data>
+  <data name="Minimum rental period: {0} days" xml:space="preserve">
+    <value>সর্বনিম্ন ভাড়ার মেয়াদ: {0} দিন</value>
+  </data>
+  <data name="Minimum rental duration is {0} days." xml:space="preserve">
+    <value>সর্বনিম্ন ভাড়ার সময়কাল {0} দিন।</value>
+  </data>
+  <data name="Special &amp; Seasonal Pricing" xml:space="preserve">
+    <value>বিশেষ ও মৌসুমী মূল্য</value>
+  </data>
+  <data name="Auto-applied at booking" xml:space="preserve">
+    <value>বুকিংয়ের সময় স্বয়ংক্রিয়ভাবে প্রযোজ্য</value>
+  </data>
+  <data name="Fri &amp; Sat" xml:space="preserve">
+    <value>শুক্র ও শনি</value>
+  </data>
+  <data name="Rate Breakdown:" xml:space="preserve">
+    <value>ভাড়ার বিস্তারিত হিসাব:</value>
+  </data>
+  <data name="from " xml:space="preserve">
+    <value>শুরু </value>
+  </data>
+  <data name="updated price" xml:space="preserve">
+    <value>হালনাগাদ মূল্য</value>
+  </data>
+  <data name="Base" xml:space="preserve">
+    <value>সাধারণ</value>
+  </data>
+  <data name="Weekend" xml:space="preserve">
+    <value>সাপ্তাহিক</value>
+  </data>
+  <data name="Season" xml:space="preserve">
+    <value>মৌসুম</value>
+  </data>
+  <data name="Rate rule saved successfully." xml:space="preserve">
+    <value>ভাড়ার নিয়ম সফলভাবে সংরক্ষিত হয়েছে।</value>
+  </data>
+  <data name="Rate rule deleted successfully." xml:space="preserve">
+    <value>ভাড়ার নিয়ম সফলভাবে মুছে ফেলা হয়েছে।</value>
+  </data>
+  <data name="Rate rule status updated." xml:space="preserve">
+    <value>ভাড়ার নিয়মের স্থিতি হালনাগাদ করা হয়েছে।</value>
+  </data>
+  <data name="Invalid rate rule." xml:space="preserve">
+    <value>ভাড়ার নিয়মটি সঠিক নয়।</value>
+  </data>
+  <data name="Season rules must have a valid Start Date and End Date." xml:space="preserve">
+    <value>মৌসুমী নিয়মের জন্য অবশ্যই সঠিক শুরুর ও শেষের তারিখ দিতে হবে।</value>
+  </data>
+  <data name="Daily rate must be greater than zero." xml:space="preserve">
+    <value>দৈনিক ভাড়া অবশ্যই শূন্যের বেশি হতে হবে।</value>
+  </data>
+  <data name="Active season rules cannot overlap with another active season rule." xml:space="preserve">
+    <value>একটি সক্রিয় মৌসুমী নিয়ম অন্য কোনো সক্রিয় মৌসুমী নিয়মের সময়ের সাথে মিলে যেতে পারবে না।</value>
+  </data>
+  <data name="Only one active weekend rule is allowed per equipment." xml:space="preserve">
+    <value>প্রতিটি যন্ত্রপাতির জন্য কেবল একটি সক্রিয় সাপ্তাহিক নিয়ম রাখা যাবে।</value>
+  </data>
+  <data name="Invalid dates for rental quote." xml:space="preserve">
+    <value>ভাড়ার হিসাবের জন্য নির্বাচিত তারিখগুলো সঠিক নয়।</value>
+  </data>
+  <data name="Selected date range is shorter than the minimum rental duration of {0} days." xml:space="preserve">
+    <value>নির্বাচিত সময়কাল সর্বনিম্ন ভাড়ার মেয়াদ {0} দিনের চেয়ে কম।</value>
+  </data>
+  <data name="Selected date range conflicts with existing bookings or blackout periods." xml:space="preserve">
+    <value>নির্বাচিত তারিখগুলো পূর্ববর্তী বুকিং বা অনুপলব্ধ সময়ের সাথে মিলে গেছে।</value>
+  </data>
+  <data name="Gross Rental Fee:" xml:space="preserve">
+    <value>মোট ভাড়ার ফি:</value>
+  </data>
+  <data name="Unit" xml:space="preserve">
+    <value>ইউনিট</value>
+  </data>
+  <data name="Units" xml:space="preserve">
+    <value>ইউনিট</value>
+  </data>
+  <data name="Units:" xml:space="preserve">
+    <value>ইউনিট সংখ্যা:</value>
+  </data>
+  <data name="Available Units" xml:space="preserve">
+    <value>উপলব্ধ ইউনিট</value>
+  </data>
+  <data name="Units Needed" xml:space="preserve">
+    <value>প্রয়োজনীয় ইউনিট</value>
+  </data>
+  <data name="Quantity / Units Needed" xml:space="preserve">
+    <value>প্রয়োজনীয় ইউনিট / সংখ্যা</value>
+  </data>
+  <data name="Partially Booked" xml:space="preserve">
+    <value>আংশিক বুক করা</value>
+  </data>
+  <data name="units available" xml:space="preserve">
+    <value>টি ইউনিট উপলব্ধ</value>
+  </data>
+  <data name="units free" xml:space="preserve">
+    <value>টি ইউনিট খালি</value>
+  </data>
+  <data name="Up to {0} units available concurrently." xml:space="preserve">
+    <value>একসাথে সর্বোচ্চ {0}টি ইউনিট পর্যন্ত ভাড়া নেওয়া যাবে।</value>
+  </data>
+  <data name="Only {0} of {1} units are available for the selected dates." xml:space="preserve">
+    <value>নির্বাচিত তারিখের জন্য {1}টি ইউনিটের মধ্যে কেবল {0}টি ইউনিট উপলব্ধ রয়েছে।</value>
+  </data>
+  <data name="Reduce the quantity or choose different dates." xml:space="preserve">
+    <value>ইউনিটের সংখ্যা কমান বা অন্য তারিখ নির্বাচন করুন।</value>
+  </data>
+  <data name="Cannot reduce quantity below {0} because {1} units are already booked on {2}." xml:space="preserve">
+    <value>যন্ত্রপাতির সংখ্যা {0} এর নিচে নামানো যাবে না কারণ {2} তারিখে ইতোমধ্যে {1}টি ইউনিট বুক করা আছে।</value>
+  </data>
+  <data name="Blocked {0} day(s). Skipped {1} day(s) already booked by farmers." xml:space="preserve">
+    <value>{0} দিন ব্লক করা হয়েছে। কৃষকদের বুক করা {1} দিন বাদ দেওয়া হয়েছে।</value>
+  </data>
+  <data name="Blocked {0} day(s)." xml:space="preserve">
+    <value>{0} দিন সফলভাবে ব্লক করা হয়েছে।</value>
+  </data>
+  <data name="Unblocked {0} day(s)." xml:space="preserve">
+    <value>{0} দিন সফলভাবে আনব্লক করা হয়েছে।</value>
+  </data>
+  <data name="The end date must be on or after the start date." xml:space="preserve">
+    <value>শেষের তারিখ অবশ্যই শুরুর তারিখের সমান বা পরবর্তী হতে হবে।</value>
+  </data>
+  <data name="You can block at most 366 days at a time." xml:space="preserve">
+    <value>একবারে সর্বোচ্চ ৩৬৬ দিন ব্লক করা যাবে।</value>
+  </data>
+  <data name="Overlaps a date you blocked ({0})" xml:space="preserve">
+    <value>আপনার ব্লক করা তারিখের সাথে সাংঘর্ষিক ({0})</value>
+  </data>
+  <data name="Block a Period" xml:space="preserve">
+    <value>একটি নির্দিষ্ট সময়কাল ব্লক করুন</value>
+  </data>
+  <data name="Block or unblock a range of dates or recurring weekdays." xml:space="preserve">
+    <value>একটি নির্দিষ্ট তারিখের পরিসর বা পুনরাবৃত্তিমূলক বার ব্লক বা আনব্লক করুন।</value>
+  </data>
+  <data name="Quick Range:" xml:space="preserve">
+    <value>দ্রুত নির্বাচন:</value>
+  </data>
+  <data name="Next 7 days" xml:space="preserve">
+    <value>পরবর্তী ৭ দিন</value>
+  </data>
+  <data name="Next 30 days" xml:space="preserve">
+    <value>পরবর্তী ৩০ দিন</value>
+  </data>
+  <data name="Rest of this month" xml:space="preserve">
+    <value>চলতি মাসের বাকি দিনগুলো</value>
+  </data>
+  <data name="Recurring Weekdays (Optional)" xml:space="preserve">
+    <value>নির্দিষ্ট বারসমূহ (ঐচ্ছিক)</value>
+  </data>
+  <data name="If none checked, applies to every day in range" xml:space="preserve">
+    <value>কোনোটি নির্বাচন না করলে পরিসরের সকল দিন গণ্য হবে</value>
+  </data>
+  <data name="Every Friday" xml:space="preserve">
+    <value>প্রতি শুক্রবার</value>
+  </data>
+  <data name="Fri + Sat" xml:space="preserve">
+    <value>শুক্র + শনি</value>
+  </data>
+  <data name="All weekdays (Sun-Thu)" xml:space="preserve">
+    <value>সকল কার্যদিবস (রবি-বৃহস্পতি)</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>মুছুন</value>
+  </data>
+  <data name="Reason (Optional)" xml:space="preserve">
+    <value>কারণ (ঐচ্ছিক)</value>
+  </data>
+  <data name="max 100 characters" xml:space="preserve">
+    <value>সর্বোচ্চ ১০০ অক্ষর</value>
+  </data>
+  <data name="e.g. Harvest festival, Annual maintenance, Personal holiday" xml:space="preserve">
+    <value>যেমন: ফসল তোলার উৎসব, বার্ষিক রক্ষণাবেক্ষণ, ব্যক্তিগত ছুটি</value>
+  </data>
+  <data name="Helps you remember why these dates were blocked. Visible on your calendar." xml:space="preserve">
+    <value>কেন এই তারিখগুলো ব্লক করা হয়েছিল তা মনে রাখতে সাহায্য করে। আপনার ক্যালেন্ডারে প্রদর্শিত হবে।</value>
+  </data>
+  <data name="Block Period" xml:space="preserve">
+    <value>সময়কাল ব্লক করুন</value>
+  </data>
+  <data name="Unblock instead" xml:space="preserve">
+    <value>পরিবর্তে আনব্লক করুন</value>
+  </data>
+  <data name="Upcoming Blocked Periods" xml:space="preserve">
+    <value>আসন্ন ব্লককৃত সময়কাল</value>
+  </data>
+  <data name="Next 12 months" xml:space="preserve">
+    <value>পরবর্তী ১২ মাস</value>
+  </data>
+  <data name="No upcoming blocked dates" xml:space="preserve">
+    <value>কোনো আসন্ন ব্লককৃত তারিখ নেই</value>
+  </data>
+  <data name="Your listing is open for bookings. Use the form on the left to block dates if needed." xml:space="preserve">
+    <value>আপনার লিস্টিং বুকিংয়ের জন্য উন্মুক্ত। প্রয়োজনে তারিখ ব্লক করতে বাম দিকের ফর্মটি ব্যবহার করুন।</value>
+  </data>
+  <data name="1 day" xml:space="preserve">
+    <value>১ দিন</value>
+  </data>
+  <data name="Unblock" xml:space="preserve">
+    <value>আনব্লক</value>
+  </data>
+  <data name="Unblock Date Range?" xml:space="preserve">
+    <value>তারিখের পরিসর আনব্লক করবেন?</value>
+  </data>
+  <data name="Are you sure you want to unblock {0}? Farmers will be able to book these dates again." xml:space="preserve">
+    <value>আপনি কি নিশ্চিতভাবে {0} আনব্লক করতে চান? কৃষকরা পুনরায় এই তারিখগুলোতে বুক করতে পারবেন।</value>
+  </data>
+  <data name="Unblock Dates" xml:space="preserve">
+    <value>তারিখ আনব্লক করুন</value>
+  </data>
+  <data name="Blocked:" xml:space="preserve">
+    <value>ব্লককৃত:</value>
+  </data>
+  <data name="Unavailable:" xml:space="preserve">
+    <value>অনুপলব্ধ:</value>
+  </data>
+  <data name="Overlaps a date you blocked" xml:space="preserve">
+    <value>আপনার ব্লক করা তারিখের সাথে সাংঘর্ষিক</value>
+  </data>
+  <data name="Change dates" xml:space="preserve">
+    <value>তারিখ পরিবর্তন করুন</value>
+  </data>
+  <data name="Change Booking Dates &amp; Details" xml:space="preserve">
+    <value>বুকিংয়ের তারিখ ও বিবরণ পরিবর্তন করুন</value>
+  </data>
+  <data name="Number of Units" xml:space="preserve">
+    <value>যন্ত্রপাতির ইউনিট সংখ্যা</value>
+  </data>
+  <data name="Storage Capacity (Tons)" xml:space="preserve">
+    <value>সংরক্ষণের পরিমাণ (টন)</value>
+  </data>
+  <data name="You can change dates and quantity up to 3 times. If previously accepted, the booking returns to pending for owner re-approval." xml:space="preserve">
+    <value>আপনি সর্বোচ্চ ৩ বার তারিখ ও পরিমাণ পরিবর্তন করতে পারবেন। পূর্বে অনুমোদিত হয়ে থাকলে পুনরায় মালিকের অনুমোদনের জন্য বুকিংটি অপেক্ষমাণ অবস্থায় ফিরে যাবে।</value>
+  </data>
+  <data name="Paid bookings cannot be modified (escrow payment is locked). Cancel and refund instead." xml:space="preserve">
+    <value>পরিশোধিত বুকিং পরিবর্তন করা সম্ভব নয় (পেমেন্ট লক করা থাকে)। পরিবর্তে বাতিল করে রিফান্ড নিন।</value>
+  </data>
+  <data name="Changed ×{0}" xml:space="preserve">
+    <value>পরিবর্তিত ×{0}</value>
+  </data>
+  <data name="Previously:" xml:space="preserve">
+    <value>পূর্বে:</value>
+  </data>
+  <data name="Booking Modified" xml:space="preserve">
+    <value>বুকিং পরিবর্তিত হয়েছে</value>
+  </data>
+  <data name="{0} updated the equipment booking for {1} to {2} - {3} ({4} units)." xml:space="preserve">
+    <value>{0} {1}-এর বুকিং আপডেট করেছেন: {2} - {3} ({4} ইউনিট)।</value>
+  </data>
+  <data name="{0} updated the storage booking for {1} to {2} tons ({3} - {4})." xml:space="preserve">
+    <value>{0} {1}-এর গুদাম বুকিং আপডেট করেছেন: {2} টন ({3} - {4})।</value>
+  </data>
+  <data name="Booking updated. Because this request was previously accepted, it has returned to pending for owner re-approval." xml:space="preserve">
+    <value>বুকিং সফলভাবে আপডেট হয়েছে। যেহেতু এটি পূর্বে অনুমোদিত ছিল, তাই মালিকের পুনরায় অনুমোদনের জন্য অপেক্ষমাণ অবস্থায় ফিরে গেছে।</value>
+  </data>
+  <data name="Booking details updated successfully." xml:space="preserve">
+    <value>বুকিংয়ের বিবরণ সফলভাবে আপডেট করা হয়েছে।</value>
+  </data>
+  <data name="Please provide both start and end dates." xml:space="preserve">
+    <value>অনুগ্রহ করে শুরুর এবং শেষের উভয় তারিখ প্রদান করুন।</value>
+  </data>
+  <data name="Harvest Plans" xml:space="preserve">
+    <value>ফসল কাটার পরিকল্পনা</value>
+  </data>
+  <data name="Harvest Plan" xml:space="preserve">
+    <value>ফসল কাটার পরিকল্পনা</value>
+  </data>
+  <data name="Bundle equipment rentals and crop storage into coordinated harvest plans. Track availability and submit requests simultaneously." xml:space="preserve">
+    <value>যন্ত্রপাতি ভাড়া এবং গুদামজাতকরণকে সমন্বিত ফসল কাটার পরিকল্পনায় যুক্ত করুন। প্রাপ্যতা যাচাই করুন এবং একসাথে অনুরোধ পাঠান।</value>
+  </data>
+  <data name="New Harvest Plan" xml:space="preserve">
+    <value>নতুন ফসল পরিকল্পনা</value>
+  </data>
+  <data name="Draft Limit Reached (5/5)" xml:space="preserve">
+    <value>খসড়া সীমা পূর্ণ হয়েছে (৫/৫)</value>
+  </data>
+  <data name="Maximum 5 draft plans allowed. Submit or delete an existing draft first." xml:space="preserve">
+    <value>সর্বোচ্চ ৫টি খসড়া পরিকল্পনা রাখা যাবে। প্রথমে একটি জমা দিন অথবা মুছে ফেলুন।</value>
+  </data>
+  <data name="Total Plans" xml:space="preserve">
+    <value>মোট পরিকল্পনা</value>
+  </data>
+  <data name="Drafts" xml:space="preserve">
+    <value>খসড়া</value>
+  </data>
+  <data name="Submitted" xml:space="preserve">
+    <value>জমা দেওয়া হয়েছে</value>
+  </data>
+  <data name="Closed" xml:space="preserve">
+    <value>সমাপ্ত</value>
+  </data>
+  <data name="No Harvest Plans Yet" xml:space="preserve">
+    <value>এখনো কোনো ফসল কাটার পরিকল্পনা নেই</value>
+  </data>
+  <data name="Create a seasonal harvest plan to group machinery and storage needs together. You can assemble multiple items and submit booking requests with a single click." xml:space="preserve">
+    <value>যন্ত্রপাতি ও গুদামজাতকরণের চাহিদা একত্রিত করে একটি মৌসুমী ফসল কাটার পরিকল্পনা তৈরি করুন। একাধিক সামগ্রী একত্র করে এক ক্লিকে বুকিং অনুরোধ পাঠানো সম্ভব।</value>
+  </data>
+  <data name="Create Your First Plan" xml:space="preserve">
+    <value>আপনার প্রথম পরিকল্পনা তৈরি করুন</value>
+  </data>
+  <data name="Target Window" xml:space="preserve">
+    <value>লক্ষ্য সময়কাল</value>
+  </data>
+  <data name="Est. Gross" xml:space="preserve">
+    <value>আনুমানিক মোট</value>
+  </data>
+  <data name="View Plan" xml:space="preserve">
+    <value>পরিকল্পনা দেখুন</value>
+  </data>
+  <data name="Clone for Next Season" xml:space="preserve">
+    <value>পরবর্তী মৌসুমের জন্য ক্লোন করুন</value>
+  </data>
+  <data name="Shift Dates By (Days)" xml:space="preserve">
+    <value>তারিখ এগিয়ে নিন (দিন)</value>
+  </data>
+  <data name="Standard: 365 days for the next annual season, or custom offset (1-730 days)." xml:space="preserve">
+    <value>সাধারণত: পরবর্তী বার্ষিক মৌসুমের জন্য ৩৬৫ দিন, অথবা নির্দিষ্ট দিন (১-৭৩০ দিন)।</value>
+  </data>
+  <data name="Standard: 365 days for next year's season (range: 1 - 730 days)." xml:space="preserve">
+    <value>সাধারণত: পরবর্তী মৌসুমের জন্য ৩৬৫ দিন (১ - ৭৩০ দিন পর্যন্ত)।</value>
+  </data>
+  <data name="Create Duplicate" xml:space="preserve">
+    <value>অনুলিপি তৈরি করুন</value>
+  </data>
+  <data name="Duplicate Plan" xml:space="preserve">
+    <value>পরিকল্পনা প্রতিলিপি করুন</value>
+  </data>
+  <data name="Delete Plan" xml:space="preserve">
+    <value>পরিকল্পনা মুছুন</value>
+  </data>
+  <data name="Are you sure you want to delete this harvest plan?" xml:space="preserve">
+    <value>আপনি কি নিশ্চিতভাবে এই ফসল কাটার পরিকল্পনাটি মুছে ফেলতে চান?</value>
+  </data>
+  <data name="Clone Harvest Plan for Next Season" xml:space="preserve">
+    <value>পরবর্তী মৌসুমের জন্য ফসল পরিকল্পনা ক্লোন করুন</value>
+  </data>
+  <data name="This will duplicate all items from &quot;{0}&quot; into a new draft plan with future dates." xml:space="preserve">
+    <value>এটি "{0}"-এর সমস্ত সামগ্রী ভবিষ্যতের তারিখসহ একটি নতুন খসড়া পরিকল্পনায় প্রতিলিপি করবে।</value>
+  </data>
+  <data name="All {0} items in this plan will be duplicated into a new Draft harvest plan with dates shifted forward." xml:space="preserve">
+    <value>এই পরিকল্পনার সকল {0}টি সামগ্রী ভবিষ্যতের তারিখ সমন্বয় করে একটি নতুন খসড়া পরিকল্পনায় প্রতিলিপি করা হবে।</value>
+  </data>
+  <data name="Create New Harvest Plan" xml:space="preserve">
+    <value>নতুন ফসল কাটার পরিকল্পনা তৈরি করুন</value>
+  </data>
+  <data name="Plan Name" xml:space="preserve">
+    <value>পরিকল্পনার নাম</value>
+  </data>
+  <data name="e.g. Boro Harvest 2027" xml:space="preserve">
+    <value>যেমন: বোরো ফসল সংগ্রহ ২০২৭</value>
+  </data>
+  <data name="Target Crop" xml:space="preserve">
+    <value>লক্ষ্য ফসল</value>
+  </data>
+  <data name="e.g. Rice (Boro), Wheat, Potato" xml:space="preserve">
+    <value>যেমন: ধান (বোরো), গম, আলু</value>
+  </data>
+  <data name="Notes &amp; Instructions" xml:space="preserve">
+    <value>নোট ও নির্দেশাবলী</value>
+  </data>
+  <data name="Internal notes on harvest timing, field locations, or labor coordination..." xml:space="preserve">
+    <value>ফসল তোলার সময়, জমির অবস্থান বা শ্রমিক সমন্বয় সংক্রান্ত অভ্যন্তরীণ নোট...</value>
+  </data>
+  <data name="Create Plan" xml:space="preserve">
+    <value>পরিকল্পনা তৈরি করুন</value>
+  </data>
+  <data name="Edit Details" xml:space="preserve">
+    <value>বিবরণ সম্পাদনা</value>
+  </data>
+  <data name="Edit Harvest Plan" xml:space="preserve">
+    <value>ফসল পরিকল্পনা সম্পাদনা</value>
+  </data>
+  <data name="Edit Plan Item" xml:space="preserve">
+    <value>আইটেম সম্পাদনা</value>
+  </data>
+  <data name="Availability Conflict Detected" xml:space="preserve">
+    <value>প্রাপ্যতা সংক্রান্ত বিরোধ পাওয়া গেছে</value>
+  </data>
+  <data name="One or more items in this harvest plan are currently unavailable for the requested dates or quantities. Please adjust dates or unit counts before submitting." xml:space="preserve">
+    <value>এই ফসল কাটার পরিকল্পনার এক বা একাধিক সামগ্রী কাঙ্ক্ষিত তারিখ বা পরিমাণের জন্য অনুপলব্ধ। জমা দেওয়ার পূর্বে তারিখ বা পরিমাণ পরিবর্তন করুন।</value>
+  </data>
+  <data name="Linked Booking Requests Status" xml:space="preserve">
+    <value>সংযুক্ত বুকিং অনুরোধের স্থিতি</value>
+  </data>
+  <data name="View in Bookings" xml:space="preserve">
+    <value>বুকিংয়ে দেখুন</value>
+  </data>
+  <data name="Plan Items" xml:space="preserve">
+    <value>পরিকল্পনার সামগ্রী</value>
+  </data>
+  <data name="Add More Items" xml:space="preserve">
+    <value>আরও সামগ্রী যোগ করুন</value>
+  </data>
+  <data name="Browse Godown Storage" xml:space="preserve">
+    <value>গুদাম সংরক্ষণ খুঁজুন</value>
+  </data>
+  <data name="This harvest plan is empty" xml:space="preserve">
+    <value>এই ফসল পরিকল্পনাটি খালি</value>
+  </data>
+  <data name="Add equipment rentals and godown storage listings to this plan to coordinate your harvest." xml:space="preserve">
+    <value>আপনার ফসল তোলার কাজের সমন্বয় করতে এই পরিকল্পনায় যন্ত্রপাতি ভাড়া এবং গুদামজাতকরণ যোগ করুন।</value>
+  </data>
+  <data name="Browse Storage" xml:space="preserve">
+    <value>সংরক্ষণাগার খুঁজুন</value>
+  </data>
+  <data name="Conflict" xml:space="preserve">
+    <value>বিরোধ</value>
+  </data>
+  <data name="Remove this item from the harvest plan?" xml:space="preserve">
+    <value>এই সামগ্রীটি ফসল কাটার পরিকল্পনা থেকে সরিয়ে ফেলবেন?</value>
+  </data>
+  <data name="Remove Item" xml:space="preserve">
+    <value>আইটেম সরান</value>
+  </data>
+  <data name="Pay Now" xml:space="preserve">
+    <value>এখনই পরিশোধ করুন</value>
+  </data>
+  <data name="Units (Max: {0})" xml:space="preserve">
+    <value>ইউনিট (সর্বোচ্চ: {0})</value>
+  </data>
+  <data name="Requested Capacity (Tons)" xml:space="preserve">
+    <value>কাঙ্ক্ষিত ধারণক্ষমতা (টন)</value>
+  </data>
+  <data name="Note / Special Instructions" xml:space="preserve">
+    <value>নোট / বিশেষ নির্দেশাবলী</value>
+  </data>
+  <data name="Plan Summary" xml:space="preserve">
+    <value>পরিকল্পনার সারসংক্ষেপ</value>
+  </data>
+  <data name="Total Items" xml:space="preserve">
+    <value>মোট সামগ্রী</value>
+  </data>
+  <data name="Total Estimated Cost" xml:space="preserve">
+    <value>মোট আনুমানিক খরচ</value>
+  </data>
+  <data name="Submitting will simultaneously send {0} booking request(s) to owners. Standard rates apply. Batch plans cannot combine individual promo codes." xml:space="preserve">
+    <value>জমা দিলে মালিকদের কাছে একসাথে {0}টি বুকিং অনুরোধ যাবে। সাধারণ মূল্য প্রযোজ্য হবে। দলগত পরিকল্পনায় আলাদা প্রোমো কোড প্রয়োগ করা যায় না।</value>
+  </data>
+  <data name="Plan is Empty" xml:space="preserve">
+    <value>পরিকল্পনা খালি</value>
+  </data>
+  <data name="Resolve Conflicts to Submit" xml:space="preserve">
+    <value>জমা দিতে বিরোধ নিষ্পত্তি করুন</value>
+  </data>
+  <data name="Submit Harvest Plan ({0})" xml:space="preserve">
+    <value>ফসল পরিকল্পনা জমা দিন ({0})</value>
+  </data>
+  <data name="View Bookings Tracker" xml:space="preserve">
+    <value>বুকিং ট্র্যাকার দেখুন</value>
+  </data>
+  <data name="Confirm Harvest Plan Submission" xml:space="preserve">
+    <value>ফসল পরিকল্পনা জমা নিশ্চিতকরণ</value>
+  </data>
+  <data name="Are you ready to submit &quot;{0}&quot;? This will create and send {1} booking request(s) to respective equipment and storage owners." xml:space="preserve">
+    <value>আপনি কি "{0}" জমা দিতে প্রস্তুত? এটি সংশ্লিষ্ট যন্ত্রপাতি ও গুদাম মালিকদের কাছে {1}টি বুকিং অনুরোধ পাঠাবে।</value>
+  </data>
+  <data name="Owners will receive notification of your coordinated harvest plan." xml:space="preserve">
+    <value>মালিকরা আপনার সমন্বিত ফসল পরিকল্পনার নোটিফিকেশন পাবেন।</value>
+  </data>
+  <data name="You will be notified as owners review and accept your requests." xml:space="preserve">
+    <value>মালিকরা আপনার অনুরোধ পর্যালোচনা ও গ্রহণ করলে আপনি অবহিত হবেন।</value>
+  </data>
+  <data name="Payments can be completed once owners accept each request." xml:space="preserve">
+    <value>মালিকরা প্রতিটি অনুরোধ গ্রহণ করার পর পেমেন্ট সম্পন্ন করা যাবে।</value>
+  </data>
+  <data name="Confirm &amp; Send Requests" xml:space="preserve">
+    <value>নিশ্চিত করুন ও অনুরোধ পাঠান</value>
+  </data>
+  <data name="Add to Harvest Plan" xml:space="preserve">
+    <value>ফসল পরিকল্পনায় যোগ করুন</value>
+  </data>
+  <data name="Add to Plan" xml:space="preserve">
+    <value>পরিকল্পনায় যোগ করুন</value>
+  </data>
+  <data name="Select Harvest Plan" xml:space="preserve">
+    <value>ফসল পরিকল্পনা নির্বাচন করুন</value>
+  </data>
+  <data name="Create New Plan..." xml:space="preserve">
+    <value>নতুন পরিকল্পনা তৈরি করুন...</value>
+  </data>
+  <data name="Create New Harvest Plan..." xml:space="preserve">
+    <value>নতুন ফসল পরিকল্পনা তৈরি করুন...</value>
+  </data>
+  <data name="New Plan Name" xml:space="preserve">
+    <value>নতুন পরিকল্পনার নাম</value>
+  </data>
+  <data name="e.g. Harvest Plan {0}" xml:space="preserve">
+    <value>যেমন: ফসল পরিকল্পনা {0}</value>
+  </data>
+  <data name="Please choose start and end dates first." xml:space="preserve">
+    <value>দয়া করে প্রথমে শুরুর ও শেষের তারিখ নির্বাচন করুন।</value>
+  </data>
+  <data name="Harvest plan: {0} · {1} items" xml:space="preserve">
+    <value>ফসল পরিকল্পনা: {0} · {1}টি সামগ্রী</value>
+  </data>
+  <data name="Part of Harvest Plan" xml:space="preserve">
+    <value>ফসল পরিকল্পনার অংশ</value>
+  </data>
+  <data name="Active Plan" xml:space="preserve">
+    <value>সক্রিয় পরিকল্পনা</value>
+  </data>
+  <data name="You have {0} draft harvest plan(s)" xml:space="preserve">
+    <value>আপনার {0}টি খসড়া ফসল পরিকল্পনা রয়েছে</value>
+  </data>
+  <data name="Coordinate and submit your bundled equipment and godown storage requests." xml:space="preserve">
+    <value>আপনার সমন্বিত যন্ত্রপাতি ও গুদাম সংরক্ষণ অনুরোধ পরিচালনা ও জমা দিন।</value>
+  </data>
+  <data name="Manage Harvest Plans" xml:space="preserve">
+    <value>ফসল পরিকল্পনা পরিচালনা</value>
+  </data>
+  <data name="{0} requested to rent {1} from {2} to {3} as part of harvest plan &quot;{4}&quot;." xml:space="preserve">
+    <value>{0} ফসল পরিকল্পনা "{4}"-এর অংশ হিসেবে {2} থেকে {3} পর্যন্ত {1} ভাড়ার অনুরোধ করেছেন।</value>
+  </data>
+  <data name="{0} requested {1} tons of storage at {2} from {3} to {4} as part of harvest plan &quot;{5}&quot;." xml:space="preserve">
+    <value>{0} ফসল পরিকল্পনা "{5}"-এর অংশ হিসেবে {3} থেকে {4} পর্যন্ত {2}-এ {1} টন সংরক্ষণের অনুরোধ করেছেন।</value>
+  </data>
+  <data name="Harvest Plan Submitted" xml:space="preserve">
+    <value>ফসল কাটার পরিকল্পনা জমা দেওয়া হয়েছে</value>
+  </data>
+  <data name="{0}: {1} requests sent to owners." xml:space="preserve">
+    <value>{0}: মালিকদের কাছে {1}টি অনুরোধ পাঠানো হয়েছে।</value>
+  </data>
+  <data name="Farmer Trust Profile" xml:space="preserve">
+    <value>কৃষকের আস্থা প্রোফাইল</value>
+  </data>
+  <data name="Back to Requests" xml:space="preserve">
+    <value>অনুরোধের তালিকায় ফিরে যান</value>
+  </data>
+  <data name="Owner Decision View" xml:space="preserve">
+    <value>মালিকের সিদ্ধান্ত দৃশ্য</value>
+  </data>
+  <data name="New to KrishiLink" xml:space="preserve">
+    <value>কৃষিলিঙ্কে নতুন</value>
+  </data>
+  <data name="Reliable" xml:space="preserve">
+    <value>নির্ভরযোগ্য</value>
+  </data>
+  <data name="Frequent cancellations" xml:space="preserve">
+    <value>ঘন ঘন বাতিলকারী</value>
+  </data>
+  <data name="Tier" xml:space="preserve">
+    <value>স্তর</value>
+  </data>
+  <data name="Phone hidden until booking confirmed" xml:space="preserve">
+    <value>বুকিং নিশ্চিত না হওয়া পর্যন্ত ফোন নম্বর লুকানো</value>
+  </data>
+  <data name="Phone number is available once a booking with this farmer is accepted/confirmed." xml:space="preserve">
+    <value>এই কৃষকের সাথে বুকিং গৃহীত/নিশ্চিত হওয়ার পর ফোন নম্বর পাওয়া যাবে।</value>
+  </data>
+  <data name="Finished rentals &amp; storage" xml:space="preserve">
+    <value>সম্পন্ন ভাড়া ও সংরক্ষণ</value>
+  </data>
+  <data name="Accepted &amp; paid in progress" xml:space="preserve">
+    <value>গৃহীত ও পরিশোধিত চলমান</value>
+  </data>
+  <data name="Cancellation Rate" xml:space="preserve">
+    <value>বাতিলের হার</value>
+  </data>
+  <data name="Cancelled after escrow payment" xml:space="preserve">
+    <value>এসক্রো পেমেন্টের পর বাতিল</value>
+  </data>
+  <data name="{0} refunded" xml:space="preserve">
+    <value>{0}টি রিফান্ড</value>
+  </data>
+  <data name="{0} cancelled of {1} decided" xml:space="preserve">
+    <value>{1}টির মধ্যে {0}টি বাতিল</value>
+  </data>
+  <data name="Avg. Time to Pay" xml:space="preserve">
+    <value>গড় পরিশোধের সময়</value>
+  </data>
+  <data name="From acceptance to escrow" xml:space="preserve">
+    <value>অনুমোদন থেকে এসক্রো জমা</value>
+  </data>
+  <data name="History With You" xml:space="preserve">
+    <value>আপনার সাথে কাজের ইতিহাস</value>
+  </data>
+  <data name="Completed: {0}" xml:space="preserve">
+    <value>সম্পন্ন: {0}</value>
+  </data>
+  <data name="Active: {0}" xml:space="preserve">
+    <value>চলমান: {0}</value>
+  </data>
+  <data name="Cancelled: {0}" xml:space="preserve">
+    <value>বাতিল: {0}</value>
+  </data>
+  <data name="First booked: {0}" xml:space="preserve">
+    <value>প্রথম বুকিং: {0}</value>
+  </data>
+  <data name="Never" xml:space="preserve">
+    <value>কখনও নয়</value>
+  </data>
+  <data name="Listing" xml:space="preserve">
+    <value>তালিকা</value>
+  </data>
+  <data name="Date Range" xml:space="preserve">
+    <value>তারিখ পরিসীমা</value>
+  </data>
+  <data name="This farmer has not yet completed any prior bookings with you. This is their first interaction." xml:space="preserve">
+    <value>এই কৃষক আপনার সাথে পূর্বে কোনো বুকিং সম্পন্ন করেননি। এটি তার প্রথম যোগাযোগ।</value>
+  </data>
+  <data name="Platform Feedback Given" xml:space="preserve">
+    <value>প্ল্যাটফর্মে প্রদত্ত মতামত</value>
+  </data>
+  <data name="{0} reviews given by this farmer · average rating: {1} ★" xml:space="preserve">
+    <value>এই কৃষকের প্রদত্ত {0}টি রিভিউ · গড় রেটিং: {1} ★</value>
+  </data>
+  <data name="No reviews submitted by this farmer yet." xml:space="preserve">
+    <value>এই কৃষক এখনও কোনো রিভিউ প্রদান করেননি।</value>
+  </data>
+  <data name="Privacy &amp; Verification Policy" xml:space="preserve">
+    <value>গোপনীয়তা ও যাচাইকরণ নীতি</value>
+  </data>
+  <data name="Shown to you because this farmer has requested one of your listings. Contact details are visible only for confirmed bookings." xml:space="preserve">
+    <value>এই কৃষক আপনার একটি তালিকায় অনুরোধ করার কারণে এটি আপনাকে দেখানো হচ্ছে। যোগাযোগের বিবরণ শুধুমাত্র নিশ্চিত বুকিংয়ের ক্ষেত্রে দৃশ্যমান হয়।</value>
+  </data>
+  <data name="✔ {0} completed · {1}% cancellations · since {2}" xml:space="preserve">
+    <value>✔ {0}টি সম্পন্ন · {1}% বাতিল · সদস্য {2} থেকে</value>
+  </data>
+  <data name="View Farmer Profile" xml:space="preserve">
+    <value>কৃষকের প্রোফাইল দেখুন</value>
+  </data>
+  <data name="Your booking starts tomorrow" xml:space="preserve">
+    <value>আপনার বুকিং আগামীকাল শুরু হবে</value>
+  </data>
+  <data name="Handover tomorrow" xml:space="preserve">
+    <value>আগামীকাল হস্তান্তর</value>
+  </data>
+  <data name="Equipment return due tomorrow" xml:space="preserve">
+    <value>আগামীকাল যন্ত্রপাতি ফেরত দেওয়ার তারিখ</value>
+  </data>
+  <data name="Storage period ending soon" xml:space="preserve">
+    <value>সংরক্ষণ মেয়াদ শীঘ্রই শেষ হচ্ছে</value>
+  </data>
+  <data name="Payment pending for your booking" xml:space="preserve">
+    <value>আপনার বুকিংয়ের পেমেন্ট বাকি রয়েছে</value>
+  </data>
+  <data name="A farmer is waiting for your reply" xml:space="preserve">
+    <value>একজন কৃষক আপনার উত্তরের অপেক্ষায় আছেন</value>
+  </data>
+  <data name="{0} starts tomorrow ({1}). Owner: {2}, {3}." xml:space="preserve">
+    <value>{0} আগামীকাল শুরু হচ্ছে ({1})। মালিক: {2}, {3}।</value>
+  </data>
+  <data name="{0} for {1} starts tomorrow ({2}). Please prepare the handover." xml:space="preserve">
+    <value>{1}-এর জন্য {0} আগামীকাল ({2}) শুরু হচ্ছে। অনুগ্রহ করে হস্তান্তরের প্রস্তুতি নিন।</value>
+  </data>
+  <data name="Your rental of {0} ends tomorrow ({1}). Please return it on time." xml:space="preserve">
+    <value>{0}-এর আপনার ভাড়া আগামীকাল ({1}) শেষ হচ্ছে। অনুগ্রহ করে সময়মতো ফেরত দিন।</value>
+  </data>
+  <data name="Your storage of {0} t at {1} ends on {2}. Extend the booking or arrange collection." xml:space="preserve">
+    <value>{1}-এ আপনার {0} টন সংরক্ষণ {2} তারিখে শেষ হচ্ছে। বুকিং বাড়ান অথবা সংগ্রহ করার ব্যবস্থা করুন।</value>
+  </data>
+  <data name="Your booking for {0} ({1}) was accepted but is not paid yet. Pay ৳{2} to confirm it." xml:space="preserve">
+    <value>{0} ({1})-এর জন্য আপনার বুকিং গৃহীত হয়েছে কিন্তু এখনও পরিশোধ করা হয়নি। নিশ্চিত করতে ৳{2} পরিশোধ করুন।</value>
+  </data>
+  <data name="{0}'s booking of {1} ended on {2}. Mark it completed to release your payout." xml:space="preserve">
+    <value>{1}-এ {0}-এর বুকিং {2} তারিখে শেষ হয়েছে। আপনার পেআউট ছাড় করতে এটি সম্পন্ন চিহ্নিত করুন।</value>
+  </data>
+  <data name="{0} requested {1} ({2}) {3} hours ago. Accept or decline so they can plan." xml:space="preserve">
+    <value>{0} {3} ঘণ্টা আগে {1} ({2})-এর অনুরোধ করেছেন। গ্রহণ বা প্রত্যাখ্যান করুন যাতে তারা পরিকল্পনা করতে পারেন।</value>
+  </data>
+  <data name="[Dev] Run reminders now" xml:space="preserve">
+    <value>[ডেভ] রিমাইন্ডার এখনই চালান</value>
+  </data>
+  <data name="[Dev] Reminders: {0} sent, {1} already delivered." xml:space="preserve">
+    <value>[ডেভ] রিমাইন্ডার: {0}টি পাঠানো হয়েছে, {1}টি আগেই বিতরণ করা হয়েছে।</value>
+  </data>
+  <data name="Reminder" xml:space="preserve">
+    <value>রিমাইন্ডার</value>
+  </data>
+  <data name="My Favorites" xml:space="preserve">
+    <value>আমার প্রিয় তালিকা</value>
+  </data>
+  <data name="My Favorites &amp; Wishlist" xml:space="preserve">
+    <value>আমার প্রিয় ও উইশলিস্ট</value>
+  </data>
+  <data name="Favorites" xml:space="preserve">
+    <value>প্রিয় তালিকা</value>
+  </data>
+  <data name="Track and quickly access your saved machinery and storage facilities with real-time availability updates." xml:space="preserve">
+    <value>রিয়েল-টাইম প্রাপ্যতা আপডেটের সাথে আপনার সংরক্ষিত যন্ত্রপাতি এবং গুদামগুলো ট্র্যাক ও দ্রুত অ্যাক্সেস করুন।</value>
+  </data>
+  <data name="Browse Machinery" xml:space="preserve">
+    <value>যন্ত্রপাতি ব্রাউজ করুন</value>
+  </data>
+  <data name="Machinery" xml:space="preserve">
+    <value>যন্ত্রপাতি</value>
+  </data>
+  <data name="No favorite machinery yet" xml:space="preserve">
+    <value>এখনও কোনো যন্ত্রপাতি প্রিয় তালিকায় যোগ করা হয়নি</value>
+  </data>
+  <data name="Click the heart icon on any equipment card or detail page while browsing to save it to your wishlist." xml:space="preserve">
+    <value>উইশলিস্টে সংরক্ষণ করতে ব্রাউজ করার সময় যেকোনো যন্ত্রপাতির কার্ড বা বিস্তারিত পৃষ্ঠায় হার্ট আইকনে ক্লিক করুন।</value>
+  </data>
+  <data name="Explore Equipment Catalog" xml:space="preserve">
+    <value>যন্ত্রপাতির ক্যাটালগ দেখুন</value>
+  </data>
+  <data name="No favorite storage facilities yet" xml:space="preserve">
+    <value>এখনও কোনো গুদাম প্রিয় তালিকায় যোগ করা হয়নি</value>
+  </data>
+  <data name="Click the heart icon on any godown facility card or detail page while browsing to save it to your wishlist." xml:space="preserve">
+    <value>উইশলিস্টে সংরক্ষণ করতে ব্রাউজ করার সময় যেকোনো গুদামের কার্ড বা বিস্তারিত পৃষ্ঠায় হার্ট আইকনে ক্লিক করুন।</value>
+  </data>
+  <data name="Explore Storage Catalog" xml:space="preserve">
+    <value>গুদামের ক্যাটালগ দেখুন</value>
+  </data>
+  <data name="Add to favorites" xml:space="preserve">
+    <value>প্রিয় তালিকায় যোগ করুন</value>
+  </data>
+  <data name="Remove from favorites" xml:space="preserve">
+    <value>প্রিয় তালিকা থেকে সরান</value>
+  </data>
+  <data name="Item removed from your favorites." xml:space="preserve">
+    <value>আইটেমটি আপনার প্রিয় তালিকা থেকে সরানো হয়েছে।</value>
+  </data>
+  <data name="Available today" xml:space="preserve">
+    <value>আজই পাওয়া যাচ্ছে</value>
+  </data>
+  <data name="Free from {0}" xml:space="preserve">
+    <value>{0} থেকে খালি আছে</value>
+  </data>
+  <data name="Check availability" xml:space="preserve">
+    <value>প্রাপ্যতা দেখুন</value>
+  </data>
+  <data name="{0} tons available today" xml:space="preserve">
+    <value>আজ {0} টন ধারণক্ষমতা খালি আছে</value>
+  </data>
+  <data name="Storage Fee" xml:space="preserve">
+    <value>সংরক্ষণ ফি</value>
+  </data>
+  <data name="Saved Searches" xml:space="preserve">
+    <value>সংরক্ষিত অনুসন্ধান</value>
+  </data>
+  <data name="Saved Searches &amp; Alerts" xml:space="preserve">
+    <value>সংরক্ষিত অনুসন্ধান ও সতর্কতা</value>
+  </data>
+  <data name="Automated alerts notify you as soon as new machinery or storage matching your preferences becomes available." xml:space="preserve">
+    <value>আপনার পছন্দের সাথে মিলে এমন নতুন যন্ত্রপাতি বা গুদাম খালি হলেই স্বয়ংক্রিয় সতর্কবার্তা আপনাকে জানিয়ে দেবে।</value>
+  </data>
+  <data name="{0} of {1} Saved" xml:space="preserve">
+    <value>{0}/{1} সংরক্ষিত</value>
+  </data>
+  <data name="[Dev] Run Alerts Now" xml:space="preserve">
+    <value>[Dev] এখনই সতর্কতা চালু করুন</value>
+  </data>
+  <data name="No saved searches yet" xml:space="preserve">
+    <value>এখনও কোনো অনুসন্ধান সংরক্ষিত নেই</value>
+  </data>
+  <data name="Search for machinery or godowns with your desired filters and click 'Save this search' to receive automatic availability alerts." xml:space="preserve">
+    <value>পছন্দসই ফিল্টার দিয়ে যন্ত্রপাতি বা গুদাম অনুসন্ধান করুন এবং স্বয়ংক্রিয় সতর্কতা পেতে 'এই অনুসন্ধান সংরক্ষণ করুন' ক্লিক করুন।</value>
+  </data>
+  <data name="Find Machinery" xml:space="preserve">
+    <value>যন্ত্রপাতি খুঁজুন</value>
+  </data>
+  <data name="Find Godowns" xml:space="preserve">
+    <value>গুদাম খুঁজুন</value>
+  </data>
+  <data name="Alerts Active" xml:space="preserve">
+    <value>সতর্কতা সক্রিয়</value>
+  </data>
+  <data name="Alerts Paused" xml:space="preserve">
+    <value>সতর্কতা স্থগিত</value>
+  </data>
+  <data name="Expired" xml:space="preserve">
+    <value>মেয়াদোত্তীর্ণ</value>
+  </data>
+  <data name="Delete search" xml:space="preserve">
+    <value>অনুসন্ধান মুছুন</value>
+  </data>
+  <data name="Are you sure you want to delete this saved search?" xml:space="preserve">
+    <value>আপনি কি নিশ্চিত যে এই সংরক্ষিত অনুসন্ধানটি মুছে ফেলতে চান?</value>
+  </data>
+  <data name="Matched Listings:" xml:space="preserve">
+    <value>মেলা তালিকা:</value>
+  </data>
+  <data name="{0} listings" xml:space="preserve">
+    <value>{0}টি তালিকা</value>
+  </data>
+  <data name="Last Alert:" xml:space="preserve">
+    <value>শেষ সতর্কতা:</value>
+  </data>
+  <data name="No alerts yet" xml:space="preserve">
+    <value>এখনও কোনো সতর্কতা নেই</value>
+  </data>
+  <data name="Pause Alerts" xml:space="preserve">
+    <value>সতর্কতা স্থগিত করুন</value>
+  </data>
+  <data name="Enable Alerts" xml:space="preserve">
+    <value>সতর্কতা চালু করুন</value>
+  </data>
+  <data name="Run Now" xml:space="preserve">
+    <value>এখনই দেখুন</value>
+  </data>
+  <data name="Search dates have passed" xml:space="preserve">
+    <value>অনুসন্ধানের তারিখ পার হয়ে গেছে</value>
+  </data>
+  <data name="Save This Search" xml:space="preserve">
+    <value>এই অনুসন্ধানটি সংরক্ষণ করুন</value>
+  </data>
+  <data name="Save Search" xml:space="preserve">
+    <value>অনুসন্ধান সংরক্ষণ</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>সংরক্ষণ</value>
+  </data>
+  <data name="Search Name" xml:space="preserve">
+    <value>অনুসন্ধানের নাম</value>
+  </data>
+  <data name="Current Search Criteria:" xml:space="preserve">
+    <value>বর্তমান অনুসন্ধানের শর্তাবলী:</value>
+  </data>
+  <data name="Notify me when new matching machinery becomes available" xml:space="preserve">
+    <value>নতুন মানানসই যন্ত্রপাতি পাওয়া গেলে আমাকে জানান</value>
+  </data>
+  <data name="Notify me when new matching storage becomes available" xml:space="preserve">
+    <value>নতুন মানানসই গুদাম পাওয়া গেলে আমাকে জানান</value>
+  </data>
+  <data name="Search '{0}' has been saved! You will receive alerts when new listings match." xml:space="preserve">
+    <value>অনুসন্ধান '{0}' সংরক্ষিত হয়েছে! নতুন তালিকা মিললে সতর্কতা পাঠানো হবে।</value>
+  </data>
+  <data name="Alert settings updated." xml:space="preserve">
+    <value>সতর্কতা সেটিংস আপডেট করা হয়েছে।</value>
+  </data>
+  <data name="Saved search deleted." xml:space="preserve">
+    <value>সংরক্ষিত অনুসন্ধান মুছে ফেলা হয়েছে।</value>
+  </data>
+  <data name="All machinery in Bangladesh" xml:space="preserve">
+    <value>বাংলাদেশের সকল যন্ত্রপাতি</value>
+  </data>
+  <data name="All storage facilities in Bangladesh" xml:space="preserve">
+    <value>বাংলাদেশের সকল গুদাম</value>
+  </data>
+  <data name="You cannot have more than 100 favorites." xml:space="preserve">
+    <value>আপনি ১০০ টির বেশি প্রিয় তালিকা রাখতে পারবেন না।</value>
+  </data>
+  <data name="You cannot have more than 10 saved searches." xml:space="preserve">
+    <value>আপনি ১০ টির বেশি অনুসন্ধান সংরক্ষণ করতে পারবেন না।</value>
+  </data>
+  <data name="Equipment listing does not exist." xml:space="preserve">
+    <value>যন্ত্রপাতির তালিকাটি বিদ্যমান নেই।</value>
+  </data>
+  <data name="Godown facility does not exist." xml:space="preserve">
+    <value>গুদাম সুবিধাটি বিদ্যমান নেই।</value>
+  </data>
+  <data name="Search name cannot exceed 80 characters" xml:space="preserve">
+    <value>অনুসন্ধানের নাম ৮০ অক্ষরের বেশি হতে পারবে না</value>
+  </data>
+  <data name="Please provide a name for this search" xml:space="preserve">
+    <value>দয়া করে এই অনুসন্ধানের একটি নাম দিন</value>
+  </data>
+  <data name="New match for your saved search" xml:space="preserve">
+    <value>আপনার সংরক্ষিত অনুসন্ধানের নতুন ফলাফল</value>
+  </data>
+  <data name="{0} in {1} matches &quot;{2}&quot;{3}." xml:space="preserve">
+    <value>{1}-এ {0} আপনার "{2}" অনুসন্ধানের সাথে মিলেছে{3}।</value>
+  </data>
+  <data name="Saved search expired" xml:space="preserve">
+    <value>সংরক্ষিত অনুসন্ধানের মেয়াদ শেষ</value>
+  </data>
+  <data name="Your saved search {0} expired — its dates have passed." xml:space="preserve">
+    <value>আপনার সংরক্ষিত অনুসন্ধান {0}-এর মেয়াদ শেষ হয়েছে — এর তারিখ পার হয়ে গেছে।</value>
+  </data>
+  <data name="[Dev] Evaluated saved searches. {0} alert(s) sent." xml:space="preserve">
+    <value>[Dev] সংরক্ষিত অনুসন্ধান মূল্যায়ন করা হয়েছে। {0}টি সতর্কতা পাঠানো হয়েছে।</value>
+  </data>
+  <data name="Storage Intake Lots &amp; Warehouse Receipts" xml:space="preserve">
+    <value>গুদামজাত পণ্য ও গুদাম রসিদ</value>
+  </data>
+  <data name="{0} / {1} t stored" xml:space="preserve">
+    <value>{0} / {1} টন সংরক্ষিত</value>
+  </data>
+  <data name="{0} t stored" xml:space="preserve">
+    <value>{0} টন সংরক্ষিত</value>
+  </data>
+  <data name="Physical goods logged via intake" xml:space="preserve">
+    <value>গুদামজাত হিসেবে সংরক্ষিত বাস্তব পণ্য</value>
+  </data>
+  <data name="Record intake" xml:space="preserve">
+    <value>পণ্য জমা নিন</value>
+  </data>
+  <data name="Record Produce Intake" xml:space="preserve">
+    <value>কৃষি পণ্য জমা রেকর্ড করুন</value>
+  </data>
+  <data name="Edit Intake Lot" xml:space="preserve">
+    <value>সংরক্ষিত লট সম্পাদনা</value>
+  </data>
+  <data name="Release" xml:space="preserve">
+    <value>খালাস করুন</value>
+  </data>
+  <data name="Release Stored Goods" xml:space="preserve">
+    <value>সংরক্ষিত পণ্য খালাস করুন</value>
+  </data>
+  <data name="Confirm Release" xml:space="preserve">
+    <value>খালাস নিশ্চিত করুন</value>
+  </data>
+  <data name="Delete this intake lot?" xml:space="preserve">
+    <value>এই সংরক্ষিত লটটি মুছে ফেলতে চান?</value>
+  </data>
+  <data name="Download Receipt PDF" xml:space="preserve">
+    <value>রসিদ PDF ডাউনলোড করুন</value>
+  </data>
+  <data name="PDF Receipt" xml:space="preserve">
+    <value>PDF রসিদ</value>
+  </data>
+  <data name="Receipt PDF" xml:space="preserve">
+    <value>রসিদ PDF</value>
+  </data>
+  <data name="Receipt #" xml:space="preserve">
+    <value>রসিদ নং</value>
+  </data>
+  <data name="Receipt Number:" xml:space="preserve">
+    <value>রসিদ নম্বর:</value>
+  </data>
+  <data name="Crop Name" xml:space="preserve">
+    <value>ফসলের নাম</value>
+  </data>
+  <data name="Number of Bags / Crates" xml:space="preserve">
+    <value>বস্তা / ক্রেটের সংখ্যা</value>
+  </data>
+  <data name="Avg. Bag Weight (kg)" xml:space="preserve">
+    <value>গড় বস্তার ওজন (কেজি)</value>
+  </data>
+  <data name="Auto-calculated (Bags × Bag Weight) or override from weighbridge ticket." xml:space="preserve">
+    <value>স্বয়ংক্রিয় হিসাব (বস্তা × বস্তার ওজন) অথবা ওজন স্কেলের মান লিখুন।</value>
+  </data>
+  <data name="Quality Grade" xml:space="preserve">
+    <value>মানের গ্রেড</value>
+  </data>
+  <data name="Grade A (Premium)" xml:space="preserve">
+    <value>গ্রেড এ (উন্নত মান)</value>
+  </data>
+  <data name="Grade B (Standard)" xml:space="preserve">
+    <value>গ্রেড বি (সাধারণ মান)</value>
+  </data>
+  <data name="Grade C (Fair)" xml:space="preserve">
+    <value>গ্রেড সি (চলতি মান)</value>
+  </data>
+  <data name="Ungraded" xml:space="preserve">
+    <value>অশ্রেণিকৃত (Ungraded)</value>
+  </data>
+  <data name="Grade" xml:space="preserve">
+    <value>গ্রেড</value>
+  </data>
+  <data name="Moisture %" xml:space="preserve">
+    <value>আর্দ্রতা %</value>
+  </data>
+  <data name="Moisture:" xml:space="preserve">
+    <value>আর্দ্রতা:</value>
+  </data>
+  <data name="Moisture Content:" xml:space="preserve">
+    <value>আর্দ্রতার পরিমাণ:</value>
+  </data>
+  <data name="Not Tested" xml:space="preserve">
+    <value>পরীক্ষা করা হয়নি</value>
+  </data>
+  <data name="Remarks / Storage Location Notes" xml:space="preserve">
+    <value>মন্তব্য / গুদামের অবস্থান নোট</value>
+  </data>
+  <data name="Save &amp; Issue Receipt" xml:space="preserve">
+    <value>সংরক্ষণ ও রসিদ ইস্যু করুন</value>
+  </data>
+  <data name="Update Lot" xml:space="preserve">
+    <value>লট আপডেট করুন</value>
+  </data>
+  <data name="Releasing goods marks this lot as finalized and cannot be undone. The warehouse receipt will reflect a permanent RELEASED status." xml:space="preserve">
+    <value>পণ্য খালাস করলে এই লটটি চূড়ান্ত হিসেবে চিহ্নিত হবে যা পরিবর্তন করা যাবে না। গুদাম রসিদে স্থায়ীভাবে খালাস (RELEASED) স্ট্যাটাস প্রতিফলিত হবে।</value>
+  </data>
+  <data name="Released To (Name / Phone / ID)" xml:space="preserve">
+    <value>কার কাছে খালাস (নাম / ফোন / আইডি)</value>
+  </data>
+  <data name="Release Remarks" xml:space="preserve">
+    <value>খালাসের মন্তব্য</value>
+  </data>
+  <data name="Warehouse receipt issued successfully." xml:space="preserve">
+    <value>গুদাম রসিদ সফলভাবে ইস্যু করা হয়েছে।</value>
+  </data>
+  <data name="Intake lot updated successfully." xml:space="preserve">
+    <value>সংরক্ষিত লট সফলভাবে আপডেট করা হয়েছে।</value>
+  </data>
+  <data name="Intake lot deleted successfully." xml:space="preserve">
+    <value>সংরক্ষিত লট সফলভাবে মুছে ফেলা হয়েছে।</value>
+  </data>
+  <data name="Goods released and farmer notified." xml:space="preserve">
+    <value>পণ্য খালাস করা হয়েছে এবং কৃষককে অবহিত করা হয়েছে।</value>
+  </data>
+  <data name="Cannot issue intake for non-godown bookings." xml:space="preserve">
+    <value>গুদাম ব্যতীত অন্য বুকিংয়ে পণ্য গ্রহণ সম্ভব নয়।</value>
+  </data>
+  <data name="Intake can only be recorded for paid or completed storage bookings." xml:space="preserve">
+    <value>কেবলমাত্র পরিশোধিত বা সম্পন্ন গুদাম বুকিংয়ের জন্য পণ্য জমা রেকর্ড করা যাবে।</value>
+  </data>
+  <data name="Intake date cannot be in the future." xml:space="preserve">
+    <value>পণ্য জমার তারিখ ভবিষ্যতের হতে পারে না।</value>
+  </data>
+  <data name="Intake date cannot precede storage booking start date." xml:space="preserve">
+    <value>পণ্য জমার তারিখ বুকিং শুরুর আগের হতে পারে না।</value>
+  </data>
+  <data name="Bags and bag weight must be positive." xml:space="preserve">
+    <value>বস্তার সংখ্যা এবং ওজন ধনাত্মক হতে হবে।</value>
+  </data>
+  <data name="Net weight cannot exceed booking capacity (+5% tolerance)." xml:space="preserve">
+    <value>মোট ওজন বুকিং ক্ষমতার অতিরিক্ত হতে পারে না (+৫% স্কেল সহনশীলতা)।</value>
+  </data>
+  <data name="Cannot edit an intake lot that has already been released." xml:space="preserve">
+    <value>ইতিমধ্যে খালাস হওয়া লট সম্পাদনা করা যাবে না।</value>
+  </data>
+  <data name="Cannot delete an intake lot that has already been released." xml:space="preserve">
+    <value>ইতিমধ্যে খালাস হওয়া লট মুছে ফেলা যাবে না।</value>
+  </data>
+  <data name="Warehouse Receipt Verification" xml:space="preserve">
+    <value>গুদাম রসিদ যাচাইকরণ</value>
+  </data>
+  <data name="Verified Authentic Warehouse Receipt" xml:space="preserve">
+    <value>যাচাইকৃত আসল গুদাম রসিদ</value>
+  </data>
+  <data name="Invalid Receipt" xml:space="preserve">
+    <value>অবৈধ গুদাম রসিদ</value>
+  </data>
+  <data name="Goods Released — Lot Finalized" xml:space="preserve">
+    <value>পণ্য খালাস সম্পন্ন — লট সমাপ্ত</value>
+  </data>
+  <data name="Receipt Not Found" xml:space="preserve">
+    <value>গুদাম রসিদ পাওয়া যায়নি</value>
+  </data>
+  <data name="STATUS: RELEASED" xml:space="preserve">
+    <value>স্ট্যাটাস: খালাস সম্পন্ন (RELEASED)</value>
+  </data>
+  <data name="STATUS: CURRENTLY STORED" xml:space="preserve">
+    <value>স্ট্যাটাস: বর্তমানে গুদামজাত (STORED)</value>
+  </data>
+  <data name="Currently Stored" xml:space="preserve">
+    <value>বর্তমানে গুদামজাত</value>
+  </data>
+  <data name="Licensed Storage Facility" xml:space="preserve">
+    <value>অনুমোদিত গুদাম সুবিধা</value>
+  </data>
+  <data name="Deposited Commodity Specifications" xml:space="preserve">
+    <value>জমা রাখা পণ্যের বিবরণ</value>
+  </data>
+  <data name="Net Stored Weight:" xml:space="preserve">
+    <value>সংরক্ষিত নেট ওজন:</value>
+  </data>
+  <data name="Storage Booking Ref:" xml:space="preserve">
+    <value>স্টোরেজ বুকিং রেফারেন্স:</value>
+  </data>
+  <data name="Storage Location &amp; Handling Remarks:" xml:space="preserve">
+    <value>গুদামের অবস্থান ও হ্যান্ডলিং মন্তব্য:</value>
+  </data>
+  <data name="Release Information:" xml:space="preserve">
+    <value>খালাসের তথ্য:</value>
+  </data>
+  <data name="Released To:" xml:space="preserve">
+    <value>যাকে দেওয়া হয়েছে:</value>
+  </data>
+  <data name="This digital verification confirms the issuance of an official KrishiLink Warehouse Receipt. Stored commodities are held under warehouse custody subject to the terms of the Agricultural Produce Storage Agreement. This receipt is non-negotiable." xml:space="preserve">
+    <value>এই ডিজিটাল যাচাইকরণ নিশ্চিত করে যে এটি একটি অফিশিয়াল কৃষিলিঙ্ক গুদাম রসিদ। সংরক্ষিত পণ্য কৃষিপণ্য গুদামজাতকরণ চুক্তির শর্তাধীনে গুদাম কর্তৃপক্ষের হেফাজতে রয়েছে। এই রসিদ হস্তান্তরযোগ্য নয়।</value>
+  </data>
+  <data name="No warehouse receipt matches the specified receipt number. Please check the QR code or URL and try again." xml:space="preserve">
+    <value>নির্দিষ্ট রসিদ নম্বরের সাথে কোনো গুদাম রসিদ মেলেনি। অনুগ্রহ করে কিউআর কোড বা লিঙ্কটি যাচাই করুন।</value>
+  </data>
+  <data name="Stored Goods &amp; Official Warehouse Receipts" xml:space="preserve">
+    <value>গুদামজাত পণ্য ও অফিশিয়াল গুদাম রসিদ</value>
+  </data>
+  <data name="Stored Produce &amp; Warehouse Receipts" xml:space="preserve">
+    <value>সংরক্ষিত পণ্য ও গুদাম রসিদ</value>
+  </data>
+  <data name="Warehouse Receipts" xml:space="preserve">
+    <value>গুদাম রসিদসমূহ</value>
+  </data>
+  <data name="{0} bags" xml:space="preserve">
+    <value>{0} বস্তা</value>
+  </data>
+  <data name="bags" xml:space="preserve">
+    <value>বস্তা</value>
+  </data>
+  <data name="{0} kg" xml:space="preserve">
+    <value>{0} কেজি</value>
+  </data>
+  <data name="{0} kg/bag" xml:space="preserve">
+    <value>{0} কেজি/বস্তা</value>
+  </data>
+  <data name="Released to {0} on {1}" xml:space="preserve">
+    <value>{0}-কে {1} তারিখে খালাস করা হয়েছে</value>
+  </data>
+  <data name="Intake lot logged: {0} kg of {1} at {2} (Receipt #{3})." xml:space="preserve">
+    <value>পণ্য জমা রেকর্ড করা হয়েছে: {0} কেজি {1}, স্থান: {2} (রসিদ #{3})।</value>
+  </data>
+  <data name="Stored goods released: {0} kg of {1} from {2} to {3} (Receipt #{4})." xml:space="preserve">
+    <value>সংরক্ষিত পণ্য খালাস করা হয়েছে: {0} কেজি {1}, {2} থেকে {3}-কে প্রদান করা হয়েছে (রসিদ #{4})।</value>
+  </data>
+<data name="Fuel" xml:space="preserve"><value>জ্বালানি</value></data><data name="Labour" xml:space="preserve"><value>শ্রমিক</value></data><data name="Repair" xml:space="preserve"><value>মেরামত</value></data><data name="Transport" xml:space="preserve"><value>পরিবহন</value></data><data name="Fumigation" xml:space="preserve"><value>জীবাণুমুক্তকরণ</value></data><data name="Utilities" xml:space="preserve"><value>ইউটিলিটি ও বিদ্যুৎ</value></data><data name="Fiscal Year" xml:space="preserve"><value>অর্থবছর</value></data><data name="Last FY" xml:space="preserve"><value>পূর্ববর্তী অর্থবছর</value></data><data name="YTD" xml:space="preserve"><value>চলতি বছর (YTD)</value></data><data name="Last 12 Months" xml:space="preserve"><value>বিগত ১২ মাস</value></data><data name="This Month" xml:space="preserve"><value>চলতি মাস</value></data><data name="Profit &amp; Loss / Tax Summary" xml:space="preserve"><value>লাভ-ক্ষতি ও কর বিবরণী</value></data><data name="Expenses by Category" xml:space="preserve"><value>খাত অনুযায়ী ব্যয়</value></data><data name="General Operating Expenses" xml:space="preserve"><value>সাধারণ পরিচালন ব্যয়</value></data><data name="General operating expense (no booking)" xml:space="preserve"><value>সাধারণ পরিচালন ব্যয় (কোনো নির্দিষ্ট বুকিং ছাড়া)</value></data><data name="Download P&amp;L (PDF)" xml:space="preserve"><value>লাভ-ক্ষতি বিবরণী (PDF)</value></data><data name="Add general expense" xml:space="preserve"><value>সাধারণ ব্যয় যোগ করুন</value></data><data name="Operating Expenses" xml:space="preserve"><value>পরিচালন ব্যয়</value></data><data name="Net Operating Profit" xml:space="preserve"><value>নিট পরিচালন লাভ</value></data><data name="Margin" xml:space="preserve"><value>মার্জিন</value></data><data name="Tax-deductible" xml:space="preserve"><value>কর-ছাড়যোগ্য</value></data><data name="Figures for your tax adviser: gross receipts, platform commission (deductible), operating expenses by category, net profit. KrishiLink does not calculate tax." xml:space="preserve"><value>আপনার কর উপদেষ্টার জন্য প্রয়োজনীয় তথ্য: মোট প্রাপ্তি, প্ল্যাটফর্ম কমিশন (ছাড়যোগ্য), খাতভিত্তিক পরিচালন ব্যয় ও নিট লাভ। কৃষিলিংক সরাসরি কর হিসাব করে না।</value></data><data name="Payment confirmed" xml:space="preserve"><value>পেমেন্ট নিশ্চিত হয়েছে</value></data><data name="Your payment of ৳{0} for {1} is confirmed (ref {2}). Your receipt is available in My Bookings." xml:space="preserve"><value>{1}-এর জন্য আপনার ৳{0} পেমেন্ট নিশ্চিত হয়েছে (রেফারেন্স {2})। আপনার রসিদ মাই বুকিং-এ সংরক্ষিত আছে।</value></data><data name="Payment Receipt" xml:space="preserve"><value>পেমেন্ট রসিদ</value></data><data name="Farmer receipt" xml:space="preserve"><value>কৃষকের রসিদ</value></data><data name="Listing (optional)" xml:space="preserve"><value>লিস্টিং (ঐচ্ছিক)</value></data><data name="None / General facility" xml:space="preserve"><value>কোনোটি নয় / সাধারণ সুবিধা</value></data><data name="Expense Date" xml:space="preserve"><value>ব্যয়ের তারিখ</value></data></root>

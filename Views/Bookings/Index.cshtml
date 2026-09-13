@@ -163,9 +163,21 @@
                                     <div>
                                         <div class="d-flex align-items-center gap-2">
                                             <span class="fw-bold text-dark mb-0">@b.ItemName</span>
+                                            @if (b.ModificationCount > 0)
+                                            {
+                                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-0.5 px-1.5" style="font-size: 0.72rem;" title="@b.PreviousDetails">
+                                                    <i class="bi bi-pencil-square me-1"></i>@L["Changed ×{0}", b.ModificationCount]
+                                                </span>
+                                            }
                                         </div>
-                                        <div class="small text-muted d-flex align-items-center gap-2 mt-0.5">
+                                        <div class="small text-muted d-flex align-items-center gap-2 mt-0.5 flex-wrap">
                                             <span class="badge bg-light text-muted border py-0.5 px-1.5" style="font-size: 0.72rem;">@b.BookingCode</span>
+                                            @if (b.HarvestPlanId.HasValue)
+                                            {
+                                                <a asp-controller="HarvestPlan" asp-action="Details" asp-route-id="@b.HarvestPlanId" class="badge bg-info-subtle text-info-emphasis border border-info-subtle text-decoration-none py-0.5 px-1.5" style="font-size: 0.72rem;" title="@L["Part of Harvest Plan"]">
+                                                    <i class="bi bi-diagram-3 me-1"></i>@(b.HarvestPlanName ?? "Harvest Plan")
+                                                </a>
+                                            }
                                             <span><i class="bi bi-geo-alt text-success"></i> @b.Location</span>
                                         </div>
                                     </div>
@@ -233,6 +245,11 @@
                                                 <div class="row g-2 small mb-2">
                                                     <div class="col-5 text-muted">@L["Booking Reference:"]</div>
                                                     <div class="col-7 fw-semibold text-dark">@b.BookingCode</div>
+                                                    @if (b.ModificationCount > 0 && !string.IsNullOrWhiteSpace(b.PreviousDetails))
+                                                    {
+                                                        <div class="col-5 text-muted">@L["Previously:"]</div>
+                                                        <div class="col-7 text-muted fst-italic">@b.PreviousDetails</div>
+                                                    }
                                                     <div class="col-5 text-muted">@L["Requested On:"]</div>
                                                     <div class="col-7 text-dark">@b.RequestedAt.ToString("dd MMM yyyy, hh:mm tt")</div>
                                                     <div class="col-5 text-muted">@L["Payment Status:"]</div>
@@ -354,6 +371,30 @@
                                                     <i class="bi bi-ticket-perforated-fill text-success"></i>
                                                     <span>@L["View Pass & Voucher"]</span>
                                                 </a>
+                                                @if (b.Status == "Paid" || b.Status == "Completed" || b.RefundedOn != null || b.PaymentReference != null)
+                                                {
+                                                    <a href="@AppLinks.BookingReceipt(b.BookingType, b.Id)" target="_blank" class="btn btn-outline-success btn-sm rounded-pill px-3.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs">
+                                                        <i class="bi bi-receipt"></i>
+                                                        <span>@L["Payment Receipt"]</span>
+                                                    </a>
+                                                }
+                                                @if (b.CanModify)
+                                                {
+                                                    <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5"
+                                                            onclick="openModifyModal('@b.BookingType', @b.Id, '@b.StartDate.ToString("yyyy-MM-dd")', '@b.EndDate.ToString("yyyy-MM-dd")', @b.Units, @b.StorageTons, @b.MaxUnits, @b.MinDays, '@b.ItemName.Replace("'", "\\'")')">
+                                                        <i class="bi bi-pencil-square"></i>
+                                                        <span>@L["Change dates"]</span>
+                                                    </button>
+                                                }
+                                                else if (b.Status == "Paid")
+                                                {
+                                                    <span data-bs-toggle="tooltip" data-bs-placement="top" title="@L["Paid bookings cannot be modified (escrow payment is locked). Cancel and refund instead."]">
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 opacity-50" disabled>
+                                                            <i class="bi bi-pencil-square"></i>
+                                                            <span>@L["Change dates"]</span>
+                                                        </button>
+                                                    </span>
+                                                }
                                                 @if (b.CanPay)
                                                 {
                                                     <a href="@b.PayUrl" class="btn btn-krishi-primary btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-sm">
@@ -378,6 +419,70 @@
                                             </div>
                                         </div>
 
+                                        @if (b.BookingType == "Godown" && b.IntakeLots.Any())
+                                        {
+                                            <div class="col-12 mt-3 pt-3 border-top">
+                                                <h6 class="fw-bold text-dark mb-2 d-flex align-items-center gap-2 small">
+                                                    <i class="bi bi-boxes text-success"></i> @L["Stored Produce & Warehouse Receipts"]
+                                                </h6>
+                                                <div class="table-responsive bg-white rounded-3 border">
+                                                    <table class="table table-sm align-middle mb-0" style="font-size: 0.8rem;">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th class="ps-3">@L["Receipt #"]</th>
+                                                                <th>@L["Crop & Variety"]</th>
+                                                                <th>@L["Net Weight"]</th>
+                                                                <th>@L["Quality"]</th>
+                                                                <th>@L["Status"]</th>
+                                                                <th class="pe-3 text-end">@L["Receipt PDF"]</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach (var lot in b.IntakeLots)
+                                                            {
+                                                                <tr>
+                                                                    <td class="ps-3 font-monospace fw-bold">@lot.ReceiptNumber</td>
+                                                                    <td>
+                                                                        <strong>@lot.Crop</strong>
+                                                                        @if (!string.IsNullOrEmpty(lot.Variety))
+                                                                        {
+                                                                            <span class="text-muted small d-block">@lot.Variety</span>
+                                                                        }
+                                                                    </td>
+                                                                    <td>
+                                                                        <strong>@lot.NetWeightKg.ToString("N0") kg</strong>
+                                                                        <span class="text-muted small d-block">(@lot.Bags @L["bags"])</span>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span class="badge bg-light text-dark border">@L["Grade"] @lot.Grade</span>
+                                                                        @if (lot.MoisturePercent.HasValue)
+                                                                        {
+                                                                            <span class="text-muted small d-block">@lot.MoisturePercent.Value.ToString("N1")%</span>
+                                                                        }
+                                                                    </td>
+                                                                    <td>
+                                                                        @if (lot.IsReleased)
+                                                                        {
+                                                                            <span class="badge bg-secondary">@L["Released"]</span>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <span class="badge bg-success">@L["Stored"]</span>
+                                                                        }
+                                                                    </td>
+                                                                    <td class="pe-3 text-end">
+                                                                        <a href="@AppLinks.WarehouseReceipt(lot.Id)" target="_blank" class="btn btn-outline-success btn-sm py-0 px-2 rounded-pill fw-semibold">
+                                                                            <i class="bi bi-file-earmark-pdf me-1"></i>@L["Download"]
+                                                                        </a>
+                                                                    </td>
+                                                                </tr>
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        }
+
                                     </div>
                                 </div>
                             </td>
@@ -399,9 +504,21 @@
                         <div class="flex-grow-1 min-w-0">
                             <div class="d-flex justify-content-between align-items-start gap-1">
                                 <h6 class="fw-bold text-dark mb-1 text-truncate">@b.ItemName</h6>
+                                @if (b.ModificationCount > 0)
+                                {
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-0.5 px-1.5" style="font-size: 0.7rem;" title="@b.PreviousDetails">
+                                        @L["Changed ×{0}", b.ModificationCount]
+                                    </span>
+                                }
                             </div>
-                            <div class="d-flex align-items-center gap-2 small text-muted">
+                            <div class="d-flex align-items-center gap-2 small text-muted flex-wrap">
                                 <span class="badge bg-light text-muted border">@b.BookingCode</span>
+                                @if (b.HarvestPlanId.HasValue)
+                                {
+                                    <a asp-controller="HarvestPlan" asp-action="Details" asp-route-id="@b.HarvestPlanId" class="badge bg-info-subtle text-info-emphasis border border-info-subtle text-decoration-none" title="@L["Part of Harvest Plan"]">
+                                        <i class="bi bi-diagram-3 me-1"></i>@(b.HarvestPlanName ?? "Harvest Plan")
+                                    </a>
+                                }
                                 <span class="text-truncate"><i class="bi bi-geo-alt text-success"></i> @b.Location</span>
                             </div>
                         </div>
@@ -461,6 +578,14 @@
                             </a>
                         </div>
 
+                        @if (b.ModificationCount > 0 && !string.IsNullOrWhiteSpace(b.PreviousDetails))
+                        {
+                            <div class="p-2.5 bg-light rounded-3 mb-2 small">
+                                <span class="text-muted d-block" style="font-size: 0.72rem;">@L["Previously:"]</span>
+                                <span class="text-secondary fst-italic">@b.PreviousDetails</span>
+                            </div>
+                        }
+
                         @if (!string.IsNullOrWhiteSpace(b.FarmerNotes))
                         {
                             <div class="p-2.5 bg-light rounded-3 mb-2">
@@ -492,6 +617,27 @@
                             </button>
                         }
 
+                        @if (b.BookingType == "Godown" && b.IntakeLots.Any())
+                        {
+                            <div class="p-2.5 bg-light rounded-3 mb-2">
+                                <span class="small fw-bold text-dark d-block mb-1"><i class="bi bi-boxes text-success me-1"></i>@L["Warehouse Receipts"]</span>
+                                <div class="d-flex flex-column gap-1.5">
+                                    @foreach (var lot in b.IntakeLots)
+                                    {
+                                        <div class="d-flex justify-content-between align-items-center bg-white p-2 rounded border small">
+                                            <div>
+                                                <div class="fw-bold text-dark">@lot.ReceiptNumber <span class="badge @(lot.IsReleased ? "bg-secondary" : "bg-success") ms-1">@(lot.IsReleased ? L["Released"] : L["Stored"])</span></div>
+                                                <div class="text-muted small">@lot.Crop · @lot.NetWeightKg.ToString("N0") kg (@lot.Bags @L["bags"])</div>
+                                            </div>
+                                            <a href="@AppLinks.WarehouseReceipt(lot.Id)" target="_blank" class="btn btn-outline-success btn-sm py-1 px-2 rounded-pill">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
                         <div class="d-grid gap-2 mt-2">
                             @if (b.CanPay)
                             {
@@ -507,6 +653,30 @@
                                 <i class="bi bi-ticket-perforated-fill text-success"></i>
                                 <span>@L["View Full Voucher Pass"]</span>
                             </a>
+                            @if (b.Status == "Paid" || b.Status == "Completed" || b.RefundedOn != null || b.PaymentReference != null)
+                            {
+                                <a href="@AppLinks.BookingReceipt(b.BookingType, b.Id)" target="_blank" class="btn btn-outline-success btn-sm rounded-pill py-2 fw-semibold d-flex align-items-center justify-content-center gap-1.5">
+                                    <i class="bi bi-receipt"></i>
+                                    <span>@L["Payment Receipt"]</span>
+                                </a>
+                            }
+                            @if (b.CanModify)
+                            {
+                                <button type="button" class="btn btn-outline-warning btn-sm rounded-pill py-2 fw-semibold d-flex align-items-center justify-content-center gap-1.5"
+                                        onclick="openModifyModal('@b.BookingType', @b.Id, '@b.StartDate.ToString("yyyy-MM-dd")', '@b.EndDate.ToString("yyyy-MM-dd")', @b.Units, @b.StorageTons, @b.MaxUnits, @b.MinDays, '@b.ItemName.Replace("'", "\\'")')">
+                                    <i class="bi bi-pencil-square"></i>
+                                    <span>@L["Change dates"]</span>
+                                </button>
+                            }
+                            else if (b.Status == "Paid")
+                            {
+                                <span class="d-block" data-bs-toggle="tooltip" data-bs-placement="top" title="@L["Paid bookings cannot be modified (escrow payment is locked). Cancel and refund instead."]">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill py-2 fw-semibold d-flex align-items-center justify-content-center gap-1.5 w-100 opacity-50" disabled>
+                                        <i class="bi bi-pencil-square"></i>
+                                        <span>@L["Change dates"]</span>
+                                    </button>
+                                </span>
+                            }
                             <a href="@b.ListingDetailUrl" class="btn btn-krishi-primary btn-sm rounded-pill py-2 fw-semibold">
                                 @L["View Listing"]
                             </a>
@@ -620,6 +790,72 @@ else
 
 <partial name="_ReviewModal" />
 
+<!-- =========================================================================
+     MODIFY BOOKING MODAL
+     ========================================================================= -->
+<div class="modal fade" id="modifyBookingModal" tabindex="-1" aria-labelledby="modifyBookingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 460px;">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <form asp-action="Modify" method="post" id="modifyBookingForm">
+                <input type="hidden" name="type" id="modifyType" />
+                <input type="hidden" name="id" id="modifyId" />
+                <input type="hidden" name="returnUrl" value="@currentUrl" />
+
+                <div class="modal-header bg-warning-subtle text-warning-emphasis py-3 border-0">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-pencil-square fs-5"></i>
+                        <h6 class="modal-title fw-bold mb-0" id="modifyBookingModalLabel">@L["Change Booking Dates & Details"]</h6>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div class="alert alert-info border-0 small rounded-3 mb-3 p-2.5">
+                        <i class="bi bi-info-circle-fill me-1"></i>
+                        <span>@L["You can change dates and quantity up to 3 times. If previously accepted, the booking returns to pending for owner re-approval."]</span>
+                    </div>
+
+                    <h6 class="fw-bold text-dark mb-3" id="modifyItemTitle"></h6>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label for="modifyStartDate" class="form-label small fw-semibold text-muted mb-1">@L["Start Date"]</label>
+                            <input type="date" class="form-control form-control-sm py-2" id="modifyStartDate" name="startDate" required
+                                   min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-6">
+                            <label for="modifyEndDate" class="form-label small fw-semibold text-muted mb-1">@L["End Date"]</label>
+                            <input type="date" class="form-control form-control-sm py-2" id="modifyEndDate" name="endDate" required
+                                   min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
+                        </div>
+                    </div>
+
+                    <div id="modifyUnitsContainer" class="mb-3">
+                        <label for="modifyUnits" class="form-label small fw-semibold text-muted mb-1">
+                            @L["Number of Units"] <span id="modifyMaxUnitsHint" class="text-muted fw-normal"></span>
+                        </label>
+                        <input type="number" class="form-control form-control-sm py-2" id="modifyUnits" name="units" min="1" />
+                    </div>
+
+                    <div id="modifyTonsContainer" class="mb-3 d-none">
+                        <label for="modifyTons" class="form-label small fw-semibold text-muted mb-1">@L["Storage Capacity (Tons)"]</label>
+                        <input type="number" step="0.1" class="form-control form-control-sm py-2" id="modifyTons" name="tons" min="0.1" />
+                    </div>
+
+                    <div id="modifyErrorAlert" class="alert alert-danger border-0 small rounded-3 d-none p-2 mb-0"></div>
+                </div>
+
+                <div class="modal-footer bg-light border-0 py-2.5 px-4 justify-content-end gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5" data-bs-dismiss="modal">@L["Cancel"]</button>
+                    <button type="submit" class="btn btn-warning btn-sm rounded-pill px-3.5 py-1.5 fw-bold text-dark">
+                        <i class="bi bi-check-circle me-1"></i>@L["Save Changes"]
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         async function openBookingQrModal(type, id) {
@@ -658,7 +894,46 @@ else
             }
         }
 
+        function openModifyModal(type, id, start, end, units, tons, maxUnits, minDays, itemName) {
+            const modalEl = document.getElementById('modifyBookingModal');
+            if (!modalEl) return;
+
+            document.getElementById('modifyType').value = type;
+            document.getElementById('modifyId').value = id;
+            document.getElementById('modifyStartDate').value = start;
+            document.getElementById('modifyEndDate').value = end;
+            document.getElementById('modifyItemTitle').textContent = itemName;
+
+            const unitsCont = document.getElementById('modifyUnitsContainer');
+            const tonsCont = document.getElementById('modifyTonsContainer');
+            const unitsInput = document.getElementById('modifyUnits');
+            const tonsInput = document.getElementById('modifyTons');
+
+            if (type.toLowerCase() === 'equipment') {
+                unitsCont.classList.remove('d-none');
+                tonsCont.classList.add('d-none');
+                unitsInput.value = units || 1;
+                unitsInput.max = maxUnits || 50;
+                unitsInput.required = true;
+                tonsInput.required = false;
+                document.getElementById('modifyMaxUnitsHint').textContent = maxUnits ? `(Max: ${maxUnits})` : '';
+            } else {
+                unitsCont.classList.add('d-none');
+                tonsCont.classList.remove('d-none');
+                tonsInput.value = tons || 1;
+                tonsInput.required = true;
+                unitsInput.required = false;
+            }
+
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (el) { return new bootstrap.Tooltip(el); });
+
             const urlParams = new URLSearchParams(window.location.search);
             const reviewParam = urlParams.get('review');
             if (reviewParam) {

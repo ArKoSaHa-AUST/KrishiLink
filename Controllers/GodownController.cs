@@ -19,6 +19,7 @@ namespace KrishiLink.Controllers
         /// <summary>GET: /Godown — browse storage facilities with server-side filtering.</summary>
         public async Task<IActionResult> Index(GodownSearchCriteria criteria)
         {
+            criteria.CurrentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             return View(await _godowns.BrowseAsync(criteria));
         }
 
@@ -26,6 +27,7 @@ namespace KrishiLink.Controllers
         [HttpGet]
         public async Task<IActionResult> FilterData(GodownSearchCriteria criteria)
         {
+            criteria.CurrentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var model = await _godowns.BrowseAsync(criteria);
             var items = model.GodownList.Select(g => new
             {
@@ -42,6 +44,7 @@ namespace KrishiLink.Controllers
                 pricePerTonPerMonthFormatted = $"৳{g.PricePerTonPerMonth:N0}",
                 dailyRatePerTonFormatted = g.DailyRatePerTon.HasValue ? $"৳{g.DailyRatePerTon.Value:N0}" : null,
                 isAvailable = g.IsAvailable,
+                isFavorite = g.IsFavorite,
                 status = g.Status,
                 imageUrl = g.ImageUrl,
                 ownerName = g.OwnerName,

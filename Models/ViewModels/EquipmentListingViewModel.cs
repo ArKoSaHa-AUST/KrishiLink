@@ -50,6 +50,16 @@ namespace KrishiLink.Models.ViewModels
         [Display(Name = "Hourly Rental Rate (৳, Optional)")]
         public decimal? HourlyRate { get; set; }
 
+        [Required(ErrorMessage = "Minimum rental days is required.")]
+        [Range(1, 90, ErrorMessage = "Minimum rental days must be between 1 and 90.")]
+        [Display(Name = "Minimum Rental Days")]
+        public int MinRentalDays { get; set; } = 1;
+
+        [Required(ErrorMessage = "Quantity is required.")]
+        [Range(1, 50, ErrorMessage = "Quantity must be between 1 and 50.")]
+        [Display(Name = "Total Available Units")]
+        public int Quantity { get; set; } = 1;
+
         [Display(Name = "Active Availability Status")]
         public bool IsAvailable { get; set; } = true;
 

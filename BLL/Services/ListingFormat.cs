@@ -32,14 +32,116 @@ namespace KrishiLink.BLL.Services
         public static double Months(DateTime start, DateTime end) => Math.Max(1, (end.Date - start.Date).TotalDays) / 30.0;
     }
 
+    public record RateSegment(decimal Rate, int Days, string Label); // Label: "Base", rule.Name
+
     /// <summary>
     /// The single source of truth for what a booking costs. Used by the farmer views, the owner revenue
     /// repositories, the acceptance snapshot and the demo seed so every side sees the same number.
     /// </summary>
     public static class BookingPricing
     {
-        public static decimal EquipmentGross(DateTime start, DateTime end, decimal dailyRate) =>
-            ListingFormat.InclusiveDays(start, end) * dailyRate;
+        public static decimal EquipmentGross(DateTime start, DateTime end, decimal dailyRate, int units = 1) =>
+            ListingFormat.InclusiveDays(start, end) * dailyRate * units;
+
+        /// <summary>
+        /// Rule-aware dynamic equipment gross calculation honoring seasonal rules (highest precedence),
+        /// weekend rules (medium precedence), and listing base daily rate (fallback).
+        /// Consecutive identical-rate segments are grouped together. Scaled by units requested.
+        /// </summary>
+        public static (decimal Gross, List<RateSegment> Segments) EquipmentGross(
+            DateTime start,
+            DateTime end,
+            decimal baseRate,
+            IReadOnlyList<EquipmentRateRule> activeRules,
+            IReadOnlySet<DayOfWeek> weekendDays,
+            int units = 1)
+        {
+            var s = start.Date;
+            var t = end.Date;
+            if (t < s) return (0m, new List<RateSegment>());
+
+            var seasonRules = activeRules
+                .Where(r => r.IsActive && r.Kind == RateRuleKind.Season && r.StartDate.HasValue && r.EndDate.HasValue)
+                .ToList();
+
+            var weekendRule = activeRules.FirstOrDefault(r => r.IsActive && r.Kind == RateRuleKind.Weekend);
+
+            var dailyRates = new List<(decimal Rate, string Label)>();
+            for (var d = s; d <= t; d = d.AddDays(1))
+            {
+                var season = seasonRules.FirstOrDefault(r => d >= r.StartDate!.Value.Date && d <= r.EndDate!.Value.Date);
+                if (season != null)
+                {
+                    dailyRates.Add((season.DailyRate, season.Name));
+                }
+                else if (weekendRule != null && weekendDays.Contains(d.DayOfWeek))
+                {
+                    dailyRates.Add((weekendRule.DailyRate, weekendRule.Name));
+                }
+                else
+                {
+                    dailyRates.Add((baseRate, "Base"));
+                }
+            }
+
+            var segments = new List<RateSegment>();
+            if (dailyRates.Count > 0)
+            {
+                var currentRate = dailyRates[0].Rate;
+                var currentLabel = dailyRates[0].Label;
+                var currentDays = 1;
+
+                for (int i = 1; i < dailyRates.Count; i++)
+                {
+                    if (dailyRates[i].Rate == currentRate && dailyRates[i].Label == currentLabel)
+                    {
+                        currentDays++;
+                    }
+                    else
+                    {
+                        segments.Add(new RateSegment(currentRate, currentDays, currentLabel));
+                        currentRate = dailyRates[i].Rate;
+                        currentLabel = dailyRates[i].Label;
+                        currentDays = 1;
+                    }
+                }
+                segments.Add(new RateSegment(currentRate, currentDays, currentLabel));
+            }
+
+            decimal gross = segments.Sum(seg => seg.Rate * seg.Days) * units;
+            return (gross, segments);
+        }
+
+        public static string Describe(IEnumerable<RateSegment> segments, int units = 1)
+        {
+            var list = segments.ToList();
+            if (list.Count == 0) return string.Empty;
+
+            string baseDesc;
+            if (list.Count == 1)
+            {
+                var s = list[0];
+                var dayUnit = s.Days == 1 ? "day" : "days";
+                baseDesc = s.Label == "Base"
+                    ? $"৳{s.Rate:N0} / day × {s.Days} {dayUnit}"
+                    : $"৳{s.Rate:N0} / day × {s.Days} {dayUnit} ({s.Label})";
+            }
+            else
+            {
+                baseDesc = string.Join(" + ", list.Select(s =>
+                    s.Label == "Base"
+                        ? $"৳{s.Rate:N0} × {s.Days} {(s.Days == 1 ? "day" : "days")}"
+                        : $"৳{s.Rate:N0} × {s.Days} {(s.Days == 1 ? "day" : "days")} ({s.Label})"));
+            }
+
+            return units > 1 ? $"{baseDesc} × {units} units" : baseDesc;
+        }
+
+        public static decimal EquipmentGrossOf(EquipmentBooking b, decimal dailyRate) =>
+            b.AgreedGross ?? (b.QuotedGross > 0 ? b.QuotedGross : EquipmentGross(b.StartDate, b.EndDate, dailyRate, b.Units));
+
+        public static decimal EquipmentGrossOf(decimal? agreedGross, decimal quotedGross, DateTime start, DateTime end, decimal dailyRate, int units = 1) =>
+            agreedGross ?? (quotedGross > 0 ? quotedGross : EquipmentGross(start, end, dailyRate, units));
 
         public static decimal GodownGross(DateTime start, DateTime end, double tons, decimal pricePerTonPerMonth) =>
             decimal.Round((decimal)tons * pricePerTonPerMonth * (decimal)ListingFormat.Months(start, end), 0);
@@ -57,7 +159,10 @@ namespace KrishiLink.BLL.Services
         public static DecisionResult Fail(string error) => new(false, error, Array.Empty<int>());
     }
 
-    /// <summary>Owner decision state machine shared by equipment rentals and godown storage bookings.</summary>
+    /// <summary>
+    /// Owner decision state machine shared by equipment rentals and godown storage bookings.
+    /// Note: <c>BookingService.ModifyAsync</c> is the only other path transitioning Accepted → Pending (farmer-initiated modification).
+    /// </summary>
     internal static class BookingWorkflow
     {
         /// <summary>Reason stored on pending requests that lose out when the owner accepts an overlapping one.</summary>

@@ -12,10 +12,15 @@ namespace KrishiLink.BLL.Services
         // Farmer / public
         Task<EquipmentBrowseViewModel> BrowseAsync(EquipmentSearchCriteria criteria);
         Task<EquipmentDetailViewModel?> GetDetailsAsync(int id, string? currentUserId = null);
+        Task<EquipmentQuote?> QuoteAsync(int equipmentId, DateTime? start, DateTime? end, int units = 1);
+        Task<(decimal Gross, string? PricingNote)> QuoteGrossAsync(int equipmentId, DateTime start, DateTime end, int units = 1);
+        Task<string?> CheckAvailabilityAsync(int equipmentId, DateTime start, DateTime end, int units = 1, int? excludeBookingId = null);
+        Task<int> FreeUnitsAsync(int equipmentId, DateTime start, DateTime end, int? excludeBookingId = null);
+        Task<string?> ValidateQuantityAsync(string ownerId, int equipmentId, int newQuantity);
 
         /// <summary>Creates a pending rental request with optional loyalty promo or points. Returns a user-facing error message, or null on success.</summary>
-        Task<string?> RequestRentalAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note, string? promoCode = null, int? pointsToRedeem = null);
-        Task<(string? Error, int? BookingId)> RequestRentalWithResultAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note, string? promoCode = null, int? pointsToRedeem = null);
+        Task<string?> RequestRentalAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note, int units = 1, string? promoCode = null, int? pointsToRedeem = null);
+        Task<(string? Error, int? BookingId)> RequestRentalWithResultAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note, int units = 1, string? promoCode = null, int? pointsToRedeem = null, int? harvestPlanId = null, string? planName = null);
 
         // Owner
         Task<EquipmentOwnerDashboardViewModel> GetOwnerDashboardAsync(string ownerId);
@@ -31,6 +36,14 @@ namespace KrishiLink.BLL.Services
         Task<bool> SaveListingAsync(string ownerId, EquipmentListingViewModel model);
         Task<ManageAvailabilityViewModel?> GetAvailabilityAsync(string ownerId, int equipmentId, DateTime? month);
         Task<bool> SaveAvailabilityAsync(string ownerId, int equipmentId, DateTime month, IEnumerable<DateTime> blockedDates);
+        Task<BulkAvailabilityResult> BlockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek, string? reason);
+        Task<BulkAvailabilityResult> UnblockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek);
+
+        // Dynamic Pricing & Seasonal Rules
+        Task<EquipmentPricingViewModel?> GetPricingAsync(string ownerId, int equipmentId);
+        Task<string?> SaveRateRuleAsync(string ownerId, int equipmentId, RateRuleInputModel m);
+        Task<bool> ToggleRateRuleAsync(string ownerId, int ruleId);
+        Task<bool> DeleteRateRuleAsync(string ownerId, int ruleId);
 
         // Maintenance & Health Tracker
         Task<EquipmentMaintenanceDashboardViewModel?> GetMaintenanceDashboardAsync(string ownerId, int equipmentId);
@@ -44,6 +57,7 @@ namespace KrishiLink.BLL.Services
         private readonly IRepository<Equipment> _equipment;
         private readonly IRepository<EquipmentBooking> _bookings;
         private readonly IRepository<EquipmentBlockedDate> _blockedDates;
+        private readonly IRepository<EquipmentRateRule> _rateRules;
         private readonly IRepository<ApplicationUser> _users;
         private readonly IRepository<EquipmentMaintenanceRecord> _maintenanceRecords;
         private readonly IFileStorageService _files;
@@ -52,13 +66,17 @@ namespace KrishiLink.BLL.Services
         private readonly IBadgeService _badges;
         private readonly ILeaderboardService _leaderboard;
         private readonly ILoyaltyService _loyalty;
+        private readonly IFarmerProfileService _farmerProfile;
         private readonly ILedgerRepository _ledger;
+        private readonly IFavoriteService _favoriteService;
         private readonly RevenueOptions _revenue;
+        private readonly PricingOptions _pricingOptions;
 
         public EquipmentService(
             IRepository<Equipment> equipment,
             IRepository<EquipmentBooking> bookings,
             IRepository<EquipmentBlockedDate> blockedDates,
+            IRepository<EquipmentRateRule> rateRules,
             IRepository<ApplicationUser> users,
             IRepository<EquipmentMaintenanceRecord> maintenanceRecords,
             IFileStorageService files,
@@ -67,12 +85,16 @@ namespace KrishiLink.BLL.Services
             IBadgeService badges,
             ILeaderboardService leaderboard,
             ILoyaltyService loyalty,
+            IFarmerProfileService farmerProfile,
             ILedgerRepository ledger,
-            IOptions<RevenueOptions> revenue)
+            IFavoriteService favoriteService,
+            IOptions<RevenueOptions> revenue,
+            IOptions<PricingOptions> pricingOptions)
         {
             _equipment = equipment;
             _bookings = bookings;
             _blockedDates = blockedDates;
+            _rateRules = rateRules;
             _users = users;
             _maintenanceRecords = maintenanceRecords;
             _files = files;
@@ -81,8 +103,11 @@ namespace KrishiLink.BLL.Services
             _badges = badges;
             _leaderboard = leaderboard;
             _loyalty = loyalty;
+            _farmerProfile = farmerProfile;
             _ledger = ledger;
+            _favoriteService = favoriteService;
             _revenue = revenue.Value;
+            _pricingOptions = pricingOptions.Value;
         }
 
         // ---------------------------------------------------------------- Browse & details
@@ -129,10 +154,13 @@ namespace KrishiLink.BLL.Services
                 var start = (c.StartDate ?? c.AvailabilityDate)!.Value.Date;
                 var end = (c.EndDate ?? start).Date;
                 if (end < start) end = start;
+                var reqUnits = c.Units > 0 ? c.Units : 1;
 
                 query = query.Where(e => e.IsAvailable
                     && !e.BlockedDates.Any(d => d.Date >= start && d.Date <= end)
-                    && !e.Bookings.Any(b => BookingStatus.Confirmed.Contains(b.Status) && b.StartDate <= end && start <= b.EndDate));
+                    && e.Quantity >= reqUnits
+                    && e.Bookings.Where(b => BookingStatus.Confirmed.Contains(b.Status) && b.StartDate <= end && start <= b.EndDate)
+                        .Sum(b => (int?)b.Units).GetValueOrDefault() + reqUnits <= e.Quantity);
             }
 
             var sort = (c.SortBy ?? "newest").ToLowerInvariant();
@@ -164,6 +192,7 @@ namespace KrishiLink.BLL.Services
                     e.Latitude,
                     e.Longitude,
                     e.IsAvailable,
+                    e.Quantity,
                     ImageUrl = e.ImageUrls,
                     OwnerName = e.Owner!.FullName,
                     OwnerIsVerified = e.Owner.IsVerified,
@@ -173,6 +202,7 @@ namespace KrishiLink.BLL.Services
                     Rating = e.AverageRating,
                     ReviewCount = e.ReviewCount,
                     CreatedAt = e.CreatedAt,
+                    HasRateRules = e.RateRules.Any(r => r.IsActive),
                     LatestServiceDate = e.MaintenanceRecords.OrderByDescending(m => m.ServiceDate).Select(m => (DateTime?)m.ServiceDate).FirstOrDefault()
                 }).ToListAsync();
 
@@ -202,6 +232,8 @@ namespace KrishiLink.BLL.Services
                     Latitude = e.Latitude,
                     Longitude = e.Longitude,
                     IsAvailable = e.IsAvailable,
+                    Quantity = e.Quantity,
+                    HasRateRules = e.HasRateRules,
                     ImageUrl = ListingFormat.Split(e.ImageUrl).FirstOrDefault() ?? string.Empty,
                     OwnerName = e.OwnerName,
                     OwnerIsVerified = e.OwnerIsVerified,
@@ -216,6 +248,16 @@ namespace KrishiLink.BLL.Services
                 };
             }).ToList();
 
+            HashSet<int> favoriteIds = new();
+            if (!string.IsNullOrWhiteSpace(c.CurrentUserId))
+            {
+                favoriteIds = await _favoriteService.GetIdsAsync(c.CurrentUserId, ListingTypes.Equipment);
+                foreach (var item in items)
+                {
+                    item.IsFavorite = favoriteIds.Contains(item.Id);
+                }
+            }
+
             var model = new EquipmentBrowseViewModel
             {
                 SearchTerm = c.SearchTerm,
@@ -227,8 +269,10 @@ namespace KrishiLink.BLL.Services
                 AvailabilityDate = c.AvailabilityDate ?? c.StartDate,
                 StartDate = c.StartDate ?? c.AvailabilityDate,
                 EndDate = c.EndDate,
+                Units = c.Units > 0 ? c.Units : 1,
                 SortBy = sort,
                 EquipmentList = items,
+                FavoriteIds = favoriteIds,
                 TotalCount = totalCount,
                 Page = page,
                 PageSize = pageSize,
@@ -271,14 +315,32 @@ namespace KrishiLink.BLL.Services
             var to = from.AddMonths(3);
             var accepted = await _bookings.Query()
                 .Where(b => b.EquipmentId == id && BookingStatus.Confirmed.Contains(b.Status) && b.EndDate >= from && b.StartDate <= to)
-                .Select(b => new { b.StartDate, b.EndDate })
+                .Select(b => new { b.StartDate, b.EndDate, b.Units })
                 .ToListAsync();
             var blocked = await _blockedDates.Query()
                 .Where(d => d.EquipmentId == id && d.Date >= from && d.Date <= to)
                 .Select(d => d.Date)
                 .ToListAsync();
 
-            var bookedDates = accepted.SelectMany(b => EachDay(b.StartDate, b.EndDate)).Concat(blocked).Distinct().OrderBy(d => d).ToList();
+            var fullyBookedDates = new HashSet<DateTime>(blocked);
+            var partiallyBookedDates = new List<DateTime>();
+
+            for (var day = from; day <= to; day = day.AddDays(1))
+            {
+                if (fullyBookedDates.Contains(day)) continue;
+
+                var bookedUnits = accepted.Where(b => b.StartDate <= day && day <= b.EndDate).Sum(b => b.Units);
+                if (bookedUnits >= e.Quantity)
+                {
+                    fullyBookedDates.Add(day);
+                }
+                else if (bookedUnits > 0)
+                {
+                    partiallyBookedDates.Add(day);
+                }
+            }
+
+            var bookedDates = fullyBookedDates.OrderBy(d => d).ToList();
             var reviewsList = await _reviews.GetReviewsForEquipmentAsync(id);
 
             var maintenanceLogs = await _maintenanceRecords.Query()
@@ -320,6 +382,29 @@ namespace KrishiLink.BLL.Services
                 lng = fallbackLng;
             }
 
+            var activeRules = await ActiveRulesAsync(id);
+            var hasRateRules = activeRules.Any();
+            var lowestRate = hasRateRules ? Math.Min(e.DailyRate, activeRules.Min(r => r.DailyRate)) : e.DailyRate;
+            var fromRateText = hasRateRules ? $"from {ListingFormat.Taka(lowestRate)} / day" : $"{ListingFormat.Taka(e.DailyRate)} / Day";
+            var ruleViewModels = activeRules
+                .OrderBy(r => r.Kind)
+                .ThenBy(r => r.StartDate)
+                .Select(r => new EquipmentRateRuleViewModel
+                {
+                    Id = r.Id,
+                    Kind = r.Kind,
+                    Name = r.Name,
+                    StartDate = r.StartDate,
+                    EndDate = r.EndDate,
+                    DateRangeText = r.Kind == RateRuleKind.Season && r.StartDate.HasValue && r.EndDate.HasValue
+                        ? ListingFormat.DateRange(r.StartDate.Value, r.EndDate.Value)
+                        : "Fridays & Saturdays",
+                    DailyRate = r.DailyRate,
+                    RateText = $"{ListingFormat.Taka(r.DailyRate)} / Day",
+                    IsActive = r.IsActive,
+                    CreatedAt = r.CreatedAt
+                }).ToList();
+
             var model = new EquipmentDetailViewModel
             {
                 Id = e.Id,
@@ -329,6 +414,12 @@ namespace KrishiLink.BLL.Services
                 DailyRate = $"{ListingFormat.Taka(e.DailyRate)} / Day",
                 DailyRateAmount = e.DailyRate,
                 HourlyRate = e.HourlyRate.HasValue ? $"{ListingFormat.Taka(e.HourlyRate.Value)} / Hour" : string.Empty,
+                MinRentalDays = e.MinRentalDays,
+                Quantity = e.Quantity,
+                UnitsAvailableText = e.Quantity > 1 ? $"{e.Quantity} units available" : "1 unit available",
+                HasRateRules = hasRateRules,
+                FromRateText = fromRateText,
+                RateRules = ruleViewModels,
                 Location = e.Location,
                 District = e.District ?? OnboardingOptions.GuessDistrict(e.Location),
                 Latitude = lat,
@@ -345,6 +436,7 @@ namespace KrishiLink.BLL.Services
                 ReviewCount = e.ReviewCount,
                 ImageUrls = ListingFormat.Split(e.ImageUrls),
                 BookedDates = bookedDates,
+                PartiallyBookedDates = partiallyBookedDates.OrderBy(d => d).ToList(),
                 Reviews = reviewsList,
                 LastServicedDate = latestService?.ServiceDate,
                 LastServicedDaysAgo = lastServicedDaysAgo,
@@ -366,6 +458,9 @@ namespace KrishiLink.BLL.Services
             // Populate Farmer Loyalty Context if user is authenticated
             if (!string.IsNullOrWhiteSpace(currentUserId))
             {
+                var userFavs = await _favoriteService.GetIdsAsync(currentUserId, ListingTypes.Equipment);
+                model.IsFavorite = userFavs.Contains(id);
+
                 var farmer = await _users.FirstOrDefaultAsync(u => u.Id == currentUserId);
                 if (farmer != null)
                 {
@@ -378,9 +473,9 @@ namespace KrishiLink.BLL.Services
             return model;
         }
 
-        public async Task<string?> RequestRentalAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note, string? promoCode = null, int? pointsToRedeem = null)
+        public async Task<string?> RequestRentalAsync(string farmerId, int equipmentId, DateTime? start, DateTime? end, string? note, int units = 1, string? promoCode = null, int? pointsToRedeem = null)
         {
-            var res = await RequestRentalWithResultAsync(farmerId, equipmentId, start, end, note, promoCode, pointsToRedeem);
+            var res = await RequestRentalWithResultAsync(farmerId, equipmentId, start, end, note, units, promoCode, pointsToRedeem);
             return res.Error;
         }
 
@@ -390,8 +485,11 @@ namespace KrishiLink.BLL.Services
             DateTime? start,
             DateTime? end,
             string? note,
+            int units = 1,
             string? promoCode = null,
-            int? pointsToRedeem = null)
+            int? pointsToRedeem = null,
+            int? harvestPlanId = null,
+            string? planName = null)
         {
             if (start is null || end is null) return ("Please choose a start and end date.", null);
             var s = start.Value.Date;
@@ -404,11 +502,23 @@ namespace KrishiLink.BLL.Services
             if (!e.IsAvailable) return ("This equipment is currently unavailable for rent.", null);
             if (e.OwnerId == farmerId) return ("You cannot rent your own equipment.", null);
 
-            var clash = await FindConflictAsync(equipmentId, s, t);
-            if (clash is not null) return (clash, null);
+            if (units < 1 || units > e.Quantity)
+            {
+                return ($"Please request between 1 and {e.Quantity} units.", null);
+            }
 
             int days = (t - s).Days + 1;
-            decimal gross = days * e.DailyRate;
+            if (days < e.MinRentalDays)
+            {
+                return ($"This equipment must be rented for at least {e.MinRentalDays} days.", null);
+            }
+
+            var clash = await FindConflictAsync(equipmentId, s, t, units);
+            if (clash is not null) return (clash, null);
+
+            var activeRules = await ActiveRulesAsync(equipmentId);
+            var (gross, segments) = BookingPricing.EquipmentGross(s, t, e.DailyRate, activeRules, _pricingOptions.WeekendDaySet(), units);
+            var pricingNote = BookingPricing.Describe(segments, units);
 
             decimal discountAmount = 0m;
             string? appliedPromo = null;
@@ -431,14 +541,18 @@ namespace KrishiLink.BLL.Services
             {
                 EquipmentId = equipmentId,
                 FarmerId = farmerId,
+                Units = units,
                 StartDate = s,
                 EndDate = t,
                 Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim(),
                 Status = BookingStatus.Pending,
                 RequestedOn = DateTime.Now,
+                QuotedGross = gross,
+                PricingNote = pricingNote,
                 DiscountAmount = discountAmount,
                 AppliedPromoCode = appliedPromo,
-                PointsUsed = pointsUsed
+                PointsUsed = pointsUsed,
+                HarvestPlanId = harvestPlanId
             };
 
             await _bookings.AddAsync(newBooking);
@@ -461,13 +575,18 @@ namespace KrishiLink.BLL.Services
             // Notify equipment owner of new pending rental request
             var farmer = await _users.FirstOrDefaultAsync(u => u.Id == farmerId);
             var farmerName = farmer?.FullName ?? "A farmer";
+            var hasPlan = !string.IsNullOrWhiteSpace(planName);
             await _notifications.NotifyAsync(new NotificationRequest
             {
                 UserId = e.OwnerId,
                 Type = NotificationTypes.BookingRequest,
                 TitleKey = "New Equipment Booking Request",
-                MessageKey = "{0} requested to rent {1} from {2} to {3}.",
-                Args = new object[] { farmerName, e.Name, $"{s:dd MMM yyyy}", $"{t:dd MMM yyyy}" },
+                MessageKey = hasPlan
+                    ? "{0} requested to rent {1} from {2} to {3} as part of harvest plan \"{4}\"."
+                    : "{0} requested to rent {1} from {2} to {3}.",
+                Args = hasPlan
+                    ? new object[] { farmerName, e.Name, $"{s:dd MMM yyyy}", $"{t:dd MMM yyyy}", planName!.Trim() }
+                    : new object[] { farmerName, e.Name, $"{s:dd MMM yyyy}", $"{t:dd MMM yyyy}" },
                 LinkUrl = AppLinks.OwnerRequests("equipment", newBooking.Id),
                 DedupeKey = $"booking:equipment:{newBooking.Id}:Requested",
                 SendEmail = false
@@ -492,6 +611,7 @@ namespace KrishiLink.BLL.Services
                     e.DailyRate,
                     e.ImageUrls,
                     e.IsAvailable,
+                    e.Quantity,
                     RentedToday = e.Bookings.Any(b => BookingStatus.Confirmed.Contains(b.Status) && b.StartDate <= today && today <= b.EndDate),
                     LatestServiceDate = e.MaintenanceRecords.OrderByDescending(m => m.ServiceDate).Select(m => (DateTime?)m.ServiceDate).FirstOrDefault()
                 })
@@ -521,6 +641,7 @@ namespace KrishiLink.BLL.Services
                     DailyRate = $"{ListingFormat.Taka(l.DailyRate)} / Day",
                     ImageUrl = ListingFormat.Split(l.ImageUrls).FirstOrDefault() ?? string.Empty,
                     Status = l.RentedToday ? "Rented" : l.IsAvailable ? "Available" : "Unavailable",
+                    Quantity = l.Quantity,
                     LastServicedDaysAgo = daysAgo,
                     LastServicedText = lastServicedText
                 };
@@ -549,11 +670,52 @@ namespace KrishiLink.BLL.Services
             foreach (var pending in items.Where(i => i.Status == BookingStatus.Pending))
             {
                 var source = bookings.First(b => b.Id == pending.Id);
-                var clash = accepted.FirstOrDefault(a => a.EquipmentId == source.EquipmentId
-                    && BookingWorkflow.Overlaps(a.StartDate, a.EndDate, source.StartDate, source.EndDate));
-                if (clash is null) continue;
-                pending.HasConflict = true;
-                pending.ConflictHint = $"Dates overlap with an accepted rental ({ListingFormat.DateRange(clash.StartDate, clash.EndDate)})";
+                var free = await FreeUnitsAsync(source.EquipmentId, source.StartDate, source.EndDate, excludeBookingId: source.Id);
+                if (free < source.Units)
+                {
+                    pending.HasConflict = true;
+                    var clash = accepted.FirstOrDefault(a => a.EquipmentId == source.EquipmentId
+                        && BookingWorkflow.Overlaps(a.StartDate, a.EndDate, source.StartDate, source.EndDate));
+                    if (clash != null)
+                    {
+                        pending.ConflictHint = pending.Quantity > 1
+                            ? $"Only {free} of {pending.Quantity} units free (clashes with {ListingFormat.DateRange(clash.StartDate, clash.EndDate)})"
+                            : $"Dates overlap with an accepted rental ({ListingFormat.DateRange(clash.StartDate, clash.EndDate)})";
+                    }
+                    else
+                    {
+                        var blocked = await _blockedDates.Query()
+                            .Where(d => d.EquipmentId == source.EquipmentId && d.Date >= source.StartDate && d.Date <= source.EndDate)
+                            .OrderBy(d => d.Date)
+                            .FirstOrDefaultAsync();
+                        if (blocked != null)
+                        {
+                            pending.ConflictHint = $"Overlaps a date you blocked ({blocked.Date:dd MMM yyyy})";
+                        }
+                        else
+                        {
+                            pending.ConflictHint = pending.Quantity > 1
+                                ? $"Only {free} of {pending.Quantity} units free for these dates."
+                                : "Dates are not available.";
+                        }
+                    }
+                }
+            }
+
+            var farmerIds = items.Select(i => i.FarmerId).Where(id => !string.IsNullOrEmpty(id)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (farmerIds.Count > 0)
+            {
+                var summaries = await _farmerProfile.GetSummariesAsync(farmerIds);
+                foreach (var item in items)
+                {
+                    if (!string.IsNullOrEmpty(item.FarmerId) && summaries.TryGetValue(item.FarmerId, out var s))
+                    {
+                        item.FarmerCompleted = s.Completed;
+                        item.FarmerCancellationRate = s.CancellationRate;
+                        item.FarmerMemberSince = s.MemberSince;
+                        item.FarmerTrustLevel = s.TrustLevel;
+                    }
+                }
             }
 
             return new RentalRequestsViewModel { Requests = items.OrderByDescending(r => r.RequestedOn).ToList() };
@@ -584,41 +746,94 @@ namespace KrishiLink.BLL.Services
             var autoRejected = new List<int>();
             if (next == BookingStatus.Accepted)
             {
-                var clash = await FindConflictAsync(booking.EquipmentId, booking.StartDate, booking.EndDate, excludeBookingId: booking.Id);
+                var clash = await FindConflictAsync(booking.EquipmentId, booking.StartDate, booking.EndDate, booking.Units, excludeBookingId: booking.Id);
                 if (clash is not null) return DecisionResult.Fail(clash);
 
-                // First accepted wins: every other pending request that overlaps these dates is declined with a reason.
-                var losers = await _bookings.QueryTracked()
+                // Capacity-aware auto-rejection: re-evaluates remaining capacity for overlapping pending requests
+                // and only auto-rejects those that can no longer fit.
+                var pendingLosers = await _bookings.QueryTracked()
                     .Where(b => b.EquipmentId == booking.EquipmentId && b.Id != booking.Id && b.Status == BookingStatus.Pending
                         && b.StartDate <= booking.EndDate && booking.StartDate <= b.EndDate)
+                    .OrderBy(b => b.RequestedOn)
                     .ToListAsync();
-                foreach (var loser in losers)
-                {
-                    loser.Status = BookingStatus.Rejected;
-                    loser.RejectReason = BookingWorkflow.AutoRejectReason;
-                    loser.UpdatedOn = DateTime.Now;
-                    autoRejected.Add(loser.Id);
 
-                    // Notify conflicting farmer of auto-rejection
-                    var loserUser = await _users.FirstOrDefaultAsync(u => u.Id == loser.FarmerId);
-                    await _notifications.NotifyAsync(new NotificationRequest
+                if (pendingLosers.Count > 0)
+                {
+                    var minStart = pendingLosers.Min(p => p.StartDate);
+                    var maxEnd = pendingLosers.Max(p => p.EndDate);
+                    var existingConfirmed = await _bookings.Query()
+                        .Where(b => b.EquipmentId == booking.EquipmentId && b.Id != booking.Id && BookingStatus.Confirmed.Contains(b.Status)
+                            && b.StartDate <= maxEnd && minStart <= b.EndDate)
+                        .Select(b => new { b.StartDate, b.EndDate, b.Units })
+                        .ToListAsync();
+
+                    var simConfirmed = existingConfirmed.ToList();
+                    simConfirmed.Add(new { booking.StartDate, booking.EndDate, booking.Units });
+
+                    var blockedDates = await _blockedDates.Query()
+                        .Where(d => d.EquipmentId == booking.EquipmentId && d.Date >= minStart && d.Date <= maxEnd)
+                        .Select(d => d.Date)
+                        .ToListAsync();
+                    var blockedSet = new HashSet<DateTime>(blockedDates);
+
+                    var equipQuantity = booking.Equipment!.Quantity;
+
+                    foreach (var loser in pendingLosers)
                     {
-                        UserId = loser.FarmerId,
-                        Type = NotificationTypes.BookingRejected,
-                        TitleKey = "Rental Request Declined",
-                        MessageKey = "Your rental request for {0} ({1} - {2}) was declined due to an overlapping confirmed booking.",
-                        Args = new object[] { booking.Equipment!.Name, $"{loser.StartDate:dd MMM yyyy}", $"{loser.EndDate:dd MMM yyyy}" },
-                        LinkUrl = AppLinks.FarmerBookings("equipment", loser.Id),
-                        DedupeKey = $"booking:equipment:{loser.Id}:AutoRejected",
-                        SendEmail = true,
-                        RecipientEmail = loserUser?.Email
-                    });
+                        bool fits = true;
+                        for (var d = loser.StartDate.Date; d <= loser.EndDate.Date; d = d.AddDays(1))
+                        {
+                            if (blockedSet.Contains(d))
+                            {
+                                fits = false;
+                                break;
+                            }
+                            var bookedOnDay = simConfirmed.Where(c => c.StartDate <= d && d <= c.EndDate).Sum(c => c.Units);
+                            if (bookedOnDay + loser.Units > equipQuantity)
+                            {
+                                fits = false;
+                                break;
+                            }
+                        }
+
+                        if (!fits)
+                        {
+                            loser.Status = BookingStatus.Rejected;
+                            loser.RejectReason = BookingWorkflow.AutoRejectReason;
+                            loser.UpdatedOn = DateTime.Now;
+                            autoRejected.Add(loser.Id);
+
+                            // Notify conflicting farmer of auto-rejection
+                            var loserUser = await _users.FirstOrDefaultAsync(u => u.Id == loser.FarmerId);
+                            await _notifications.NotifyAsync(new NotificationRequest
+                            {
+                                UserId = loser.FarmerId,
+                                Type = NotificationTypes.BookingRejected,
+                                TitleKey = "Rental Request Declined",
+                                MessageKey = "Your rental request for {0} ({1} - {2}) was declined due to an overlapping confirmed booking.",
+                                Args = new object[] { booking.Equipment!.Name, $"{loser.StartDate:dd MMM yyyy}", $"{loser.EndDate:dd MMM yyyy}" },
+                                LinkUrl = AppLinks.FarmerBookings("equipment", loser.Id),
+                                DedupeKey = $"booking:equipment:{loser.Id}:AutoRejected",
+                                SendEmail = true,
+                                RecipientEmail = loserUser?.Email
+                            });
+                        }
+                    }
                 }
             }
 
             var equipment = booking.Equipment!;
+            var activeRules = await ActiveRulesAsync(booking.EquipmentId);
+            var (currentGross, currentSegments) = BookingPricing.EquipmentGross(booking.StartDate, booking.EndDate, equipment.DailyRate, activeRules, _pricingOptions.WeekendDaySet(), booking.Units);
+            var currentPricingNote = BookingPricing.Describe(currentSegments, booking.Units);
+            if (booking.QuotedGross > 0 && Math.Abs(currentGross - booking.QuotedGross) > 0)
+            {
+                currentPricingNote += " (updated price)";
+            }
+            booking.PricingNote = currentPricingNote;
+
             BookingWorkflow.ApplyMoney(booking, next!, "Equipment", ownerId, _ledger,
-                equipment.DailyRate, BookingPricing.EquipmentGross(booking.StartDate, booking.EndDate, equipment.DailyRate), _revenue.PlatformCommissionRate);
+                equipment.DailyRate, currentGross, _revenue.PlatformCommissionRate);
             booking.Status = next!;
             booking.RejectReason = next == BookingStatus.Rejected && !string.IsNullOrWhiteSpace(reason) ? reason.Trim() : null;
             booking.UpdatedOn = DateTime.Now;
@@ -712,6 +927,8 @@ namespace KrishiLink.BLL.Services
                 Longitude = e.Longitude,
                 DailyRate = e.DailyRate,
                 HourlyRate = e.HourlyRate,
+                MinRentalDays = e.MinRentalDays,
+                Quantity = e.Quantity,
                 IsAvailable = e.IsAvailable,
                 ExistingImageUrls = ListingFormat.Split(e.ImageUrls)
             };
@@ -767,6 +984,8 @@ namespace KrishiLink.BLL.Services
 
                 entity.DailyRate = model.DailyRate;
                 entity.HourlyRate = model.HourlyRate is > 0 ? model.HourlyRate : null;
+                entity.MinRentalDays = Math.Clamp(model.MinRentalDays, 1, 90);
+                entity.Quantity = Math.Clamp(model.Quantity, 1, 50);
                 entity.IsAvailable = model.IsAvailable;
                 entity.ImageUrls = ListingFormat.Join(orderedImages);
 
@@ -835,12 +1054,42 @@ namespace KrishiLink.BLL.Services
 
             var accepted = await _bookings.Query()
                 .Where(b => b.EquipmentId == equipmentId && BookingStatus.Confirmed.Contains(b.Status) && b.EndDate >= first && b.StartDate <= last)
-                .Select(b => new { b.StartDate, b.EndDate })
+                .Select(b => new { b.StartDate, b.EndDate, b.Units })
                 .ToListAsync();
-            var blocked = await _blockedDates.Query()
+            var blockedRows = await _blockedDates.Query()
                 .Where(d => d.EquipmentId == equipmentId && d.Date >= first && d.Date <= last)
-                .Select(d => d.Date)
+                .Select(d => new { d.Date, d.Reason })
                 .ToListAsync();
+
+            var bookedUnitsMap = new Dictionary<string, int>();
+            var farmerBooked = new List<DateTime>();
+
+            for (var d = first; d <= last; d = d.AddDays(1))
+            {
+                var sumUnits = accepted.Where(b => b.StartDate <= d && d <= b.EndDate).Sum(b => b.Units);
+                if (sumUnits > 0)
+                {
+                    farmerBooked.Add(d);
+                    bookedUnitsMap[d.ToString("yyyy-MM-dd")] = sumUnits;
+                }
+            }
+
+            var today = DateTime.Today;
+            var horizonEnd = today.AddMonths(12);
+            var upcomingBlocked = await _blockedDates.Query()
+                .Where(d => d.EquipmentId == equipmentId && d.Date >= today && d.Date <= horizonEnd)
+                .OrderBy(d => d.Date)
+                .Select(d => new { d.Date, d.Reason })
+                .ToListAsync();
+
+            var upcomingPeriods = DateRanges.Group(upcomingBlocked.Select(d => (d.Date, d.Reason)))
+                .Select(g => new BlockedPeriodItem
+                {
+                    From = g.From,
+                    To = g.To,
+                    Reason = g.Reason
+                })
+                .ToList();
 
             return new ManageAvailabilityViewModel
             {
@@ -852,8 +1101,12 @@ namespace KrishiLink.BLL.Services
                 ThumbnailUrl = ListingFormat.Split(e.ImageUrls).FirstOrDefault() ?? string.Empty,
                 Month = first,
                 MonthName = first.ToString("MMMM yyyy"),
-                FarmerBookedDates = accepted.SelectMany(b => EachDay(b.StartDate, b.EndDate)).Where(d => d >= first && d <= last).Distinct().ToList(),
-                OwnerBlockedDates = blocked
+                Quantity = e.Quantity,
+                BookedUnitsByDate = bookedUnitsMap,
+                FarmerBookedDates = farmerBooked,
+                OwnerBlockedDates = blockedRows.Select(d => d.Date).ToList(),
+                BlockedReasonsByDate = blockedRows.ToDictionary(d => d.Date.ToString("yyyy-MM-dd"), d => d.Reason),
+                UpcomingBlockedPeriods = upcomingPeriods
             };
         }
 
@@ -867,7 +1120,6 @@ namespace KrishiLink.BLL.Services
             var current = await _blockedDates.QueryTracked()
                 .Where(d => d.EquipmentId == equipmentId && d.Date >= first && d.Date <= last)
                 .ToListAsync();
-            _blockedDates.RemoveRange(current);
 
             var farmerBooked = (await _bookings.Query()
                     .Where(b => b.EquipmentId == equipmentId && BookingStatus.Confirmed.Contains(b.Status) && b.EndDate >= first && b.StartDate <= last)
@@ -876,11 +1128,132 @@ namespace KrishiLink.BLL.Services
                 .SelectMany(b => EachDay(b.StartDate, b.EndDate))
                 .ToHashSet();
 
-            foreach (var date in blockedDates.Select(d => d.Date).Distinct().Where(d => d >= first && d <= last && !farmerBooked.Contains(d)))
+            var targetDates = blockedDates
+                .Select(d => d.Date)
+                .Distinct()
+                .Where(d => d >= first && d <= last && !farmerBooked.Contains(d))
+                .ToHashSet();
+
+            var toRemove = current.Where(c => !targetDates.Contains(c.Date)).ToList();
+            _blockedDates.RemoveRange(toRemove);
+
+            var currentDates = current.Select(c => c.Date).ToHashSet();
+            foreach (var date in targetDates.Where(d => !currentDates.Contains(d)))
+            {
                 await _blockedDates.AddAsync(new EquipmentBlockedDate { EquipmentId = equipmentId, Date = date });
+            }
 
             await _blockedDates.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<BulkAvailabilityResult> BlockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek, string? reason)
+        {
+            var f = from.Date;
+            if (f < DateTime.Today) f = DateTime.Today;
+            var t = to.Date;
+
+            if (t < f)
+                return new BulkAvailabilityResult(true, 0, 0, 0, "The end date must be on or after the start date.");
+
+            if ((t - f).TotalDays + 1 > DateRanges.MaxBulkDays)
+                return new BulkAvailabilityResult(true, 0, 0, 0, "You can block at most 366 days at a time.");
+
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == listingId && x.OwnerId == ownerId);
+            if (e is null)
+                return new BulkAvailabilityResult(false, 0, 0, 0, null);
+
+            var existingBlocked = (await _blockedDates.Query()
+                .Where(d => d.EquipmentId == listingId && d.Date >= f && d.Date <= t)
+                .Select(d => d.Date)
+                .ToListAsync())
+                .ToHashSet();
+
+            var farmerBooked = (await _bookings.Query()
+                    .Where(b => b.EquipmentId == listingId && BookingStatus.Confirmed.Contains(b.Status) && b.EndDate >= f && b.StartDate <= t)
+                    .Select(b => new { b.StartDate, b.EndDate })
+                    .ToListAsync())
+                .SelectMany(b => EachDay(b.StartDate, b.EndDate))
+                .Where(d => d >= f && d <= t)
+                .ToHashSet();
+
+            var days = DateRanges.Expand(f, t, daysOfWeek).ToList();
+            int changed = 0, skippedBooked = 0, alreadyInState = 0;
+
+            var cleanReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+            if (cleanReason?.Length > 100) cleanReason = cleanReason[..100];
+
+            foreach (var d in days)
+            {
+                if (farmerBooked.Contains(d))
+                {
+                    skippedBooked++;
+                }
+                else if (existingBlocked.Contains(d))
+                {
+                    alreadyInState++;
+                }
+                else
+                {
+                    await _blockedDates.AddAsync(new EquipmentBlockedDate
+                    {
+                        EquipmentId = listingId,
+                        Date = d,
+                        Reason = cleanReason
+                    });
+                    changed++;
+                }
+            }
+
+            if (changed > 0)
+            {
+                try
+                {
+                    await _blockedDates.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex) when (DbErrors.IsUniqueViolation(ex))
+                {
+                    return new BulkAvailabilityResult(true, 0, skippedBooked, alreadyInState, "A conflicting operation already modified blocked dates for these days. Please refresh and try again.");
+                }
+            }
+
+            return new BulkAvailabilityResult(true, changed, skippedBooked, alreadyInState, null);
+        }
+
+        public async Task<BulkAvailabilityResult> UnblockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek)
+        {
+            var f = from.Date;
+            if (f < DateTime.Today) f = DateTime.Today;
+            var t = to.Date;
+
+            if (t < f)
+                return new BulkAvailabilityResult(true, 0, 0, 0, "The end date must be on or after the start date.");
+
+            if ((t - f).TotalDays + 1 > DateRanges.MaxBulkDays)
+                return new BulkAvailabilityResult(true, 0, 0, 0, "You can block at most 366 days at a time.");
+
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == listingId && x.OwnerId == ownerId);
+            if (e is null)
+                return new BulkAvailabilityResult(false, 0, 0, 0, null);
+
+            var query = _blockedDates.QueryTracked()
+                .Where(d => d.EquipmentId == listingId && d.Date >= f && d.Date <= t);
+
+            var rows = await query.ToListAsync();
+            var filterDays = daysOfWeek != null && daysOfWeek.Count > 0;
+            if (filterDays)
+            {
+                rows = rows.Where(r => daysOfWeek!.Contains(r.Date.DayOfWeek)).ToList();
+            }
+
+            int count = rows.Count;
+            if (count > 0)
+            {
+                _blockedDates.RemoveRange(rows);
+                await _blockedDates.SaveChangesAsync();
+            }
+
+            return new BulkAvailabilityResult(true, count, 0, 0, null);
         }
 
         // ---------------------------------------------------------------- Equipment Health Tracker
@@ -980,29 +1353,408 @@ namespace KrishiLink.BLL.Services
             return true;
         }
 
+        // ---------------------------------------------------------------- Dynamic Pricing & Availability
+
+        public Task<string?> CheckAvailabilityAsync(int equipmentId, DateTime start, DateTime end, int units = 1, int? excludeBookingId = null) =>
+            FindConflictAsync(equipmentId, start.Date, end.Date, units, excludeBookingId);
+
+        public async Task<int> FreeUnitsAsync(int equipmentId, DateTime start, DateTime end, int? excludeBookingId = null)
+        {
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == equipmentId);
+            if (e == null || !e.IsAvailable) return 0;
+
+            var s = start.Date;
+            var t = end.Date;
+            if (t < s) return 0;
+
+            var isBlocked = await _blockedDates.Query()
+                .AnyAsync(d => d.EquipmentId == equipmentId && d.Date >= s && d.Date <= t);
+            if (isBlocked) return 0;
+
+            var accepted = await _bookings.Query()
+                .Where(b => b.EquipmentId == equipmentId && b.Id != excludeBookingId && BookingStatus.Confirmed.Contains(b.Status)
+                    && b.StartDate <= t && s <= b.EndDate)
+                .Select(b => new { b.StartDate, b.EndDate, b.Units })
+                .ToListAsync();
+
+            int minFree = e.Quantity;
+            for (var d = s; d <= t; d = d.AddDays(1))
+            {
+                var bookedUnits = accepted.Where(b => b.StartDate <= d && d <= b.EndDate).Sum(b => b.Units);
+                var free = Math.Max(0, e.Quantity - bookedUnits);
+                if (free < minFree) minFree = free;
+                if (minFree == 0) break;
+            }
+
+            return minFree;
+        }
+
+        public async Task<string?> ValidateQuantityAsync(string ownerId, int equipmentId, int newQuantity)
+        {
+            if (newQuantity < 1) return "Quantity must be at least 1.";
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == equipmentId && x.OwnerId == ownerId);
+            if (e == null) return "Equipment listing not found.";
+
+            var today = DateTime.Today;
+            var futureBookings = await _bookings.Query()
+                .Where(b => b.EquipmentId == equipmentId && BookingStatus.Confirmed.Contains(b.Status) && b.EndDate >= today)
+                .Select(b => new { b.StartDate, b.EndDate, b.Units })
+                .ToListAsync();
+
+            if (futureBookings.Count == 0) return null;
+
+            var minDate = futureBookings.Min(b => b.StartDate < today ? today : b.StartDate);
+            var maxDate = futureBookings.Max(b => b.EndDate);
+
+            for (var d = minDate; d <= maxDate; d = d.AddDays(1))
+            {
+                var booked = futureBookings.Where(b => b.StartDate <= d && d <= b.EndDate).Sum(b => b.Units);
+                if (booked > newQuantity)
+                {
+                    return $"You have {booked} units booked on {d:dd MMM yyyy}; quantity cannot be lower than that.";
+                }
+            }
+
+            return null;
+        }
+
+        public async Task<EquipmentQuote?> QuoteAsync(int equipmentId, DateTime? start, DateTime? end, int units = 1)
+        {
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == equipmentId);
+            if (e == null) return null;
+
+            units = Math.Clamp(units, 1, e.Quantity);
+
+            if (!start.HasValue || !end.HasValue)
+            {
+                return new EquipmentQuote
+                {
+                    Ok = false,
+                    Error = "Please choose a start and end date.",
+                    MinDays = e.MinRentalDays,
+                    Units = units,
+                    Quantity = e.Quantity,
+                    FreeUnits = e.Quantity
+                };
+            }
+
+            var s = start.Value.Date;
+            var t = end.Value.Date;
+            if (s < DateTime.Today)
+            {
+                return new EquipmentQuote
+                {
+                    Ok = false,
+                    Error = "Start date cannot be in the past.",
+                    MinDays = e.MinRentalDays,
+                    Units = units,
+                    Quantity = e.Quantity,
+                    FreeUnits = 0
+                };
+            }
+
+            if (t < s)
+            {
+                return new EquipmentQuote
+                {
+                    Ok = false,
+                    Error = "End date must be on or after the start date.",
+                    MinDays = e.MinRentalDays,
+                    Units = units,
+                    Quantity = e.Quantity,
+                    FreeUnits = 0
+                };
+            }
+
+            int days = (t - s).Days + 1;
+            if (days < e.MinRentalDays)
+            {
+                return new EquipmentQuote
+                {
+                    Ok = false,
+                    Error = $"This equipment must be rented for at least {e.MinRentalDays} days.",
+                    Days = days,
+                    MinDays = e.MinRentalDays,
+                    Units = units,
+                    Quantity = e.Quantity,
+                    FreeUnits = await FreeUnitsAsync(equipmentId, s, t)
+                };
+            }
+
+            var free = await FreeUnitsAsync(equipmentId, s, t);
+            var conflict = await FindConflictAsync(equipmentId, s, t, units);
+            if (conflict != null)
+            {
+                return new EquipmentQuote
+                {
+                    Ok = false,
+                    Error = conflict,
+                    Days = days,
+                    MinDays = e.MinRentalDays,
+                    Units = units,
+                    Quantity = e.Quantity,
+                    FreeUnits = free
+                };
+            }
+
+            var activeRules = await ActiveRulesAsync(equipmentId);
+            var (gross, segments) = BookingPricing.EquipmentGross(s, t, e.DailyRate, activeRules, _pricingOptions.WeekendDaySet(), units);
+            var desc = BookingPricing.Describe(segments, units);
+
+            return new EquipmentQuote
+            {
+                Ok = true,
+                Days = days,
+                Gross = gross,
+                MinDays = e.MinRentalDays,
+                Units = units,
+                FreeUnits = free,
+                Quantity = e.Quantity,
+                Breakdown = segments.Select(seg => new RateSegmentBreakdown
+                {
+                    Rate = seg.Rate,
+                    Days = seg.Days,
+                    Label = seg.Label
+                }).ToList(),
+                Description = desc
+            };
+        }
+
+        public async Task<(decimal Gross, string? PricingNote)> QuoteGrossAsync(int equipmentId, DateTime start, DateTime end, int units = 1)
+        {
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == equipmentId);
+            if (e == null) return (0m, null);
+
+            var s = start.Date;
+            var t = end.Date;
+            units = Math.Clamp(units, 1, e.Quantity);
+
+            var activeRules = await ActiveRulesAsync(equipmentId);
+            var (gross, segments) = BookingPricing.EquipmentGross(s, t, e.DailyRate, activeRules, _pricingOptions.WeekendDaySet(), units);
+            var pricingNote = BookingPricing.Describe(segments, units);
+            return (gross, pricingNote);
+        }
+
+        public async Task<EquipmentPricingViewModel?> GetPricingAsync(string ownerId, int equipmentId)
+        {
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == equipmentId && x.OwnerId == ownerId);
+            if (e == null) return null;
+
+            var rules = await _rateRules.Query()
+                .Where(r => r.EquipmentId == equipmentId)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToListAsync();
+
+            return new EquipmentPricingViewModel
+            {
+                EquipmentId = e.Id,
+                ListingName = e.Name,
+                Category = e.Category,
+                Location = e.Location,
+                ThumbnailUrl = ListingFormat.Split(e.ImageUrls).FirstOrDefault() ?? string.Empty,
+                BaseDailyRate = e.DailyRate,
+                RateText = $"{ListingFormat.Taka(e.DailyRate)} / Day",
+                MinRentalDays = e.MinRentalDays,
+                Rules = rules.Select(r => new EquipmentRateRuleViewModel
+                {
+                    Id = r.Id,
+                    Kind = r.Kind,
+                    Name = r.Name,
+                    StartDate = r.StartDate,
+                    EndDate = r.EndDate,
+                    DateRangeText = r.Kind == RateRuleKind.Season && r.StartDate.HasValue && r.EndDate.HasValue
+                        ? ListingFormat.DateRange(r.StartDate.Value, r.EndDate.Value)
+                        : "Fridays & Saturdays",
+                    DailyRate = r.DailyRate,
+                    RateText = $"{ListingFormat.Taka(r.DailyRate)} / Day",
+                    IsActive = r.IsActive,
+                    CreatedAt = r.CreatedAt
+                }).ToList(),
+                NewRule = new RateRuleInputModel
+                {
+                    EquipmentId = e.Id,
+                    DailyRate = e.DailyRate
+                }
+            };
+        }
+
+        public async Task<string?> SaveRateRuleAsync(string ownerId, int equipmentId, RateRuleInputModel m)
+        {
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == equipmentId && x.OwnerId == ownerId);
+            if (e == null) return "Equipment listing not found or access denied.";
+
+            if (m.DailyRate < 1 || m.DailyRate > 500000)
+                return "Daily rate must be between ৳1 and ৳500,000.";
+
+            var name = m.Name?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(name))
+                return "Rule name is required.";
+
+            var kind = m.Kind == RateRuleKind.Weekend ? RateRuleKind.Weekend : RateRuleKind.Season;
+
+            DateTime? startDate = null;
+            DateTime? endDate = null;
+
+            if (kind == RateRuleKind.Weekend)
+            {
+                if (m.IsActive)
+                {
+                    var existingActiveWeekend = await _rateRules.Query()
+                        .AnyAsync(r => r.EquipmentId == equipmentId && r.Kind == RateRuleKind.Weekend && r.IsActive && r.Id != (m.Id ?? 0));
+                    if (existingActiveWeekend)
+                        return "An active weekend rate rule already exists for this equipment.";
+                }
+            }
+            else
+            {
+                if (!m.StartDate.HasValue || !m.EndDate.HasValue)
+                    return "Start date and end date are required for season rate rules.";
+
+                startDate = m.StartDate.Value.Date;
+                endDate = m.EndDate.Value.Date;
+
+                if (endDate < startDate)
+                    return "End date must be on or after start date.";
+
+                if (m.IsActive)
+                {
+                    var existingSeasons = await _rateRules.Query()
+                        .Where(r => r.EquipmentId == equipmentId && r.Kind == RateRuleKind.Season && r.IsActive && r.Id != (m.Id ?? 0))
+                        .ToListAsync();
+
+                    if (existingSeasons.Any(r => r.StartDate.HasValue && r.EndDate.HasValue && BookingWorkflow.Overlaps(r.StartDate.Value.Date, r.EndDate.Value.Date, startDate.Value, endDate.Value)))
+                    {
+                        return "Season rate rules cannot overlap with existing active season rules.";
+                    }
+                }
+            }
+
+            if (m.Id.HasValue && m.Id.Value > 0)
+            {
+                var rule = await _rateRules.QueryTracked()
+                    .Include(r => r.Equipment)
+                    .FirstOrDefaultAsync(r => r.Id == m.Id.Value && r.EquipmentId == equipmentId && r.Equipment!.OwnerId == ownerId);
+                if (rule == null) return "Rate rule not found or access denied.";
+
+                rule.Kind = kind;
+                rule.Name = name;
+                rule.DailyRate = m.DailyRate;
+                rule.StartDate = startDate;
+                rule.EndDate = endDate;
+                rule.IsActive = m.IsActive;
+            }
+            else
+            {
+                var newRule = new EquipmentRateRule
+                {
+                    EquipmentId = equipmentId,
+                    Kind = kind,
+                    Name = name,
+                    DailyRate = m.DailyRate,
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    IsActive = m.IsActive,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _rateRules.AddAsync(newRule);
+            }
+
+            await _rateRules.SaveChangesAsync();
+            return null;
+        }
+
+        public async Task<bool> ToggleRateRuleAsync(string ownerId, int ruleId)
+        {
+            var rule = await _rateRules.QueryTracked()
+                .Include(r => r.Equipment)
+                .FirstOrDefaultAsync(r => r.Id == ruleId && r.Equipment!.OwnerId == ownerId);
+            if (rule == null) return false;
+
+            if (!rule.IsActive)
+            {
+                if (rule.Kind == RateRuleKind.Weekend)
+                {
+                    var existingWeekend = await _rateRules.Query()
+                        .AnyAsync(r => r.EquipmentId == rule.EquipmentId && r.Kind == RateRuleKind.Weekend && r.IsActive && r.Id != rule.Id);
+                    if (existingWeekend) return false;
+                }
+                else if (rule.Kind == RateRuleKind.Season && rule.StartDate.HasValue && rule.EndDate.HasValue)
+                {
+                    var existingSeasons = await _rateRules.Query()
+                        .Where(r => r.EquipmentId == rule.EquipmentId && r.Kind == RateRuleKind.Season && r.IsActive && r.Id != rule.Id)
+                        .ToListAsync();
+
+                    if (existingSeasons.Any(r => r.StartDate.HasValue && r.EndDate.HasValue && BookingWorkflow.Overlaps(r.StartDate.Value.Date, r.EndDate.Value.Date, rule.StartDate.Value.Date, rule.EndDate.Value.Date)))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            rule.IsActive = !rule.IsActive;
+            await _rateRules.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeleteRateRuleAsync(string ownerId, int ruleId)
+        {
+            var rule = await _rateRules.QueryTracked()
+                .Include(r => r.Equipment)
+                .FirstOrDefaultAsync(r => r.Id == ruleId && r.Equipment!.OwnerId == ownerId);
+            if (rule == null) return false;
+
+            _rateRules.Remove(rule);
+            await _rateRules.SaveChangesAsync();
+            return true;
+        }
+
+        private Task<List<EquipmentRateRule>> ActiveRulesAsync(int equipmentId) =>
+            _rateRules.Query().Where(r => r.EquipmentId == equipmentId && r.IsActive).ToListAsync();
+
         // ---------------------------------------------------------------- Helpers
 
         /// <summary>
         /// The single source of truth for equipment double-booking: an accepted (or ongoing) rental or an owner-blocked
         /// date inside [start, end] makes the range unavailable. Returns a user-facing message, or null when free.
         /// </summary>
-        private async Task<string?> FindConflictAsync(int equipmentId, DateTime start, DateTime end, int? excludeBookingId = null)
+        private async Task<string?> FindConflictAsync(int equipmentId, DateTime start, DateTime end, int units = 1, int? excludeBookingId = null)
         {
-            var accepted = await _bookings.Query()
-                .Where(b => b.EquipmentId == equipmentId && b.Id != excludeBookingId && BookingStatus.Confirmed.Contains(b.Status)
-                    && b.StartDate <= end && start <= b.EndDate)
-                .OrderBy(b => b.StartDate)
-                .Select(b => new { b.StartDate, b.EndDate })
-                .FirstOrDefaultAsync();
-            if (accepted is not null)
-                return $"These dates overlap an accepted rental ({ListingFormat.DateRange(accepted.StartDate, accepted.EndDate)}). Please choose different dates.";
+            var e = await _equipment.Query().FirstOrDefaultAsync(x => x.Id == equipmentId);
+            if (e == null) return "This equipment listing no longer exists.";
 
             var blocked = await _blockedDates.Query()
                 .Where(d => d.EquipmentId == equipmentId && d.Date >= start && d.Date <= end)
                 .OrderBy(d => d.Date)
                 .Select(d => (DateTime?)d.Date)
                 .FirstOrDefaultAsync();
-            return blocked is null ? null : $"The owner has marked {blocked:dd MMM yyyy} as unavailable. Please choose different dates.";
+            if (blocked is not null)
+                return $"The owner has marked {blocked:dd MMM yyyy} as unavailable. Please choose different dates.";
+
+            var accepted = await _bookings.Query()
+                .Where(b => b.EquipmentId == equipmentId && b.Id != excludeBookingId && BookingStatus.Confirmed.Contains(b.Status)
+                    && b.StartDate <= end && start <= b.EndDate)
+                .OrderBy(b => b.StartDate)
+                .Select(b => new { b.StartDate, b.EndDate, b.Units })
+                .ToListAsync();
+
+            if (accepted.Count == 0) return null;
+
+            for (var d = start.Date; d <= end.Date; d = d.AddDays(1))
+            {
+                var bookedUnits = accepted.Where(b => b.StartDate <= d && d <= b.EndDate).Sum(b => b.Units);
+                if (bookedUnits + units > e.Quantity)
+                {
+                    if (e.Quantity == 1)
+                    {
+                        var firstClash = accepted.First(b => b.StartDate <= d && d <= b.EndDate);
+                        return $"These dates overlap an accepted rental ({ListingFormat.DateRange(firstClash.StartDate, firstClash.EndDate)}). Please choose different dates.";
+                    }
+                    var freeUnits = Math.Max(0, e.Quantity - bookedUnits);
+                    return $"Only {freeUnits} of {e.Quantity} units are free on {d:dd MMM yyyy}. Reduce the quantity or choose different dates.";
+                }
+            }
+
+            return null;
         }
 
         private IQueryable<EquipmentBooking> OwnerBookingsQuery(string ownerId) =>
@@ -1010,26 +1762,56 @@ namespace KrishiLink.BLL.Services
                 .Include(b => b.Equipment)
                 .Include(b => b.Farmer)
                 .Include(b => b.Payment)
+                .Include(b => b.HarvestPlan)
+                    .ThenInclude(p => p!.Items)
                 .Where(b => b.Equipment!.OwnerId == ownerId);
 
-        private static RentalRequestItem ToRequestItem(EquipmentBooking b) => new()
+        private static RentalRequestItem ToRequestItem(EquipmentBooking b)
         {
-            Id = b.Id,
-            FarmerName = string.IsNullOrWhiteSpace(b.Farmer?.FullName) ? "Farmer" : b.Farmer!.FullName,
-            EquipmentName = b.Equipment?.Name ?? string.Empty,
-            EquipmentCategory = b.Equipment?.Category ?? string.Empty,
-            DailyRate = $"{ListingFormat.Taka(b.AgreedRate ?? b.Equipment?.DailyRate ?? 0)} / Day",
-            Location = b.Equipment?.Location ?? string.Empty,
-            DateRange = ListingFormat.DateRange(b.StartDate, b.EndDate),
-            StartDate = b.StartDate,
-            EndDate = b.EndDate,
-            Note = b.Note,
-            Status = b.Status,
-            RejectReason = b.RejectReason,
-            RequestedOn = b.RequestedOn,
-            AgreedGross = b.AgreedGross ?? (b.Equipment is null ? 0 : BookingPricing.EquipmentGross(b.StartDate, b.EndDate, b.Equipment.DailyRate)),
-            PaymentReference = b.Payment?.Status == PaymentStatus.Succeeded ? b.Payment.Reference : null
-        };
+            var plan = b.HarvestPlan;
+            string? otherItemsText = null;
+            if (plan?.Items != null)
+            {
+                var others = plan.Items
+                    .Where(i => i.BookingId != b.Id)
+                    .Select(i => i.ItemType == HarvestPlanItemType.Equipment
+                        ? $"{i.Units}x Equipment ({ListingFormat.DateRange(i.StartDate, i.EndDate)})"
+                        : $"{i.Tons}T Storage ({ListingFormat.DateRange(i.StartDate, i.EndDate)})")
+                    .ToList();
+                otherItemsText = others.Count > 0
+                    ? "Also in plan: " + string.Join(", ", others)
+                    : "Single item in plan";
+            }
+
+            return new RentalRequestItem
+            {
+                Id = b.Id,
+                FarmerId = b.FarmerId,
+                FarmerName = string.IsNullOrWhiteSpace(b.Farmer?.FullName) ? "Farmer" : b.Farmer!.FullName,
+                EquipmentName = b.Equipment?.Name ?? string.Empty,
+                EquipmentCategory = b.Equipment?.Category ?? string.Empty,
+                DailyRate = $"{ListingFormat.Taka(b.AgreedRate ?? b.Equipment?.DailyRate ?? 0)} / Day",
+                Location = b.Equipment?.Location ?? string.Empty,
+                DateRange = ListingFormat.DateRange(b.StartDate, b.EndDate),
+                StartDate = b.StartDate,
+                EndDate = b.EndDate,
+                Units = b.Units,
+                Quantity = b.Equipment?.Quantity ?? 1,
+                Note = b.Note,
+                Status = b.Status,
+                RejectReason = b.RejectReason,
+                RequestedOn = b.RequestedOn,
+                AgreedGross = BookingPricing.EquipmentGrossOf(b, b.Equipment?.DailyRate ?? 0),
+                PricingNote = b.PricingNote,
+                PaymentReference = b.Payment?.Status == PaymentStatus.Succeeded ? b.Payment.Reference : null,
+                ModificationCount = b.ModificationCount,
+                PreviousDetails = b.PreviousDetails,
+                HarvestPlanId = b.HarvestPlanId,
+                HarvestPlanName = plan?.Name,
+                HarvestPlanItemCount = plan?.Items?.Count ?? 0,
+                HarvestPlanOtherItems = otherItemsText
+            };
+        }
 
         private static IEnumerable<DateTime> EachDay(DateTime start, DateTime end)
         {

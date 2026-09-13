@@ -4,6 +4,7 @@ using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace KrishiLink.Controllers
 {
@@ -12,16 +13,25 @@ namespace KrishiLink.Controllers
     {
         private readonly IEquipmentService _equipment;
         private readonly IFileStorageService _files;
+        private readonly ISavedSearchService _savedSearches;
+        private readonly ILogger<EquipmentOwnerController> _logger;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
         public EquipmentOwnerController(
             IEquipmentService equipment,
             IFileStorageService files,
+            ISavedSearchService savedSearches,
+            ILogger<EquipmentOwnerController> logger,
             IEquipmentRevenueService revenueService,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IStringLocalizer<SharedResource> localizer)
             : base(revenueService, userManager)
         {
             _equipment = equipment;
             _files = files;
+            _savedSearches = savedSearches;
+            _logger = logger;
+            _localizer = localizer;
         }
 
         /// <summary>GET: /EquipmentOwner — dashboard with listings, pending requests and revenue KPI.</summary>
@@ -116,12 +126,33 @@ namespace KrishiLink.Controllers
                 ModelState.AddModelError("ImageFiles", "A listing cannot have more than 8 images.");
             }
 
+            if (model.IsEditMode && model.Id.HasValue)
+            {
+                var qtyErr = await _equipment.ValidateQuantityAsync(OwnerId, model.Id.Value, model.Quantity);
+                if (qtyErr != null)
+                {
+                    ModelState.AddModelError("Quantity", qtyErr);
+                }
+            }
+
             if (!ModelState.IsValid)
                 return View("Create", model);
 
             var isEdit = model.IsEditMode;
             if (!await _equipment.SaveListingAsync(OwnerId, model))
                 return NotFound();
+
+            if (!isEdit && model.Id.HasValue)
+            {
+                try
+                {
+                    await _savedSearches.EvaluateForListingAsync(ListingTypes.Equipment, model.Id.Value);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to evaluate saved search alerts for newly created equipment listing {ListingId}", model.Id.Value);
+                }
+            }
 
             TempData["SuccessMessage"] = $"Equipment listing '{model.Name}' successfully {(isEdit ? "updated" : "created")}!";
             return RedirectToAction(nameof(Index));
@@ -146,6 +177,55 @@ namespace KrishiLink.Controllers
                 return NotFound();
 
             return RedirectToAction(nameof(Availability), new { id = listingId, month = month.ToString("yyyy-MM-dd"), saved = true });
+        }
+
+        /// <summary>POST: /EquipmentOwner/BlockRange — bulk blocks a date range and optional recurring weekdays.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BlockRange(BulkAvailabilityInputModel m)
+        {
+            var res = await _equipment.BlockRangeAsync(OwnerId, m.ListingId, m.From, m.To, m.DaysOfWeek, m.Reason);
+            if (!res.Found) return NotFound();
+
+            if (!string.IsNullOrEmpty(res.Error))
+            {
+                TempData["ErrorMessage"] = _localizer[res.Error].Value;
+            }
+            else
+            {
+                if (res.SkippedBooked > 0)
+                {
+                    TempData["SuccessMessage"] = _localizer["Blocked {0} day(s). Skipped {1} day(s) already booked by farmers.", res.Changed, res.SkippedBooked].Value;
+                }
+                else
+                {
+                    TempData["SuccessMessage"] = _localizer["Blocked {0} day(s).", res.Changed].Value;
+                }
+            }
+
+            var targetMonth = m.Month == default ? m.From : m.Month;
+            return RedirectToAction(nameof(Availability), new { id = m.ListingId, month = targetMonth.ToString("yyyy-MM-dd") });
+        }
+
+        /// <summary>POST: /EquipmentOwner/UnblockRange — bulk unblocks a date range and optional recurring weekdays.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UnblockRange(BulkAvailabilityInputModel m)
+        {
+            var res = await _equipment.UnblockRangeAsync(OwnerId, m.ListingId, m.From, m.To, m.DaysOfWeek);
+            if (!res.Found) return NotFound();
+
+            if (!string.IsNullOrEmpty(res.Error))
+            {
+                TempData["ErrorMessage"] = _localizer[res.Error].Value;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = _localizer["Unblocked {0} day(s).", res.Changed].Value;
+            }
+
+            var targetMonth = m.Month == default ? m.From : m.Month;
+            return RedirectToAction(nameof(Availability), new { id = m.ListingId, month = targetMonth.ToString("yyyy-MM-dd") });
         }
 
         /// <summary>GET: /EquipmentOwner/Maintenance/5 — Equipment Health Tracker dashboard.</summary>
@@ -198,6 +278,77 @@ namespace KrishiLink.Controllers
             }
 
             return RedirectToAction(nameof(Maintenance), new { id = equipmentId });
+        }
+
+        /// <summary>GET: /EquipmentOwner/Pricing/5 — Manage seasonal and weekend rate rules.</summary>
+        [HttpGet]
+        public async Task<IActionResult> Pricing(int id)
+        {
+            var model = await _equipment.GetPricingAsync(OwnerId, id);
+            if (model is null) return NotFound();
+
+            return View("Pricing", model);
+        }
+
+        /// <summary>POST: /EquipmentOwner/SaveRateRule — Create or update a dynamic rate rule.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveRateRule(int equipmentId, RateRuleInputModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                TempData["ErrorMessage"] = errors;
+                return RedirectToAction(nameof(Pricing), new { id = equipmentId });
+            }
+
+            var error = await _equipment.SaveRateRuleAsync(OwnerId, equipmentId, model);
+            if (error != null)
+            {
+                TempData["ErrorMessage"] = error;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = "Rate rule saved successfully!";
+            }
+
+            return RedirectToAction(nameof(Pricing), new { id = equipmentId });
+        }
+
+        /// <summary>POST: /EquipmentOwner/ToggleRateRule — Activate or deactivate a rate rule.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleRateRule(int ruleId, int equipmentId)
+        {
+            var success = await _equipment.ToggleRateRuleAsync(OwnerId, ruleId);
+            if (!success)
+            {
+                TempData["ErrorMessage"] = "Could not activate rule (ensure no overlapping active season rules or duplicate active weekend rules).";
+            }
+            else
+            {
+                TempData["SuccessMessage"] = "Rate rule status updated.";
+            }
+
+            return RedirectToAction(nameof(Pricing), new { id = equipmentId });
+        }
+
+        /// <summary>POST: /EquipmentOwner/DeleteRateRule — Delete an equipment rate rule.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteRateRule(int ruleId, int equipmentId)
+        {
+            var success = await _equipment.DeleteRateRuleAsync(OwnerId, ruleId);
+            if (!success)
+            {
+                TempData["ErrorMessage"] = "Could not delete the rate rule.";
+            }
+            else
+            {
+                TempData["SuccessMessage"] = "Rate rule removed successfully.";
+            }
+
+            return RedirectToAction(nameof(Pricing), new { id = equipmentId });
         }
     }
 }

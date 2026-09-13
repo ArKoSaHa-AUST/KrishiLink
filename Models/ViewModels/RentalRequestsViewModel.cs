@@ -25,7 +25,12 @@ namespace KrishiLink.Models.ViewModels
     public class RentalRequestItem
     {
         public int Id { get; set; }
+        public string FarmerId { get; set; } = string.Empty;
         public string FarmerName { get; set; } = string.Empty;
+        public int FarmerCompleted { get; set; }
+        public double FarmerCancellationRate { get; set; }
+        public string FarmerMemberSince { get; set; } = string.Empty;
+        public string FarmerTrustLevel { get; set; } = string.Empty;
         public string EquipmentName { get; set; } = string.Empty;
         public string DateRange { get; set; } = string.Empty;
         public string? Note { get; set; }
@@ -35,6 +40,9 @@ namespace KrishiLink.Models.ViewModels
 
         /// <summary>Total the farmer pays (snapshot at acceptance).</summary>
         public decimal AgreedGross { get; set; }
+
+        /// <summary>Quote breakdown and notes (e.g. '৳1,500 × 3 days + ৳2,200 × 4 days (Boro harvest peak)').</summary>
+        public string? PricingNote { get; set; }
 
         /// <summary>Set once the farmer's payment has succeeded; drives the "Paid ৳X" chip and the Mark Completed gate.</summary>
         public string? PaymentReference { get; set; }
@@ -50,6 +58,16 @@ namespace KrishiLink.Models.ViewModels
         /// <summary>Set when a pending request's dates overlap an accepted rental of the same equipment.</summary>
         public bool HasConflict { get; set; }
         public string? ConflictHint { get; set; }
+
+        public int Units { get; set; } = 1;
+        public int Quantity { get; set; } = 1;
+        public int ModificationCount { get; set; } = 0;
+        public string? PreviousDetails { get; set; }
+
+        public int? HarvestPlanId { get; set; }
+        public string? HarvestPlanName { get; set; }
+        public int HarvestPlanItemCount { get; set; }
+        public string? HarvestPlanOtherItems { get; set; }
 
         /// <summary>Owner's reason shown on rejected requests.</summary>
         public string? RejectReason { get; set; }

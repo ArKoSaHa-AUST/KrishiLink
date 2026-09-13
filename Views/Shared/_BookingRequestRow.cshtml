@@ -20,8 +20,10 @@
     };
     var gross = "৳" + Model.AgreedGross.ToString("N0");
 }
+@using KrishiLink.BLL.Services
 <div class="request-row border-bottom pending-request-row" data-request-id="@Model.Id"
      data-farmer-name="@Model.FarmerName" data-godown-id="@Model.GodownId" data-capacity="@Model.RequestedCapacityTons"
+     data-conflict="@(Model.HasConflict ? "true" : "false")"
      data-search="@(($"{Model.FarmerName} {Model.GodownName}").ToLowerInvariant())">
     <div class="p-3 px-4 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 request-row-header"
          role="@(expandable ? "button" : null)" tabindex="@(expandable ? "0" : null)"
@@ -32,13 +34,62 @@
                 @Model.FarmerName[0]
             </div>
             <div>
-                <span class="fw-semibold d-block" style="color: var(--krishi-text-primary);">@Model.FarmerName</span>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    @if (!string.IsNullOrEmpty(Model.FarmerId))
+                    {
+                        <a href="@AppLinks.FarmerProfile(Model.FarmerId)" class="fw-semibold text-decoration-none text-dark hover-underline" onclick="event.stopPropagation();">@Model.FarmerName</a>
+                    }
+                    else
+                    {
+                        <span class="fw-semibold" style="color: var(--krishi-text-primary);">@Model.FarmerName</span>
+                    }
+                    @if (expandable && !string.IsNullOrEmpty(Model.FarmerTrustLevel))
+                    {
+                        var trustChipClass = Model.FarmerTrustLevel switch
+                        {
+                            "Reliable" => "krishi-badge-available",
+                            "Caution" => "krishi-badge-unavailable",
+                            _ => "krishi-badge-pending"
+                        };
+                        var trustChipText = Model.FarmerTrustLevel switch
+                        {
+                            "Reliable" => L["Reliable"],
+                            "Caution" => L["Frequent cancellations"],
+                            _ => L["New to KrishiLink"]
+                        };
+                        <span class="krishi-badge @trustChipClass" style="font-size: 0.68rem; padding: 0.12rem 0.45rem;">@trustChipText</span>
+                    }
+                </div>
+                @if (expandable && !string.IsNullOrEmpty(Model.FarmerMemberSince))
+                {
+                    <span class="small d-block text-muted" style="font-size: 0.76rem;">
+                        @L["✔ {0} completed · {1}% cancellations · since {2}", Model.FarmerCompleted, (int)Math.Round(Model.FarmerCancellationRate * 100), Model.FarmerMemberSince]
+                    </span>
+                }
                 <span class="small d-block" style="color: var(--krishi-text-muted);">
                     <i class="bi bi-building me-1 text-success"></i>@Model.GodownName
                     <span class="mx-1">·</span>
                     <i class="bi bi-box-seam me-1 text-success"></i>@L["{0} Tons", Model.RequestedCapacityTons.ToString("N0")]
                     <span class="mx-1">·</span>
                     <i class="bi bi-calendar-range me-1 text-success"></i>@Model.DateRange
+                    @if (Model.HarvestPlanId.HasValue)
+                    {
+                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle ms-1" style="font-size: 0.72rem;" title="@Model.HarvestPlanOtherItems">
+                            <i class="bi bi-diagram-3 me-1"></i>@L["Harvest plan: {0} · {1} items", Model.HarvestPlanName ?? "Plan", Model.HarvestPlanItemCount]
+                        </span>
+                    }
+                    @if (Model.ModificationCount > 0)
+                    {
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle ms-1" style="font-size: 0.72rem;" title="@Model.PreviousDetails">
+                            <i class="bi bi-pencil-square me-1"></i>@L["Changed ×{0}", Model.ModificationCount]
+                        </span>
+                    }
+                    @if (expandable && (Model.Status == "Paid" || Model.Status == "Completed"))
+                    {
+                        <span class="krishi-badge krishi-badge-paid ms-1" style="font-size: 0.72rem;" title="@L["Actually stored / Booked capacity"]">
+                            <i class="bi bi-box-seam me-1"></i>@L["{0} / {1} t stored", Model.StoredTonsActual.ToString("N1"), Model.RequestedCapacityTons.ToString("N0")]
+                        </span>
+                    }
                     @if (!string.IsNullOrEmpty(Model.TimeAgo))
                     {
                         <span class="mx-1">·</span>
@@ -48,6 +99,12 @@
                 @if (!expandable && !string.IsNullOrEmpty(Model.Note))
                 {
                     <span class="small fst-italic" style="color: var(--krishi-text-muted);">"@Model.Note"</span>
+                }
+                @if (Model.HasConflict)
+                {
+                    <span class="small d-block fw-semibold" style="color: var(--krishi-status-pending-text);">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>@Model.ConflictHint
+                    </span>
                 }
                 @if (Model.Status == "Pending")
                 {
@@ -104,7 +161,7 @@
 
     @if (expandable)
     {
-        <!-- Expanded detail: capacity vs. remaining availability + farmer's note -->
+        <!-- Expanded detail: capacity vs. remaining availability + farmer's note + intake section -->
         <div class="collapse" id="detail-@Model.Id">
             <div class="px-4 pb-3 pt-1 ms-md-5">
                 <div class="row g-3 p-3 rounded-3 border" style="background-color: var(--krishi-primary-light);">
@@ -120,12 +177,129 @@
                             <li><i class="bi bi-box-seam text-success me-1"></i> @L["Requested:"] @L["{0} Tons", Model.RequestedCapacityTons.ToString("N0")] <span style="color: var(--krishi-text-muted);">· @L["Total"] @gross</span></li>
                             <li><i class="bi bi-building text-success me-1"></i> <span class="detail-availability">—</span></li>
                             <li><i class="bi bi-calendar-range text-success me-1"></i> @Model.DateRange</li>
+                            @if (Model.HasConflict)
+                            {
+                                <li><i class="bi bi-exclamation-triangle-fill text-warning me-1"></i> <span class="fw-semibold text-danger">@Model.ConflictHint</span></li>
+                            }
+                            @if (Model.ModificationCount > 0 && !string.IsNullOrEmpty(Model.PreviousDetails))
+                            {
+                                <li><i class="bi bi-clock-history text-warning me-1"></i> <span class="text-muted">@L["Previously:"] @Model.PreviousDetails</span></li>
+                            }
                         </ul>
                     </div>
                     <div class="col-12 reject-reason-block @(string.IsNullOrEmpty(Model.RejectReason) ? "d-none" : "")">
                         <span class="small fw-semibold text-uppercase d-block mb-1" style="color: var(--krishi-status-rejected-text); letter-spacing: 0.04em;">@L["Rejection Reason"]</span>
                         <p class="small mb-0 reject-reason-text" style="color: var(--krishi-text-primary);">@Model.RejectReason</p>
                     </div>
+
+                    @if (Model.Status == "Paid" || Model.Status == "Completed")
+                    {
+                        <div class="col-12 mt-3 pt-3 border-top">
+                            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                <span class="small fw-semibold text-uppercase d-block" style="color: var(--krishi-text-primary); letter-spacing: 0.04em;">
+                                    <i class="bi bi-boxes text-success me-1"></i>@L["Storage Intake Lots & Warehouse Receipts"]
+                                    <span class="badge bg-white text-success border ms-1">@L["{0} / {1} t stored", Model.StoredTonsActual.ToString("N1"), Model.RequestedCapacityTons.ToString("N0")]</span>
+                                </span>
+                                <button type="button" class="btn btn-krishi-primary btn-sm rounded-pill px-3 fw-semibold"
+                                        onclick="openIntakeModal(@Model.Id, '@Model.FarmerName.Replace("'", "\\'")')">
+                                    <i class="bi bi-plus-lg me-1"></i>@L["Record intake"]
+                                </button>
+                            </div>
+
+                            @if (Model.IntakeLots.Any())
+                            {
+                                <div class="table-responsive bg-white rounded-3 border">
+                                    <table class="table table-sm align-middle mb-0" style="font-size: 0.8rem;">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="ps-3">@L["Receipt #"]</th>
+                                                <th>@L["Crop & Variety"]</th>
+                                                <th>@L["Quantity"]</th>
+                                                <th>@L["Net Weight"]</th>
+                                                <th>@L["Quality"]</th>
+                                                <th>@L["Status"]</th>
+                                                <th class="pe-3 text-end">@L["Actions"]</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var lot in Model.IntakeLots)
+                                            {
+                                                <tr>
+                                                    <td class="ps-3 font-monospace fw-bold">
+                                                        <a href="@AppLinks.OwnerWarehouseReceipt(lot.Id)" target="_blank" class="text-success text-decoration-none" title="@L["Download Receipt PDF"]">
+                                                            <i class="bi bi-file-earmark-pdf me-1"></i>@lot.ReceiptNumber
+                                                        </a>
+                                                    </td>
+                                                    <td>
+                                                        <strong>@lot.Crop</strong>
+                                                        @if (!string.IsNullOrEmpty(lot.Variety))
+                                                        {
+                                                            <span class="text-muted small d-block">@lot.Variety</span>
+                                                        }
+                                                    </td>
+                                                    <td>@L["{0} bags", lot.Bags] (@L["{0} kg", lot.BagWeightKg.ToString("N0")])</td>
+                                                    <td>
+                                                        <strong>@lot.NetWeightKg.ToString("N0") kg</strong>
+                                                        <span class="text-muted small d-block">(@lot.NetWeightTons.ToString("N2") t)</span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-light text-dark border">@L["Grade"] @lot.Grade</span>
+                                                        @if (lot.MoisturePercent.HasValue)
+                                                        {
+                                                            <span class="text-muted small d-block">@L["Moisture:"] @lot.MoisturePercent.Value.ToString("N1")%</span>
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        @if (lot.IsReleased)
+                                                        {
+                                                            <span class="krishi-badge krishi-badge-completed" title="@L["Released to {0} on {1}", lot.ReleasedTo ?? "Farmer", lot.ReleasedOn?.ToString("dd MMM yyyy") ?? ""]">
+                                                                @L["Released"]
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="krishi-badge krishi-badge-paid">@L["Stored"]</span>
+                                                        }
+                                                    </td>
+                                                    <td class="pe-3 text-end">
+                                                        <div class="d-inline-flex align-items-center gap-1">
+                                                            <a href="@AppLinks.OwnerWarehouseReceipt(lot.Id)" target="_blank" class="btn btn-outline-success btn-sm py-0 px-2 rounded-pill" title="@L["Download Receipt PDF"]">
+                                                                <i class="bi bi-download"></i> @L["PDF"]
+                                                            </a>
+                                                            @if (!lot.IsReleased)
+                                                            {
+                                                                <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 rounded-pill"
+                                                                        onclick="openEditIntakeModal(@lot.Id, @Model.Id, '@lot.IntakeDate.ToString("yyyy-MM-dd")', '@lot.Crop.Replace("'", "\\'")', '@(lot.Variety?.Replace("'", "\\'") ?? "")', @lot.Bags, @lot.BagWeightKg, @lot.NetWeightKg, '@(lot.MoisturePercent?.ToString() ?? "")', '@lot.Grade', '@(lot.Remarks?.Replace("'", "\\'") ?? "")')">
+                                                                    <i class="bi bi-pencil"></i>
+                                                                </button>
+                                                                <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 rounded-pill"
+                                                                        onclick="openReleaseModal(@lot.Id, '@Model.FarmerName.Replace("'", "\\'")')">
+                                                                    <i class="bi bi-box-arrow-right"></i> @L["Release"]
+                                                                </button>
+                                                                <form asp-controller="GodownOwner" asp-action="DeleteIntake" method="post" class="d-inline" onsubmit="return confirm('@L["Delete this intake lot?"]');">
+                                                                    <input type="hidden" name="lotId" value="@lot.Id" />
+                                                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString#request-@Model.Id" />
+                                                                    <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2 rounded-pill" title="@L["Delete"]">
+                                                                        <i class="bi bi-trash"></i>
+                                                                    </button>
+                                                                </form>
+                                                            }
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="p-3 bg-white rounded-3 border text-center text-muted small">
+                                    <i class="bi bi-box-seam me-1 text-success"></i>@L["No produce intake lots recorded yet. Click 'Record intake' when produce arrives at the warehouse."]
+                                </div>
+                            }
+                        </div>
+                    }
                 </div>
             </div>
         </div>

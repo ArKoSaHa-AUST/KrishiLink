@@ -1,0 +1,327 @@
+@model KrishiLink.Models.ViewModels.FavoritesViewModel
+@{
+    ViewData["Title"] = L["My Favorites"].Value;
+}
+
+<div class="container py-4">
+    <!-- Breadcrumb & Header -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item"><a asp-controller="Farmer" asp-action="Dashboard" class="text-decoration-none text-success">@L["Dashboard"]</a></li>
+            <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">@L["Favorites"]</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 pb-3 mb-4 border-bottom">
+        <div>
+            <h2 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-heart-fill text-danger"></i>
+                <span>@L["My Favorites & Wishlist"]</span>
+            </h2>
+            <p class="text-muted mb-0">
+                @L["Track and quickly access your saved machinery and storage facilities with real-time availability updates."]
+            </p>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <a asp-controller="Equipment" asp-action="Index" class="btn btn-outline-success btn-sm rounded-pill px-3 py-1.5 fw-semibold d-flex align-items-center gap-1.5">
+                <i class="bi bi-tools"></i>
+                <span>@L["Browse Machinery"]</span>
+            </a>
+            <a asp-controller="Godown" asp-action="Index" class="btn btn-outline-success btn-sm rounded-pill px-3 py-1.5 fw-semibold d-flex align-items-center gap-1.5">
+                <i class="bi bi-building"></i>
+                <span>@L["Browse Storage"]</span>
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <span class="small">@TempData["SuccessMessage"]</span>
+        </div>
+    }
+
+    <!-- Nav Tabs -->
+    <ul class="nav nav-pills mb-4 gap-2" id="favoritesTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-pill px-3.5 py-2 fw-semibold d-flex align-items-center gap-2" 
+                    id="equipment-tab" data-bs-toggle="pill" data-bs-target="#equipment-pane" type="button" role="tab" aria-controls="equipment-pane" aria-selected="true">
+                <i class="bi bi-tools"></i>
+                <span>@L["Machinery"]</span>
+                <span class="badge bg-success rounded-pill">@Model.EquipmentFavorites.Count</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill px-3.5 py-2 fw-semibold d-flex align-items-center gap-2" 
+                    id="godown-tab" data-bs-toggle="pill" data-bs-target="#godown-pane" type="button" role="tab" aria-controls="godown-pane" aria-selected="false">
+                <i class="bi bi-building"></i>
+                <span>@L["Storage Facilities"]</span>
+                <span class="badge bg-secondary rounded-pill">@Model.GodownFavorites.Count</span>
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="favoritesTabContent">
+        <!-- 1. Equipment Tab -->
+        <div class="tab-pane fade show active" id="equipment-pane" role="tabpanel" aria-labelledby="equipment-tab" tabindex="0">
+            @if (!Model.EquipmentFavorites.Any())
+            {
+                <div class="card krishi-card border-0 shadow-sm rounded-4 p-5 text-center my-3 bg-white">
+                    <div class="rounded-circle bg-danger-subtle text-danger mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 72px; height: 72px;">
+                        <i class="bi bi-heart fs-1"></i>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-2">@L["No favorite machinery yet"]</h4>
+                    <p class="text-muted mx-auto mb-4" style="max-width: 480px;">
+                        @L["Click the heart icon on any equipment card or detail page while browsing to save it to your wishlist."]
+                    </p>
+                    <div>
+                        <a asp-controller="Equipment" asp-action="Index" class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-semibold shadow-sm">
+                            <i class="bi bi-search me-1.5"></i>@L["Explore Equipment Catalog"]
+                        </a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+                    @foreach (var item in Model.EquipmentFavorites)
+                    {
+                        <div class="col" id="fav-item-eq-@item.ListingId">
+                            <div class="card krishi-card h-100 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column transition-hover">
+                                <!-- Image wrapper -->
+                                <div class="position-relative bg-light text-center" style="height: 200px;">
+                                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                    {
+                                        <img src="@item.ImageUrl" class="w-100 h-100 object-fit-cover" alt="@item.Name" loading="lazy" />
+                                    }
+                                    else
+                                    {
+                                        <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                                            <i class="bi bi-image fs-1 text-secondary opacity-50"></i>
+                                            <span class="small text-secondary fw-medium mt-1">@L["No Image Provided"]</span>
+                                        </div>
+                                    }
+
+                                    <!-- Category Pill -->
+                                    <div class="position-absolute top-0 start-0 m-2.5">
+                                        <span class="badge bg-white text-dark shadow-sm rounded-pill px-2.5 py-1 small fw-semibold opacity-95">
+                                            @L[item.Category ?? "Machinery"]
+                                        </span>
+                                    </div>
+
+                                    <!-- Top-right Heart Button (Un-favorite) -->
+                                    <div class="position-absolute top-0 end-0 m-2.5">
+                                        <button type="button" 
+                                                class="btn btn-light btn-sm rounded-circle shadow-sm favorite-btn active text-danger" 
+                                                style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;"
+                                                data-type="Equipment" 
+                                                data-id="@item.ListingId" 
+                                                onclick="KrishiFavorites.toggle(this);"
+                                                title="@L["Remove from favorites"]">
+                                            <i class="bi bi-heart-fill text-danger"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- Availability Hint Pill (Bottom-start) -->
+                                    @if (!string.IsNullOrWhiteSpace(item.AvailabilityHint))
+                                    {
+                                        <div class="position-absolute bottom-0 start-0 m-2.5">
+                                            <span class="badge @(item.IsAvailable ? "bg-success" : "bg-dark bg-opacity-75") text-white shadow-sm rounded-pill px-2.5 py-1 small fw-semibold">
+                                                <i class="bi @(item.IsAvailable ? "bi-check-circle-fill" : "bi-clock-fill") me-1"></i>@L[item.AvailabilityHint]
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+
+                                <!-- Card Body -->
+                                <div class="card-body d-flex flex-column p-3.5">
+                                    <h5 class="card-title fw-bold text-dark mb-1 text-truncate" title="@item.Name">
+                                        @item.Name
+                                    </h5>
+
+                                    <p class="card-text text-muted small mb-2 d-flex align-items-center">
+                                        <i class="bi bi-geo-alt text-success me-1"></i>
+                                        <span class="text-truncate">
+                                            @if (!string.IsNullOrWhiteSpace(item.District))
+                                            {
+                                                <strong>@L[item.District]</strong>@(!string.IsNullOrWhiteSpace(item.Location) && !item.Location.Equals(item.District, StringComparison.OrdinalIgnoreCase) ? $" · {item.Location}" : "")
+                                            }
+                                            else
+                                            {
+                                                @L[item.Location ?? "Location Not Specified"]
+                                            }
+                                        </span>
+                                    </p>
+
+                                    @if (item.ReviewCount > 0)
+                                    {
+                                        <div class="mb-2">
+                                            <span class="text-warning small fw-bold d-inline-flex align-items-center gap-1">
+                                                <i class="bi bi-star-fill"></i> @item.Rating.ToString("0.0") <span class="text-muted fw-normal">(@item.ReviewCount)</span>
+                                            </span>
+                                        </div>
+                                    }
+
+                                    <div class="pt-3 border-top mt-auto">
+                                        <div class="d-flex justify-content-between align-items-baseline mb-3">
+                                            <span class="text-muted small">@L["Rental Rate"]</span>
+                                            <span class="fw-bold text-success fs-5">@item.PriceFormatted</span>
+                                        </div>
+
+                                        <div class="d-flex gap-2">
+                                            <a href="@item.DetailUrl" class="btn btn-krishi-primary flex-grow-1 fw-semibold py-2 d-flex align-items-center justify-content-center gap-1.5 shadow-sm">
+                                                <span>@L["View Details"]</span>
+                                                <i class="bi bi-arrow-right small"></i>
+                                            </a>
+                                            <form asp-action="Remove" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="type" value="Equipment" />
+                                                <input type="hidden" name="id" value="@item.ListingId" />
+                                                <button type="submit" class="btn btn-outline-danger py-2 px-2.5 rounded-3" title="@L["Remove from favorites"]">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- 2. Godown Tab -->
+        <div class="tab-pane fade" id="godown-pane" role="tabpanel" aria-labelledby="godown-tab" tabindex="0">
+            @if (!Model.GodownFavorites.Any())
+            {
+                <div class="card krishi-card border-0 shadow-sm rounded-4 p-5 text-center my-3 bg-white">
+                    <div class="rounded-circle bg-danger-subtle text-danger mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 72px; height: 72px;">
+                        <i class="bi bi-heart fs-1"></i>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-2">@L["No favorite storage facilities yet"]</h4>
+                    <p class="text-muted mx-auto mb-4" style="max-width: 480px;">
+                        @L["Click the heart icon on any godown facility card or detail page while browsing to save it to your wishlist."]
+                    </p>
+                    <div>
+                        <a asp-controller="Godown" asp-action="Index" class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-semibold shadow-sm">
+                            <i class="bi bi-search me-1.5"></i>@L["Explore Storage Catalog"]
+                        </a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+                    @foreach (var item in Model.GodownFavorites)
+                    {
+                        <div class="col" id="fav-item-gd-@item.ListingId">
+                            <div class="card krishi-card h-100 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column transition-hover">
+                                <!-- Image wrapper -->
+                                <div class="position-relative bg-light text-center" style="height: 200px;">
+                                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                    {
+                                        <img src="@item.ImageUrl" class="w-100 h-100 object-fit-cover" alt="@item.Name" loading="lazy" />
+                                    }
+                                    else
+                                    {
+                                        <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                                            <i class="bi bi-image fs-1 text-secondary opacity-50"></i>
+                                            <span class="small text-secondary fw-medium mt-1">@L["No Image Provided"]</span>
+                                        </div>
+                                    }
+
+                                    <!-- Storage Type Pill -->
+                                    <div class="position-absolute top-0 start-0 m-2.5">
+                                        <span class="badge bg-white text-dark shadow-sm rounded-pill px-2.5 py-1 small fw-semibold opacity-95">
+                                            @L[item.Category ?? "Storage"]
+                                        </span>
+                                    </div>
+
+                                    <!-- Top-right Heart Button (Un-favorite) -->
+                                    <div class="position-absolute top-0 end-0 m-2.5">
+                                        <button type="button" 
+                                                class="btn btn-light btn-sm rounded-circle shadow-sm favorite-btn active text-danger" 
+                                                style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;"
+                                                data-type="Godown" 
+                                                data-id="@item.ListingId" 
+                                                onclick="KrishiFavorites.toggle(this);"
+                                                title="@L["Remove from favorites"]">
+                                            <i class="bi bi-heart-fill text-danger"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- Availability Hint Pill (Bottom-start) -->
+                                    @if (!string.IsNullOrWhiteSpace(item.AvailabilityHint))
+                                    {
+                                        <div class="position-absolute bottom-0 start-0 m-2.5">
+                                            <span class="badge @(item.IsAvailable ? "bg-success" : "bg-dark bg-opacity-75") text-white shadow-sm rounded-pill px-2.5 py-1 small fw-semibold">
+                                                <i class="bi @(item.IsAvailable ? "bi-check-circle-fill" : "bi-clock-fill") me-1"></i>@L[item.AvailabilityHint]
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+
+                                <!-- Card Body -->
+                                <div class="card-body d-flex flex-column p-3.5">
+                                    <h5 class="card-title fw-bold text-dark mb-1 text-truncate" title="@item.Name">
+                                        @item.Name
+                                    </h5>
+
+                                    <p class="card-text text-muted small mb-2 d-flex align-items-center">
+                                        <i class="bi bi-geo-alt text-success me-1"></i>
+                                        <span class="text-truncate">
+                                            @if (!string.IsNullOrWhiteSpace(item.District))
+                                            {
+                                                <strong>@L[item.District]</strong>@(!string.IsNullOrWhiteSpace(item.Location) && !item.Location.Equals(item.District, StringComparison.OrdinalIgnoreCase) ? $" · {item.Location}" : "")
+                                            }
+                                            else
+                                            {
+                                                @L[item.Location ?? "Location Not Specified"]
+                                            }
+                                        </span>
+                                    </p>
+
+                                    @if (item.ReviewCount > 0)
+                                    {
+                                        <div class="mb-2">
+                                            <span class="text-warning small fw-bold d-inline-flex align-items-center gap-1">
+                                                <i class="bi bi-star-fill"></i> @item.Rating.ToString("0.0") <span class="text-muted fw-normal">(@item.ReviewCount)</span>
+                                            </span>
+                                        </div>
+                                    }
+
+                                    <div class="pt-3 border-top mt-auto">
+                                        <div class="d-flex justify-content-between align-items-baseline mb-3">
+                                            <span class="text-muted small">@L["Storage Fee"]</span>
+                                            <span class="fw-bold text-success fs-5">@item.PriceFormatted</span>
+                                        </div>
+
+                                        <div class="d-flex gap-2">
+                                            <a href="@item.DetailUrl" class="btn btn-krishi-primary flex-grow-1 fw-semibold py-2 d-flex align-items-center justify-content-center gap-1.5 shadow-sm">
+                                                <span>@L["View Details"]</span>
+                                                <i class="bi bi-arrow-right small"></i>
+                                            </a>
+                                            <form asp-action="Remove" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="type" value="Godown" />
+                                                <input type="hidden" name="id" value="@item.ListingId" />
+                                                <button type="submit" class="btn btn-outline-danger py-2 px-2.5 rounded-3" title="@L["Remove from favorites"]">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<form id="antiForgeryForm" class="d-none">@Html.AntiForgeryToken()</form>

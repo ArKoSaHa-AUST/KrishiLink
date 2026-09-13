@@ -37,13 +37,21 @@ namespace KrishiLink.Models.ViewModels
 
         public double OccupiedTons => TotalCapacityTons - AvailableCapacityTons;
         public int UtilizationPercent => TotalCapacityTons > 0 ? (int)Math.Round(OccupiedTons / TotalCapacityTons * 100) : 0;
+
+        /// <summary>Total actual physical tonnage currently stored across active intake lots.</summary>
+        public double StoredTonsActual { get; set; }
     }
 
     /// <summary>An incoming storage booking request row in the pending requests widget.</summary>
     public class GodownBookingRequestItem
     {
         public int Id { get; set; }
+        public string FarmerId { get; set; } = string.Empty;
         public string FarmerName { get; set; } = string.Empty;
+        public int FarmerCompleted { get; set; }
+        public double FarmerCancellationRate { get; set; }
+        public string FarmerMemberSince { get; set; } = string.Empty;
+        public string FarmerTrustLevel { get; set; } = string.Empty;
         public int GodownId { get; set; }
         public string GodownName { get; set; } = string.Empty;
         public double RequestedCapacityTons { get; set; }
@@ -65,6 +73,22 @@ namespace KrishiLink.Models.ViewModels
 
         /// <summary>When the farmer submitted the request (drives sorting and "time ago").</summary>
         public DateTime RequestedOn { get; set; }
+
+        /// <summary>Set when a pending request's dates overlap an accepted booking or blocked date.</summary>
+        public bool HasConflict { get; set; }
+        public string? ConflictHint { get; set; }
+        public int ModificationCount { get; set; } = 0;
+        public string? PreviousDetails { get; set; }
+
+        public int? HarvestPlanId { get; set; }
+        public string? HarvestPlanName { get; set; }
+        public int HarvestPlanItemCount { get; set; }
+        public string? HarvestPlanOtherItems { get; set; }
+
+        /// <summary>Total actual physical tonnage currently stored for this booking.</summary>
+        public double StoredTonsActual { get; set; }
+        public int IntakeLotCount { get; set; }
+        public List<StorageIntakeLotItemViewModel> IntakeLots { get; set; } = new();
 
         /// <summary>Compact relative timestamp, e.g. "2h ago". Empty when RequestedOn is unset.</summary>
         public string TimeAgo => TimeAgoFormatter.Format(RequestedOn);

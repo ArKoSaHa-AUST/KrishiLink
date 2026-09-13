@@ -31,6 +31,7 @@ namespace KrishiLink.Models.ViewModels
         public double OwnerRating { get; set; }
         public int OwnerReviewCount { get; set; }
         public List<string> Facilities { get; set; } = new();
+        public bool IsFavorite { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
@@ -49,6 +50,9 @@ namespace KrishiLink.Models.ViewModels
         public string SortBy { get; set; } = "newest";
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 24;
+
+        [Microsoft.AspNetCore.Mvc.ModelBinding.BindNever]
+        public string? CurrentUserId { get; set; }
     }
 
     /// <summary>
@@ -76,6 +80,7 @@ namespace KrishiLink.Models.ViewModels
 
         // Results
         public List<GodownItemViewModel> GodownList { get; set; } = new();
+        public HashSet<int> FavoriteIds { get; set; } = new();
         public int TotalCount { get; set; }
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 24;

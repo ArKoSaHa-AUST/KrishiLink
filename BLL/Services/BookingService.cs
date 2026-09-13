@@ -15,42 +15,63 @@ namespace KrishiLink.BLL.Services
         /// <summary>Farmer cancels their own pending, unpaid-accepted, or paid-but-not-started booking. Paid bookings are refunded in the same operation.</summary>
         Task<(string? Error, decimal? Refunded)> CancelAsync(string farmerId, string bookingType, int bookingId);
 
+        /// <summary>Farmer modifies their own pending or unpaid-accepted booking. Accepted bookings return to pending for owner re-approval.</summary>
+        Task<(string? Error, bool NeedsReapproval)> ModifyAsync(string farmerId, string bookingType, int bookingId, DateTime startDate, DateTime endDate, int? units, double? tons);
+
         // QR Code Booking Confirmation & Verification
         Task<BookingConfirmationViewModel?> GetConfirmationAsync(string? userId, string bookingType, int bookingId, string requestHost, bool justCreated = false);
         Task<BookingConfirmationViewModel?> GetConfirmationByCodeAsync(string? userId, string bookingCode, string requestHost);
         Task<BookingVerificationViewModel> GetVerificationByCodeAsync(string bookingCode, string? currentUserId, string requestHost);
         Task<string?> QuickVerifyActionAsync(string ownerId, string bookingCode, string action);
+
+        /// <summary>
+        /// Generates the official payment receipt PDF if requester is the booking farmer or listing owner,
+        /// and the booking has a succeeded or refunded payment.
+        /// </summary>
+        Task<(byte[] Content, string FileName)?> GetReceiptPdfAsync(string requesterId, bool requesterIsOwner, string bookingType, int bookingId, string requestHost);
     }
 
     public class BookingService : IBookingService
     {
         private readonly IRepository<EquipmentBooking> _rentals;
         private readonly IRepository<GodownBooking> _storage;
+        private readonly IRepository<HarvestPlan> _harvestPlans;
         private readonly IQrCodeService _qrCode;
         private readonly ILoyaltyService _loyalty;
         private readonly INotificationService _notifications;
         private readonly IPaymentService _payments;
         private readonly IEquipmentService _equipmentService;
         private readonly IGodownService _godownService;
+        private readonly IRepository<Favorite> _favorites;
+        private readonly IRepository<SavedSearch> _savedSearches;
+        private readonly IReceiptDocumentService _receipts;
 
         public BookingService(
             IRepository<EquipmentBooking> rentals,
             IRepository<GodownBooking> storage,
+            IRepository<HarvestPlan> harvestPlans,
             IQrCodeService qrCode,
             ILoyaltyService loyalty,
             INotificationService notifications,
             IPaymentService payments,
             IEquipmentService equipmentService,
-            IGodownService godownService)
+            IGodownService godownService,
+            IRepository<Favorite> favorites,
+            IRepository<SavedSearch> savedSearches,
+            IReceiptDocumentService receipts)
         {
             _rentals = rentals;
             _storage = storage;
+            _harvestPlans = harvestPlans;
             _qrCode = qrCode;
             _loyalty = loyalty;
             _notifications = notifications;
             _payments = payments;
             _equipmentService = equipmentService;
             _godownService = godownService;
+            _favorites = favorites;
+            _savedSearches = savedSearches;
+            _receipts = receipts;
         }
 
         public async Task<BookingHistoryViewModel> GetHistoryAsync(string farmerId, string tab, string status, DateTime? from, DateTime? to, string? search)
@@ -122,6 +143,35 @@ namespace KrishiLink.BLL.Services
                 activity.Add((b.UpdatedAt.Value, Feed(text, icon, color, b.UpdatedAt.Value)));
             }
 
+            var draftPlansCount = await _harvestPlans.Query()
+                .CountAsync(p => p.FarmerId == farmerId && p.Status == HarvestPlanStatus.Draft);
+
+            var nextPlan = await _harvestPlans.Query()
+                .Include(p => p.Items)
+                .Where(p => p.FarmerId == farmerId && p.Status == HarvestPlanStatus.Submitted)
+                .OrderByDescending(p => p.SubmittedOn ?? p.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            HarvestPlanSummaryViewModel? nextPlanSummary = null;
+            if (nextPlan != null)
+            {
+                var minDate = nextPlan.Items.Count > 0 ? nextPlan.Items.Min(i => i.StartDate) : (DateTime?)null;
+                var maxDate = nextPlan.Items.Count > 0 ? nextPlan.Items.Max(i => i.EndDate) : (DateTime?)null;
+                nextPlanSummary = new HarvestPlanSummaryViewModel
+                {
+                    Id = nextPlan.Id,
+                    Name = nextPlan.Name,
+                    Crop = nextPlan.Crop,
+                    Status = nextPlan.Status,
+                    ItemCount = nextPlan.Items.Count,
+                    EarliestStartDate = minDate,
+                    TargetDateRange = minDate.HasValue && maxDate.HasValue ? ListingFormat.DateRange(minDate.Value, maxDate.Value) : string.Empty
+                };
+            }
+
+            var favoritesCount = await _favorites.Query().CountAsync(f => f.UserId == farmerId);
+            var savedSearchesCount = await _savedSearches.Query().CountAsync(s => s.UserId == farmerId);
+
             return new FarmerDashboardViewModel
             {
                 ActiveBookings = all
@@ -138,7 +188,11 @@ namespace KrishiLink.BLL.Services
                         Status = b.Status,
                         DetailUrl = "/Bookings"
                     }).ToList(),
-                RecentActivity = activity.OrderByDescending(a => a.At).Take(6).Select(a => a.Item).ToList()
+                RecentActivity = activity.OrderByDescending(a => a.At).Take(6).Select(a => a.Item).ToList(),
+                DraftHarvestPlansCount = draftPlansCount,
+                NextSubmittedHarvestPlan = nextPlanSummary,
+                FavoritesCount = favoritesCount,
+                SavedSearchesCount = savedSearchesCount
             };
         }
 
@@ -243,6 +297,229 @@ namespace KrishiLink.BLL.Services
 
         private static bool CanCancel(IPayableBooking b) => ValidateCancel(b) is null;
 
+        public const int MaxModifications = 3;
+
+        /// <summary>
+        /// Farmers can modify Pending or unpaid Accepted bookings before their start date, up to MaxModifications times.
+        /// Paid bookings cannot be modified as payment is locked in escrow.
+        /// </summary>
+        private static string? ValidateModify(IPayableBooking? b)
+        {
+            if (b is null) return "This booking could not be found.";
+            if (b.ModificationCount >= MaxModifications)
+                return $"This booking has already been modified the maximum allowed {MaxModifications} times.";
+            if (b.Payment?.Status == PaymentStatus.Succeeded)
+                return "This booking has been paid and its payment is locked. Please cancel and request a refund instead of modifying.";
+            if (b.StartDate.Date <= DateTime.Today)
+                return "This booking has already started or starts today and can no longer be modified.";
+            if (b.Status is not (BookingStatus.Pending or BookingStatus.Accepted))
+                return $"A {b.Status.ToLowerInvariant()} booking cannot be modified.";
+            return null;
+        }
+
+        private static bool CanModify(IPayableBooking b) => ValidateModify(b) is null;
+
+        public async Task<(string? Error, bool NeedsReapproval)> ModifyAsync(
+            string farmerId,
+            string bookingType,
+            int bookingId,
+            DateTime startDate,
+            DateTime endDate,
+            int? units,
+            double? tons)
+        {
+            if (startDate.Date < DateTime.Today)
+                return ("Start date cannot be in the past.", false);
+            if (endDate.Date < startDate.Date)
+                return ("End date cannot be before start date.", false);
+
+            if (bookingType.Equals("Equipment", StringComparison.OrdinalIgnoreCase))
+            {
+                var b = await _rentals.QueryTracked()
+                    .Include(x => x.Equipment!).ThenInclude(e => e.Owner)
+                    .Include(x => x.Farmer)
+                    .Include(x => x.Payment)
+                    .FirstOrDefaultAsync(x => x.Id == bookingId && x.FarmerId == farmerId);
+
+                var error = ValidateModify(b);
+                if (error is not null) return (error, false);
+
+                var e = b!.Equipment!;
+                var days = ListingFormat.InclusiveDays(startDate, endDate);
+                if (days < e.MinRentalDays)
+                    return ($"Minimum rental duration is {e.MinRentalDays} {(e.MinRentalDays == 1 ? "day" : "days")}.", false);
+
+                var reqUnits = units ?? b.Units;
+                if (reqUnits < 1 || reqUnits > e.Quantity)
+                    return ($"Requested units must be between 1 and {e.Quantity}.", false);
+
+                var conflict = await _equipmentService.CheckAvailabilityAsync(e.Id, startDate, endDate, reqUnits, excludeBookingId: b.Id);
+                if (conflict is not null) return (conflict, false);
+
+                var quote = await _equipmentService.QuoteGrossAsync(e.Id, startDate, endDate, reqUnits);
+
+                var oldRange = ListingFormat.DateRange(b.StartDate, b.EndDate);
+                var oldUnits = b.Units;
+                var prevDetails = $"{oldRange} ({oldUnits} {(oldUnits == 1 ? "unit" : "units")})";
+
+                var needsReapproval = b.Status == BookingStatus.Accepted;
+
+                if (b.PointsUsed > 0 || !string.IsNullOrEmpty(b.AppliedPromoCode))
+                {
+                    await _loyalty.RefundPointsForCancelledBookingAsync(farmerId, "Equipment", b.Id, $"#EQ-{b.Id:D4}");
+                    var (redeemSuccess, _, valResult) = await _loyalty.RedeemPointsForBookingAsync(
+                        farmerId,
+                        b.AppliedPromoCode,
+                        b.PointsUsed > 0 ? b.PointsUsed : null,
+                        quote.Gross,
+                        "Equipment",
+                        b.Id,
+                        $"#EQ-{b.Id:D4}");
+
+                    if (redeemSuccess && valResult != null)
+                    {
+                        b.DiscountAmount = valResult.DiscountAmount;
+                        b.PointsUsed = valResult.PointsRequired;
+                    }
+                    else
+                    {
+                        b.DiscountAmount = 0;
+                        b.PointsUsed = 0;
+                        b.AppliedPromoCode = null;
+                    }
+                }
+
+                b.StartDate = startDate.Date;
+                b.EndDate = endDate.Date;
+                b.Units = reqUnits;
+                b.QuotedGross = quote.Gross;
+                b.PricingNote = quote.PricingNote;
+
+                b.PreviousDetails = prevDetails.Length > 200 ? prevDetails[..200] : prevDetails;
+                b.ModificationCount++;
+                b.ModifiedOn = DateTime.UtcNow;
+                b.UpdatedOn = DateTime.UtcNow;
+
+                if (needsReapproval)
+                {
+                    b.Status = BookingStatus.Pending;
+                    b.AgreedRate = null;
+                    b.AgreedGross = null;
+                    b.CommissionRate = null;
+                    b.RejectReason = null;
+                }
+
+                await _rentals.SaveChangesAsync();
+
+                if (e.OwnerId != null)
+                {
+                    var farmerName = b.Farmer?.FullName ?? "A farmer";
+                    await _notifications.NotifyAsync(new NotificationRequest
+                    {
+                        UserId = e.OwnerId,
+                        Type = NotificationTypes.BookingModified,
+                        TitleKey = "Booking Modified",
+                        MessageKey = "{0} updated the equipment booking for {1} to {2} - {3} ({4} units).",
+                        Args = new object[] { farmerName, e.Name, $"{b.StartDate:dd MMM yyyy}", $"{b.EndDate:dd MMM yyyy}", b.Units },
+                        LinkUrl = AppLinks.OwnerRequests("equipment", b.Id),
+                        DedupeKey = $"booking:equipment:{b.Id}:Modified:{b.ModificationCount}",
+                        SendEmail = false
+                    });
+                }
+
+                return (null, needsReapproval);
+            }
+            else
+            {
+                var g = await _storage.QueryTracked()
+                    .Include(x => x.Godown!).ThenInclude(god => god.Owner)
+                    .Include(x => x.Farmer)
+                    .Include(x => x.Payment)
+                    .FirstOrDefaultAsync(x => x.Id == bookingId && x.FarmerId == farmerId);
+
+                var error = ValidateModify(g);
+                if (error is not null) return (error, false);
+
+                var godown = g!.Godown!;
+                var reqTons = tons ?? g.StorageTons;
+                if (reqTons <= 0 || reqTons > godown.CapacityInTons)
+                    return ($"Requested capacity must be between 1 and {godown.CapacityInTons:N0} tons.", false);
+
+                var conflict = await _godownService.CheckAvailabilityAsync(godown.Id, reqTons, startDate, endDate, excludeBookingId: g.Id);
+                if (conflict is not null) return (conflict, false);
+
+                var newGross = BookingPricing.GodownGross(startDate, endDate, reqTons, godown.PricePerTonPerMonth);
+
+                var oldRange = ListingFormat.DateRange(g.StartDate, g.EndDate);
+                var prevDetails = $"{oldRange} ({g.StorageTons:N0} tons)";
+
+                var needsReapproval = g.Status == BookingStatus.Accepted;
+
+                if (g.PointsUsed > 0 || !string.IsNullOrEmpty(g.AppliedPromoCode))
+                {
+                    await _loyalty.RefundPointsForCancelledBookingAsync(farmerId, "Godown", g.Id, $"#GD-{g.Id:D4}");
+                    var (redeemSuccess, _, valResult) = await _loyalty.RedeemPointsForBookingAsync(
+                        farmerId,
+                        g.AppliedPromoCode,
+                        g.PointsUsed > 0 ? g.PointsUsed : null,
+                        newGross,
+                        "Godown",
+                        g.Id,
+                        $"#GD-{g.Id:D4}");
+
+                    if (redeemSuccess && valResult != null)
+                    {
+                        g.DiscountAmount = valResult.DiscountAmount;
+                        g.PointsUsed = valResult.PointsRequired;
+                    }
+                    else
+                    {
+                        g.DiscountAmount = 0;
+                        g.PointsUsed = 0;
+                        g.AppliedPromoCode = null;
+                    }
+                }
+
+                g.StartDate = startDate.Date;
+                g.EndDate = endDate.Date;
+                g.StorageTons = reqTons;
+
+                g.PreviousDetails = prevDetails.Length > 200 ? prevDetails[..200] : prevDetails;
+                g.ModificationCount++;
+                g.ModifiedOn = DateTime.UtcNow;
+                g.UpdatedOn = DateTime.UtcNow;
+
+                if (needsReapproval)
+                {
+                    g.Status = BookingStatus.Pending;
+                    g.AgreedRate = null;
+                    g.AgreedGross = null;
+                    g.CommissionRate = null;
+                    g.RejectReason = null;
+                }
+
+                await _storage.SaveChangesAsync();
+
+                if (godown.OwnerId != null)
+                {
+                    var farmerName = g.Farmer?.FullName ?? "A farmer";
+                    await _notifications.NotifyAsync(new NotificationRequest
+                    {
+                        UserId = godown.OwnerId,
+                        Type = NotificationTypes.BookingModified,
+                        TitleKey = "Booking Modified",
+                        MessageKey = "{0} updated the storage booking for {1} to {2} tons ({3} - {4}).",
+                        Args = new object[] { farmerName, godown.Name, g.StorageTons, $"{g.StartDate:dd MMM yyyy}", $"{g.EndDate:dd MMM yyyy}" },
+                        LinkUrl = AppLinks.OwnerRequests("godown", g.Id),
+                        DedupeKey = $"booking:godown:{g.Id}:Modified:{g.ModificationCount}",
+                        SendEmail = false
+                    });
+                }
+
+                return (null, needsReapproval);
+            }
+        }
+
         // ---------------------------------------------------------------- QR Code & Confirmation Voucher
 
         public async Task<BookingConfirmationViewModel?> GetConfirmationAsync(string? userId, string bookingType, int bookingId, string requestHost, bool justCreated = false)
@@ -256,7 +533,12 @@ namespace KrishiLink.BLL.Services
                     .FirstOrDefaultAsync(x => x.Id == bookingId);
 
                 if (b == null || b.Equipment == null) return null;
-                return BuildEquipmentConfirmation(b, requestHost, justCreated);
+                var vm = BuildEquipmentConfirmation(b, requestHost, justCreated);
+                if (!string.IsNullOrEmpty(userId) && userId == vm.OwnerId)
+                {
+                    vm.FarmerProfileUrl = AppLinks.FarmerProfile(vm.FarmerId);
+                }
+                return vm;
             }
             else
             {
@@ -264,10 +546,16 @@ namespace KrishiLink.BLL.Services
                     .Include(x => x.Godown!).ThenInclude(god => god.Owner)
                     .Include(x => x.Farmer)
                     .Include(x => x.Payment)
+                    .Include(x => x.IntakeLots)
                     .FirstOrDefaultAsync(x => x.Id == bookingId);
 
                 if (g == null || g.Godown == null) return null;
-                return BuildGodownConfirmation(g, requestHost, justCreated);
+                var vm = BuildGodownConfirmation(g, requestHost, justCreated);
+                if (!string.IsNullOrEmpty(userId) && userId == vm.OwnerId)
+                {
+                    vm.FarmerProfileUrl = AppLinks.FarmerProfile(vm.FarmerId);
+                }
+                return vm;
             }
         }
 
@@ -331,12 +619,12 @@ namespace KrishiLink.BLL.Services
                     StartDate = b.StartDate,
                     EndDate = b.EndDate,
                     DurationDisplay = days == 1 ? "1 Day" : $"{days} Days",
-                    TotalCost = b.AgreedGross ?? BookingPricing.EquipmentGross(b.StartDate, b.EndDate, b.Equipment.DailyRate),
+                    TotalCost = BookingPricing.EquipmentGrossOf(b, b.Equipment.DailyRate),
                     DiscountAmount = b.DiscountAmount,
                     AppliedPromoCode = b.AppliedPromoCode,
                     PointsUsed = b.PointsUsed,
-                    RateDescription = $"{ListingFormat.Taka(b.Equipment.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
-                    QuantityDisplay = $"1 {b.Equipment.Category}",
+                    RateDescription = b.PricingNote ?? ($"{ListingFormat.Taka(b.Equipment.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}" + (b.Units > 1 ? $" × {b.Units} units" : "")),
+                    QuantityDisplay = b.Units > 1 ? $"{b.Units} × {b.Equipment.Category}" : $"1 {b.Equipment.Category}",
                     Status = b.Status,
                     PaymentStatus = GetPaymentStatus(b),
                     RequestedAt = b.RequestedOn,
@@ -350,6 +638,7 @@ namespace KrishiLink.BLL.Services
                     OwnerPhone = b.Equipment.Owner?.PhoneNumber ?? "—",
                     OwnerBusiness = b.Equipment.Owner?.BusinessOrFarmName ?? string.Empty,
                     IsCurrentOwner = isOwner,
+                    FarmerProfileUrl = isOwner ? AppLinks.FarmerProfile(b.FarmerId) : null,
                     CanAccept = isOwner && b.Status == BookingStatus.Pending,
                     CanReject = isOwner && b.Status == BookingStatus.Pending,
                     CanConfirmPickup = isOwner && b.Status == BookingStatus.Paid,
@@ -436,6 +725,7 @@ namespace KrishiLink.BLL.Services
                     OwnerPhone = g.Godown.Owner?.PhoneNumber ?? "—",
                     OwnerBusiness = g.Godown.Owner?.BusinessOrFarmName ?? string.Empty,
                     IsCurrentOwner = isOwner,
+                    FarmerProfileUrl = isOwner ? AppLinks.FarmerProfile(g.FarmerId) : null,
                     CanAccept = isOwner && g.Status == BookingStatus.Pending,
                     CanReject = isOwner && g.Status == BookingStatus.Pending,
                     CanConfirmPickup = isOwner && g.Status == BookingStatus.Paid,
@@ -516,7 +806,7 @@ namespace KrishiLink.BLL.Services
             var days = ListingFormat.InclusiveDays(b.StartDate, b.EndDate);
             var code = $"KL-EQ-{b.RequestedOn.Year}-{b.Id:D3}";
             var verUrl = $"{requestHost.TrimEnd('/')}/Verify/{code}";
-            var grossCost = b.AgreedGross ?? BookingPricing.EquipmentGross(b.StartDate, b.EndDate, e.DailyRate);
+            var grossCost = BookingPricing.EquipmentGrossOf(b, e.DailyRate);
             var netCost = Math.Max(0m, grossCost - b.DiscountAmount);
 
             var vm = new BookingConfirmationViewModel
@@ -538,8 +828,8 @@ namespace KrishiLink.BLL.Services
                 AppliedPromoCode = b.AppliedPromoCode,
                 PointsUsed = b.PointsUsed,
                 PointsEarned = _loyalty.CalculatePointsEarned(netCost),
-                RateDescription = $"{ListingFormat.Taka(e.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
-                QuantityDisplay = $"1 {e.Category}",
+                RateDescription = b.PricingNote ?? ($"{ListingFormat.Taka(e.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}" + (b.Units > 1 ? $" × {b.Units} units" : "")),
+                QuantityDisplay = b.Units > 1 ? $"{b.Units} × {e.Category}" : $"1 {e.Category}",
                 PaymentStatus = GetPaymentStatus(b),
                 Status = b.Status,
                 RequestedAt = b.RequestedOn,
@@ -562,6 +852,9 @@ namespace KrishiLink.BLL.Services
                 QrCodeBase64 = _qrCode.GenerateBase64Png(verUrl, 8),
                 JustCreated = justCreated,
                 CanCancel = CanCancel(b),
+                CanModify = CanModify(b),
+                ModificationCount = b.ModificationCount,
+                PreviousDetails = b.PreviousDetails,
                 Timeline = GenerateTimeline(b.Status, b.RequestedOn, b.UpdatedOn, b.PaidOn, e.Owner?.FullName ?? "Owner", b.StartDate, b.EndDate, "Rental Requested", "Active in Field", "Equipment in use", "Completed & Handover")
             };
 
@@ -620,7 +913,11 @@ namespace KrishiLink.BLL.Services
                 QrCodeBase64 = _qrCode.GenerateBase64Png(verUrl, 8),
                 JustCreated = justCreated,
                 CanCancel = CanCancel(b),
-                Timeline = GenerateTimeline(b.Status, b.RequestedOn, b.UpdatedOn, b.PaidOn, g.Owner?.FullName ?? "Owner", b.StartDate, b.EndDate, "Storage Requested", "Produce Stored", "Goods in storage", "Storage Period Ended")
+                CanModify = CanModify(b),
+                ModificationCount = b.ModificationCount,
+                PreviousDetails = b.PreviousDetails,
+                Timeline = GenerateTimeline(b.Status, b.RequestedOn, b.UpdatedOn, b.PaidOn, g.Owner?.FullName ?? "Owner", b.StartDate, b.EndDate, "Storage Requested", "Produce Stored", "Goods in storage", "Storage Period Ended"),
+                IntakeLots = b.IntakeLots.OrderByDescending(l => l.IntakeDate).Select(ToLotViewModel).ToList()
             };
 
             return vm;
@@ -679,12 +976,15 @@ namespace KrishiLink.BLL.Services
                 .Include(b => b.Equipment!).ThenInclude(e => e.Owner)
                 .Include(b => b.Review)
                 .Include(b => b.Payment)
+                .Include(b => b.HarvestPlan)
                 .Where(b => b.FarmerId == farmerId)
                 .ToListAsync();
             var storage = await _storage.Query()
                 .Include(b => b.Godown!).ThenInclude(g => g.Owner)
                 .Include(b => b.Review)
                 .Include(b => b.Payment)
+                .Include(b => b.HarvestPlan)
+                .Include(b => b.IntakeLots)
                 .Where(b => b.FarmerId == farmerId)
                 .ToListAsync();
 
@@ -706,15 +1006,20 @@ namespace KrishiLink.BLL.Services
                 Location = e.Location,
                 StartDate = b.StartDate,
                 EndDate = b.EndDate,
-                TotalCost = b.AgreedGross ?? BookingPricing.EquipmentGross(b.StartDate, b.EndDate, e.DailyRate),
-                RateDescription = $"{ListingFormat.Taka(b.AgreedRate ?? e.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}",
-                QuantityDisplay = $"1 {e.Category}",
+                TotalCost = BookingPricing.EquipmentGrossOf(b, e.DailyRate),
+                RateDescription = b.PricingNote ?? ($"{ListingFormat.Taka(b.AgreedRate ?? e.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}" + (b.Units > 1 ? $" × {b.Units} units" : "")),
+                QuantityDisplay = b.Units > 1 ? $"{b.Units} × {e.Category}" : $"1 {e.Category}",
                 ListingDetailUrl = $"/Equipment/Details/{e.Id}",
                 ListingId = e.Id,
                 HasReview = b.Review != null,
                 ReviewRating = b.Review?.Rating,
                 ReviewComment = b.Review?.Comment,
-                ReviewedAt = b.Review?.CreatedAt
+                ReviewedAt = b.Review?.CreatedAt,
+                Units = b.Units,
+                MaxUnits = e.Quantity,
+                MinDays = e.MinRentalDays,
+                HarvestPlanId = b.HarvestPlanId,
+                HarvestPlanName = b.HarvestPlan?.Name
             };
             return Finish(item, b, b.Note, b.RejectReason, b.RequestedOn, b.UpdatedOn, e.Owner, "Rental Requested", "Active in Field", "Equipment in use", "Completed & Handover");
         }
@@ -742,7 +1047,12 @@ namespace KrishiLink.BLL.Services
                 HasReview = b.Review != null,
                 ReviewRating = b.Review?.Rating,
                 ReviewComment = b.Review?.Comment,
-                ReviewedAt = b.Review?.CreatedAt
+                ReviewedAt = b.Review?.CreatedAt,
+                StorageTons = b.StorageTons,
+                MinDays = 1,
+                HarvestPlanId = b.HarvestPlanId,
+                HarvestPlanName = b.HarvestPlan?.Name,
+                IntakeLots = b.IntakeLots.OrderByDescending(l => l.IntakeDate).Select(ToLotViewModel).ToList()
             };
             return Finish(item, b, b.Note, b.RejectReason, b.RequestedOn, b.UpdatedOn, g.Owner, "Booking Requested", "Produce Stored", "Goods in storage", "Storage Period Ended");
         }
@@ -759,6 +1069,9 @@ namespace KrishiLink.BLL.Services
             item.FarmerNotes = note ?? string.Empty;
             item.OwnerRemarks = rejectReason;
             item.CanCancel = CanCancel(b);
+            item.CanModify = CanModify(b);
+            item.ModificationCount = b.ModificationCount;
+            item.PreviousDetails = b.PreviousDetails;
             item.CanPay = status == BookingStatus.Accepted && b.AgreedGross > 0;
             item.PayUrl = $"/Bookings/Pay?type={item.BookingType}&id={b.Id}";
             item.PaymentStatus = GetPaymentStatus(b);
@@ -773,5 +1086,69 @@ namespace KrishiLink.BLL.Services
 
         private static ActivityFeedItem Feed(string text, string icon, string color, DateTime at) =>
             new() { Description = text, IconClass = icon, IconColor = color, TimeAgo = TimeAgoFormatter.Format(at) };
+
+        private static StorageIntakeLotItemViewModel ToLotViewModel(StorageIntakeLot l) => new()
+        {
+            Id = l.Id,
+            GodownBookingId = l.GodownBookingId,
+            ReceiptNumber = l.ReceiptNumber,
+            IntakeDate = l.IntakeDate,
+            Crop = l.Crop,
+            Variety = l.Variety,
+            Bags = l.Bags,
+            BagWeightKg = l.BagWeightKg,
+            NetWeightKg = l.NetWeightKg,
+            MoisturePercent = l.MoisturePercent,
+            Grade = l.Grade,
+            Remarks = l.Remarks,
+            Status = l.Status,
+            ReleasedOn = l.ReleasedOn,
+            ReleasedTo = l.ReleasedTo,
+            ReleaseRemarks = l.ReleaseRemarks,
+            RecordedAt = l.RecordedAt,
+            UpdatedAt = l.UpdatedAt,
+            ReceiptPdfUrl = AppLinks.WarehouseReceipt(l.Id)
+        };
+
+        public async Task<(byte[] Content, string FileName)?> GetReceiptPdfAsync(string requesterId, bool requesterIsOwner, string bookingType, int bookingId, string requestHost)
+        {
+            if (string.Equals(bookingType, "Equipment", StringComparison.OrdinalIgnoreCase))
+            {
+                var b = await _rentals.Query().Include(x => x.Equipment).Include(x => x.Payment).FirstOrDefaultAsync(x => x.Id == bookingId);
+                if (b is null || b.Payment is null) return null;
+
+                var isFarmer = b.FarmerId == requesterId;
+                var isOwner = b.Equipment != null && b.Equipment.OwnerId == requesterId;
+                if (!isFarmer && !isOwner) return null;
+
+                var isEligible = b.Payment.Status == PaymentStatus.Succeeded ||
+                                 b.Payment.Status == PaymentStatus.Refunded ||
+                                 b.Status == BookingStatus.Completed ||
+                                 b.Status == BookingStatus.Paid;
+                if (!isEligible) return null;
+
+                return await _receipts.BuildAsync(bookingType, bookingId, requestHost);
+            }
+
+            if (string.Equals(bookingType, "Godown", StringComparison.OrdinalIgnoreCase))
+            {
+                var g = await _storage.Query().Include(x => x.Godown).Include(x => x.Payment).FirstOrDefaultAsync(x => x.Id == bookingId);
+                if (g is null || g.Payment is null) return null;
+
+                var isFarmer = g.FarmerId == requesterId;
+                var isOwner = g.Godown != null && g.Godown.OwnerId == requesterId;
+                if (!isFarmer && !isOwner) return null;
+
+                var isEligible = g.Payment.Status == PaymentStatus.Succeeded ||
+                                 g.Payment.Status == PaymentStatus.Refunded ||
+                                 g.Status == BookingStatus.Completed ||
+                                 g.Status == BookingStatus.Paid;
+                if (!isEligible) return null;
+
+                return await _receipts.BuildAsync(bookingType, bookingId, requestHost);
+            }
+
+            return null;
+        }
     }
 }

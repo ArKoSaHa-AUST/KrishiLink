@@ -7,5 +7,6 @@ namespace KrishiLink.Models.Entities
         public int GodownId { get; set; }
         public Godown? Godown { get; set; }
         public DateTime Date { get; set; }
+        public string? Reason { get; set; }
     }
 }

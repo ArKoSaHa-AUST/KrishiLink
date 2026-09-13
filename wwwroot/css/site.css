@@ -808,3 +808,20 @@ a:hover {
     background-color: var(--krishi-primary-light) !important;
 }
 
+/* Multi-unit availability calendar styles */
+.cal-partial {
+    background-color: #fef3c7 !important;
+    border: 1px solid #f59e0b !important;
+    color: #b45309 !important;
+    cursor: pointer;
+}
+
+.cal-partial:hover {
+    background-color: #fde68a !important;
+}
+
+.cal-partial-indicator {
+    background-color: #f59e0b !important;
+}
+
+

@@ -11,7 +11,6 @@
     var listingLabel = L[Model.ListingLabel].Value;
     string Money(decimal v) => "৳" + v.ToString("N0");
     string PeriodUrl(string period) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, Period = period, f.Sort })!;
-    string RangeUrl(DateTime from, DateTime to) => Url.Action("Revenue", new { From = from.ToString("yyyy-MM-dd"), To = to.ToString("yyyy-MM-dd"), f.ListingId, f.Status, f.Period, f.Sort })!;
     string SortUrl(string sort) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, f.Period, Sort = sort, f.Page })! + "#breakdown";
     string PageUrl(int page) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, f.Period, f.Sort, Page = page })! + "#transactions";
     var sortKey = (f.Sort ?? "revenue").ToLowerInvariant();
@@ -143,6 +142,7 @@
 <form method="get" asp-action="Revenue" class="card border-0 shadow-sm p-3 mb-4 d-print-none" style="border-radius: var(--krishi-radius-lg);">
     <input type="hidden" name="Period" value="@f.Period" />
     <input type="hidden" name="Sort" value="@f.Sort" />
+    <input type="hidden" name="Range" id="filterRange" value="@f.Range" />
     <div class="row g-2 align-items-end">
         <div class="col-6 col-md-3 col-lg-2">
             <label for="From" class="form-label small fw-semibold mb-1">@L["From"]</label>
@@ -181,15 +181,17 @@
         </div>
     </div>
     <div class="small mt-2 d-flex flex-wrap align-items-center gap-2" style="color: var(--krishi-text-muted);">
-        <span><i class="bi bi-calendar-range me-1"></i>@L["Showing"] <strong>@rangeText</strong></span>
+        <span><i class="bi bi-calendar-range me-1"></i>@L["Showing"] <strong>@(string.IsNullOrEmpty(Model.RangeLabel) ? rangeText : Model.RangeLabel)</strong></span>
         @if (f.ListingId is not null)
         {
             <span>· @Model.Listings.FirstOrDefault(g => g.Id == f.ListingId)?.Name</span>
         }
-        <span class="ms-auto d-flex gap-1">
-            <a href="@RangeUrl(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1), DateTime.Today)" class="badge rounded-pill text-decoration-none border bg-white" style="color: var(--krishi-primary);">@L["This month"]</a>
-            <a href="@RangeUrl(DateTime.Today.AddDays(-89), DateTime.Today)" class="badge rounded-pill text-decoration-none border bg-white" style="color: var(--krishi-primary);">@L["Last 90 days"]</a>
-            <a href="@RangeUrl(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-11), DateTime.Today)" class="badge rounded-pill text-decoration-none border bg-white" style="color: var(--krishi-primary);">@L["Last 12 months"]</a>
+        <span class="ms-auto d-flex flex-wrap gap-1">
+            <a href="@Url.Action("Revenue", new { Range = "fy", f.ListingId, f.Status, f.Period, f.Sort })" class="badge rounded-pill text-decoration-none border @(f.Range == "fy" ? "bg-success text-white" : "bg-white text-success")">@L["Fiscal Year"]</a>
+            <a href="@Url.Action("Revenue", new { Range = "lastfy", f.ListingId, f.Status, f.Period, f.Sort })" class="badge rounded-pill text-decoration-none border @(f.Range == "lastfy" ? "bg-success text-white" : "bg-white text-success")">@L["Last FY"]</a>
+            <a href="@Url.Action("Revenue", new { Range = "ytd", f.ListingId, f.Status, f.Period, f.Sort })" class="badge rounded-pill text-decoration-none border @(f.Range == "ytd" ? "bg-success text-white" : "bg-white text-success")">@L["YTD"]</a>
+            <a href="@Url.Action("Revenue", new { Range = "12m", f.ListingId, f.Status, f.Period, f.Sort })" class="badge rounded-pill text-decoration-none border @(f.Range == "12m" || (string.IsNullOrEmpty(f.Range) && f.From == null && f.To == null) ? "bg-success text-white" : "bg-white text-success")">@L["Last 12 Months"]</a>
+            <a href="@Url.Action("Revenue", new { Range = "month", f.ListingId, f.Status, f.Period, f.Sort })" class="badge rounded-pill text-decoration-none border @(f.Range == "month" ? "bg-success text-white" : "bg-white text-success")">@L["This Month"]</a>
         </span>
     </div>
 </form>
@@ -274,6 +276,164 @@
                 </ul>
             }
         </div>
+    </div>
+</div>
+
+<!-- Profit & Loss / Tax Summary Card -->
+@{
+    var pnl = Model.ProfitAndLoss;
+}
+<div class="card border-0 shadow-sm mb-4 p-3 p-md-4" id="pnl" style="border-radius: var(--krishi-radius-lg);">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3 pb-2 border-bottom">
+        <div>
+            <h5 class="fw-bold mb-1" style="color: var(--krishi-text-primary);">
+                <i class="bi bi-file-earmark-spreadsheet me-2 text-success"></i>@L["Profit & Loss / Tax Summary"]
+            </h5>
+            <span class="small text-muted">
+                @(pnl.IsFiscalYear ? pnl.FiscalYearName : $"{L["Period:"]} {pnl.PeriodLabel}")
+            </span>
+        </div>
+        <div class="d-flex flex-wrap gap-2 d-print-none">
+            <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3 fw-semibold add-expense-btn"
+                    data-bs-toggle="modal" data-bs-target="#expenseModal"
+                    data-booking-id="" data-booking-label="@L["General operating expense (no booking)"]"
+                    data-category="Other" data-expense-date="@DateTime.Today.ToString("yyyy-MM-dd")"
+                    title="@L["Record a non-booking facility or machinery expense"]">
+                <i class="bi bi-plus-circle me-1"></i>@L["Add general expense"]
+            </button>
+            <a asp-action="ProfitAndLoss" asp-route-from="@f.From?.ToString("yyyy-MM-dd")" asp-route-to="@f.To?.ToString("yyyy-MM-dd")" asp-route-range="@f.Range" asp-route-listingId="@f.ListingId"
+               class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold" target="_blank" title="@L["Download standalone P&L statement as PDF"]">
+                <i class="bi bi-download me-1"></i>@L["Download P&L (PDF)"]
+            </a>
+        </div>
+    </div>
+
+    <!-- P&L Financial Strip -->
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="bg-light rounded-3 p-3 text-center">
+                <div class="small text-muted">@L["Gross Revenue"]</div>
+                <div class="fs-5 fw-bold text-dark">@Money(pnl.Gross)</div>
+                <div class="small text-muted" style="font-size: 0.75rem;">@L["{0} completed", pnl.CompletedBookingsCount]</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="bg-light rounded-3 p-3 text-center">
+                <div class="small text-muted">@L["Platform Commission"]</div>
+                <div class="fs-5 fw-bold text-danger">− @Money(pnl.Commission)</div>
+                <div class="small text-muted" style="font-size: 0.75rem;">@L["Tax-deductible"]</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="bg-light rounded-3 p-3 text-center">
+                <div class="small text-muted">@L["Operating Expenses"]</div>
+                <div class="fs-5 fw-bold text-danger">− @Money(pnl.TotalExpenses)</div>
+                <div class="small text-muted" style="font-size: 0.75rem;">@L["{0} recorded", pnl.ExpenseCount]</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="rounded-3 p-3 text-center" style="background-color: var(--krishi-primary-light);">
+                <div class="small fw-semibold" style="color: var(--krishi-primary);">@L["Net Operating Profit"]</div>
+                <div class="fs-5 fw-bold" style="color: var(--krishi-primary);">@Money(pnl.NetProfit)</div>
+                <div class="small fw-semibold" style="color: var(--krishi-primary); font-size: 0.75rem;">@pnl.MarginPercent% @L["Margin"]</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Operating Expenses by Category Table & General Expenses -->
+    <div class="row g-3">
+        <div class="col-12 @(Model.GeneralExpenses.Any() ? "col-lg-7" : "col-12")">
+            <h6 class="small fw-bold text-uppercase text-muted mb-2">@L["Expenses by Category"]</h6>
+            @if (pnl.ExpensesByCategory.Count == 0)
+            {
+                <div class="p-3 bg-light rounded-3 text-center text-muted small">@L["No expenses recorded in this period."]</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light small">
+                            <tr>
+                                <th>@L["Category"]</th>
+                                <th class="text-end">@L["Count"]</th>
+                                <th class="text-end">@L["Amount"]</th>
+                                <th class="text-end">@L["Share"]</th>
+                            </tr>
+                        </thead>
+                        <tbody class="small">
+                            @foreach (var cat in pnl.ExpensesByCategory)
+                            {
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-light text-dark border me-1">@L[cat.Category]</span>
+                                        @if (cat.HasGeneralExpenses)
+                                        {
+                                            <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.7rem;">@L["General"]</span>
+                                        }
+                                    </td>
+                                    <td class="text-end text-muted">@cat.Count</td>
+                                    <td class="text-end fw-semibold">@Money(cat.Amount)</td>
+                                    <td class="text-end text-muted">@cat.PercentageOfExpenses%</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        @if (Model.GeneralExpenses.Any())
+        {
+            <div class="col-12 col-lg-5">
+                <h6 class="small fw-bold text-uppercase text-muted mb-2">@L["General Operating Expenses"]</h6>
+                <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+                    <table class="table table-sm align-middle mb-0">
+                        <tbody class="small">
+                            @foreach (var ge in Model.GeneralExpenses)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@ge.Note</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">
+                                            <span class="badge bg-light text-dark border py-0">@L[ge.Category]</span>
+                                            @ge.ExpenseDate.ToString("dd MMM yyyy")
+                                            @if (ge.ListingName != null) { <span>· @ge.ListingName</span> }
+                                        </div>
+                                    </td>
+                                    <td class="text-end fw-semibold text-nowrap">@Money(ge.Amount)</td>
+                                    <td class="text-end text-nowrap d-print-none ps-2">
+                                        <button type="button" class="btn btn-link btn-sm text-secondary p-0 me-2 add-expense-btn"
+                                                data-bs-toggle="modal" data-bs-target="#expenseModal"
+                                                data-expense-id="@ge.Id" data-amount="@ge.Amount" data-note="@ge.Note"
+                                                data-category="@ge.Category" data-expense-date="@ge.ExpenseDate.ToString("yyyy-MM-dd")"
+                                                data-listing-id="@(ge.ListingId?.ToString() ?? "")"
+                                                data-booking-id="" data-booking-label="@L["General operating expense"]" title="@L["Edit"]">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <form asp-action="DeleteExpense" method="post" class="d-inline" onsubmit="return confirm('@L["Remove this expense?"]');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="expenseId" value="@ge.Id" />
+                                            <input type="hidden" name="returnUrl" value="@currentUrl" />
+                                            <button type="submit" class="btn btn-link btn-sm text-danger p-0" title="@L["Delete"]">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Tax adviser note -->
+    <div class="mt-3 pt-2 border-top">
+        <p class="small text-muted mb-0" style="font-size: 0.8rem;">
+            <i class="bi bi-info-circle me-1"></i>
+            @L["Figures for your tax adviser: gross receipts, platform commission (deductible), operating expenses by category, net profit. KrishiLink does not calculate tax."]
+        </p>
     </div>
 </div>
 
@@ -511,11 +671,13 @@
                                 @foreach (var e in t.ExpenseLines)
                                 {
                                     <div class="small text-danger d-flex justify-content-end align-items-center gap-1">
+                                        <span class="badge bg-light text-secondary border py-0" style="font-size: 0.7rem;">@L[e.Category]</span>
                                         <span title="@e.Note">− @Money(e.Amount) <span style="color: var(--krishi-text-muted);">@(string.IsNullOrEmpty(e.Note) ? L["exp."].Value : e.Note)</span></span>
                                         @if (canExpense)
                                         {
                                             <button type="button" class="btn btn-link btn-sm p-0 text-secondary d-print-none add-expense-btn" title="@L["Edit expense"]"
                                                     data-booking-id="@t.BookingId" data-booking-label="#@t.BookingId · @t.ListingName" data-expense-id="@e.Id" data-amount="@e.Amount" data-note="@e.Note"
+                                                    data-category="@e.Category" data-expense-date="@e.ExpenseDate.ToString("yyyy-MM-dd")"
                                                     data-bs-toggle="modal" data-bs-target="#expenseModal"><i class="bi bi-pencil-square"></i></button>
                                             <form asp-action="DeleteExpense" method="post" class="d-inline d-print-none" onsubmit="return confirm('@L["Remove this expense?"]');">
                                                 <input type="hidden" name="expenseId" value="@e.Id" />
@@ -563,7 +725,9 @@
                                 @if (canExpense)
                                 {
                                     <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 add-expense-btn"
-                                            data-booking-id="@t.BookingId" data-booking-label="#@t.BookingId · @t.ListingName" data-bs-toggle="modal" data-bs-target="#expenseModal" title="@L["Add expense"]">
+                                            data-booking-id="@t.BookingId" data-booking-label="#@t.BookingId · @t.ListingName"
+                                            data-category="Other" data-expense-date="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                            data-bs-toggle="modal" data-bs-target="#expenseModal" title="@L["Add expense"]">
                                         <i class="bi bi-plus-circle"></i>
                                     </button>
                                 }
@@ -604,11 +768,34 @@
             </div>
             <div class="modal-body py-2">
                 <div class="mb-3">
+                    <label for="expenseCategory" class="form-label small fw-semibold">@L["Category"]</label>
+                    <select class="form-select" id="expenseCategory" name="category" required>
+                        @foreach (var cat in KrishiLink.Models.Entities.ExpenseCategories.All)
+                        {
+                            <option value="@cat">@L[cat]</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3" id="expenseListingGroup">
+                    <label for="expenseListingId" class="form-label small fw-semibold">@L["Listing (optional)"]</label>
+                    <select class="form-select" id="expenseListingId" name="listingId">
+                        <option value="">@L["None / General facility"]</option>
+                        @foreach (var l in Model.Listings)
+                        {
+                            <option value="@l.Id">@l.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
                     <label for="expenseAmount" class="form-label small fw-semibold">@L["Amount (BDT ৳)"]</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light text-success fw-bold">৳</span>
                         <input type="number" class="form-control" id="expenseAmount" name="amount" min="1" step="1" required />
                     </div>
+                </div>
+                <div class="mb-3">
+                    <label for="expenseDate" class="form-label small fw-semibold">@L["Expense Date"]</label>
+                    <input type="date" class="form-control" id="expenseDate" name="expenseDate" max="@DateTime.Today.ToString("yyyy-MM-dd")" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
                 </div>
                 <div>
                     <label for="expenseNote" class="form-label small fw-semibold">@L["Note"]</label>
@@ -635,16 +822,35 @@
 
 @section Scripts {
     <script>
-        // Point the shared expense modal at the clicked booking (and prefill when editing an existing expense)
+        // Point the shared expense modal at the clicked booking / general expense (and prefill when editing)
         document.getElementById('expenseModal').addEventListener('show.bs.modal', e => {
             const btn = e.relatedTarget;
             const editing = !!btn.dataset.expenseId;
-            document.getElementById('expenseBookingId').value = btn.dataset.bookingId;
+            const bookingId = btn.dataset.bookingId || '';
+            document.getElementById('expenseBookingId').value = bookingId;
             document.getElementById('expenseId').value = btn.dataset.expenseId || '';
-            document.getElementById('expenseBookingLabel').textContent = btn.dataset.bookingLabel;
+            document.getElementById('expenseBookingLabel').textContent = btn.dataset.bookingLabel || '';
             document.getElementById('expenseModalTitle').textContent = editing ? '@L["Edit Expense"]' : '@L["Add Expense"]';
             document.getElementById('expenseAmount').value = editing ? btn.dataset.amount : '';
+            document.getElementById('expenseCategory').value = btn.dataset.category || 'Other';
             document.getElementById('expenseNote').value = editing ? btn.dataset.note : '';
+            document.getElementById('expenseDate').value = btn.dataset.expenseDate || '@DateTime.Today.ToString("yyyy-MM-dd")';
+            document.getElementById('expenseListingId').value = btn.dataset.listingId || '';
+
+            const listingGroup = document.getElementById('expenseListingGroup');
+            if (listingGroup) {
+                listingGroup.style.display = bookingId ? 'none' : 'block';
+            }
         });
+
+        // Clear range preset if user edits From or To date inputs
+        const fromInput = document.getElementById('From');
+        const toInput = document.getElementById('To');
+        const rangeInput = document.getElementById('filterRange');
+        if (fromInput && toInput && rangeInput) {
+            const clearRange = () => { rangeInput.value = ''; };
+            fromInput.addEventListener('change', clearRange);
+            toInput.addEventListener('change', clearRange);
+        }
     </script>
 }

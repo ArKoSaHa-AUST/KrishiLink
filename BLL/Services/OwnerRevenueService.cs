@@ -41,7 +41,11 @@ namespace KrishiLink.BLL.Services
 
         /// <summary>Adds (expenseId null) or updates an expense. Returns an error message, or null on success.</summary>
         string? SaveExpense(string ownerId, int? expenseId, int bookingId, decimal amount, string? note);
+        string? SaveExpense(string ownerId, int? expenseId, int? bookingId, int? listingId, decimal amount, string category, string? note, DateTime? expenseDate);
         bool DeleteExpense(string ownerId, int expenseId);
+
+        /// <summary>Builds the standalone one-page Profit & Loss PDF for the given range.</summary>
+        (byte[] Content, string FileName) GenerateProfitAndLoss(string ownerId, RevenueFilter filter, StatementOwner owner);
     }
 
     public interface IGodownRevenueService : IOwnerRevenueService { }
@@ -93,7 +97,7 @@ namespace KrishiLink.BLL.Services
         public OwnerRevenueViewModel GetReport(string ownerId, RevenueFilter filter)
         {
             var today = DateTime.Today;
-            var (from, to) = ResolveRange(filter, today);
+            var (from, to, rangeLabel, isFy, fyName) = ResolveRange(filter, today);
 
             var listings = _repo.GetListings(ownerId);
             var allBookings = _repo.GetBookings(ownerId);
@@ -124,6 +128,7 @@ namespace KrishiLink.BLL.Services
                 Filter = filter,
                 RangeStart = from,
                 RangeEnd = to,
+                RangeLabel = rangeLabel,
                 Listings = listings.Select(l => new RevenueListingOption { Id = l.Id, Name = l.Name }).ToList(),
 
                 TotalRevenue = totalRevenue,
@@ -153,6 +158,28 @@ namespace KrishiLink.BLL.Services
                     .FirstOrDefault()
             };
 
+            var listingMap = listings.ToDictionary(l => l.Id, l => l.Name);
+            model.ProfitAndLoss = BuildProfitAndLoss(inRange, expenses.ToList(), from, to, rangeLabel, isFy, fyName, filter.ListingId);
+            model.GeneralExpenses = expenses
+                .Where(e => e.BookingId == null &&
+                            e.ExpenseDate.Date >= from &&
+                            e.ExpenseDate.Date <= to &&
+                            (filter.ListingId is null || e.ListingId == null || e.ListingId == filter.ListingId))
+                .OrderByDescending(e => e.ExpenseDate)
+                .Select(e => new ExpenseLine
+                {
+                    Id = e.Id,
+                    BookingId = null,
+                    ListingId = e.ListingId,
+                    ListingName = e.ListingId.HasValue ? listingMap.GetValueOrDefault(e.ListingId.Value) : null,
+                    Amount = e.Amount,
+                    Category = e.Category,
+                    Note = e.Note,
+                    ExpenseDate = e.ExpenseDate,
+                    RecordedOn = e.RecordedOn
+                })
+                .ToList();
+
             // Top vs. weakest listing in the range (breakdown is built revenue-desc before any user sort)
             model.Insights.UnderUtilizedListings = breakdown.Count(b => b.IsUnderUtilized);
             model.Insights.LowUtilizationPercent = _options.LowUtilizationPercent;
@@ -176,6 +203,8 @@ namespace KrishiLink.BLL.Services
 
             return new BookingInvoiceViewModel
             {
+                BookingId = b.Id,
+                BookingType = _profile.ListingLabel,
                 InvoiceNumber = $"{_profile.InvoicePrefix}-{b.Id:D6}",
                 Title = _profile.InvoiceTitle,
                 IssuedOn = b.EndDate,
@@ -205,11 +234,40 @@ namespace KrishiLink.BLL.Services
             return (document.GeneratePdf(), document.FileName);
         }
 
-        public string? SaveExpense(string ownerId, int? expenseId, int bookingId, decimal amount, string? note)
+        public (byte[] Content, string FileName) GenerateProfitAndLoss(string ownerId, RevenueFilter filter, StatementOwner owner)
+        {
+            var report = GetReport(ownerId, filter);
+            var document = new ProfitAndLossDocument(report.ProfitAndLoss, owner, _profile.ListingLabel);
+            return (document.GeneratePdf(), document.FileName);
+        }
+
+        public string? SaveExpense(string ownerId, int? expenseId, int bookingId, decimal amount, string? note) =>
+            SaveExpense(ownerId, expenseId, bookingId, null, amount, ExpenseCategories.Other, note, DateTime.Today);
+
+        public string? SaveExpense(string ownerId, int? expenseId, int? bookingId, int? listingId, decimal amount, string category, string? note, DateTime? expenseDate)
         {
             if (amount <= 0) return "Expense must be a positive amount.";
-            var booking = _repo.GetBookings(ownerId).FirstOrDefault(b => b.Id == bookingId && ConfirmedStatuses.Contains(b.Status));
-            if (booking is null) return "Expenses can only be recorded against accepted or completed bookings.";
+
+            var cat = (category ?? string.Empty).Trim();
+            if (!ExpenseCategories.All.Contains(cat))
+                return "Please select a valid expense category.";
+
+            var date = (expenseDate ?? DateTime.Today).Date;
+            if (date > DateTime.Today || date < new DateTime(2000, 1, 1))
+                return "Expense date must be between the year 2000 and today.";
+
+            if (bookingId.HasValue)
+            {
+                var booking = _repo.GetBookings(ownerId).FirstOrDefault(b => b.Id == bookingId.Value && ConfirmedStatuses.Contains(b.Status));
+                if (booking is null) return "Expenses can only be recorded against accepted or completed bookings.";
+                listingId ??= booking.ListingId;
+            }
+            else if (listingId.HasValue)
+            {
+                var listings = _repo.GetListings(ownerId);
+                if (!listings.Any(l => l.Id == listingId.Value))
+                    return "The specified listing does not belong to your account.";
+            }
 
             var expense = expenseId is null ? null : _repo.GetExpense(ownerId, expenseId.Value);
             if (expenseId is not null && expense is null) return "That expense no longer exists.";
@@ -219,16 +277,23 @@ namespace KrishiLink.BLL.Services
                 _repo.AddExpense(new BookingExpense
                 {
                     BookingId = bookingId,
+                    ListingId = listingId,
                     OwnerId = ownerId,
                     Amount = decimal.Round(amount, 2),
+                    Category = cat,
                     Note = (note ?? string.Empty).Trim(),
+                    ExpenseDate = date,
                     RecordedOn = DateTime.UtcNow
                 });
             }
             else
             {
+                expense.BookingId = bookingId;
+                expense.ListingId = listingId;
                 expense.Amount = decimal.Round(amount, 2);
+                expense.Category = cat;
                 expense.Note = (note ?? string.Empty).Trim();
+                expense.ExpenseDate = date;
                 _repo.UpdateExpense(expense);
             }
             return null;
@@ -326,14 +391,123 @@ namespace KrishiLink.BLL.Services
             return Math.Max(0, (end - start).TotalDays + 1);
         }
 
-        private static (DateTime From, DateTime To) ResolveRange(RevenueFilter filter, DateTime today)
+        private static (DateTime From, DateTime To, string RangeLabel, bool IsFiscalYear, string? FiscalYearName) ResolveRange(RevenueFilter filter, DateTime today)
         {
-            var to = (filter.To ?? today).Date;
-            var from = (filter.From ?? new DateTime(today.Year, today.Month, 1).AddMonths(-11)).Date;
-            if (from > to) (from, to) = (to, from);
-            filter.From = from;
-            filter.To = to;
-            return (from, to);
+            if (filter.From is null && filter.To is null && !string.IsNullOrWhiteSpace(filter.Range))
+            {
+                var range = filter.Range.ToLowerInvariant().Trim();
+                switch (range)
+                {
+                    case "fy":
+                        {
+                            var startYear = today.Month >= 7 ? today.Year : today.Year - 1;
+                            var endYear = startYear + 1;
+                            var from = new DateTime(startYear, 7, 1);
+                            var to = new DateTime(endYear, 6, 30);
+                            var fyName = $"Fiscal year {startYear}-{(endYear % 100):D2} (1 Jul {startYear} – 30 Jun {endYear})";
+                            filter.From = from;
+                            filter.To = to;
+                            return (from, to, fyName, true, fyName);
+                        }
+                    case "lastfy":
+                        {
+                            var startYear = (today.Month >= 7 ? today.Year : today.Year - 1) - 1;
+                            var endYear = startYear + 1;
+                            var from = new DateTime(startYear, 7, 1);
+                            var to = new DateTime(endYear, 6, 30);
+                            var fyName = $"Fiscal year {startYear}-{(endYear % 100):D2} (1 Jul {startYear} – 30 Jun {endYear})";
+                            filter.From = from;
+                            filter.To = to;
+                            return (from, to, fyName, true, fyName);
+                        }
+                    case "ytd":
+                        {
+                            var from = new DateTime(today.Year, 1, 1);
+                            var to = today;
+                            var label = $"Year to date {today.Year} (1 Jan – {today:dd MMM yyyy})";
+                            filter.From = from;
+                            filter.To = to;
+                            return (from, to, label, false, null);
+                        }
+                    case "month":
+                        {
+                            var from = new DateTime(today.Year, today.Month, 1);
+                            var to = today;
+                            var label = $"{today:MMMM yyyy}";
+                            filter.From = from;
+                            filter.To = to;
+                            return (from, to, label, false, null);
+                        }
+                }
+            }
+
+            var resolvedTo = (filter.To ?? today).Date;
+            var resolvedFrom = (filter.From ?? new DateTime(today.Year, today.Month, 1).AddMonths(-11)).Date;
+            if (resolvedFrom > resolvedTo) (resolvedFrom, resolvedTo) = (resolvedTo, resolvedFrom);
+            filter.From = resolvedFrom;
+            filter.To = resolvedTo;
+            var defaultLabel = $"{resolvedFrom:dd MMM yyyy} – {resolvedTo:dd MMM yyyy}";
+            return (resolvedFrom, resolvedTo, defaultLabel, false, null);
+        }
+
+        private ProfitAndLossViewModel BuildProfitAndLoss(
+            List<RevenueBooking> inRange,
+            List<BookingExpense> expenses,
+            DateTime from,
+            DateTime to,
+            string periodLabel,
+            bool isFiscalYear,
+            string? fiscalYearName,
+            int? listingId)
+        {
+            // Completed bookings recognized in range by EndDate (consistent with trend recognition rule)
+            var completedInRange = inRange
+                .Where(b => b.Status == BookingStatus.Completed &&
+                            b.EndDate.Date >= from &&
+                            b.EndDate.Date <= to &&
+                            (listingId is null || b.ListingId == listingId))
+                .ToList();
+
+            var gross = completedInRange.Sum(b => b.Gross);
+            var commission = completedInRange.Sum(Commission);
+
+            // Expenses in range filtered by ExpenseDate
+            var expensesInRange = expenses
+                .Where(e => e.ExpenseDate.Date >= from &&
+                            e.ExpenseDate.Date <= to &&
+                            (listingId is null || e.ListingId == null || e.ListingId == listingId))
+                .ToList();
+
+            var totalExpenses = expensesInRange.Sum(e => e.Amount);
+
+            var byCategory = expensesInRange
+                .GroupBy(e => string.IsNullOrWhiteSpace(e.Category) ? ExpenseCategories.Other : e.Category)
+                .Select(g => new ExpenseCategorySummary
+                {
+                    Category = g.Key,
+                    Amount = g.Sum(e => e.Amount),
+                    Count = g.Count(),
+                    GeneralAmount = g.Where(e => e.BookingId == null).Sum(e => e.Amount),
+                    PercentageOfExpenses = totalExpenses > 0 ? Math.Round((double)(g.Sum(e => e.Amount) / totalExpenses * 100), 1) : 0
+                })
+                .Where(c => c.Amount > 0)
+                .OrderByDescending(c => c.Amount)
+                .ToList();
+
+            return new ProfitAndLossViewModel
+            {
+                From = from,
+                To = to,
+                PeriodLabel = periodLabel,
+                IsFiscalYear = isFiscalYear,
+                FiscalYearName = fiscalYearName,
+                Gross = gross,
+                Commission = commission,
+                ExpensesByCategory = byCategory,
+                TotalExpenses = totalExpenses,
+                ExpenseCount = expensesInRange.Count,
+                CompletedBookingsCount = completedInRange.Count
+            };
         }
 
         private RevenueSettlement BuildSettlement(IReadOnlyList<RevenueBooking> all, IReadOnlyList<BookingExpense> expenses, IReadOnlyList<Transaction> payouts)
@@ -489,10 +663,23 @@ namespace KrishiLink.BLL.Services
             IReadOnlyList<BookingExpense> expenses, string? status)
         {
             var confirmed = allBookings.Where(b => ConfirmedStatuses.Contains(b.Status)).ToList();
-            var expensesByBooking = expenses.GroupBy(e => e.BookingId).ToDictionary(g => g.Key, g => g
-                .OrderBy(e => e.RecordedOn)
-                .Select(e => new ExpenseLine { Id = e.Id, Amount = e.Amount, Note = e.Note })
-                .ToList());
+            var expensesByBooking = expenses
+                .Where(e => e.BookingId.HasValue)
+                .GroupBy(e => e.BookingId!.Value)
+                .ToDictionary(g => g.Key, g => g
+                    .OrderBy(e => e.RecordedOn)
+                    .Select(e => new ExpenseLine
+                    {
+                        Id = e.Id,
+                        BookingId = e.BookingId,
+                        ListingId = e.ListingId,
+                        Amount = e.Amount,
+                        Category = e.Category,
+                        Note = e.Note,
+                        ExpenseDate = e.ExpenseDate,
+                        RecordedOn = e.RecordedOn
+                    })
+                    .ToList());
 
             return inRange
                 .Where(b => string.IsNullOrEmpty(status) || b.Status.Equals(status, StringComparison.OrdinalIgnoreCase))

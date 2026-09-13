@@ -13,6 +13,8 @@ namespace KrishiLink.Models.Entities
         string Status { get; set; }
         DateTime? UpdatedOn { get; set; }
         DateTime? CancelledOn { get; set; }
+        int ModificationCount { get; }
+        string? PreviousDetails { get; }
 
         decimal? AgreedRate { get; set; }
         decimal? AgreedGross { get; set; }

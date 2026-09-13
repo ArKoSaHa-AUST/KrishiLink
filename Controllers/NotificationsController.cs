@@ -2,6 +2,8 @@ using System.Security.Claims;
 using KrishiLink.BLL.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Localization;
 
 namespace KrishiLink.Controllers
 {
@@ -9,10 +11,20 @@ namespace KrishiLink.Controllers
     public class NotificationsController : Controller
     {
         private readonly INotificationService _notifications;
+        private readonly IReminderService _reminders;
+        private readonly IHostEnvironment _env;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
-        public NotificationsController(INotificationService notifications)
+        public NotificationsController(
+            INotificationService notifications,
+            IReminderService reminders,
+            IHostEnvironment env,
+            IStringLocalizer<SharedResource> localizer)
         {
             _notifications = notifications;
+            _reminders = reminders;
+            _env = env;
+            _localizer = localizer;
         }
 
         private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
@@ -131,6 +143,22 @@ namespace KrishiLink.Controllers
             {
                 return Redirect(returnUrl);
             }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        /// <summary>
+        /// POST: /Notifications/RunReminders — Development-only trigger to run due reminders for the current user.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RunReminders(CancellationToken ct)
+        {
+            if (!_env.IsDevelopment()) return NotFound();
+
+            var summary = await _reminders.SendDueRemindersAsync(ct, onlyUserId: CurrentUserId);
+            var format = _localizer["[Dev] Reminders: {0} sent, {1} already delivered."].Value;
+            TempData["SuccessMessage"] = string.Format(format, summary.Sent, summary.Skipped);
 
             return RedirectToAction(nameof(Index));
         }

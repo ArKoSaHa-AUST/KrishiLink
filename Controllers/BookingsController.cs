@@ -11,11 +11,13 @@ namespace KrishiLink.Controllers
     {
         private readonly IBookingService _bookings;
         private readonly IPaymentService _payments;
+        private readonly IStorageIntakeService _intakeService;
 
-        public BookingsController(IBookingService bookings, IPaymentService payments)
+        public BookingsController(IBookingService bookings, IPaymentService payments, IStorageIntakeService intakeService)
         {
             _bookings = bookings;
             _payments = payments;
+            _intakeService = intakeService;
         }
 
         /// <summary>GET: /Bookings — the farmer's rental and storage booking history.</summary>
@@ -107,6 +109,35 @@ namespace KrishiLink.Controllers
             return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Index));
         }
 
+        /// <summary>POST: /Bookings/Modify — farmer changes dates, units, or tons on a pending or accepted-unpaid booking.</summary>
+        [HttpPost]
+        [Authorize(Roles = AppRoles.Farmer)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Modify(string type, int id, DateTime? startDate, DateTime? endDate, int? units, double? tons, string? returnUrl)
+        {
+            if (startDate is null || endDate is null)
+            {
+                TempData["ErrorMessage"] = "Please provide both start and end dates.";
+                return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Index));
+            }
+
+            var farmerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var (error, needsReapproval) = await _bookings.ModifyAsync(farmerId, type ?? string.Empty, id, startDate.Value, endDate.Value, units, tons);
+
+            if (error is not null)
+            {
+                TempData["ErrorMessage"] = error;
+            }
+            else
+            {
+                TempData["SuccessMessage"] = needsReapproval
+                    ? "Booking updated. Because this request was previously accepted, it has returned to pending for owner re-approval."
+                    : "Booking details updated successfully.";
+            }
+
+            return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Index));
+        }
+
         // ---------------------------------------------------------------- Escrow payment (simulated gateway)
 
         /// <summary>GET: /Bookings/Pay?type=Equipment&id=1 — checkout for an accepted, unpaid booking.</summary>
@@ -171,6 +202,35 @@ namespace KrishiLink.Controllers
                 TempData["ErrorMessage"] = $"Payment failed: {error}. You can try again from your bookings.";
 
             return LocalRedirect(AppLinks.FarmerBookings(payment.BookingType, payment.BookingId));
+        }
+
+        /// <summary>GET: /Bookings/WarehouseReceipt/5 — download official Warehouse Receipt PDF as farmer.</summary>
+        [HttpGet]
+        [Authorize(Roles = AppRoles.Farmer)]
+        [Route("Bookings/WarehouseReceipt/{id}")]
+        public async Task<IActionResult> WarehouseReceipt(int id)
+        {
+            var farmerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var result = await _intakeService.GetReceiptPdfAsync(id, farmerId, isOwner: false);
+            if (result is null)
+                return NotFound();
+
+            return File(result.Value.Content, "application/pdf", result.Value.FileName);
+        }
+
+        /// <summary>GET: /Bookings/Receipt?type=Equipment&id=1 — download official payment receipt PDF.</summary>
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> Receipt(string type, int id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var isOwner = User.IsInRole(AppRoles.EquipmentOwner) || User.IsInRole(AppRoles.GodownOwner);
+            var host = $"{Request.Scheme}://{Request.Host}";
+            var result = await _bookings.GetReceiptPdfAsync(userId, isOwner, type, id, host);
+            if (result is null)
+                return NotFound();
+
+            return File(result.Value.Content, "application/pdf", result.Value.FileName);
         }
     }
 }

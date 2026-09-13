@@ -19,6 +19,7 @@ namespace KrishiLink.Models.ViewModels
         public double? Longitude { get; set; }
         public double DistanceKm { get; set; }
         public bool IsAvailable { get; set; } = true;
+        public bool HasRateRules { get; set; } = false;
         public string Status => IsAvailable ? "Available" : "Unavailable";
         public string ImageUrl { get; set; } = string.Empty;
         public string OwnerName { get; set; } = string.Empty;
@@ -30,6 +31,8 @@ namespace KrishiLink.Models.ViewModels
         public int OwnerReviewCount { get; set; }
         public int? LastServicedDaysAgo { get; set; }
         public string? LastServicedText { get; set; }
+        public int Quantity { get; set; } = 1;
+        public bool IsFavorite { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
@@ -45,9 +48,13 @@ namespace KrishiLink.Models.ViewModels
         public DateTime? AvailabilityDate { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
+        public int Units { get; set; } = 1;
         public string SortBy { get; set; } = "newest";
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 24;
+
+        [Microsoft.AspNetCore.Mvc.ModelBinding.BindNever]
+        public string? CurrentUserId { get; set; }
     }
 
     /// <summary>
@@ -67,10 +74,12 @@ namespace KrishiLink.Models.ViewModels
         public DateTime? AvailabilityDate { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
+        public int Units { get; set; } = 1;
         public string SortBy { get; set; } = "newest"; // "price_asc", "price_desc", "location", "rating_desc", "newest"
 
         // Results
         public List<EquipmentItemViewModel> EquipmentList { get; set; } = new();
+        public HashSet<int> FavoriteIds { get; set; } = new();
         public int TotalCount { get; set; }
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 24;

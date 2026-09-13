@@ -15,6 +15,10 @@ namespace KrishiLink.Models.ViewModels
         public string? DetailUrl { get; set; }
         public double Rating { get; set; }
         public int ReviewCount { get; set; }
+        public int? Id { get; set; }
+        public string? ListingType { get; set; }
+        public bool IsFavorite { get; set; }
+        public string? AvailabilityHint { get; set; }
         public double OwnerRating { get; set; }
         public int OwnerReviewCount { get; set; }
     }
