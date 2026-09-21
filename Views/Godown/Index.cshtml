@@ -83,23 +83,17 @@
             </div>
 
             <!-- 1. Location / District Filter -->
-            <div class="mb-4">
-                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="desktopLocationSelect">
-                    @L["Location / District"]
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0 text-muted">
-                        <i class="bi bi-geo-alt-fill text-success"></i>
-                    </span>
-                    <select class="form-select border-start-0 filter-input" id="desktopLocationSelect" onchange="syncLocation(this.value); onFilterChanged(1);">
-                        <option value="">@L["All Locations (Bangladesh)"]</option>
-                        @foreach (var loc in Model.AvailableLocations)
-                        {
-                            <option value="@loc" selected="@((Model.District == loc || Model.Location == loc) ? "selected" : null)">@L[loc]</option>
-                        }
-                    </select>
-                </div>
-            </div>
+            <partial name="_GeoSelector" model="@(new GeoSelectorViewModel {
+                DivisionId = "desktopDivisionSelect",
+                DistrictId = "desktopLocationSelect",
+                SelectedDivision = Model.Division,
+                SelectedDistrict = Model.District ?? Model.Location,
+                DivisionLabel = "Division",
+                DistrictLabel = "Location / District",
+                AnyOptionText = "All Locations (Bangladesh)",
+                OnDistrictChanged = "syncLocation(this.value); onFilterChanged(1);",
+                ColumnClass = "mb-4"
+            })" />
 
             <!-- 2. Capacity Needed Slider / Input -->
             <div class="mb-4">
@@ -520,16 +514,17 @@
     <div class="offcanvas-body px-4 py-3" style="overflow-y: auto;">
 
         <!-- Mobile: Location -->
-        <div class="mb-4">
-            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="mobileLocationSelect">@L["Location / District"]</label>
-            <select class="form-select" id="mobileLocationSelect" onchange="syncLocation(this.value); onFilterChanged(1);">
-                <option value="">@L["All Locations (Bangladesh)"]</option>
-                @foreach (var loc in Model.AvailableLocations)
-                {
-                    <option value="@loc" selected="@((Model.District == loc || Model.Location == loc) ? "selected" : null)">@L[loc]</option>
-                }
-            </select>
-        </div>
+        <partial name="_GeoSelector" model="@(new GeoSelectorViewModel {
+            DivisionId = "mobileDivisionSelect",
+            DistrictId = "mobileLocationSelect",
+            SelectedDivision = Model.Division,
+            SelectedDistrict = Model.District ?? Model.Location,
+            DivisionLabel = "Division",
+            DistrictLabel = "Location / District",
+            AnyOptionText = "All Locations (Bangladesh)",
+            OnDistrictChanged = "syncLocation(this.value); onFilterChanged(1);",
+            ColumnClass = "mb-4"
+        })" />
 
         <!-- Mobile: Capacity Slider -->
         <div class="mb-4">
@@ -691,6 +686,15 @@
             const mob = document.getElementById('mobileLocationSelect');
             if (desk && desk.value !== val) desk.value = val;
             if (mob && mob.value !== val) mob.value = val;
+            // Mirror the division too, so the desktop and mobile district lists stay narrowed alike.
+            const deskDiv = document.getElementById('desktopDivisionSelect');
+            const mobDiv = document.getElementById('mobileDivisionSelect');
+            if (deskDiv && mobDiv && deskDiv.value !== mobDiv.value) {
+                const source = document.activeElement === mob || document.activeElement === mobDiv ? mobDiv : deskDiv;
+                const target = source === deskDiv ? mobDiv : deskDiv;
+                target.value = source.value;
+                target.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         }
 
         function syncCapacity(val) {
@@ -801,6 +805,7 @@
             const searchTerm = document.getElementById('mainSearchInput')?.value || '';
             const selectedStorageTypes = Array.from(document.querySelectorAll('.desktop-type-filter:checked')).map(cb => cb.value);
             const location = document.getElementById('desktopLocationSelect')?.value || '';
+            const division = document.getElementById('desktopDivisionSelect')?.value || '';
             const capacity = document.getElementById('desktopCapacitySlider')?.value || 0;
             const minPrice = Number(document.getElementById('desktopMinPriceInput')?.value || DEFAULT_MIN_PRICE);
             const maxPrice = Number(document.getElementById('desktopMaxPriceInput')?.value || DEFAULT_MAX_PRICE);
@@ -821,6 +826,7 @@
             if (searchTerm.trim()) params.append('searchTerm', searchTerm.trim());
             selectedStorageTypes.forEach(t => params.append('selectedStorageTypes', t));
             if (location) params.append('district', location);
+            else if (division) params.append('division', division);
             if (Number(capacity) > 0) params.append('selectedMinCapacity', capacity);
             if (minPrice > DEFAULT_MIN_PRICE) params.append('selectedMinPrice', minPrice);
             if (maxPrice < DEFAULT_MAX_PRICE) params.append('selectedMaxPrice', maxPrice);
@@ -867,6 +873,7 @@
             const searchTerm = document.getElementById('mainSearchInput')?.value || '';
             const selectedTypes = Array.from(document.querySelectorAll('.desktop-type-filter:checked')).map(cb => cb.value);
             const location = document.getElementById('desktopLocationSelect')?.value || '';
+            const division = document.getElementById('desktopDivisionSelect')?.value || '';
             const capacity = Number(document.getElementById('desktopCapacitySlider')?.value || 0);
             const minPrice = Number(document.getElementById('desktopMinPriceInput')?.value || DEFAULT_MIN_PRICE);
             const maxPrice = Number(document.getElementById('desktopPriceSlider')?.value || DEFAULT_MAX_PRICE);
@@ -876,7 +883,7 @@
             let activeCount = 0;
             if (searchTerm.trim()) activeCount++;
             activeCount += selectedTypes.length;
-            if (location) activeCount++;
+            if (location || division) activeCount++;
             if (capacity > 0) activeCount++;
             if (minPrice > DEFAULT_MIN_PRICE) activeCount++;
             if (maxPrice < DEFAULT_MAX_PRICE) activeCount++;

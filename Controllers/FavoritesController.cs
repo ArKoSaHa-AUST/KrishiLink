@@ -46,8 +46,10 @@ namespace KrishiLink.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Remove(string type, int id)
         {
-            var (isFavorite, count, error) = await _favorites.ToggleAsync(FarmerId, type, id);
-            TempData["SuccessMessage"] = "Item removed from your favorites.";
+            var error = await _favorites.RemoveAsync(FarmerId, type, id);
+            if (error is null) TempData["SuccessMessage"] = "Item removed from your favorites.";
+            else TempData["ErrorMessage"] = error;
+
             return RedirectToAction(nameof(Index));
         }
     }

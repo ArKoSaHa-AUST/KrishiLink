@@ -3,16 +3,28 @@ using KrishiLink.DAL;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 
 var builder = WebApplication.CreateBuilder(args);
 EnvironmentConfiguration.AddLocalEnvironmentFiles(builder.Configuration, builder.Environment.ContentRootPath, args);
 
 // QuestPDF community licence (free for organisations under USD 1M annual revenue)
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
+// Binding 0.0.0.0 lets phones and tablets on the same Wi-Fi reach the site by LAN IP.
+// HTTPS stays on localhost: a development certificate is not trusted by other devices.
+// Development only, so a hosting platform's own port binding is never overridden in production.
+var listenUrls = builder.Configuration["App:ListenUrls"];
+if (builder.Environment.IsDevelopment() && !string.IsNullOrWhiteSpace(listenUrls))
+{
+    builder.WebHost.UseUrls(listenUrls.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+}
 
 var connectionString = DatabaseConfiguration.GetConnectionString(builder.Configuration);
 
@@ -39,6 +51,15 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
 builder.Services.AddSupabaseAuthentication(builder.Configuration);
+
+// The sign-in cookie is Secure-only, which is right in production. A development LAN is served over
+// plain HTTP so phones can reach it by IP, and a Secure cookie would never be sent back on those
+// requests, making sign-in silently impossible. Relax it for Development only.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.ConfigureApplicationCookie(options =>
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest);
+}
 
 builder.Services.AddAntiforgery(options =>
 {
@@ -173,7 +194,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Redirecting to HTTPS in development would break LAN access from devices that do not trust the dev certificate.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -184,5 +210,28 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// Print the addresses other devices can use, so QR codes scanned on a phone resolve to a reachable host.
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    var wildcards = app.Urls.Where(url => url.Contains("0.0.0.0") || url.Contains("[::]")).ToList();
+    if (wildcards.Count == 0) return;
+
+    var addresses = NetworkInterface.GetAllNetworkInterfaces()
+        .Where(nic => nic.OperationalStatus == OperationalStatus.Up && nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+        .SelectMany(nic => nic.GetIPProperties().UnicastAddresses)
+        .Where(address => address.Address.AddressFamily == AddressFamily.InterNetwork)
+        .Select(address => address.Address.ToString())
+        .Distinct();
+
+    foreach (var address in addresses)
+    {
+        foreach (var url in wildcards)
+        {
+            logger.LogInformation("KrishiLink is reachable on this network at {Url}", url.Replace("0.0.0.0", address).Replace("[::]", address));
+        }
+    }
+});
 
 app.Run();

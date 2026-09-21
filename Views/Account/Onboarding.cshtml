@@ -26,17 +26,19 @@
 
                     @if (Model.AskDistrict)
                     {
-                        <div class="mb-4">
-                            <label asp-for="District" class="form-label fw-semibold text-dark">@L["Which district are you in?"]</label>
-                            <select asp-for="District" class="form-select py-2.5 rounded-3" required>
-                                <option value="">@L["-- Select district --"]</option>
-                                @foreach (var d in OnboardingOptions.Districts)
-                                {
-                                    <option value="@d">@d</option>
-                                }
-                            </select>
-                            <span asp-validation-for="District" class="text-danger small"></span>
-                            <div class="form-text">@L["Used to show you nearby equipment, storage and weather advisories."]</div>
+                        <div class="row g-3 mb-4">
+                            <partial name="_GeoSelector" model="@(new GeoSelectorViewModel {
+                                IdPrefix = "onboarding",
+                                DivisionField = "Division",
+                                DistrictField = "District",
+                                SelectedDistrict = Model.District,
+                                DivisionLabel = "Which division are you in?",
+                                DistrictLabel = "Which district are you in?",
+                                HelpText = "Used to show you nearby equipment, storage and weather advisories."
+                            })" />
+                            <div class="col-12">
+                                <span asp-validation-for="District" class="text-danger small"></span>
+                            </div>
                         </div>
                     }
 

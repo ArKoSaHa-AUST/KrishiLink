@@ -1,3 +1,4 @@
+using System;
 namespace KrishiLink.Models.Entities
 {
     /// <summary>
@@ -53,6 +54,44 @@ namespace KrishiLink.Models.Entities
         public string ConditionIcon { get; set; } = "bi-cloud-rain-fill";
         public DateTime ForecastDate { get; set; } = DateTime.Today;
         public List<DailyForecastEntry> FiveDayForecast { get; set; } = new();
+
+        /// <summary>Where these numbers came from, so the UI never presents an estimate as a live reading.</summary>
+        public WeatherSource Source { get; set; } = WeatherSource.Live;
+
+        /// <summary>When the underlying observation was retrieved from the provider (UTC).</summary>
+        public DateTime RetrievedAtUtc { get; set; } = DateTime.UtcNow;
+
+        public bool IsLive => Source == WeatherSource.Live;
+
+        /// <summary>Short provenance label, e.g. "Live · 4 min ago" or "Estimated".</summary>
+        public string FreshnessLabel => Source switch
+        {
+            WeatherSource.Live => $"Live · {Age()}",
+            WeatherSource.Recent => $"Last reading · {Age()}",
+            _ => "Estimated (forecast unavailable)"
+        };
+
+        private string Age()
+        {
+            var minutes = (int)Math.Max(0, (DateTime.UtcNow - RetrievedAtUtc).TotalMinutes);
+            if (minutes < 1) return "just now";
+            if (minutes < 60) return $"{minutes} min ago";
+            var hours = minutes / 60;
+            return hours < 24 ? $"{hours} h ago" : $"{hours / 24} d ago";
+        }
+    }
+
+    /// <summary>Provenance of a weather reading.</summary>
+    public enum WeatherSource
+    {
+        /// <summary>Fetched from Open-Meteo on this request.</summary>
+        Live,
+
+        /// <summary>Replayed from the last stored Open-Meteo reading because the provider was unreachable.</summary>
+        Recent,
+
+        /// <summary>Seasonal climatology, used only when no real reading exists at all.</summary>
+        Estimated
     }
 
     public class DailyForecastEntry

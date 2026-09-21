@@ -116,17 +116,20 @@
                             </div>
                             <h6 class="fw-bold text-dark mb-1">@Model.FarmerName</h6>
                             <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1"></i>@Model.FarmerLocation</p>
-                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <a href="tel:@Model.FarmerPhone" class="btn btn-outline-success btn-sm rounded-pill px-3 py-1 fw-semibold">
-                                    <i class="bi bi-telephone-fill me-1"></i> @Model.FarmerPhone
-                                </a>
-                                @if (!string.IsNullOrEmpty(Model.FarmerProfileUrl))
-                                {
-                                    <a href="@Model.FarmerProfileUrl" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1 fw-semibold">
-                                        <i class="bi bi-person-lines-fill me-1"></i> @L["View Farmer Profile"]
+                            @if (Model.ShowContactDetails)
+                            {
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <a href="tel:@Model.FarmerPhone" class="btn btn-outline-success btn-sm rounded-pill px-3 py-1 fw-semibold">
+                                        <i class="bi bi-telephone-fill me-1"></i> @Model.FarmerPhone
                                     </a>
-                                }
-                            </div>
+                                    @if (!string.IsNullOrEmpty(Model.FarmerProfileUrl))
+                                    {
+                                        <a href="@Model.FarmerProfileUrl" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1 fw-semibold">
+                                            <i class="bi bi-person-lines-fill me-1"></i> @L["View Farmer Profile"]
+                                        </a>
+                                    }
+                                </div>
+                            }
                         </div>
                     </div>
 
@@ -139,9 +142,12 @@
                             </div>
                             <h6 class="fw-bold text-dark mb-1">@Model.OwnerName</h6>
                             <p class="text-muted small mb-2">@(string.IsNullOrWhiteSpace(Model.OwnerBusiness) ? L["Verified Machinery Host"] : Model.OwnerBusiness)</p>
-                            <a href="tel:@Model.OwnerPhone" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1 fw-semibold">
-                                <i class="bi bi-telephone-fill me-1"></i> @Model.OwnerPhone
-                            </a>
+                            @if (Model.ShowContactDetails)
+                            {
+                                <a href="tel:@Model.OwnerPhone" class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1 fw-semibold">
+                                    <i class="bi bi-telephone-fill me-1"></i> @Model.OwnerPhone
+                                </a>
+                            }
                         </div>
                     </div>
 
@@ -155,12 +161,22 @@
                                 <div class="col-6 col-sm-3 text-muted">@L["Duration:"]</div>
                                 <div class="col-6 col-sm-3 fw-semibold text-dark">@Model.DurationDisplay</div>
 
-                                <div class="col-6 col-sm-3 text-muted">@L["Total Cost:"]</div>
-                                <div class="col-6 col-sm-3 fw-bold text-success fs-6">@Model.CostDisplay</div>
+                                @if (Model.ShowFinancials)
+                                {
+                                    <div class="col-6 col-sm-3 text-muted">@L["Total Cost:"]</div>
+                                    <div class="col-6 col-sm-3 fw-bold text-success fs-6">@Model.CostDisplay</div>
 
-                                <div class="col-6 col-sm-3 text-muted">@L["Payment Status:"]</div>
-                                <div class="col-6 col-sm-3"><span class="badge bg-light text-dark border">@L[Model.PaymentStatus]</span></div>
+                                    <div class="col-6 col-sm-3 text-muted">@L["Payment Status:"]</div>
+                                    <div class="col-6 col-sm-3"><span class="badge bg-light text-dark border">@L[Model.PaymentStatus]</span></div>
+                                }
                             </div>
+                            @if (!Model.ShowFinancials)
+                            {
+                                <p class="small text-muted mb-0 mt-2">
+                                    <i class="bi bi-shield-lock me-1"></i>
+                                    @L["Contact numbers and payment details are hidden. Sign in as the farmer or the owner of this booking to see them."]
+                                </p>
+                            }
                         </div>
                     </div>
 
@@ -210,9 +226,12 @@
                                 </form>
                             }
 
-                            <a href="tel:@Model.FarmerPhone" class="btn btn-outline-success rounded-pill px-3 py-2 fw-semibold">
-                                <i class="bi bi-telephone-fill me-1"></i> @L["Call Farmer"]
-                            </a>
+                            @if (Model.ShowContactDetails)
+                            {
+                                <a href="tel:@Model.FarmerPhone" class="btn btn-outline-success rounded-pill px-3 py-2 fw-semibold">
+                                    <i class="bi bi-telephone-fill me-1"></i> @L["Call Farmer"]
+                                </a>
+                            }
                         </div>
                     </div>
                 }

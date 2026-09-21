@@ -32,6 +32,9 @@ namespace KrishiLink.Models.Entities
         /// <summary>Summary of previous booking parameters before the last change.</summary>
         public string? PreviousDetails { get; set; }
 
+        /// <summary>Unguessable secret embedded in this booking's QR link, generated on first use.</summary>
+        public string? VerifyToken { get; set; }
+
         /// <summary>The payout that settled this booking's revenue; null while still unpaid.</summary>
         public int? PayoutId { get; set; }
         public Transaction? Payout { get; set; }

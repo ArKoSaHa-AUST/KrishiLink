@@ -14,6 +14,9 @@ namespace KrishiLink.BLL.Services
     public interface IFavoriteService
     {
         Task<(bool IsFavorite, int Count, string? Error)> ToggleAsync(string userId, string listingType, int listingId);
+
+        /// <summary>Idempotent removal used by the Favorites page, where toggling would silently re-add the listing.</summary>
+        Task<string?> RemoveAsync(string userId, string listingType, int listingId);
         Task<FavoritesViewModel> GetAsync(string userId);
         Task<HashSet<int>> GetIdsAsync(string userId, string listingType);
         Task<int> CountAsync(string userId);
@@ -49,6 +52,22 @@ namespace KrishiLink.BLL.Services
             _equipmentBlockedDates = equipmentBlockedDates;
             _godownBlockedDates = godownBlockedDates;
             _logger = logger;
+        }
+
+        public async Task<string?> RemoveAsync(string userId, string listingType, int listingId)
+        {
+            var normType = NormalizeListingType(listingType);
+            if (string.IsNullOrWhiteSpace(userId) || normType == null)
+                return "Invalid favorite.";
+
+            var existing = await _favorites.QueryTracked()
+                .FirstOrDefaultAsync(f => f.UserId == userId && f.ListingType == normType && f.ListingId == listingId);
+            if (existing == null) return null;
+
+            _favorites.Remove(existing);
+            await _favorites.SaveChangesAsync();
+            _logger.LogInformation("Removed favorite {ListingType}:{ListingId} for user {UserId}", normType, listingId, userId);
+            return null;
         }
 
         public async Task<(bool IsFavorite, int Count, string? Error)> ToggleAsync(string userId, string listingType, int listingId)

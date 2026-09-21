@@ -88,6 +88,9 @@ namespace KrishiLink.Models.ViewModels
         public string SortBy { get; set; } = "trust"; // "trust", "bookings", "rating"
         public string? District { get; set; }
 
+        /// <summary>Set only when the board was narrowed to a whole division rather than one district.</summary>
+        public string? Division { get; set; }
+
         // Results
         public List<OwnerLeaderboardEntryViewModel> TopPodium { get; set; } = new(); // Top 3
         public List<OwnerLeaderboardEntryViewModel> RankedList { get; set; } = new(); // Rank 4+

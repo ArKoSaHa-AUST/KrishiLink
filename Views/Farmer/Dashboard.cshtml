@@ -180,6 +180,11 @@
                                 </div>
                             }
                         </div>
+                        <div class="text-center mt-1">
+                            <span class="badge @(ws.Weather.IsLive ? "bg-success-subtle text-success-emphasis" : "bg-secondary-subtle text-secondary-emphasis") rounded-pill px-2 py-1" style="font-size: 0.65rem;">
+                                <i class="bi @(ws.Weather.IsLive ? "bi-broadcast" : "bi-cloud-slash") me-1"></i>@L[ws.Weather.FreshnessLabel]
+                            </span>
+                        </div>
                     </div>
                 }
             </div>

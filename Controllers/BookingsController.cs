@@ -225,7 +225,7 @@ namespace KrishiLink.Controllers
         public async Task<IActionResult> WarehouseReceipt(int id)
         {
             var farmerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            var result = await _intakeService.GetReceiptPdfAsync(id, farmerId, isOwner: false);
+            var result = await _intakeService.GetReceiptPdfAsync(id, farmerId, isOwner: false, $"{Request.Scheme}://{Request.Host}");
             if (result is null)
                 return NotFound();
 
@@ -238,9 +238,8 @@ namespace KrishiLink.Controllers
         public async Task<IActionResult> Receipt(string type, int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            var isOwner = User.IsInRole(AppRoles.EquipmentOwner) || User.IsInRole(AppRoles.GodownOwner);
             var host = $"{Request.Scheme}://{Request.Host}";
-            var result = await _bookings.GetReceiptPdfAsync(userId, isOwner, type, id, host);
+            var result = await _bookings.GetReceiptPdfAsync(userId, type, id, host);
             if (result is null)
                 return NotFound();
 

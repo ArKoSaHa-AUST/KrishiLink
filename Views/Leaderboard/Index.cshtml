@@ -72,17 +72,19 @@
             <!-- District & Sort Controls -->
             <div class="col-md-7">
                 <div class="d-flex flex-wrap align-items-center justify-content-md-end gap-2">
-                    <!-- District Dropdown -->
-                    <div class="d-flex align-items-center gap-1.5">
-                        <label class="text-muted small fw-medium text-nowrap"><i class="bi bi-geo-alt"></i> @L["District"]:</label>
-                        <select name="district" class="form-select form-select-sm rounded-pill border-light-subtle shadow-2xs" style="width: auto; min-width: 140px;" onchange="this.form.submit()">
-                            <option value="">@L["All Bangladesh (64)"]</option>
-                            @foreach (var dist in Model.AvailableDistricts)
-                            {
-                                <option value="@dist" selected="@(Model.District == dist ? "selected" : null)">@dist</option>
-                            }
-                        </select>
-                    </div>
+                    <!-- Division + District Dropdowns -->
+                    <partial name="_GeoSelector" model="@(new GeoSelectorViewModel {
+                        IdPrefix = "leaderboard",
+                        DivisionField = "division",
+                        DistrictField = "district",
+                        SelectedDivision = Model.Division,
+                        SelectedDistrict = Model.District,
+                        AnyOptionText = "All Bangladesh (64)",
+                        SubmitOnChange = true,
+                        ShowLabels = false,
+                        Size = "sm",
+                        ColumnClass = "d-flex align-items-center gap-1.5"
+                    })" />
 
                     <!-- Sort Dropdown -->
                     <div class="d-flex align-items-center gap-1.5">

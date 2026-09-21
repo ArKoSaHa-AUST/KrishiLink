@@ -16,6 +16,9 @@ namespace KrishiLink.Models.Entities
         int ModificationCount { get; }
         string? PreviousDetails { get; }
 
+        /// <summary>Unguessable secret embedded in the booking's QR link; possession of the voucher is what authorises an anonymous scan.</summary>
+        string? VerifyToken { get; set; }
+
         decimal? AgreedRate { get; set; }
         decimal? AgreedGross { get; set; }
         decimal? CommissionRate { get; set; }

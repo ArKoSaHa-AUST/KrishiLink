@@ -60,9 +60,9 @@ namespace KrishiLink.Controllers
             if (error != null)
             {
                 TempData["Error"] = error;
-                if (!string.IsNullOrWhiteSpace(input.ReturnUrl))
+                if (Url.IsLocalUrl(input.ReturnUrl))
                 {
-                    return Redirect(input.ReturnUrl);
+                    return Redirect(input.ReturnUrl!);
                 }
                 return input.PlanId.HasValue
                     ? RedirectToAction("Details", new { id = input.PlanId.Value })

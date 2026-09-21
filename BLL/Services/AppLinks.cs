@@ -50,6 +50,9 @@ namespace KrishiLink.BLL.Services
 
         public static string BookingReceipt(string type, int id) => $"/Bookings/Receipt?type={type}&id={id}";
 
+        /// <summary>The printable confirmation voucher with the booking QR code.</summary>
+        public static string BookingPass(string type, int id) => $"/Bookings/Confirmation?type={type}&id={id}";
+
         public static string EquipmentDetails(int id) => $"/Equipment/Details/{id}";
         public static string EquipmentPricing(int id) => $"/EquipmentOwner/Pricing/{id}";
         public static string GodownDetails(int id) => $"/Godown/Details/{id}";

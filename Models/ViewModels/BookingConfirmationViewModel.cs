@@ -131,6 +131,12 @@ namespace KrishiLink.Models.ViewModels
         public string OwnerPhone { get; set; } = string.Empty;
         public string OwnerBusiness { get; set; } = string.Empty;
 
+        /// <summary>True only for the booking's farmer, the listing's owner and administrators; gates phone numbers.</summary>
+        public bool ShowContactDetails { get; set; }
+
+        /// <summary>True only for the booking's farmer, the listing's owner and administrators; gates money.</summary>
+        public bool ShowFinancials { get; set; }
+
         // Interactive Owner Permissions
         public bool IsCurrentOwner { get; set; }
         public bool CanAccept { get; set; }

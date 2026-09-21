@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using KrishiLink.BLL.Services;
+using KrishiLink.Models.Entities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace KrishiLink.Controllers
@@ -16,19 +17,22 @@ namespace KrishiLink.Controllers
         }
 
         /// <summary>
-        /// Public & Owner Booking Verification Certificate endpoint: /Verify/KL-EQ-2026-001
-        /// Scannable by any smartphone camera or KrishiLink in-app QR scanner.
+        /// Booking Verification Certificate endpoint: /Verify/KL-EQ-2026-001?t={qr secret}
+        /// The two parties and administrators see the full certificate when signed in; anyone else must present
+        /// the secret from the QR link, and then sees no phone numbers and no money.
         /// </summary>
         [HttpGet]
         [Route("Verify/{code}")]
-        public async Task<IActionResult> Index(string code)
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+        public async Task<IActionResult> Index(string code, [FromQuery(Name = "t")] string? t)
         {
             if (string.IsNullOrWhiteSpace(code))
                 return RedirectToAction("Index", "Home");
 
+            Response.Headers.CacheControl = "no-store";
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var host = $"{Request.Scheme}://{Request.Host}";
-            var model = await _bookings.GetVerificationByCodeAsync(code, currentUserId, host);
+            var model = await _bookings.GetVerificationByCodeAsync(code, t, currentUserId, User.IsInRole(AppRoles.Admin), host);
 
             return View(model);
         }
@@ -76,7 +80,7 @@ namespace KrishiLink.Controllers
         public async Task<IActionResult> Receipt(string receiptNumber)
         {
             Response.Headers.CacheControl = "no-store";
-            var model = await _intakeService.GetVerificationAsync(receiptNumber);
+            var model = await _intakeService.GetVerificationAsync(receiptNumber, $"{Request.Scheme}://{Request.Host}");
             return View(model);
         }
     }

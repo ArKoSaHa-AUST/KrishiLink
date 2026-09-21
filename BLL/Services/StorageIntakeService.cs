@@ -20,8 +20,8 @@ namespace KrishiLink.BLL.Services
         Task<string?> UpdateAsync(string ownerId, int lotId, IntakeLotInput input);
         Task<string?> DeleteAsync(string ownerId, int lotId);
         Task<string?> ReleaseAsync(string ownerId, int lotId, string releasedTo, string? remarks);
-        Task<(byte[] Content, string FileName)?> GetReceiptPdfAsync(int lotId, string requesterId, bool isOwner);
-        Task<ReceiptVerificationViewModel> GetVerificationAsync(string receiptNumber);
+        Task<(byte[] Content, string FileName)?> GetReceiptPdfAsync(int lotId, string requesterId, bool isOwner, string requestHost);
+        Task<ReceiptVerificationViewModel> GetVerificationAsync(string receiptNumber, string requestHost);
         Task<Dictionary<int, IntakeSummary>> SummariseAsync(IEnumerable<int> bookingIds);
     }
 
@@ -113,7 +113,7 @@ namespace KrishiLink.BLL.Services
             var lot = new StorageIntakeLot
             {
                 GodownBookingId = booking.Id,
-                ReceiptNumber = $"TMP-{Guid.NewGuid():N}",
+                ReceiptNumber = ProvisionalReceiptNumber(),
                 IntakeDate = input.IntakeDate.Date,
                 Crop = input.Crop.Trim(),
                 Variety = string.IsNullOrWhiteSpace(input.Variety) ? null : input.Variety.Trim(),
@@ -128,12 +128,17 @@ namespace KrishiLink.BLL.Services
                 RecordedAt = DateTime.UtcNow
             };
 
-            await _lots.AddAsync(lot);
-            await _lots.SaveChangesAsync();
+            // The canonical number "KL-WR-{yyyy}-{Id:D5}" needs the identity value, so it takes a second save.
+            // Both saves share one transaction: a failure can never leave a lot stranded on its placeholder.
+            await using (var transaction = await _lots.BeginWorkflowAsync())
+            {
+                await _lots.AddAsync(lot);
+                await _lots.SaveChangesAsync();
 
-            // Two-step save to assign canonical receipt number: "KL-WR-{yyyy}-{Id:D5}"
-            lot.ReceiptNumber = $"KL-WR-{lot.IntakeDate.Year:D4}-{lot.Id:D5}";
-            await _lots.SaveChangesAsync();
+                lot.ReceiptNumber = $"KL-WR-{lot.IntakeDate.Year:D4}-{lot.Id:D5}";
+                await _lots.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
 
             // Notification to farmer
             if (booking.Farmer != null)
@@ -171,6 +176,8 @@ namespace KrishiLink.BLL.Services
             var lot = await _lots.QueryTracked()
                 .Include(l => l.Booking)
                     .ThenInclude(b => b!.Godown)
+                .Include(l => l.Booking)
+                    .ThenInclude(b => b!.Farmer)
                 .FirstOrDefaultAsync(l => l.Id == lotId && l.Booking!.Godown!.OwnerId == ownerId);
 
             if (lot is null)
@@ -180,6 +187,9 @@ namespace KrishiLink.BLL.Services
                 return "Released intake lots cannot be modified.";
 
             var booking = lot.Booking!;
+            var beforeBags = lot.Bags;
+            var beforeNetKg = lot.NetWeightKg;
+            var beforeCrop = lot.Crop;
             var validationErr = ValidateIntakePermissionsAndData(booking, input);
             if (validationErr is not null)
                 return validationErr;
@@ -212,6 +222,31 @@ namespace KrishiLink.BLL.Services
             lot.UpdatedAt = DateTime.UtcNow;
 
             await _lots.SaveChangesAsync();
+
+            // A receipt the farmer already holds must never change quietly: announce any change to the goods.
+            var goodsChanged = beforeBags != lot.Bags || beforeNetKg != lot.NetWeightKg
+                || !string.Equals(beforeCrop, lot.Crop, StringComparison.OrdinalIgnoreCase);
+            if (goodsChanged && booking.Farmer != null)
+            {
+                await _notifications.NotifyAsync(new NotificationRequest
+                {
+                    UserId = booking.FarmerId,
+                    Type = NotificationTypes.System,
+                    TitleKey = "Warehouse receipt amended",
+                    MessageKey = "Receipt {0} was corrected from {1} bags of {2} ({3} kg) to {4} bags of {5} ({6} kg).",
+                    Args = new object[]
+                    {
+                        lot.ReceiptNumber,
+                        beforeBags, beforeCrop, beforeNetKg.ToString("N0"),
+                        lot.Bags, lot.Crop, lot.NetWeightKg.ToString("N0")
+                    },
+                    LinkUrl = AppLinks.FarmerBookings("Godown", booking.Id),
+                    DedupeKey = $"intake:{lot.Id}:amended:{lot.UpdatedAt:yyyyMMddHHmmssfff}",
+                    SendEmail = true,
+                    RecipientEmail = booking.Farmer.Email
+                });
+            }
+
             return null;
         }
 
@@ -220,6 +255,8 @@ namespace KrishiLink.BLL.Services
             var lot = await _lots.QueryTracked()
                 .Include(l => l.Booking)
                     .ThenInclude(b => b!.Godown)
+                .Include(l => l.Booking)
+                    .ThenInclude(b => b!.Farmer)
                 .FirstOrDefaultAsync(l => l.Id == lotId && l.Booking!.Godown!.OwnerId == ownerId);
 
             if (lot is null)
@@ -228,10 +265,32 @@ namespace KrishiLink.BLL.Services
             if (lot.Status == IntakeLotStatus.Released)
                 return "Released intake lots cannot be deleted.";
 
+            var booking = lot.Booking!;
+            var receiptNumber = lot.ReceiptNumber;
+            var bags = lot.Bags;
+            var crop = lot.Crop;
+
             _lots.Remove(lot);
             await _lots.SaveChangesAsync();
 
-            _logger.LogInformation("Intake lot {LotId} deleted by {OwnerId}", lotId, ownerId);
+            _logger.LogInformation("Intake lot {LotId} (receipt {ReceiptNumber}) cancelled by {OwnerId}", lotId, receiptNumber, ownerId);
+
+            if (booking.Farmer != null)
+            {
+                await _notifications.NotifyAsync(new NotificationRequest
+                {
+                    UserId = booking.FarmerId,
+                    Type = NotificationTypes.System,
+                    TitleKey = "Warehouse receipt cancelled",
+                    MessageKey = "Receipt {0} for {1} bags of {2} was cancelled by the godown owner and is no longer valid.",
+                    Args = new object[] { receiptNumber, bags, crop },
+                    LinkUrl = AppLinks.FarmerBookings("Godown", booking.Id),
+                    DedupeKey = $"intake:{lotId}:cancelled",
+                    SendEmail = true,
+                    RecipientEmail = booking.Farmer.Email
+                });
+            }
+
             return null;
         }
 
@@ -292,7 +351,7 @@ namespace KrishiLink.BLL.Services
             return null;
         }
 
-        public async Task<(byte[] Content, string FileName)?> GetReceiptPdfAsync(int lotId, string requesterId, bool isOwner)
+        public async Task<(byte[] Content, string FileName)?> GetReceiptPdfAsync(int lotId, string requesterId, bool isOwner, string requestHost)
         {
             var lot = await _lots.Query()
                 .Include(l => l.Booking!)
@@ -320,7 +379,7 @@ namespace KrishiLink.BLL.Services
                 if (booking.FarmerId != requesterId) return null;
             }
 
-            var verifyUrl = $"{_appOptions.PublicBaseUrl.TrimEnd('/')}/Verify/Receipt/{lot.ReceiptNumber}";
+            var verifyUrl = $"{ResolveHost(requestHost)}/Verify/Receipt/{lot.ReceiptNumber}";
             var qrB64 = _qrCode.GenerateBase64Png(verifyUrl, 6);
             var rawB64 = qrB64.Contains(',') ? qrB64.Split(',')[1] : qrB64;
             var qrBytes = Convert.FromBase64String(rawB64);
@@ -363,7 +422,7 @@ namespace KrishiLink.BLL.Services
             return (document.GeneratePdf(), document.FileName);
         }
 
-        public async Task<ReceiptVerificationViewModel> GetVerificationAsync(string receiptNumber)
+        public async Task<ReceiptVerificationViewModel> GetVerificationAsync(string receiptNumber, string requestHost)
         {
             if (string.IsNullOrWhiteSpace(receiptNumber))
             {
@@ -407,7 +466,7 @@ namespace KrishiLink.BLL.Services
                 ReleasedOn = lot.ReleasedOn,
                 ReleasedTo = lot.ReleasedTo,
                 ReleaseRemarks = lot.ReleaseRemarks,
-                VerificationUrl = $"{_appOptions.PublicBaseUrl.TrimEnd('/')}/Verify/Receipt/{lot.ReceiptNumber}"
+                VerificationUrl = $"{ResolveHost(requestHost)}/Verify/Receipt/{lot.ReceiptNumber}"
             };
         }
 
@@ -433,6 +492,13 @@ namespace KrishiLink.BLL.Services
                 r => r.BookingId,
                 r => new IntakeSummary(r.StoredKg, r.ReleasedKg, r.Count, r.LastIntake));
         }
+
+        /// <summary>Placeholder that fits the 20-character receipt column until the identity value is known.</summary>
+        private static string ProvisionalReceiptNumber() => $"TMP-{Guid.NewGuid():N}"[..20];
+
+        /// <summary>Printed QR links follow the address the receipt was generated from, falling back to the configured base URL.</summary>
+        private string ResolveHost(string? requestHost) =>
+            (string.IsNullOrWhiteSpace(requestHost) ? _appOptions.PublicBaseUrl : requestHost).TrimEnd('/');
 
         private static string? ValidateIntakePermissionsAndData(GodownBooking booking, IntakeLotInput input)
         {

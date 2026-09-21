@@ -329,6 +329,10 @@
                 <div class="small text-muted">@L["Operating Expenses"]</div>
                 <div class="fs-5 fw-bold text-danger">− @Money(pnl.TotalExpenses)</div>
                 <div class="small text-muted" style="font-size: 0.75rem;">@L["{0} recorded", pnl.ExpenseCount]</div>
+                @if (pnl.UnallocatedExpenses > 0)
+                {
+                    <div class="small text-muted" style="font-size: 0.72rem;">@L["{0} not allocated to this listing", Money(pnl.UnallocatedExpenses)]</div>
+                }
             </div>
         </div>
         <div class="col-6 col-md-3">
@@ -716,9 +720,10 @@
                                 }
                             </td>
                             <td class="pe-4 text-end text-nowrap d-print-none">
-                                @if (t.Status == "Completed")
+                                @if (t.Status == "Accepted" || t.Status == "Paid" || t.Status == "Completed")
                                 {
-                                    <a asp-action="Invoice" asp-route-id="@t.BookingId" class="btn btn-sm btn-krishi-outline rounded-pill px-2" title="@L["Invoice / receipt"]" target="_blank" rel="noopener">
+                                    <a asp-action="Invoice" asp-route-id="@t.BookingId" class="btn btn-sm btn-krishi-outline rounded-pill px-2"
+                                       title="@(t.Status == "Completed" ? L["Invoice / receipt"] : L["Proforma invoice"])" target="_blank" rel="noopener">
                                         <i class="bi bi-file-earmark-text"></i>
                                     </a>
                                 }

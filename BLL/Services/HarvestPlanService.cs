@@ -339,20 +339,20 @@ namespace KrishiLink.BLL.Services
                     if (item.ItemType == HarvestPlanItemType.Equipment && eqBookings.TryGetValue(item.BookingId.Value, out var eb))
                     {
                         bookingStatus = eb.Status;
-                        bookingCode = $"KL-EQ-{eb.RequestedOn.Year}-{eb.Id:D3}";
+                        bookingCode = BookingService.BuildBookingCode("EQ", eb.RequestedOn, eb.Id);
                         agreedGross = BookingPricing.EquipmentGrossOf(eb, equipments.TryGetValue(eb.EquipmentId, out var e) ? e.DailyRate : 0);
                         canPay = eb.Status == BookingStatus.Accepted;
                         payUrl = $"/Bookings/Pay?type=Equipment&id={eb.Id}";
-                        passUrl = $"/Bookings/Pass/Equipment/{eb.Id}";
+                        passUrl = AppLinks.BookingPass("Equipment", eb.Id);
                     }
                     else if (item.ItemType == HarvestPlanItemType.Godown && gdBookings.TryGetValue(item.BookingId.Value, out var gb))
                     {
                         bookingStatus = gb.Status;
-                        bookingCode = $"KL-GD-{gb.RequestedOn.Year}-{gb.Id:D3}";
+                        bookingCode = BookingService.BuildBookingCode("GD", gb.RequestedOn, gb.Id);
                         agreedGross = gb.AgreedGross ?? BookingPricing.GodownGross(gb.StartDate, gb.EndDate, gb.StorageTons, godowns.TryGetValue(gb.GodownId, out var g) ? g.PricePerTonPerMonth : 0);
                         canPay = gb.Status == BookingStatus.Accepted;
                         payUrl = $"/Bookings/Pay?type=Godown&id={gb.Id}";
-                        passUrl = $"/Bookings/Pass/Godown/{gb.Id}";
+                        passUrl = AppLinks.BookingPass("Godown", gb.Id);
                     }
 
                     if (bookingStatus == BookingStatus.Pending) pendingCount++;

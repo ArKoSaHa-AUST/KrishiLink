@@ -83,21 +83,25 @@
             video.srcObject = qrVideoStream;
             await video.play();
             prompt.classList.add('d-none');
-            status.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-radar me-1"></i> @L["Scanning for QR Code..."]</span>`;
 
-            // Native BarcodeDetector API if supported by browser
-            if ('BarcodeDetector' in window) {
-                const detector = new BarcodeDetector({ formats: ['qr_code'] });
-                qrScanInterval = setInterval(async () => {
-                    try {
-                        const barcodes = await detector.detect(video);
-                        if (barcodes.length > 0) {
-                            const raw = barcodes[0].rawValue;
-                            handleScannedQrPayload(raw);
-                        }
-                    } catch (e) {}
-                }, 400);
+            // Decoding uses the browser's native BarcodeDetector (Chrome / Edge / Android).
+            // Safari and Firefox do not ship it, so say so rather than showing a scanner that can never fire.
+            if (!('BarcodeDetector' in window)) {
+                stopQrScannerCamera();
+                status.innerHTML = `<span class="text-warning-emphasis small">@L["This browser cannot decode QR codes. Open the link from the farmer's pass, or type the reference code below."]</span>`;
+                return;
             }
+
+            status.innerHTML = `<span class="text-success fw-semibold"><i class="bi bi-radar me-1"></i> @L["Scanning for QR Code..."]</span>`;
+            const detector = new BarcodeDetector({ formats: ['qr_code'] });
+            qrScanInterval = setInterval(async () => {
+                try {
+                    const barcodes = await detector.detect(video);
+                    if (barcodes.length > 0) {
+                        handleScannedQrPayload(barcodes[0].rawValue);
+                    }
+                } catch (e) { /* frame not decodable yet */ }
+            }, 400);
         } catch (err) {
             console.error(err);
             status.innerHTML = `<span class="text-danger small">@L["Camera access was not granted or not available. Please enter the booking reference code manually below."]</span>`;
@@ -119,19 +123,34 @@
 
     function handleScannedQrPayload(payload) {
         if (!payload) return;
-        stopQrScannerCamera();
-        if (payload.startsWith('http://') || payload.startsWith('https://')) {
-            window.location.href = payload;
-        } else {
-            window.location.href = `/Verify/${encodeURIComponent(payload)}`;
+        const target = sameOriginVerifyPath(payload);
+        if (!target) {
+            document.getElementById('qrScanStatus').innerHTML =
+                `<span class="text-danger small">@L["That QR code is not a KrishiLink booking pass."]</span>`;
+            return;
         }
+        stopQrScannerCamera();
+        window.location.assign(target);
+    }
+
+    // Accepts a verification URL on this site, or a bare reference code. Anything else is rejected,
+    // so a hostile sticker cannot redirect a signed-in owner off the platform.
+    function sameOriginVerifyPath(payload) {
+        const raw = String(payload).trim();
+        if (/^https?:\/\//i.test(raw)) {
+            let url;
+            try { url = new URL(raw); } catch { return null; }
+            if (url.origin !== window.location.origin) return null;
+            if (!/^\/Verify\/[^/]+\/?$/i.test(url.pathname)) return null;
+            return url.pathname + url.search;
+        }
+        if (!/^[A-Za-z0-9-]{1,40}$/.test(raw)) return null;
+        return `/Verify/${encodeURIComponent(raw)}`;
     }
 
     function submitManualQrCode() {
         const input = document.getElementById('manualBookingCodeInput');
         if (!input || !input.value.trim()) return;
-        const code = input.value.trim();
-        stopQrScannerCamera();
-        window.location.href = `/Verify/${encodeURIComponent(code)}`;
+        handleScannedQrPayload(input.value);
     }
 </script>

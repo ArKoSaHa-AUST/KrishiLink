@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace KrishiLink.DAL.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260921163006_AddFeatureEnhancementsPostgreSql")]
-    partial class AddFeatureEnhancementsPostgreSql
+    [Migration("20260921171729_AddBookingVerifyToken")]
+    partial class AddBookingVerifyToken
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -624,6 +624,10 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<DateTime?>("UpdatedOn")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("VerifyToken")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("FarmerId");
@@ -966,6 +970,10 @@ namespace KrishiLink.DAL.Migrations
 
                     b.Property<DateTime?>("UpdatedOn")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VerifyToken")
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)");
 
                     b.HasKey("Id");
 

@@ -310,7 +310,7 @@ namespace KrishiLink.Controllers
         [HttpGet]
         public async Task<IActionResult> WarehouseReceipt(int id)
         {
-            var result = await _intakeService.GetReceiptPdfAsync(id, OwnerId, isOwner: true);
+            var result = await _intakeService.GetReceiptPdfAsync(id, OwnerId, isOwner: true, $"{Request.Scheme}://{Request.Host}");
             if (result is null)
                 return NotFound();
 

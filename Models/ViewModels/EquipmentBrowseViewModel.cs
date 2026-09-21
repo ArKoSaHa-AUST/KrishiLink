@@ -41,6 +41,7 @@ namespace KrishiLink.Models.ViewModels
     {
         public string? SearchTerm { get; set; }
         public List<string>? SelectedCategories { get; set; }
+        public string? Division { get; set; }
         public string? District { get; set; }
         public string? Location { get; set; }
         public decimal? SelectedMinPrice { get; set; }
@@ -65,6 +66,7 @@ namespace KrishiLink.Models.ViewModels
         // Filter & Search Parameters
         public string? SearchTerm { get; set; }
         public List<string> SelectedCategories { get; set; } = new();
+        public string? Division { get; set; }
         public string? District { get; set; }
         public string? Location { get; set; }
         public decimal MinPrice { get; set; } = 200;

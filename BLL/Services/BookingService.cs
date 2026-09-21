@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
@@ -19,16 +21,23 @@ namespace KrishiLink.BLL.Services
         Task<(string? Error, bool NeedsReapproval)> ModifyAsync(string farmerId, string bookingType, int bookingId, DateTime startDate, DateTime endDate, int? units, double? tons);
 
         // QR Code Booking Confirmation & Verification
+        /// <summary>Returns null unless <paramref name="userId"/> is the booking's farmer or the listing's owner.</summary>
         Task<BookingConfirmationViewModel?> GetConfirmationAsync(string? userId, string bookingType, int bookingId, string requestHost, bool justCreated = false);
         Task<BookingConfirmationViewModel?> GetConfirmationByCodeAsync(string? userId, string bookingCode, string requestHost);
-        Task<BookingVerificationViewModel> GetVerificationByCodeAsync(string bookingCode, string? currentUserId, string requestHost);
+
+        /// <summary>
+        /// Public verification certificate. Full detail is shown to the booking's farmer, the listing's owner and
+        /// administrators; an anonymous scan needs the signed <paramref name="token"/> from the QR link and never
+        /// sees phone numbers or money. Anything else is reported as an unrecognised reference.
+        /// </summary>
+        Task<BookingVerificationViewModel> GetVerificationByCodeAsync(string bookingCode, string? token, string? currentUserId, bool currentUserIsAdmin, string requestHost);
         Task<string?> QuickVerifyActionAsync(string ownerId, string bookingCode, string action);
 
         /// <summary>
         /// Generates the official payment receipt PDF if requester is the booking farmer or listing owner,
         /// and the booking has a succeeded or refunded payment.
         /// </summary>
-        Task<(byte[] Content, string FileName)?> GetReceiptPdfAsync(string requesterId, bool requesterIsOwner, string bookingType, int bookingId, string requestHost);
+        Task<(byte[] Content, string FileName)?> GetReceiptPdfAsync(string requesterId, string bookingType, int bookingId, string requestHost);
     }
 
     public class BookingService : IBookingService
@@ -336,6 +345,8 @@ namespace KrishiLink.BLL.Services
             if (endDate.Date < startDate.Date)
                 return ("End date cannot be before start date.", false);
 
+            await using var transaction = await _rentals.BeginWorkflowAsync();
+
             if (bookingType.Equals("Equipment", StringComparison.OrdinalIgnoreCase))
             {
                 var b = await _rentals.QueryTracked()
@@ -413,6 +424,7 @@ namespace KrishiLink.BLL.Services
                 }
 
                 await _rentals.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 if (e.OwnerId != null)
                 {
@@ -502,6 +514,7 @@ namespace KrishiLink.BLL.Services
                 }
 
                 await _storage.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 if (godown.OwnerId != null)
                 {
@@ -525,27 +538,52 @@ namespace KrishiLink.BLL.Services
 
         // ---------------------------------------------------------------- QR Code & Confirmation Voucher
 
+        /// <summary>Random, URL-safe secret embedded in a booking's QR link (16 chars).</summary>
+        private static string NewVerifyToken() =>
+            Convert.ToBase64String(RandomNumberGenerator.GetBytes(12)).Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+        /// <summary>Issues the QR secret on first use, so bookings created before tokens existed still get one.</summary>
+        private static async Task<string> EnsureVerifyTokenAsync<T>(T booking, IRepository<T> repo) where T : class, IPayableBooking
+        {
+            if (!string.IsNullOrEmpty(booking.VerifyToken)) return booking.VerifyToken!;
+            booking.VerifyToken = NewVerifyToken();
+            await repo.SaveChangesAsync();
+            return booking.VerifyToken;
+        }
+
+        /// <summary>The canonical human reference for a booking, e.g. KL-EQ-2026-001.</summary>
+        internal static string BuildBookingCode(string prefix, DateTime requestedOn, int id) => $"KL-{prefix}-{requestedOn.Year}-{id:D3}";
+
+        internal static string BuildVerifyUrl(string requestHost, string code, string? token) =>
+            $"{requestHost.TrimEnd('/')}/Verify/{code}" + (string.IsNullOrEmpty(token) ? string.Empty : $"?t={token}");
+
         public async Task<BookingConfirmationViewModel?> GetConfirmationAsync(string? userId, string bookingType, int bookingId, string requestHost, bool justCreated = false)
         {
+            if (string.IsNullOrEmpty(userId)) return null;
+
             if (string.Equals(bookingType, "Equipment", StringComparison.OrdinalIgnoreCase))
             {
-                var b = await _rentals.Query()
+                var b = await _rentals.QueryTracked()
                     .Include(x => x.Equipment!).ThenInclude(e => e.Owner)
                     .Include(x => x.Farmer)
                     .Include(x => x.Payment)
                     .FirstOrDefaultAsync(x => x.Id == bookingId);
 
                 if (b == null || b.Equipment == null) return null;
-                var vm = BuildEquipmentConfirmation(b, requestHost, justCreated);
-                if (!string.IsNullOrEmpty(userId) && userId == vm.OwnerId)
-                {
-                    vm.FarmerProfileUrl = AppLinks.FarmerProfile(vm.FarmerId);
-                }
+
+                // The voucher carries both parties' contact details, so only the two parties may open it.
+                var isFarmer = b.FarmerId == userId;
+                var isOwner = b.Equipment.OwnerId == userId;
+                if (!isFarmer && !isOwner) return null;
+
+                var token = await EnsureVerifyTokenAsync(b, _rentals);
+                var vm = BuildEquipmentConfirmation(b, requestHost, token, justCreated);
+                if (isOwner) vm.FarmerProfileUrl = AppLinks.FarmerProfile(vm.FarmerId);
                 return vm;
             }
             else
             {
-                var g = await _storage.Query()
+                var g = await _storage.QueryTracked()
                     .Include(x => x.Godown!).ThenInclude(god => god.Owner)
                     .Include(x => x.Farmer)
                     .Include(x => x.Payment)
@@ -553,11 +591,14 @@ namespace KrishiLink.BLL.Services
                     .FirstOrDefaultAsync(x => x.Id == bookingId);
 
                 if (g == null || g.Godown == null) return null;
-                var vm = BuildGodownConfirmation(g, requestHost, justCreated);
-                if (!string.IsNullOrEmpty(userId) && userId == vm.OwnerId)
-                {
-                    vm.FarmerProfileUrl = AppLinks.FarmerProfile(vm.FarmerId);
-                }
+
+                var isFarmer = g.FarmerId == userId;
+                var isOwner = g.Godown.OwnerId == userId;
+                if (!isFarmer && !isOwner) return null;
+
+                var token = await EnsureVerifyTokenAsync(g, _storage);
+                var vm = BuildGodownConfirmation(g, requestHost, token, justCreated);
+                if (isOwner) vm.FarmerProfileUrl = AppLinks.FarmerProfile(vm.FarmerId);
                 return vm;
             }
         }
@@ -569,19 +610,19 @@ namespace KrishiLink.BLL.Services
             return await GetConfirmationAsync(userId, type, id, requestHost, false);
         }
 
-        public async Task<BookingVerificationViewModel> GetVerificationByCodeAsync(string bookingCode, string? currentUserId, string requestHost)
+        private static BookingVerificationViewModel Unrecognised(string message = "Invalid or unrecognized booking reference code.") => new()
+        {
+            IsFound = false,
+            IsValid = false,
+            VerificationStatusMessage = message,
+            SecurityBadgeClass = "bg-danger"
+        };
+
+        public async Task<BookingVerificationViewModel> GetVerificationByCodeAsync(
+            string bookingCode, string? token, string? currentUserId, bool currentUserIsAdmin, string requestHost)
         {
             var (type, id) = ParseBookingCode(bookingCode);
-            if (id <= 0)
-            {
-                return new BookingVerificationViewModel
-                {
-                    IsFound = false,
-                    IsValid = false,
-                    VerificationStatusMessage = "Invalid or unrecognized booking reference code.",
-                    SecurityBadgeClass = "bg-danger"
-                };
-            }
+            if (id <= 0) return Unrecognised();
 
             if (type.Equals("Equipment", StringComparison.OrdinalIgnoreCase))
             {
@@ -591,23 +632,18 @@ namespace KrishiLink.BLL.Services
                     .Include(x => x.Payment)
                     .FirstOrDefaultAsync(x => x.Id == id);
 
-                if (b == null || b.Equipment == null)
-                {
-                    return new BookingVerificationViewModel
-                    {
-                        IsFound = false,
-                        IsValid = false,
-                        VerificationStatusMessage = "Booking record not found in system.",
-                        SecurityBadgeClass = "bg-danger"
-                    };
-                }
+                if (b == null || b.Equipment == null) return Unrecognised("Booking record not found in system.");
 
-                var code = $"KL-EQ-{b.RequestedOn.Year}-{b.Id:D3}";
-                var verUrl = $"{requestHost.TrimEnd('/')}/Verify/{code}";
+                var code = BuildBookingCode("EQ", b.RequestedOn, b.Id);
+                var access = ResolveAccess(bookingCode, code, token, b.VerifyToken, currentUserId, b.FarmerId, b.Equipment.OwnerId, currentUserIsAdmin);
+                if (access == VerificationAccess.Denied) return Unrecognised();
+
+                var trusted = access == VerificationAccess.Party;
                 var isOwner = !string.IsNullOrEmpty(currentUserId) && b.Equipment.OwnerId == currentUserId;
+                var verifyUrl = BuildVerifyUrl(requestHost, code, b.VerifyToken);
                 var days = ListingFormat.InclusiveDays(b.StartDate, b.EndDate);
 
-                var vm = new BookingVerificationViewModel
+                return new BookingVerificationViewModel
                 {
                     IsFound = true,
                     IsValid = b.Status != BookingStatus.Cancelled && b.Status != BookingStatus.Rejected,
@@ -622,40 +658,38 @@ namespace KrishiLink.BLL.Services
                     StartDate = b.StartDate,
                     EndDate = b.EndDate,
                     DurationDisplay = days == 1 ? "1 Day" : $"{days} Days",
-                    TotalCost = BookingPricing.EquipmentGrossOf(b, b.Equipment.DailyRate),
-                    DiscountAmount = b.DiscountAmount,
-                    AppliedPromoCode = b.AppliedPromoCode,
-                    PointsUsed = b.PointsUsed,
-                    RateDescription = b.PricingNote ?? ($"{ListingFormat.Taka(b.Equipment.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}" + (b.Units > 1 ? $" × {b.Units} units" : "")),
+                    TotalCost = trusted ? BookingPricing.EquipmentGrossOf(b, b.Equipment.DailyRate) : 0m,
+                    DiscountAmount = trusted ? b.DiscountAmount : 0m,
+                    AppliedPromoCode = trusted ? b.AppliedPromoCode : null,
+                    PointsUsed = trusted ? b.PointsUsed : 0,
+                    RateDescription = trusted
+                        ? (b.PricingNote ?? ($"{ListingFormat.Taka(b.Equipment.DailyRate)} / day × {days} {(days == 1 ? "day" : "days")}" + (b.Units > 1 ? $" × {b.Units} units" : "")))
+                        : string.Empty,
                     QuantityDisplay = b.Units > 1 ? $"{b.Units} × {b.Equipment.Category}" : $"1 {b.Equipment.Category}",
                     Status = b.Status,
-                    PaymentStatus = GetPaymentStatus(b),
+                    PaymentStatus = trusted ? GetPaymentStatus(b) : string.Empty,
                     RequestedAt = b.RequestedOn,
                     UpdatedAt = b.UpdatedOn,
-                    FarmerId = b.FarmerId,
+                    FarmerId = trusted ? b.FarmerId : string.Empty,
                     FarmerName = b.Farmer?.FullName ?? "Registered Farmer",
-                    FarmerPhone = b.Farmer?.PhoneNumber ?? "—",
+                    FarmerPhone = trusted ? (b.Farmer?.PhoneNumber ?? "—") : string.Empty,
                     FarmerLocation = b.Farmer?.Location ?? "—",
-                    OwnerId = b.Equipment.OwnerId,
+                    OwnerId = trusted ? b.Equipment.OwnerId : string.Empty,
                     OwnerName = b.Equipment.Owner?.FullName ?? "Equipment Owner",
-                    OwnerPhone = b.Equipment.Owner?.PhoneNumber ?? "—",
+                    OwnerPhone = trusted ? (b.Equipment.Owner?.PhoneNumber ?? "—") : string.Empty,
                     OwnerBusiness = b.Equipment.Owner?.BusinessOrFarmName ?? string.Empty,
+                    ShowContactDetails = trusted,
+                    ShowFinancials = trusted,
                     IsCurrentOwner = isOwner,
                     FarmerProfileUrl = isOwner ? AppLinks.FarmerProfile(b.FarmerId) : null,
                     CanAccept = isOwner && b.Status == BookingStatus.Pending,
                     CanReject = isOwner && b.Status == BookingStatus.Pending,
                     CanConfirmPickup = isOwner && b.Status == BookingStatus.Paid,
                     CanComplete = isOwner && b.Status == BookingStatus.Paid,
-                    VerificationUrl = verUrl,
-                    QrCodeSvg = _qrCode.GenerateSvg(verUrl, 8),
-                    QrCodeBase64 = _qrCode.GenerateBase64Png(verUrl, 8),
-                    SecurityBadgeClass = b.Status switch
-                    {
-                        BookingStatus.Accepted or BookingStatus.Paid => "bg-success",
-                        BookingStatus.Completed => "bg-primary",
-                        BookingStatus.Pending => "bg-warning text-dark",
-                        _ => "bg-danger"
-                    },
+                    VerificationUrl = verifyUrl,
+                    QrCodeSvg = _qrCode.GenerateSvg(verifyUrl, 8),
+                    QrCodeBase64 = _qrCode.GenerateBase64Png(verifyUrl, 8),
+                    SecurityBadgeClass = BadgeFor(b.Status),
                     VerificationStatusMessage = b.Status switch
                     {
                         BookingStatus.Accepted => "Authentic Booking — Accepted, Awaiting Farmer Payment",
@@ -667,8 +701,6 @@ namespace KrishiLink.BLL.Services
                         _ => "Unverified Status"
                     }
                 };
-
-                return vm;
             }
             else
             {
@@ -678,23 +710,18 @@ namespace KrishiLink.BLL.Services
                     .Include(x => x.Payment)
                     .FirstOrDefaultAsync(x => x.Id == id);
 
-                if (g == null || g.Godown == null)
-                {
-                    return new BookingVerificationViewModel
-                    {
-                        IsFound = false,
-                        IsValid = false,
-                        VerificationStatusMessage = "Storage booking record not found.",
-                        SecurityBadgeClass = "bg-danger"
-                    };
-                }
+                if (g == null || g.Godown == null) return Unrecognised("Storage booking record not found.");
 
-                var code = $"KL-GD-{g.RequestedOn.Year}-{g.Id:D3}";
-                var verUrl = $"{requestHost.TrimEnd('/')}/Verify/{code}";
+                var code = BuildBookingCode("GD", g.RequestedOn, g.Id);
+                var access = ResolveAccess(bookingCode, code, token, g.VerifyToken, currentUserId, g.FarmerId, g.Godown.OwnerId, currentUserIsAdmin);
+                if (access == VerificationAccess.Denied) return Unrecognised();
+
+                var trusted = access == VerificationAccess.Party;
                 var isOwner = !string.IsNullOrEmpty(currentUserId) && g.Godown.OwnerId == currentUserId;
+                var verifyUrl = BuildVerifyUrl(requestHost, code, g.VerifyToken);
                 var months = ListingFormat.Months(g.StartDate, g.EndDate);
 
-                var vm = new BookingVerificationViewModel
+                return new BookingVerificationViewModel
                 {
                     IsFound = true,
                     IsValid = g.Status != BookingStatus.Cancelled && g.Status != BookingStatus.Rejected,
@@ -709,40 +736,36 @@ namespace KrishiLink.BLL.Services
                     StartDate = g.StartDate,
                     EndDate = g.EndDate,
                     DurationDisplay = $"{months:0.#} Months ({g.StorageTons:N0} Tons)",
-                    TotalCost = g.AgreedGross ?? BookingPricing.GodownGross(g.StartDate, g.EndDate, g.StorageTons, g.Godown.PricePerTonPerMonth),
-                    DiscountAmount = g.DiscountAmount,
-                    AppliedPromoCode = g.AppliedPromoCode,
-                    PointsUsed = g.PointsUsed,
-                    RateDescription = $"{ListingFormat.Taka(g.Godown.PricePerTonPerMonth)} / ton / mo × {g.StorageTons:N0} Tons",
+                    TotalCost = trusted ? (g.AgreedGross ?? BookingPricing.GodownGross(g.StartDate, g.EndDate, g.StorageTons, g.Godown.PricePerTonPerMonth)) : 0m,
+                    DiscountAmount = trusted ? g.DiscountAmount : 0m,
+                    AppliedPromoCode = trusted ? g.AppliedPromoCode : null,
+                    PointsUsed = trusted ? g.PointsUsed : 0,
+                    RateDescription = trusted ? $"{ListingFormat.Taka(g.Godown.PricePerTonPerMonth)} / ton / mo × {g.StorageTons:N0} Tons" : string.Empty,
                     QuantityDisplay = $"{g.StorageTons:N0} Tons Capacity",
                     Status = g.Status,
-                    PaymentStatus = GetPaymentStatus(g),
+                    PaymentStatus = trusted ? GetPaymentStatus(g) : string.Empty,
                     RequestedAt = g.RequestedOn,
                     UpdatedAt = g.UpdatedOn,
-                    FarmerId = g.FarmerId,
+                    FarmerId = trusted ? g.FarmerId : string.Empty,
                     FarmerName = g.Farmer?.FullName ?? "Registered Farmer",
-                    FarmerPhone = g.Farmer?.PhoneNumber ?? "—",
+                    FarmerPhone = trusted ? (g.Farmer?.PhoneNumber ?? "—") : string.Empty,
                     FarmerLocation = g.Farmer?.Location ?? "—",
-                    OwnerId = g.Godown.OwnerId,
+                    OwnerId = trusted ? g.Godown.OwnerId : string.Empty,
                     OwnerName = g.Godown.Owner?.FullName ?? "Godown Owner",
-                    OwnerPhone = g.Godown.Owner?.PhoneNumber ?? "—",
+                    OwnerPhone = trusted ? (g.Godown.Owner?.PhoneNumber ?? "—") : string.Empty,
                     OwnerBusiness = g.Godown.Owner?.BusinessOrFarmName ?? string.Empty,
+                    ShowContactDetails = trusted,
+                    ShowFinancials = trusted,
                     IsCurrentOwner = isOwner,
                     FarmerProfileUrl = isOwner ? AppLinks.FarmerProfile(g.FarmerId) : null,
                     CanAccept = isOwner && g.Status == BookingStatus.Pending,
                     CanReject = isOwner && g.Status == BookingStatus.Pending,
                     CanConfirmPickup = isOwner && g.Status == BookingStatus.Paid,
                     CanComplete = isOwner && g.Status == BookingStatus.Paid,
-                    VerificationUrl = verUrl,
-                    QrCodeSvg = _qrCode.GenerateSvg(verUrl, 8),
-                    QrCodeBase64 = _qrCode.GenerateBase64Png(verUrl, 8),
-                    SecurityBadgeClass = g.Status switch
-                    {
-                        BookingStatus.Accepted or BookingStatus.Paid => "bg-success",
-                        BookingStatus.Completed => "bg-primary",
-                        BookingStatus.Pending => "bg-warning text-dark",
-                        _ => "bg-danger"
-                    },
+                    VerificationUrl = verifyUrl,
+                    QrCodeSvg = _qrCode.GenerateSvg(verifyUrl, 8),
+                    QrCodeBase64 = _qrCode.GenerateBase64Png(verifyUrl, 8),
+                    SecurityBadgeClass = BadgeFor(g.Status),
                     VerificationStatusMessage = g.Status switch
                     {
                         BookingStatus.Accepted => "Authentic Storage Booking — Accepted, Awaiting Farmer Payment",
@@ -754,15 +777,43 @@ namespace KrishiLink.BLL.Services
                         _ => "Unverified Status"
                     }
                 };
-
-                return vm;
             }
         }
 
+        private enum VerificationAccess { Denied, Scanner, Party }
+
         /// <summary>
-        /// QR quick actions go through the same owner decision pipeline as the Requests page, so the price snapshot,
-        /// payment gate, conflict checks and ledger rows apply identically however the owner reaches the decision.
+        /// Decides how much of a certificate a viewer may see. Parties and administrators are trusted outright;
+        /// everyone else must present the exact canonical code plus the QR secret, which keeps the page unenumerable.
         /// </summary>
+        private static VerificationAccess ResolveAccess(
+            string suppliedCode, string canonicalCode, string? suppliedToken, string? storedToken,
+            string? currentUserId, string farmerId, string ownerId, bool isAdmin)
+        {
+            if (isAdmin) return VerificationAccess.Party;
+            if (!string.IsNullOrEmpty(currentUserId) && (currentUserId == farmerId || currentUserId == ownerId))
+                return VerificationAccess.Party;
+
+            if (!string.Equals(suppliedCode?.Trim(), canonicalCode, StringComparison.OrdinalIgnoreCase))
+                return VerificationAccess.Denied;
+            if (string.IsNullOrEmpty(storedToken) || string.IsNullOrEmpty(suppliedToken))
+                return VerificationAccess.Denied;
+
+            return CryptographicOperations.FixedTimeEquals(
+                    Encoding.UTF8.GetBytes(storedToken),
+                    Encoding.UTF8.GetBytes(suppliedToken))
+                ? VerificationAccess.Scanner
+                : VerificationAccess.Denied;
+        }
+
+        private static string BadgeFor(string status) => status switch
+        {
+            BookingStatus.Accepted or BookingStatus.Paid => "bg-success",
+            BookingStatus.Completed => "bg-primary",
+            BookingStatus.Pending => "bg-warning text-dark",
+            _ => "bg-danger"
+        };
+
         public async Task<string?> QuickVerifyActionAsync(string ownerId, string bookingCode, string action)
         {
             var (type, id) = ParseBookingCode(bookingCode);
@@ -803,12 +854,12 @@ namespace KrishiLink.BLL.Services
             }
         }
 
-        private BookingConfirmationViewModel BuildEquipmentConfirmation(EquipmentBooking b, string requestHost, bool justCreated)
+        private BookingConfirmationViewModel BuildEquipmentConfirmation(EquipmentBooking b, string requestHost, string? verifyToken, bool justCreated)
         {
             var e = b.Equipment!;
             var days = ListingFormat.InclusiveDays(b.StartDate, b.EndDate);
-            var code = $"KL-EQ-{b.RequestedOn.Year}-{b.Id:D3}";
-            var verUrl = $"{requestHost.TrimEnd('/')}/Verify/{code}";
+            var code = BuildBookingCode("EQ", b.RequestedOn, b.Id);
+            var verUrl = BuildVerifyUrl(requestHost, code, verifyToken);
             var grossCost = BookingPricing.EquipmentGrossOf(b, e.DailyRate);
             var netCost = Math.Max(0m, grossCost - b.DiscountAmount);
 
@@ -864,12 +915,12 @@ namespace KrishiLink.BLL.Services
             return vm;
         }
 
-        private BookingConfirmationViewModel BuildGodownConfirmation(GodownBooking b, string requestHost, bool justCreated)
+        private BookingConfirmationViewModel BuildGodownConfirmation(GodownBooking b, string requestHost, string? verifyToken, bool justCreated)
         {
             var g = b.Godown!;
             var months = ListingFormat.Months(b.StartDate, b.EndDate);
-            var code = $"KL-GD-{b.RequestedOn.Year}-{b.Id:D3}";
-            var verUrl = $"{requestHost.TrimEnd('/')}/Verify/{code}";
+            var code = BuildBookingCode("GD", b.RequestedOn, b.Id);
+            var verUrl = BuildVerifyUrl(requestHost, code, verifyToken);
             var grossCost = b.AgreedGross ?? BookingPricing.GodownGross(b.StartDate, b.EndDate, b.StorageTons, g.PricePerTonPerMonth);
             var netCost = Math.Max(0m, grossCost - b.DiscountAmount);
 
@@ -1113,7 +1164,7 @@ namespace KrishiLink.BLL.Services
             ReceiptPdfUrl = AppLinks.WarehouseReceipt(l.Id)
         };
 
-        public async Task<(byte[] Content, string FileName)?> GetReceiptPdfAsync(string requesterId, bool requesterIsOwner, string bookingType, int bookingId, string requestHost)
+        public async Task<(byte[] Content, string FileName)?> GetReceiptPdfAsync(string requesterId, string bookingType, int bookingId, string requestHost)
         {
             if (string.Equals(bookingType, "Equipment", StringComparison.OrdinalIgnoreCase))
             {
