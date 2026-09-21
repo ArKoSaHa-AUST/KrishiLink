@@ -57,6 +57,12 @@
             <i class="bi bi-arrow-left me-1"></i> @L["Back to My Bookings"]
         </a>
         <div class="d-flex gap-2">
+            @if (Model.Status == "Paid" || Model.Status == "Completed" || Model.PaymentStatus.Contains("Paid") || Model.PaymentStatus.Contains("Refunded"))
+            {
+                <a href="@AppLinks.BookingReceipt(Model.BookingType, Model.BookingId)" target="_blank" class="btn btn-krishi-primary btn-sm rounded-pill px-3 fw-semibold">
+                    <i class="bi bi-receipt me-1"></i> @L["Payment Receipt"]
+                </a>
+            }
             <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3 fw-semibold" onclick="window.print()">
                 <i class="bi bi-printer-fill me-1"></i> @L["Print / Save PDF"]
             </button>
@@ -129,9 +135,17 @@
                 <!-- Right: Asset & Rental Summary -->
                 <div class="col-12 col-md-7">
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <span class="badge bg-light text-dark border px-3 py-1.5 rounded-pill fw-semibold">
-                            <i class="bi @(Model.BookingType == "Equipment" ? "bi-truck" : "bi-building") text-success me-1"></i> @L[Model.BookingType]
-                        </span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-light text-dark border px-3 py-1.5 rounded-pill fw-semibold">
+                                <i class="bi @(Model.BookingType == "Equipment" ? "bi-truck" : "bi-building") text-success me-1"></i> @L[Model.BookingType]
+                            </span>
+                            @if (Model.ModificationCount > 0)
+                            {
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2.5 py-1 rounded-pill fw-semibold" title="@Model.PreviousDetails">
+                                    <i class="bi bi-pencil-square me-1"></i>@L["Changed ×{0}", Model.ModificationCount]
+                                </span>
+                            }
+                        </div>
                         <partial name="_StatusBadge" model="@Model.Status" />
                     </div>
 
@@ -143,6 +157,12 @@
                         <div class="row g-2 small">
                             <div class="col-5 text-muted">@L["Rental Period:"]</div>
                             <div class="col-7 fw-bold text-dark">@Model.DateRangeDisplay</div>
+
+                            @if (Model.ModificationCount > 0 && !string.IsNullOrWhiteSpace(Model.PreviousDetails))
+                            {
+                                <div class="col-5 text-muted">@L["Previously:"]</div>
+                                <div class="col-7 text-muted fst-italic">@Model.PreviousDetails</div>
+                            }
 
                             <div class="col-5 text-muted">@L["Duration:"]</div>
                             <div class="col-7 fw-semibold text-dark">@Model.DurationDisplay</div>
@@ -169,13 +189,78 @@
                                 <span class="text-muted d-block" style="font-size: 0.72rem;">@L["Farmer / Customer"]</span>
                                 <span class="fw-bold text-dark d-block">@Model.FarmerName</span>
                                 <span class="text-muted small"><i class="bi bi-telephone me-1"></i>@Model.FarmerPhone</span>
+                                @if (!string.IsNullOrEmpty(Model.FarmerProfileUrl))
+                                {
+                                    <div class="mt-1">
+                                        <a href="@Model.FarmerProfileUrl" class="text-primary text-decoration-none small fw-semibold">
+                                            <i class="bi bi-person-lines-fill me-1"></i>@L["View Farmer Profile"]
+                                        </a>
+                                    </div>
+                                }
                             </div>
                         </div>
                     </div>
-
                 </div>
-
             </div>
+
+            @if (Model.BookingType == "Godown" && Model.IntakeLots.Any())
+            {
+                <div class="mt-4 pt-3 border-top">
+                    <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-boxes text-success"></i> @L["Stored Goods & Official Warehouse Receipts"]
+                    </h5>
+                    <div class="table-responsive bg-white rounded-3 border">
+                        <table class="table table-hover align-middle mb-0 small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3">@L["Receipt #"]</th>
+                                    <th>@L["Intake Date"]</th>
+                                    <th>@L["Crop & Variety"]</th>
+                                    <th>@L["Quantity"]</th>
+                                    <th>@L["Net Weight"]</th>
+                                    <th>@L["Quality"]</th>
+                                    <th>@L["Status"]</th>
+                                    <th class="pe-3 text-end">@L["Action"]</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var lot in Model.IntakeLots)
+                                {
+                                    <tr>
+                                        <td class="ps-3 font-monospace fw-bold text-success">@lot.ReceiptNumber</td>
+                                        <td>@lot.IntakeDate.ToString("dd MMM yyyy")</td>
+                                        <td>
+                                            <strong>@lot.Crop</strong>
+                                            @if (!string.IsNullOrEmpty(lot.Variety))
+                                            {
+                                                <span class="text-muted small d-block">@lot.Variety</span>
+                                            }
+                                        </td>
+                                        <td>@L["{0} bags", lot.Bags] (@lot.BagWeightKg.ToString("N0") kg)</td>
+                                        <td><strong>@lot.NetWeightKg.ToString("N0") kg</strong> (@lot.NetWeightTons.ToString("N2") t)</td>
+                                        <td><span class="badge bg-light text-dark border">@L["Grade"] @lot.Grade</span></td>
+                                        <td>
+                                            @if (lot.IsReleased)
+                                            {
+                                                <span class="badge bg-secondary">@L["Released"]</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success">@L["Stored"]</span>
+                                            }
+                                        </td>
+                                        <td class="pe-3 text-end">
+                                            <a href="@AppLinks.WarehouseReceipt(lot.Id)" target="_blank" class="btn btn-outline-success btn-sm rounded-pill px-3 py-1 fw-semibold">
+                                                <i class="bi bi-file-earmark-pdf me-1"></i>@L["PDF Receipt"]
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
 
             <hr class="my-4" />
 

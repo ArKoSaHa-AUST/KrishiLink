@@ -191,13 +191,28 @@ namespace KrishiLink.DAL.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<int>("BookingId")
+                    b.Property<int?>("BookingId")
                         .HasColumnType("integer");
 
                     b.Property<string>("BookingType")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("Other");
+
+                    b.Property<DateTime>("ExpenseDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int?>("ListingId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Note")
                         .IsRequired()
@@ -213,7 +228,7 @@ namespace KrishiLink.DAL.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OwnerId", "BookingType");
+                    b.HasIndex("OwnerId", "BookingType", "ExpenseDate");
 
                     b.ToTable("BookingExpenses", "krishilink");
                 });
@@ -433,6 +448,11 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<double?>("Longitude")
                         .HasColumnType("double precision");
 
+                    b.Property<int>("MinRentalDays")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -441,6 +461,11 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<string>("OwnerId")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("Quantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
 
                     b.Property<int>("ReviewCount")
                         .ValueGeneratedOnAdd()
@@ -471,6 +496,10 @@ namespace KrishiLink.DAL.Migrations
 
                     b.Property<int>("EquipmentId")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
 
@@ -524,6 +553,17 @@ namespace KrishiLink.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int?>("HarvestPlanId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ModificationCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Note")
                         .HasColumnType("text");
 
@@ -545,6 +585,20 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<int>("PointsUsed")
                         .HasColumnType("integer");
 
+                    b.Property<string>("PreviousDetails")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("PricingNote")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<decimal>("QuotedGross")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m);
+
                     b.Property<string>("RejectReason")
                         .HasColumnType("text");
 
@@ -559,12 +613,19 @@ namespace KrishiLink.DAL.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<int>("Units")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
+
                     b.Property<DateTime?>("UpdatedOn")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
                     b.HasIndex("FarmerId");
+
+                    b.HasIndex("HarvestPlanId");
 
                     b.HasIndex("PaymentId");
 
@@ -617,6 +678,81 @@ namespace KrishiLink.DAL.Migrations
                     b.HasIndex("EquipmentId", "ServiceDate");
 
                     b.ToTable("EquipmentMaintenanceRecords", "krishilink");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.EquipmentRateRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("DailyRate")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("EquipmentId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EquipmentId", "IsActive");
+
+                    b.ToTable("EquipmentRateRules", "krishilink");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.Favorite", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ListingId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ListingType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "ListingType", "ListingId")
+                        .IsUnique();
+
+                    b.ToTable("Favorites", "krishilink");
                 });
 
             modelBuilder.Entity("KrishiLink.Models.Entities.Godown", b =>
@@ -716,6 +852,10 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<int>("GodownId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Reason")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("GodownId", "Date")
@@ -768,6 +908,17 @@ namespace KrishiLink.DAL.Migrations
                     b.Property<int>("GodownId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("HarvestPlanId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ModificationCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("ModifiedOn")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Note")
                         .HasColumnType("text");
 
@@ -788,6 +939,10 @@ namespace KrishiLink.DAL.Migrations
 
                     b.Property<int>("PointsUsed")
                         .HasColumnType("integer");
+
+                    b.Property<string>("PreviousDetails")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("RejectReason")
                         .HasColumnType("text");
@@ -813,6 +968,8 @@ namespace KrishiLink.DAL.Migrations
 
                     b.HasIndex("FarmerId");
 
+                    b.HasIndex("HarvestPlanId");
+
                     b.HasIndex("PaymentId");
 
                     b.HasIndex("PayoutId");
@@ -820,6 +977,99 @@ namespace KrishiLink.DAL.Migrations
                     b.HasIndex("GodownId", "Status");
 
                     b.ToTable("GodownBookings", "krishilink");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.HarvestPlan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Crop")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("FarmerId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Draft");
+
+                    b.Property<DateTime?>("SubmittedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FarmerId", "Status");
+
+                    b.ToTable("HarvestPlans", "krishilink");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.HarvestPlanItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("BookingId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("HarvestPlanId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ItemType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("ListingId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<double>("Tons")
+                        .HasColumnType("double precision");
+
+                    b.Property<int>("Units")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HarvestPlanId");
+
+                    b.ToTable("HarvestPlanItems", "krishilink");
                 });
 
             modelBuilder.Entity("KrishiLink.Models.Entities.LedgerEntry", b =>
@@ -1227,6 +1477,174 @@ namespace KrishiLink.DAL.Migrations
                     b.ToTable("Reviews", "krishilink");
                 });
 
+            modelBuilder.Entity("KrishiLink.Models.Entities.SavedSearch", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("AlertsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("District")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<DateTime?>("From")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("KnownListingIds")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasDefaultValue("");
+
+                    b.Property<DateTime?>("LastAlertedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastRunAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ListingType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<decimal?>("MaxRate")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<double?>("MinCapacityTons")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("SearchTerm")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("To")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlertsEnabled");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("SavedSearches", "krishilink");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.StorageIntakeLot", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("BagWeightKg")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("numeric(6,2)");
+
+                    b.Property<int>("Bags")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Crop")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<int>("GodownBookingId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Grade")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasDefaultValue("Ungraded");
+
+                    b.Property<DateTime>("IntakeDate")
+                        .HasColumnType("date");
+
+                    b.Property<decimal?>("MoisturePercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<decimal>("NetWeightKg")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<string>("ReceiptNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RecordedByUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.Property<string>("ReleaseRemarks")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<DateTime?>("ReleasedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ReleasedTo")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Stored");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Variety")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GodownBookingId");
+
+                    b.HasIndex("ReceiptNumber")
+                        .IsUnique();
+
+                    b.ToTable("StorageIntakeLots", "krishilink");
+                });
+
             modelBuilder.Entity("KrishiLink.Models.Entities.Transaction", b =>
                 {
                     b.Property<int>("Id")
@@ -1518,6 +1936,11 @@ namespace KrishiLink.DAL.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("KrishiLink.Models.Entities.HarvestPlan", "HarvestPlan")
+                        .WithMany()
+                        .HasForeignKey("HarvestPlanId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("KrishiLink.Models.Entities.Payment", "Payment")
                         .WithMany()
                         .HasForeignKey("PaymentId")
@@ -1531,6 +1954,8 @@ namespace KrishiLink.DAL.Migrations
                     b.Navigation("Equipment");
 
                     b.Navigation("Farmer");
+
+                    b.Navigation("HarvestPlan");
 
                     b.Navigation("Payment");
 
@@ -1546,6 +1971,28 @@ namespace KrishiLink.DAL.Migrations
                         .IsRequired();
 
                     b.Navigation("Equipment");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.EquipmentRateRule", b =>
+                {
+                    b.HasOne("KrishiLink.Models.Entities.Equipment", "Equipment")
+                        .WithMany("RateRules")
+                        .HasForeignKey("EquipmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Equipment");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.Favorite", b =>
+                {
+                    b.HasOne("KrishiLink.Models.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("KrishiLink.Models.Entities.Godown", b =>
@@ -1584,6 +2031,11 @@ namespace KrishiLink.DAL.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("KrishiLink.Models.Entities.HarvestPlan", "HarvestPlan")
+                        .WithMany()
+                        .HasForeignKey("HarvestPlanId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("KrishiLink.Models.Entities.Payment", "Payment")
                         .WithMany()
                         .HasForeignKey("PaymentId")
@@ -1598,9 +2050,33 @@ namespace KrishiLink.DAL.Migrations
 
                     b.Navigation("Godown");
 
+                    b.Navigation("HarvestPlan");
+
                     b.Navigation("Payment");
 
                     b.Navigation("Payout");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.HarvestPlan", b =>
+                {
+                    b.HasOne("KrishiLink.Models.Entities.ApplicationUser", "Farmer")
+                        .WithMany()
+                        .HasForeignKey("FarmerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Farmer");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.HarvestPlanItem", b =>
+                {
+                    b.HasOne("KrishiLink.Models.Entities.HarvestPlan", "Plan")
+                        .WithMany("Items")
+                        .HasForeignKey("HarvestPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Plan");
                 });
 
             modelBuilder.Entity("KrishiLink.Models.Entities.LoyaltyPointTransaction", b =>
@@ -1686,6 +2162,28 @@ namespace KrishiLink.DAL.Migrations
                     b.Navigation("GodownBooking");
                 });
 
+            modelBuilder.Entity("KrishiLink.Models.Entities.SavedSearch", b =>
+                {
+                    b.HasOne("KrishiLink.Models.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.StorageIntakeLot", b =>
+                {
+                    b.HasOne("KrishiLink.Models.Entities.GodownBooking", "Booking")
+                        .WithMany("IntakeLots")
+                        .HasForeignKey("GodownBookingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Booking");
+                });
+
             modelBuilder.Entity("KrishiLink.Models.Entities.Transaction", b =>
                 {
                     b.HasOne("KrishiLink.Models.Entities.ApplicationUser", "User")
@@ -1756,6 +2254,8 @@ namespace KrishiLink.DAL.Migrations
 
                     b.Navigation("MaintenanceRecords");
 
+                    b.Navigation("RateRules");
+
                     b.Navigation("Reviews");
                 });
 
@@ -1775,7 +2275,14 @@ namespace KrishiLink.DAL.Migrations
 
             modelBuilder.Entity("KrishiLink.Models.Entities.GodownBooking", b =>
                 {
+                    b.Navigation("IntakeLots");
+
                     b.Navigation("Review");
+                });
+
+            modelBuilder.Entity("KrishiLink.Models.Entities.HarvestPlan", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

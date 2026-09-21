@@ -98,6 +98,163 @@
 
 <form id="antiForgeryForm">@Html.AntiForgeryToken()</form>
 
+<!-- Intake Modal (Record / Edit) -->
+<div class="modal fade" id="intakeModal" tabindex="-1" aria-labelledby="intakeModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: var(--krishi-radius-lg, 16px);">
+            <div class="modal-header border-bottom px-4 py-3" style="background-color: var(--krishi-primary-light);">
+                <h5 class="modal-title fw-bold" id="intakeModalTitle" style="color: var(--krishi-primary);">
+                    <i class="bi bi-box-seam me-2"></i>@L["Record Produce Intake"]
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="intakeForm" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="lotId" id="intakeLotId" value="" />
+                <input type="hidden" name="GodownBookingId" id="intakeGodownBookingId" value="" />
+                <input type="hidden" name="returnUrl" id="intakeReturnUrl" value="" />
+
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label for="intakeDateInput" class="form-label small fw-bold text-dark">
+                                @L["Intake Date"] <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" class="form-control rounded-3" id="intakeDateInput" name="IntakeDate"
+                                   value="@DateTime.Today.ToString("yyyy-MM-dd")" max="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="intakeCropInput" class="form-label small fw-bold text-dark">
+                                @L["Crop Name"] <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control rounded-3" id="intakeCropInput" name="Crop"
+                                   placeholder="@L["e.g. Potato, Rice, Wheat..."]" maxlength="80" required />
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label for="intakeVarietyInput" class="form-label small fw-bold text-dark">
+                                @L["Variety"] <span class="text-muted">@L["(Optional)"]</span>
+                            </label>
+                            <input type="text" class="form-control rounded-3" id="intakeVarietyInput" name="Variety"
+                                   placeholder="@L["e.g. Diamond, Cardinal, Miniket..."]" maxlength="80" />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="intakeGradeSelect" class="form-label small fw-bold text-dark">
+                                @L["Quality Grade"] <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select rounded-3" id="intakeGradeSelect" name="Grade" required>
+                                <option value="Ungraded">@L["Ungraded"]</option>
+                                <option value="A">@L["Grade A (Premium)"]</option>
+                                <option value="B">@L["Grade B (Standard)"]</option>
+                                <option value="C">@L["Grade C (Fair)"]</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label for="intakeBagsInput" class="form-label small fw-bold text-dark">
+                                @L["Number of Bags / Crates"] <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" class="form-control rounded-3" id="intakeBagsInput" name="Bags"
+                                   min="1" max="100000" placeholder="e.g. 200" required />
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="intakeBagWeightInput" class="form-label small fw-bold text-dark">
+                                @L["Avg. Bag Weight (kg)"] <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" class="form-control rounded-3" id="intakeBagWeightInput" name="BagWeightKg"
+                                   step="0.1" min="0.1" max="1000" placeholder="e.g. 50" required />
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label for="intakeNetWeightInput" class="form-label small fw-bold text-dark">
+                                @L["Net Weight (kg)"] <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" class="form-control rounded-3" id="intakeNetWeightInput" name="NetWeightKg"
+                                   step="0.01" min="0.01" max="1000000" placeholder="e.g. 10000" required />
+                            <div class="form-text small text-muted">@L["Auto-calculated (Bags × Bag Weight) or override from weighbridge ticket."]</div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label for="intakeMoistureInput" class="form-label small fw-bold text-dark">
+                                @L["Moisture %"] <span class="text-muted">@L["(Optional)"]</span>
+                            </label>
+                            <input type="number" class="form-control rounded-3" id="intakeMoistureInput" name="MoisturePercent"
+                                   step="0.1" min="0" max="100" placeholder="e.g. 12.5" />
+                        </div>
+
+                        <div class="col-12">
+                            <label for="intakeRemarksInput" class="form-label small fw-bold text-dark">
+                                @L["Remarks / Storage Location Notes"] <span class="text-muted">@L["(Optional)"]</span>
+                            </label>
+                            <textarea class="form-control rounded-3" id="intakeRemarksInput" name="Remarks" rows="2"
+                                      placeholder="@L["e.g. Stacked in Chamber B, Row 3; inspected on arrival..."]" maxlength="500"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light px-4 py-3 border-top">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold" data-bs-dismiss="modal">
+                        @L["Cancel"]
+                    </button>
+                    <button type="submit" class="btn btn-krishi-primary rounded-pill px-4 fw-semibold" id="intakeSubmitBtn">
+                        <i class="bi bi-file-earmark-check me-1"></i><span id="intakeSubmitText">@L["Save & Issue Receipt"]</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Release Modal -->
+<div class="modal fade" id="releaseModal" tabindex="-1" aria-labelledby="releaseModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: var(--krishi-radius-lg, 16px);">
+            <div class="modal-header border-bottom px-4 py-3 bg-light">
+                <h5 class="modal-title fw-bold text-primary" id="releaseModalTitle">
+                    <i class="bi bi-box-arrow-right me-2"></i>@L["Release Stored Goods"]
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-controller="GodownOwner" asp-action="ReleaseIntake" method="post" id="releaseForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="lotId" id="releaseLotId" value="" />
+                <input type="hidden" name="returnUrl" id="releaseReturnUrl" value="" />
+
+                <div class="modal-body p-4">
+                    <div class="alert alert-warning d-flex align-items-center gap-2 small mb-3">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0 text-warning"></i>
+                        <div>@L["Releasing goods marks this lot as finalized and cannot be undone. The warehouse receipt will reflect a permanent RELEASED status."]</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="releaseToInput" class="form-label small fw-bold text-dark">
+                            @L["Released To (Name / Phone / ID)"] <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control rounded-3" id="releaseToInput" name="releasedTo"
+                               placeholder="@L["e.g. Farmer Name or Authorized Representative..."]" maxlength="120" required />
+                    </div>
+
+                    <div class="mb-2">
+                        <label for="releaseRemarksInput" class="form-label small fw-bold text-dark">
+                            @L["Release Remarks"] <span class="text-muted">@L["(Optional)"]</span>
+                        </label>
+                        <textarea class="form-control rounded-3" id="releaseRemarksInput" name="remarks" rows="2"
+                                  placeholder="@L["e.g. Gate pass #, truck reg #, ID verified..."]" maxlength="500"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light px-4 py-3 border-top">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-3 fw-semibold" data-bs-dismiss="modal">
+                        @L["Cancel"]
+                    </button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 fw-semibold">
+                        <i class="bi bi-check2-circle me-1"></i>@L["Confirm Release"]
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         // Live capacity state per godown, seeded from the server
@@ -187,6 +344,66 @@
                 if (decision === 'complete') applyCapacityChange(row.dataset.godownId, cap);
             },
             afterListChange: refreshCapacityUI
+        });
+
+        // Intake & Release Modal Helpers
+        function openIntakeModal(bookingId, farmerName) {
+            document.getElementById('intakeModalTitle').innerHTML = '<i class="bi bi-box-seam me-2"></i>' + '@L["Record Produce Intake"]';
+            document.getElementById('intakeSubmitText').textContent = '@L["Save & Issue Receipt"]';
+            const form = document.getElementById('intakeForm');
+            form.action = '@Url.Action("RecordIntake", "GodownOwner")';
+            form.reset();
+            document.getElementById('intakeLotId').value = '';
+            document.getElementById('intakeGodownBookingId').value = bookingId;
+            document.getElementById('intakeReturnUrl').value = window.location.pathname + window.location.search + '#request-' + bookingId;
+            document.getElementById('intakeDateInput').value = new Date().toISOString().split('T')[0];
+            document.getElementById('intakeGradeSelect').value = 'Ungraded';
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('intakeModal')).show();
+        }
+
+        function openEditIntakeModal(lotId, bookingId, intakeDate, crop, variety, bags, bagWeightKg, netWeightKg, moisture, grade, remarks) {
+            document.getElementById('intakeModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2"></i>' + '@L["Edit Intake Lot"]';
+            document.getElementById('intakeSubmitText').textContent = '@L["Update Lot"]';
+            const form = document.getElementById('intakeForm');
+            form.action = '@Url.Action("UpdateIntake", "GodownOwner")';
+            document.getElementById('intakeLotId').value = lotId;
+            document.getElementById('intakeGodownBookingId').value = bookingId;
+            document.getElementById('intakeReturnUrl').value = window.location.pathname + window.location.search + '#request-' + bookingId;
+            document.getElementById('intakeDateInput').value = intakeDate;
+            document.getElementById('intakeCropInput').value = crop;
+            document.getElementById('intakeVarietyInput').value = variety || '';
+            document.getElementById('intakeBagsInput').value = bags;
+            document.getElementById('intakeBagWeightInput').value = bagWeightKg;
+            document.getElementById('intakeNetWeightInput').value = netWeightKg;
+            document.getElementById('intakeMoistureInput').value = moisture || '';
+            document.getElementById('intakeGradeSelect').value = grade || 'Ungraded';
+            document.getElementById('intakeRemarksInput').value = remarks || '';
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('intakeModal')).show();
+        }
+
+        function openReleaseModal(lotId, farmerName) {
+            document.getElementById('releaseLotId').value = lotId;
+            document.getElementById('releaseToInput').value = farmerName || '';
+            document.getElementById('releaseRemarksInput').value = '';
+            document.getElementById('releaseReturnUrl').value = window.location.pathname + window.location.search;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('releaseModal')).show();
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const bagsInput = document.getElementById('intakeBagsInput');
+            const bagWeightInput = document.getElementById('intakeBagWeightInput');
+            const netWeightInput = document.getElementById('intakeNetWeightInput');
+
+            function calcNetWeight() {
+                const b = parseFloat(bagsInput?.value) || 0;
+                const w = parseFloat(bagWeightInput?.value) || 0;
+                if (b > 0 && w > 0 && netWeightInput) {
+                    netWeightInput.value = (b * w).toFixed(2);
+                }
+            }
+
+            bagsInput?.addEventListener('input', calcNetWeight);
+            bagWeightInput?.addEventListener('input', calcNetWeight);
         });
     </script>
 }

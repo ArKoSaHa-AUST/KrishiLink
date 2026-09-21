@@ -7,10 +7,12 @@ namespace KrishiLink.Controllers
     public class VerifyController : Controller
     {
         private readonly IBookingService _bookings;
+        private readonly IStorageIntakeService _intakeService;
 
-        public VerifyController(IBookingService bookings)
+        public VerifyController(IBookingService bookings, IStorageIntakeService intakeService)
         {
             _bookings = bookings;
+            _intakeService = intakeService;
         }
 
         /// <summary>
@@ -62,6 +64,20 @@ namespace KrishiLink.Controllers
             }
 
             return RedirectToAction(nameof(Index), new { code });
+        }
+
+        /// <summary>
+        /// Public & Anonymous Warehouse Receipt Verification endpoint: /Verify/Receipt/KL-WR-2026-00001
+        /// Scannable by any smartphone camera. Never exposes farmer personal details.
+        /// </summary>
+        [HttpGet]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+        [Route("Verify/Receipt/{receiptNumber}")]
+        public async Task<IActionResult> Receipt(string receiptNumber)
+        {
+            Response.Headers.CacheControl = "no-store";
+            var model = await _intakeService.GetVerificationAsync(receiptNumber);
+            return View(model);
         }
     }
 }

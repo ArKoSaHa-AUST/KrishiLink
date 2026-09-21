@@ -10,6 +10,9 @@ namespace KrishiLink.Models.ViewModels
         public string? Status { get; set; }
         public int? ListingId { get; set; }
 
+        /// <summary>Preset range: 12m (default) | fy (Bangladesh FY 1 Jul–30 Jun) | lastfy | ytd | month</summary>
+        public string? Range { get; set; }
+
         /// <summary>Trend chart granularity: month | week</summary>
         public string Period { get; set; } = "month";
 
@@ -37,6 +40,7 @@ namespace KrishiLink.Models.ViewModels
         public RevenueFilter Filter { get; set; } = new();
         public DateTime RangeStart { get; set; }
         public DateTime RangeEnd { get; set; }
+        public string RangeLabel { get; set; } = string.Empty;
         public List<RevenueListingOption> Listings { get; set; } = new();
 
         // KPI cards
@@ -70,6 +74,12 @@ namespace KrishiLink.Models.ViewModels
 
         /// <summary>Payout processed within the last 7 days, surfaced as an alert.</summary>
         public PayoutItem? RecentPayout { get; set; }
+
+        /// <summary>Profit & Loss and tax summary block for the selected range.</summary>
+        public ProfitAndLossViewModel ProfitAndLoss { get; set; } = new();
+
+        /// <summary>Operating expenses not tied to any single booking within the selected range.</summary>
+        public List<ExpenseLine> GeneralExpenses { get; set; } = new();
     }
 
     public class RevenueListingOption
@@ -213,8 +223,14 @@ namespace KrishiLink.Models.ViewModels
     public class ExpenseLine
     {
         public int Id { get; set; }
+        public int? BookingId { get; set; }
+        public int? ListingId { get; set; }
+        public string? ListingName { get; set; }
         public decimal Amount { get; set; }
+        public string Category { get; set; } = Entities.ExpenseCategories.Other;
         public string Note { get; set; } = string.Empty;
+        public DateTime ExpenseDate { get; set; } = DateTime.Today;
+        public DateTime RecordedOn { get; set; } = DateTime.UtcNow;
     }
 
     public class RevenueInsights
@@ -239,6 +255,8 @@ namespace KrishiLink.Models.ViewModels
     /// <summary>Printable receipt for a completed booking.</summary>
     public class BookingInvoiceViewModel
     {
+        public int BookingId { get; set; }
+        public string BookingType { get; set; } = "Godown";
         public string InvoiceNumber { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public DateTime IssuedOn { get; set; }
@@ -263,5 +281,36 @@ namespace KrishiLink.Models.ViewModels
         public string? PaymentMethod { get; set; }
         public string? PaymentReference { get; set; }
         public DateTime? PaidOn { get; set; }
+    }
+
+    /// <summary>Profit & Loss and tax summary statement for a specific date range or Bangladesh fiscal year.</summary>
+    public class ProfitAndLossViewModel
+    {
+        public DateTime From { get; set; }
+        public DateTime To { get; set; }
+        public string PeriodLabel { get; set; } = string.Empty;
+        public bool IsFiscalYear { get; set; }
+        public string? FiscalYearName { get; set; }
+
+        public decimal Gross { get; set; }
+        public decimal Commission { get; set; }
+        public decimal NetEarned => Gross - Commission;
+
+        public List<ExpenseCategorySummary> ExpensesByCategory { get; set; } = new();
+        public decimal TotalExpenses { get; set; }
+        public decimal NetProfit => NetEarned - TotalExpenses;
+        public double MarginPercent => Gross > 0 ? Math.Round((double)(NetProfit / Gross * 100), 1) : 0;
+        public int ExpenseCount { get; set; }
+        public int CompletedBookingsCount { get; set; }
+    }
+
+    public class ExpenseCategorySummary
+    {
+        public string Category { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public int Count { get; set; }
+        public decimal GeneralAmount { get; set; }
+        public bool HasGeneralExpenses => GeneralAmount > 0;
+        public double PercentageOfExpenses { get; set; }
     }
 }

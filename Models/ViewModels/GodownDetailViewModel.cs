@@ -16,6 +16,7 @@ namespace KrishiLink.Models.ViewModels
         public decimal PricePerTonPerMonthAmount { get; set; }
         public string DailyRatePerTon { get; set; } = string.Empty;
         public string Status { get; set; } = "Available";
+        public bool IsFavorite { get; set; }
         public string Description { get; set; } = string.Empty;
 
         // Geographic Coordinates & Navigation

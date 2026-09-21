@@ -9,6 +9,9 @@ namespace KrishiLink.Models.Entities
         public ApplicationUser? Farmer { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
+
+        /// <summary>Number of units requested / booked for this date range (1..Equipment.Quantity).</summary>
+        public int Units { get; set; } = 1;
         public string? Note { get; set; }
         public string Status { get; set; } = BookingStatus.Pending;
         public string? RejectReason { get; set; }
@@ -20,9 +23,22 @@ namespace KrishiLink.Models.Entities
         /// <summary>Set when the farmer cancels the request.</summary>
         public DateTime? CancelledOn { get; set; }
 
+        /// <summary>When the farmer last changed the booking dates / units.</summary>
+        public DateTime? ModifiedOn { get; set; }
+
+        /// <summary>Number of times this booking has been modified (max 3).</summary>
+        public int ModificationCount { get; set; } = 0;
+
+        /// <summary>Summary of previous booking parameters before the last change.</summary>
+        public string? PreviousDetails { get; set; }
+
         /// <summary>The payout that settled this booking's revenue; null while still unpaid.</summary>
         public int? PayoutId { get; set; }
         public Transaction? Payout { get; set; }
+
+        // Quoted price shown to farmer at request time
+        public decimal QuotedGross { get; set; } = 0m;
+        public string? PricingNote { get; set; }
 
         // Price snapshot taken when the owner accepts, so later rate edits never change what was agreed.
         public decimal? AgreedRate { get; set; }
@@ -44,5 +60,9 @@ namespace KrishiLink.Models.Entities
         public int PointsUsed { get; set; } = 0;
         public int PointsEarned { get; set; } = 0;
         public bool PointsAwarded { get; set; } = false;
+
+        /// <summary>Optional link to a multi-item Harvest Plan if this booking was created from one.</summary>
+        public int? HarvestPlanId { get; set; }
+        public HarvestPlan? HarvestPlan { get; set; }
     }
 }

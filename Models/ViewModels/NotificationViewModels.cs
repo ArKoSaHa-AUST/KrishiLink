@@ -27,8 +27,12 @@ namespace KrishiLink.Models.ViewModels
             NotificationTypes.BookingCompleted => "info",
             NotificationTypes.PayoutProcessed => "success",
             NotificationTypes.PaymentReceived => "success",
+            NotificationTypes.BookingCancelled => "secondary",
+            NotificationTypes.BookingModified => "warning",
             NotificationTypes.ReviewReceived => "warning",
             NotificationTypes.WeatherSuggestion => "warning",
+            NotificationTypes.Reminder => "info",
+            NotificationTypes.SavedSearchAlert => "success",
             _ => "secondary"
         };
 
@@ -40,8 +44,12 @@ namespace KrishiLink.Models.ViewModels
             NotificationTypes.BookingCompleted => "bi bi-patch-check-fill",
             NotificationTypes.PayoutProcessed => "bi bi-cash-stack",
             NotificationTypes.PaymentReceived => "bi bi-credit-card-fill",
+            NotificationTypes.BookingCancelled => "bi bi-x-octagon-fill",
+            NotificationTypes.BookingModified => "bi bi-pencil-square",
             NotificationTypes.ReviewReceived => "bi bi-star-fill",
             NotificationTypes.WeatherSuggestion => "bi bi-cloud-sun-fill",
+            NotificationTypes.Reminder => "bi bi-alarm-fill",
+            NotificationTypes.SavedSearchAlert => "bi bi-bell-fill",
             _ => "bi bi-bell-fill"
         };
 
@@ -53,8 +61,12 @@ namespace KrishiLink.Models.ViewModels
             NotificationTypes.BookingCompleted => "bg-info-subtle",
             NotificationTypes.PayoutProcessed => "bg-success-subtle",
             NotificationTypes.PaymentReceived => "bg-success-subtle",
+            NotificationTypes.BookingCancelled => "bg-secondary-subtle",
+            NotificationTypes.BookingModified => "bg-warning-subtle",
             NotificationTypes.ReviewReceived => "bg-warning-subtle",
             NotificationTypes.WeatherSuggestion => "bg-warning-subtle",
+            NotificationTypes.Reminder => "bg-info-subtle",
+            NotificationTypes.SavedSearchAlert => "bg-success-subtle",
             _ => "bg-light"
         };
 

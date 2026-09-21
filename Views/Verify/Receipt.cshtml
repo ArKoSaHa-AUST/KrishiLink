@@ -1,0 +1,257 @@
+@model KrishiLink.Models.ViewModels.ReceiptVerificationViewModel
+@{
+    ViewData["Title"] = $"{L["Warehouse Receipt Verification"]} - {Model.ReceiptNumber}";
+    var headerClass = !Model.IsFound 
+        ? "cert-header-invalid" 
+        : Model.IsReleased 
+            ? "cert-header-released" 
+            : "cert-header-valid";
+}
+
+@section Styles {
+    <style>
+        .cert-card {
+            border-radius: 24px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+        .cert-header-valid {
+            background: linear-gradient(135deg, #198754 0%, #0d6838 100%);
+            color: white;
+        }
+        .cert-header-released {
+            background: linear-gradient(135deg, #495057 0%, #212529 100%);
+            color: white;
+        }
+        .cert-header-invalid {
+            background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%);
+            color: white;
+        }
+        .cert-shield-badge {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            margin: 0 auto;
+        }
+        @@media print {
+            header, footer, nav, .navbar, .btn-no-print { display: none !important; }
+            body { background: white !important; padding: 0 !important; }
+            .cert-card { border: 1px solid #333 !important; box-shadow: none !important; }
+            .container { max-width: 100% !important; width: 100% !important; padding: 0 !important; }
+        }
+    </style>
+}
+
+<div class="container py-4" style="max-width: 760px;">
+
+    <!-- Navigation Actions -->
+    <div class="d-flex align-items-center justify-content-between mb-3 btn-no-print">
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold">
+            <i class="bi bi-house-door me-1"></i> @L["Home"]
+        </a>
+        <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3 fw-semibold" onclick="window.print()">
+            <i class="bi bi-printer-fill me-1"></i> @L["Print / Save PDF"]
+        </button>
+    </div>
+
+    <!-- =========================================================================
+         RECEIPT VERIFICATION CERTIFICATE CARD
+         ========================================================================= -->
+    <div class="card cert-card shadow-lg border-0 mb-4">
+
+        <!-- Header Banner -->
+        <div class="@headerClass p-4 p-md-5 text-center position-relative">
+            <div class="cert-shield-badge mb-3">
+                @if (!Model.IsFound)
+                {
+                    <i class="bi bi-shield-x text-white fs-1"></i>
+                }
+                else if (Model.IsReleased)
+                {
+                    <i class="bi bi-box-arrow-right text-white fs-1"></i>
+                }
+                else
+                {
+                    <i class="bi bi-patch-check-fill text-white fs-1"></i>
+                }
+            </div>
+
+            <span class="badge bg-white text-dark rounded-pill px-3 py-1.5 fw-bold text-uppercase mb-2 shadow-xs" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+                @if (!Model.IsFound)
+                {
+                    @L["Invalid Receipt"]
+                }
+                else if (Model.IsReleased)
+                {
+                    @L["Goods Released — Lot Finalized"]
+                }
+                else
+                {
+                    @L["Verified Authentic Warehouse Receipt"]
+                }
+            </span>
+
+            <h3 class="fw-black mb-1 text-white">
+                @if (!Model.IsFound)
+                {
+                    @L["Receipt Not Found"]
+                }
+                else if (Model.IsReleased)
+                {
+                    @L["STATUS: RELEASED"]
+                }
+                else
+                {
+                    @L["STATUS: CURRENTLY STORED"]
+                }
+            </h3>
+
+            <p class="text-white-50 small mb-0 font-monospace">
+                @L["Receipt Number:"] <strong class="text-white">@(string.IsNullOrEmpty(Model.ReceiptNumber) ? "N/A" : Model.ReceiptNumber)</strong>
+            </p>
+        </div>
+
+        @if (Model.IsFound)
+        {
+            <div class="card-body p-4 p-md-5">
+
+                <!-- Status & Identification Summary -->
+                <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom flex-wrap gap-2">
+                    <div>
+                        <span class="badge bg-light text-muted border px-2.5 py-1 font-monospace me-1">@Model.ReceiptNumber</span>
+                        <span class="badge bg-white text-dark border px-2.5 py-1">
+                            <i class="bi bi-calendar-event me-1 text-success"></i>@L["Intake:"] @Model.IntakeDate.ToString("dd MMM yyyy")
+                        </span>
+                    </div>
+                    <div>
+                        @if (Model.IsReleased)
+                        {
+                            <span class="badge bg-secondary rounded-pill px-3 py-1.5 fw-semibold">
+                                <i class="bi bi-check-circle me-1"></i>@L["Released"] @(Model.ReleasedOn.HasValue ? Model.ReleasedOn.Value.ToString("dd MMM yyyy") : "")
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success rounded-pill px-3 py-1.5 fw-semibold">
+                                <i class="bi bi-box-seam me-1"></i>@L["Currently Stored"]
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <!-- Warehouse & Facility Details -->
+                <div class="p-3.5 rounded-4 bg-light border mb-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center shadow-xs flex-shrink-0" style="width: 48px; height: 48px;">
+                            <i class="bi bi-building fs-4"></i>
+                        </div>
+                        <div class="flex-grow-1 min-w-0">
+                            <span class="small text-muted d-block" style="font-size: 0.72rem;">@L["Licensed Storage Facility"]</span>
+                            <h5 class="fw-bold text-dark mb-0.5 text-truncate">@Model.GodownName</h5>
+                            <span class="text-muted small"><i class="bi bi-geo-alt text-success me-1"></i>@Model.Location</span>
+                        </div>
+                        <div>
+                            <span class="badge bg-white text-dark border px-2.5 py-1.5 rounded-pill small">@L[Model.StorageType]</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Produce & Quality Specifications Grid -->
+                <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-boxes text-success"></i> @L["Deposited Commodity Specifications"]
+                </h6>
+
+                <div class="p-3.5 rounded-4 border bg-white shadow-xs mb-4">
+                    <div class="row g-3 small">
+                        <div class="col-6 col-md-4">
+                            <span class="text-muted d-block">@L["Crop & Variety:"]</span>
+                            <strong class="text-dark fs-6">@Model.Crop</strong>
+                            @if (!string.IsNullOrEmpty(Model.Variety))
+                            {
+                                <span class="text-muted d-block">@Model.Variety</span>
+                            }
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <span class="text-muted d-block">@L["Quantity / Count:"]</span>
+                            <strong class="text-dark fs-6">@L["{0} bags", Model.Bags]</strong>
+                            <span class="text-muted d-block">(@L["{0} kg/bag", Model.BagWeightKg.ToString("N0")])</span>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <span class="text-muted d-block">@L["Net Stored Weight:"]</span>
+                            <strong class="text-success fs-6">@Model.NetWeightKg.ToString("N0") kg</strong>
+                            <span class="text-muted d-block">(@Model.NetWeightTons.ToString("N2") @L["Tons"])</span>
+                        </div>
+
+                        <div class="col-6 col-md-4">
+                            <span class="text-muted d-block">@L["Quality Grade:"]</span>
+                            <span class="badge bg-light text-dark border">@L["Grade"] @Model.Grade</span>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <span class="text-muted d-block">@L["Moisture Content:"]</span>
+                            <strong class="text-dark">@(Model.MoisturePercent.HasValue ? $"{Model.MoisturePercent.Value:N1}%" : L["Not Tested"].Value)</strong>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <span class="text-muted d-block">@L["Intake Date:"]</span>
+                            <strong class="text-dark">@Model.IntakeDate.ToString("dd MMM yyyy")</strong>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.Remarks))
+                        {
+                            <div class="col-12 border-top pt-2 mt-2">
+                                <span class="text-muted d-block mb-1">@L["Storage Location & Handling Remarks:"]</span>
+                                <p class="text-dark fst-italic mb-0 bg-light p-2.5 rounded-3">@Model.Remarks</p>
+                            </div>
+                        }
+
+                        @if (Model.IsReleased)
+                        {
+                            <div class="col-12 border-top pt-2 mt-2 bg-light-subtle p-2.5 rounded-3">
+                                <strong class="text-dark d-block mb-1"><i class="bi bi-box-arrow-right text-primary me-1"></i>@L["Release Information:"]</strong>
+                                <span class="d-block text-dark">@L["Released To:"] <strong>@(Model.ReleasedTo ?? "Depositor")</strong></span>
+                                <span class="d-block text-muted">@L["Date:"] @(Model.ReleasedOn?.ToString("dd MMM yyyy, hh:mm tt") ?? "N/A")</span>
+                                @if (!string.IsNullOrEmpty(Model.ReleaseRemarks))
+                                {
+                                    <span class="d-block text-muted small mt-1">@L["Release Remarks:"] @Model.ReleaseRemarks</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Legal Notice -->
+                <div class="p-3 rounded-4 bg-light text-muted small border mb-3">
+                    <i class="bi bi-info-circle text-success me-1"></i>
+                    @L["This digital verification confirms the issuance of an official KrishiLink Warehouse Receipt. Stored commodities are held under warehouse custody subject to the terms of the Agricultural Produce Storage Agreement. This receipt is non-negotiable."]
+                </div>
+
+            </div>
+        }
+        else
+        {
+            <div class="card-body p-5 text-center">
+                <i class="bi bi-exclamation-octagon text-danger display-3 d-block mb-3"></i>
+                <h4 class="fw-bold text-dark mb-2">@L["Receipt Reference Not Found"]</h4>
+                <p class="text-muted mb-4 mx-auto" style="max-width: 440px;">
+                    @L["No warehouse receipt matches the specified receipt number. Please check the QR code or URL and try again."]
+                </p>
+                <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-semibold">
+                    @L["Back to Homepage"]
+                </a>
+            </div>
+        }
+
+        <div class="bg-light p-3 border-top text-center text-muted small">
+            <i class="bi bi-patch-check-fill text-success me-1"></i>
+            @L["Secured with KrishiLink Digital Trust Protocol • Scanned at {0}", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm UTC")]
+        </div>
+
+    </div>
+
+</div>

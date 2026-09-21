@@ -19,6 +19,7 @@ namespace KrishiLink.Controllers
         /// <summary>GET: /Equipment — browse & search with server-side filtering.</summary>
         public async Task<IActionResult> Index(EquipmentSearchCriteria criteria)
         {
+            criteria.CurrentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             return View(await _equipment.BrowseAsync(criteria));
         }
 
@@ -26,6 +27,7 @@ namespace KrishiLink.Controllers
         [HttpGet]
         public async Task<IActionResult> FilterData(EquipmentSearchCriteria criteria)
         {
+            criteria.CurrentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var model = await _equipment.BrowseAsync(criteria);
             var items = model.EquipmentList.Select(e => new
             {
@@ -34,13 +36,16 @@ namespace KrishiLink.Controllers
                 category = e.Category,
                 dailyRate = e.DailyRate,
                 dailyRateFormatted = $"৳{e.DailyRate:N0}",
+                hasRateRules = e.HasRateRules,
                 hourlyRate = e.HourlyRate,
                 hourlyRateFormatted = e.HourlyRate.HasValue ? $"৳{e.HourlyRate.Value:N0}" : null,
                 location = e.Location,
                 district = e.District,
                 distanceKm = e.DistanceKm,
                 isAvailable = e.IsAvailable,
+                isFavorite = e.IsFavorite,
                 status = e.Status,
+                quantity = e.Quantity,
                 imageUrl = e.ImageUrl,
                 ownerName = e.OwnerName,
                 ownerIsVerified = e.OwnerIsVerified,
@@ -64,6 +69,50 @@ namespace KrishiLink.Controllers
                 hasNextPage = model.HasNextPage,
                 items
             });
+        }
+
+        /// <summary>GET: /Equipment/Quote?id=&start=&end=&units=1 — Live rule-aware rental price quote.</summary>
+        [HttpGet]
+        public async Task<IActionResult> Quote(int id, DateTime? start, DateTime? end, int units = 1)
+        {
+            var quote = await _equipment.QuoteAsync(id, start, end, units);
+            if (quote is null) return NotFound();
+
+            return Json(new
+            {
+                ok = quote.Ok,
+                error = quote.Error,
+                days = quote.Days,
+                gross = quote.Gross,
+                minDays = quote.MinDays,
+                units = quote.Units,
+                freeUnits = quote.FreeUnits,
+                quantity = quote.Quantity,
+                breakdown = quote.Breakdown.Select(b => new
+                {
+                    rate = b.Rate,
+                    days = b.Days,
+                    label = b.Label,
+                    subtotal = b.Subtotal
+                }),
+                description = quote.Description
+            });
+        }
+
+        /// <summary>GET: /Equipment/FreeUnits?id=&start=&end= — returns free units for range.</summary>
+        [HttpGet]
+        public async Task<IActionResult> FreeUnits(int id, DateTime? start, DateTime? end)
+        {
+            var eq = await _equipment.GetDetailsAsync(id);
+            if (eq == null) return NotFound();
+
+            if (!start.HasValue || !end.HasValue)
+            {
+                return Json(new { free = eq.Quantity, quantity = eq.Quantity });
+            }
+
+            var free = await _equipment.FreeUnitsAsync(id, start.Value, end.Value);
+            return Json(new { free, quantity = eq.Quantity });
         }
 
         /// <summary>GET: /Equipment/Details/5 — details & rental request form.</summary>
@@ -90,6 +139,7 @@ namespace KrishiLink.Controllers
                 model.StartDate,
                 model.EndDate,
                 model.Note,
+                model.Units,
                 model.AppliedPromoCode,
                 model.PointsUsed
             );

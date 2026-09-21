@@ -1,0 +1,208 @@
+@model KrishiLink.Models.ViewModels.SavedSearchListViewModel
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+@{
+    ViewData["Title"] = L["Saved Searches & Alerts"].Value;
+}
+
+<div class="container py-4">
+    <!-- Breadcrumb & Header -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item"><a asp-controller="Farmer" asp-action="Dashboard" class="text-decoration-none text-success">@L["Dashboard"]</a></li>
+            <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">@L["Saved Searches"]</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 pb-3 mb-4 border-bottom">
+        <div>
+            <h2 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-bookmark-heart text-success"></i>
+                <span>@L["Saved Searches & Alerts"]</span>
+            </h2>
+            <p class="text-muted mb-0">
+                @L["Automated alerts notify you as soon as new machinery or storage matching your preferences becomes available."]
+            </p>
+        </div>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <span class="badge bg-light text-dark border rounded-pill px-3 py-2 fw-semibold">
+                <i class="bi bi-folder2-open text-success me-1"></i>@L["{0} of {1} Saved", Model.TotalCount, Model.MaxAllowed]
+            </span>
+
+            @if (Env.IsDevelopment())
+            {
+                <form asp-action="RunNow" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 fw-semibold shadow-sm d-flex align-items-center gap-1.5" title="Test alerts immediately in Development mode">
+                        <i class="bi bi-play-circle-fill"></i>
+                        <span>@L["[Dev] Run Alerts Now"]</span>
+                    </button>
+                </form>
+            }
+
+            <a asp-controller="Equipment" asp-action="Index" class="btn btn-outline-success btn-sm rounded-pill px-3 py-1.5 fw-semibold d-flex align-items-center gap-1.5">
+                <i class="bi bi-search"></i>
+                <span>@L["Browse Listings"]</span>
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <span class="small">@TempData["SuccessMessage"]</span>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+            <span class="small">@TempData["ErrorMessage"]</span>
+        </div>
+    }
+
+    @if (!Model.Searches.Any())
+    {
+        <div class="card krishi-card border-0 shadow-sm rounded-4 p-5 text-center my-4 bg-white">
+            <div class="rounded-circle bg-success-subtle text-success mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 72px; height: 72px;">
+                <i class="bi bi-bell fs-1"></i>
+            </div>
+            <h4 class="fw-bold text-dark mb-2">@L["No saved searches yet"]</h4>
+            <p class="text-muted mx-auto mb-4" style="max-width: 480px;">
+                @L["Search for machinery or godowns with your desired filters and click 'Save this search' to receive automatic availability alerts."]
+            </p>
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <a asp-controller="Equipment" asp-action="Index" class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-semibold shadow-sm">
+                    <i class="bi bi-tools me-1.5"></i>@L["Find Machinery"]
+                </a>
+                <a asp-controller="Godown" asp-action="Index" class="btn btn-krishi-outline rounded-pill px-4 py-2 fw-semibold">
+                    <i class="bi bi-building me-1.5"></i>@L["Find Godowns"]
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var search in Model.Searches)
+            {
+                var isEq = search.ListingType == KrishiLink.Models.Entities.ListingTypes.Equipment;
+                <div class="col-12 col-lg-6">
+                    <div class="card krishi-card border-0 shadow-sm rounded-4 p-4 h-100 d-flex flex-column transition-hover">
+                        <!-- Top Header -->
+                        <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                    <span class="badge @(isEq ? "bg-primary-subtle text-primary border border-primary-subtle" : "bg-success-subtle text-success border border-success-subtle") rounded-pill px-2.5 py-1 small fw-semibold">
+                                        <i class="bi @(isEq ? "bi-tools" : "bi-building") me-1"></i>@L[isEq ? "Machinery" : "Storage"]
+                                    </span>
+                                    @if (search.IsExpired)
+                                    {
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 small fw-semibold">
+                                            <i class="bi bi-exclamation-circle me-1"></i>@L["Expired"]
+                                        </span>
+                                    }
+                                    else if (search.AlertsEnabled)
+                                    {
+                                        <span class="badge bg-success text-white rounded-pill px-2.5 py-1 small fw-semibold">
+                                            <i class="bi bi-bell-fill me-1"></i>@L["Alerts Active"]
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary text-white rounded-pill px-2.5 py-1 small fw-semibold">
+                                            <i class="bi bi-bell-slash me-1"></i>@L["Alerts Paused"]
+                                        </span>
+                                    }
+                                </div>
+                                <h5 class="fw-bold text-dark mb-0">@search.Name</h5>
+                            </div>
+
+                            <!-- Delete button -->
+                            <form asp-action="Delete" method="post" onsubmit="return confirm('@L["Are you sure you want to delete this saved search?"]');">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@search.Id" />
+                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="@L["Delete search"]">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Filter Criteria Chips -->
+                        <div class="d-flex flex-wrap gap-1.5 mb-3">
+                            @if (!string.IsNullOrWhiteSpace(search.SearchTerm))
+                            {
+                                <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small">
+                                    <i class="bi bi-search me-1 text-muted"></i>@search.SearchTerm
+                                </span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(search.Category))
+                            {
+                                <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small">
+                                    <i class="bi bi-tag me-1 text-muted"></i>@L[search.Category]
+                                </span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(search.District))
+                            {
+                                <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small">
+                                    <i class="bi bi-geo-alt me-1 text-success"></i>@L[search.District]
+                                </span>
+                            }
+                            @if (search.MaxRate.HasValue)
+                            {
+                                <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small">
+                                    <i class="bi bi-currency-dollar me-1 text-success"></i>≤ ৳@search.MaxRate.Value.ToString("N0")
+                                </span>
+                            }
+                            @if (search.MinCapacityTons.HasValue)
+                            {
+                                <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small">
+                                    <i class="bi bi-box-seam me-1 text-muted"></i>≥ @search.MinCapacityTons.Value.ToString("0.#") @L["tons"]
+                                </span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(search.DateRangeDisplay))
+                            {
+                                <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 small">
+                                    <i class="bi bi-calendar-event me-1 text-primary"></i>@search.DateRangeDisplay
+                                </span>
+                            }
+                        </div>
+
+                        <!-- Stats & Metadata -->
+                        <div class="p-2.5 rounded-3 bg-light border small text-muted mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span><i class="bi bi-check2-circle text-success me-1"></i>@L["Matched Listings:"]</span>
+                                <strong class="text-dark">@L["{0} listings", search.MatchedCount]</strong>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-clock-history me-1"></i>@L["Last Alert:"]</span>
+                                <span>@(search.LastAlertedAt.HasValue ? search.LastAlertedAt.Value.ToString("dd MMM yyyy, HH:mm") : L["No alerts yet"])</span>
+                            </div>
+                        </div>
+
+                        <!-- Card Footer Actions -->
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top mt-auto gap-2">
+                            <!-- Toggle Alerts Form -->
+                            <form asp-action="ToggleAlerts" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@search.Id" />
+                                <button type="submit" class="btn @(search.AlertsEnabled ? "btn-outline-secondary" : "btn-outline-success") btn-sm rounded-pill px-3 py-1.5 fw-semibold d-flex align-items-center gap-1.5"
+                                        @(search.IsExpired ? "disabled title='" + L["Search dates have passed"] + "'" : "")>
+                                    <i class="bi @(search.AlertsEnabled ? "bi-bell-slash" : "bi-bell")"></i>
+                                    <span>@(search.AlertsEnabled ? L["Pause Alerts"] : L["Enable Alerts"])</span>
+                                </button>
+                            </form>
+
+                            <!-- Run Now / View Results -->
+                            <a href="@search.BrowseUrl" class="btn btn-krishi-primary btn-sm rounded-pill px-3.5 py-1.5 fw-semibold d-flex align-items-center gap-1.5 shadow-sm">
+                                <span>@L["Run Now"]</span>
+                                <i class="bi bi-arrow-right small"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

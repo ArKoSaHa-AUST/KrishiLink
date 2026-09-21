@@ -944,4 +944,95 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
+/**
+ * KrishiFavorites: handles optimistic toggling of favorite heart buttons across browse, details, and wishlist pages.
+ */
+window.KrishiFavorites = {
+    toggle: async function (btn) {
+        if (!btn || btn.disabled) return;
+        const type = btn.getAttribute('data-type') || 'Equipment';
+        const id = btn.getAttribute('data-id');
+        if (!id) return;
+
+        btn.disabled = true;
+        const token = document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]')?.value
+                   || document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+        const params = new URLSearchParams();
+        params.append('type', type);
+        params.append('id', id);
+        params.append('__RequestVerificationToken', token);
+
+        try {
+            const res = await fetch('/Favorites/Toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            });
+
+            if (res.redirected) {
+                window.location.href = res.url;
+                return;
+            }
+
+            if (res.status === 401 || res.status === 403) {
+                window.location.href = '/Account/Login?returnUrl=' + encodeURIComponent(window.location.pathname + window.location.search);
+                return;
+            }
+
+            const data = await res.json();
+            if (!data.success) {
+                if (window.KrishiToast) {
+                    KrishiToast.show(data.message || 'Could not update favorites.', 'danger');
+                } else {
+                    alert(data.message || 'Could not update favorites.');
+                }
+                return;
+            }
+
+            // Sync all matching heart buttons on the page
+            const matchingBtns = document.querySelectorAll(`.favorite-btn[data-type="${type}"][data-id="${id}"]`);
+            matchingBtns.forEach(b => {
+                const icon = b.querySelector('i');
+                if (data.isFavorite) {
+                    b.classList.add('active', 'text-danger');
+                    if (icon) {
+                        icon.className = icon.className.replace('bi-heart', 'bi-heart-fill text-danger');
+                    }
+                    b.setAttribute('title', 'Remove from favorites');
+                } else {
+                    b.classList.remove('active', 'text-danger');
+                    if (icon) {
+                        icon.className = icon.className.replace('bi-heart-fill text-danger', 'bi-heart').replace('bi-heart-fill', 'bi-heart').replace('text-danger', '').trim();
+                    }
+                    b.setAttribute('title', 'Add to favorites');
+                }
+            });
+
+            // If we are on the /Favorites page and item was unfavorited, animate and remove the card
+            if (!data.isFavorite) {
+                const favPrefix = type === 'Equipment' ? 'fav-item-eq-' : 'fav-item-gd-';
+                const cardEl = document.getElementById(favPrefix + id);
+                if (cardEl) {
+                    cardEl.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    cardEl.style.opacity = '0';
+                    cardEl.style.transform = 'scale(0.95)';
+                    setTimeout(() => cardEl.remove(), 300);
+                }
+            }
+
+            if (window.KrishiToast) {
+                KrishiToast.show(data.isFavorite ? 'Added to favorites' : 'Removed from favorites', data.isFavorite ? 'success' : 'info');
+            }
+        } catch (err) {
+            console.error('[KrishiFavorites] Toggle failed:', err);
+            if (window.KrishiToast) {
+                KrishiToast.show('Failed to update favorites. Please try again.', 'danger');
+            }
+        } finally {
+            btn.disabled = false;
+        }
+    }
+};
+
 
