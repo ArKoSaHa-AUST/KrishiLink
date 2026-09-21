@@ -44,8 +44,9 @@
             <!-- Left: Regional Weather Overview -->
             <div class="col-12 col-lg-7">
                 <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-                    <span class="badge bg-danger text-white px-3 py-1 rounded-pill fw-bold text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">
-                        <i class="bi bi-broadcast me-1"></i>@L["Live Weather Telemetry"]
+                    <span class="badge @(Model.Weather.IsLive ? "bg-danger" : "bg-secondary") text-white px-3 py-1 rounded-pill fw-bold text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;"
+                          title="@L["Source: Open-Meteo forecast API"]">
+                        <i class="bi @(Model.Weather.IsLive ? "bi-broadcast" : "bi-cloud-slash") me-1"></i>@L[Model.Weather.FreshnessLabel]
                     </span>
                     <span class="badge bg-white bg-opacity-20 text-white px-2.5 py-1 rounded-pill small">
                         @Model.Weather.Division @L["Division"]
@@ -150,21 +151,21 @@
 <div class="card krishi-card border-0 shadow-sm rounded-4 p-3.5 mb-4">
     <div class="row g-3 align-items-center">
         
-        <!-- District Dropdown -->
-        <div class="col-12 col-md-5 col-lg-4">
-            <label class="form-label small fw-bold text-dark mb-1">
-                <i class="bi bi-geo-alt-fill text-danger me-1"></i>@L["Select Bangladesh District / Zone:"]
-            </label>
-            <form asp-controller="Advisory" asp-action="Alerts" method="get" id="districtForm">
+        <!-- Division + District Dropdowns -->
+        <div class="col-12 col-md-7 col-lg-6">
+            <form asp-controller="Advisory" asp-action="Alerts" method="get" id="districtForm" class="row g-2">
                 <input type="hidden" name="crop" value="@Model.SelectedCrop" />
-                <select name="district" class="form-select form-select-lg fs-6 bg-light" onchange="this.form.submit()">
-                    @foreach (var d in Model.Districts)
-                    {
-                        <option value="@d.Value" selected="@(Model.SelectedDistrict == d.Value)">
-                            @(isBangla ? d.BanglaText : d.Text)
-                        </option>
-                    }
-                </select>
+                <partial name="_GeoSelector" model="@(new GeoSelectorViewModel {
+                    IdPrefix = "alerts",
+                    DivisionField = "division",
+                    DistrictField = "district",
+                    SelectedDistrict = Model.SelectedDistrict,
+                    DivisionLabel = "Division",
+                    DistrictLabel = "Select Bangladesh District / Zone:",
+                    AnyOptionText = "All Divisions",
+                    SubmitOnChange = true,
+                    ColumnClass = "col-12 col-sm-6"
+                })" />
             </form>
         </div>
 

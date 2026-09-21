@@ -114,7 +114,14 @@ namespace KrishiLink.BLL.Services
             var totalRevenue = completedLifetime.Sum(b => b.Gross);
             var lastMonth = new DateTime(today.Year, today.Month, 1).AddMonths(-1);
 
-            var (trend, bucketDays, trendNote) = BuildTrend(inRange, from, to, filter.IsWeekly);
+            // Escrow is recognised on the payment date, so it is scoped by PaidOn rather than by booking dates.
+            var paidInRange = allBookings
+                .Where(b => b.Status == BookingStatus.Paid && b.PaidOn.HasValue
+                            && b.PaidOn.Value.Date >= from && b.PaidOn.Value.Date <= to
+                            && (filter.ListingId is null || b.ListingId == filter.ListingId))
+                .ToList();
+
+            var (trend, bucketDays, trendNote) = BuildTrend(inRange, paidInRange, from, to, filter.IsWeekly);
             var breakdown = BuildBreakdown(scopedListings, inRange, from, to, today);
             var allTransactions = BuildTransactions(inRange, allBookings, expenses, filter.Status);
             var pageSize = Math.Max(1, _options.TransactionsPageSize);
@@ -164,7 +171,7 @@ namespace KrishiLink.BLL.Services
                 .Where(e => e.BookingId == null &&
                             e.ExpenseDate.Date >= from &&
                             e.ExpenseDate.Date <= to &&
-                            (filter.ListingId is null || e.ListingId == null || e.ListingId == filter.ListingId))
+                            (filter.ListingId is null || e.ListingId == filter.ListingId))
                 .OrderByDescending(e => e.ExpenseDate)
                 .Select(e => new ExpenseLine
                 {
@@ -198,8 +205,12 @@ namespace KrishiLink.BLL.Services
 
         public BookingInvoiceViewModel? GetInvoice(string ownerId, int bookingId)
         {
-            var b = _repo.GetBookings(ownerId).FirstOrDefault(x => x.Id == bookingId && x.Status == BookingStatus.Completed);
+            // An accepted booking already has an agreed price, so the owner can raise the document straight away;
+            // until it completes it is a proforma, because nothing has been earned or settled yet.
+            var b = _repo.GetBookings(ownerId).FirstOrDefault(x => x.Id == bookingId && ConfirmedStatuses.Contains(x.Status));
             if (b is null) return null;
+
+            var isProforma = b.Status != BookingStatus.Completed;
 
             return new BookingInvoiceViewModel
             {
@@ -207,7 +218,8 @@ namespace KrishiLink.BLL.Services
                 BookingType = _profile.ListingLabel,
                 InvoiceNumber = $"{_profile.InvoicePrefix}-{b.Id:D6}",
                 Title = _profile.InvoiceTitle,
-                IssuedOn = b.EndDate,
+                IsProforma = isProforma,
+                IssuedOn = isProforma ? (b.PaidOn?.Date ?? DateTime.Today) : b.EndDate,
                 CustomerName = b.CustomerName,
                 CustomerLocation = b.CustomerLocation,
                 ListingName = b.ListingName,
@@ -473,12 +485,19 @@ namespace KrishiLink.BLL.Services
             var gross = completedInRange.Sum(b => b.Gross);
             var commission = completedInRange.Sum(Commission);
 
-            // Expenses in range filtered by ExpenseDate
-            var expensesInRange = expenses
-                .Where(e => e.ExpenseDate.Date >= from &&
-                            e.ExpenseDate.Date <= to &&
-                            (listingId is null || e.ListingId == null || e.ListingId == listingId))
+            // Expenses in range filtered by ExpenseDate. When one listing is selected, expenses that were never
+            // attributed to a listing are reported separately instead of being charged to every listing in turn.
+            var datedExpenses = expenses
+                .Where(e => e.ExpenseDate.Date >= from && e.ExpenseDate.Date <= to)
                 .ToList();
+
+            var expensesInRange = listingId is null
+                ? datedExpenses
+                : datedExpenses.Where(e => e.ListingId == listingId).ToList();
+
+            var unallocated = listingId is null
+                ? 0m
+                : datedExpenses.Where(e => e.ListingId == null).Sum(e => e.Amount);
 
             var totalExpenses = expensesInRange.Sum(e => e.Amount);
 
@@ -507,6 +526,7 @@ namespace KrishiLink.BLL.Services
                 Commission = commission,
                 ExpensesByCategory = byCategory,
                 TotalExpenses = totalExpenses,
+                UnallocatedExpenses = unallocated,
                 ExpenseCount = expensesInRange.Count,
                 CompletedBookingsCount = completedInRange.Count
             };
@@ -552,7 +572,8 @@ namespace KrishiLink.BLL.Services
         /// Monthly buckets (capped at 24) or, for weekly, 7-day buckets that automatically widen to fortnights when the
         /// range would exceed <see cref="MaxTrendBuckets"/>; if even fortnights overflow, older buckets are dropped and a note says so.
         /// </summary>
-        private static (List<RevenueTrendPoint> Points, int BucketDays, string? Note) BuildTrend(List<RevenueBooking> inRange, DateTime from, DateTime to, bool weekly)
+        private static (List<RevenueTrendPoint> Points, int BucketDays, string? Note) BuildTrend(
+            List<RevenueBooking> inRange, List<RevenueBooking> paidInRange, DateTime from, DateTime to, bool weekly)
         {
             var completed = inRange.Where(b => b.Status == BookingStatus.Completed).ToList();
             var points = new List<RevenueTrendPoint>();
@@ -579,7 +600,8 @@ namespace KrishiLink.BLL.Services
                     points.Add(new RevenueTrendPoint
                     {
                         Label = start.ToString("d MMM", CultureInfo.InvariantCulture),
-                        Amount = completed.Where(b => b.EndDate.Date >= start && b.EndDate.Date <= end).Sum(b => b.Gross)
+                        Amount = completed.Where(b => b.EndDate.Date >= start && b.EndDate.Date <= end).Sum(b => b.Gross),
+                        EscrowAmount = paidInRange.Where(b => b.PaidOn!.Value.Date >= start && b.PaidOn.Value.Date <= end).Sum(b => b.Gross)
                     });
                 }
                 return (points, bucketDays, note);
@@ -595,7 +617,8 @@ namespace KrishiLink.BLL.Services
                 points.Add(new RevenueTrendPoint
                 {
                     Label = m.ToString("MMM yy", CultureInfo.InvariantCulture),
-                    Amount = completed.Where(b => b.EndDate.Year == m.Year && b.EndDate.Month == m.Month).Sum(b => b.Gross)
+                    Amount = completed.Where(b => b.EndDate.Year == m.Year && b.EndDate.Month == m.Month).Sum(b => b.Gross),
+                    EscrowAmount = paidInRange.Where(b => b.PaidOn!.Value.Year == m.Year && b.PaidOn.Value.Month == m.Month).Sum(b => b.Gross)
                 });
             }
             return (points, 0, months > MaxMonthBuckets ? $"Showing the most recent {MaxMonthBuckets} months of the selected range." : null);

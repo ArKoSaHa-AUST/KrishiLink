@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using KrishiLink.BLL.Helpers;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -82,7 +83,7 @@ namespace KrishiLink.BLL.Services
         /// </summary>
         private async Task<(int Sent, int Skipped)> RunRule1StartsTomorrowFarmerAsync(CancellationToken ct, string? onlyUserId)
         {
-            var today = DateTime.Today;
+            var today = BangladeshClock.Today;
             var tomorrow = today.AddDays(1);
 
             var eqQuery = _equipmentBookings.Query()
@@ -150,7 +151,7 @@ namespace KrishiLink.BLL.Services
         /// </summary>
         private async Task<(int Sent, int Skipped)> RunRule2StartsTomorrowOwnerAsync(CancellationToken ct, string? onlyUserId)
         {
-            var today = DateTime.Today;
+            var today = BangladeshClock.Today;
             var tomorrow = today.AddDays(1);
 
             var eqQuery = _equipmentBookings.Query()
@@ -214,7 +215,7 @@ namespace KrishiLink.BLL.Services
         /// </summary>
         private async Task<(int Sent, int Skipped)> RunRule3ReturnDueFarmerAsync(CancellationToken ct, string? onlyUserId)
         {
-            var today = DateTime.Today;
+            var today = BangladeshClock.Today;
             var tomorrow = today.AddDays(1);
 
             var query = _equipmentBookings.Query()
@@ -249,7 +250,7 @@ namespace KrishiLink.BLL.Services
         /// </summary>
         private async Task<(int Sent, int Skipped)> RunRule4StorageEndingFarmerAsync(CancellationToken ct, string? onlyUserId)
         {
-            var today = DateTime.Today;
+            var today = BangladeshClock.Today;
             var maxEndDate = today.AddDays(_options.Value.StorageEndingDays);
 
             var query = _godownBookings.Query()
@@ -266,7 +267,7 @@ namespace KrishiLink.BLL.Services
             var requests = bookings.Select(b => BuildFarmerRequest(
                 userId: b.FarmerId,
                 titleKey: "Storage period ending soon",
-                messageKey: "Your storage of {0} t at {1} ends on {2}. Extend the booking or arrange collection.",
+                messageKey: "Your storage of {0} t at {1} ends on {2}. Arrange collection, or contact the owner to book a further period.",
                 args: new object[]
                 {
                     b.StorageTons.ToString("0.#"),
@@ -286,9 +287,8 @@ namespace KrishiLink.BLL.Services
         /// </summary>
         private async Task<(int Sent, int Skipped)> RunRule5PaymentPendingFarmerAsync(CancellationToken ct, string? onlyUserId)
         {
-            var today = DateTime.Today;
-            var cutoffUtc = DateTime.UtcNow.AddHours(-_options.Value.UnpaidNudgeHours);
-            var cutoffLocal = DateTime.Now.AddHours(-_options.Value.UnpaidNudgeHours);
+            var today = BangladeshClock.Today;
+            var cutoff = DateTime.UtcNow.AddHours(-_options.Value.UnpaidNudgeHours);
 
             var eqQuery = _equipmentBookings.Query()
                 .Include(b => b.Equipment)
@@ -298,7 +298,7 @@ namespace KrishiLink.BLL.Services
                     && (b.AgreedGross ?? 0m) > 0m
                     && (b.Payment == null || b.Payment.Status == PaymentStatus.Failed)
                     && b.UpdatedOn != null
-                    && (b.UpdatedOn <= cutoffUtc || b.UpdatedOn <= cutoffLocal)
+                    && b.UpdatedOn <= cutoff
                     && b.StartDate.Date >= today);
 
             var gdQuery = _godownBookings.Query()
@@ -309,7 +309,7 @@ namespace KrishiLink.BLL.Services
                     && (b.AgreedGross ?? 0m) > 0m
                     && (b.Payment == null || b.Payment.Status == PaymentStatus.Failed)
                     && b.UpdatedOn != null
-                    && (b.UpdatedOn <= cutoffUtc || b.UpdatedOn <= cutoffLocal)
+                    && b.UpdatedOn <= cutoff
                     && b.StartDate.Date >= today);
 
             if (!string.IsNullOrEmpty(onlyUserId))
@@ -365,7 +365,7 @@ namespace KrishiLink.BLL.Services
         /// </summary>
         private async Task<(int Sent, int Skipped)> RunRule6OverdueCompletionOwnerAsync(CancellationToken ct, string? onlyUserId)
         {
-            var today = DateTime.Today;
+            var today = BangladeshClock.Today;
             var completionCutoff = today.AddDays(-_options.Value.CompletionOverdueDays);
 
             var eqQuery = _equipmentBookings.Query()
@@ -429,15 +429,14 @@ namespace KrishiLink.BLL.Services
         /// </summary>
         private async Task<(int Sent, int Skipped)> RunRule7StalePendingOwnerAsync(CancellationToken ct, string? onlyUserId)
         {
-            var today = DateTime.Today;
-            var cutoffUtc = DateTime.UtcNow.AddHours(-_options.Value.StalePendingHours);
-            var cutoffLocal = DateTime.Now.AddHours(-_options.Value.StalePendingHours);
+            var today = BangladeshClock.Today;
+            var cutoff = DateTime.UtcNow.AddHours(-_options.Value.StalePendingHours);
 
             var eqQuery = _equipmentBookings.Query()
                 .Include(b => b.Equipment)
                 .Include(b => b.Farmer)
                 .Where(b => b.Status == BookingStatus.Pending
-                    && (b.RequestedOn <= cutoffUtc || b.RequestedOn <= cutoffLocal)
+                    && b.RequestedOn <= cutoff
                     && b.StartDate.Date >= today
                     && b.Equipment != null && !string.IsNullOrEmpty(b.Equipment.OwnerId));
 
@@ -445,7 +444,7 @@ namespace KrishiLink.BLL.Services
                 .Include(b => b.Godown)
                 .Include(b => b.Farmer)
                 .Where(b => b.Status == BookingStatus.Pending
-                    && (b.RequestedOn <= cutoffUtc || b.RequestedOn <= cutoffLocal)
+                    && b.RequestedOn <= cutoff
                     && b.StartDate.Date >= today
                     && b.Godown != null && !string.IsNullOrEmpty(b.Godown.OwnerId));
 
@@ -462,7 +461,7 @@ namespace KrishiLink.BLL.Services
 
             foreach (var b in eqBookings)
             {
-                var elapsedHours = Math.Max(1, (int)Math.Round(Math.Max((DateTime.Now - b.RequestedOn).TotalHours, (DateTime.UtcNow - b.RequestedOn).TotalHours)));
+                var elapsedHours = Math.Max(1, (int)Math.Round((DateTime.UtcNow - b.RequestedOn).TotalHours));
                 requests.Add(BuildOwnerRequest(
                     userId: b.Equipment!.OwnerId,
                     titleKey: "A farmer is waiting for your reply",
@@ -480,7 +479,7 @@ namespace KrishiLink.BLL.Services
 
             foreach (var b in gdBookings)
             {
-                var elapsedHours = Math.Max(1, (int)Math.Round(Math.Max((DateTime.Now - b.RequestedOn).TotalHours, (DateTime.UtcNow - b.RequestedOn).TotalHours)));
+                var elapsedHours = Math.Max(1, (int)Math.Round((DateTime.UtcNow - b.RequestedOn).TotalHours));
                 requests.Add(BuildOwnerRequest(
                     userId: b.Godown!.OwnerId,
                     titleKey: "A farmer is waiting for your reply",

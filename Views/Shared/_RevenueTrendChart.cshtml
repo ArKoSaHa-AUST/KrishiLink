@@ -2,7 +2,8 @@
 @using Microsoft.AspNetCore.Html
 @*
     Shared Partial: Revenue trend bar chart rendered as inline SVG (no charting library).
-    Model: ordered list of (Label, Amount) buckets. Scales to its container via viewBox.
+    Model: ordered list of buckets. Each bar stacks earned revenue (completed bookings, by end date)
+    under escrow revenue (paid but not yet completed, by payment date). Scales to its container via viewBox.
     SVG <text> clashes with Razor's reserved <text> tag, so labels are emitted via SvgText().
 *@
 @{
@@ -10,7 +11,8 @@
     var plotW = W - PadL - PadR;
     var plotH = H - PadT - PadB;
 
-    var max = Model.Count > 0 ? Model.Max(p => p.Amount) : 0;
+    var max = Model.Count > 0 ? Model.Max(p => p.Total) : 0;
+    var hasEscrow = Model.Any(p => p.EscrowAmount > 0);
     // Round the axis top up to a "nice" number so gridlines land on readable values
     decimal step = 1000;
     if (max > 0)
@@ -41,19 +43,31 @@
     {
         var p = Model[i];
         var x = PadL + slot * i + (slot - barW) / 2;
-        var h = yMax > 0 ? (double)(p.Amount / yMax) * plotH : 0;
-        var y = PadT + plotH - h;
+        var earnedH = yMax > 0 ? (double)(p.Amount / yMax) * plotH : 0;
+        var escrowH = yMax > 0 ? (double)(p.EscrowAmount / yMax) * plotH : 0;
+        var earnedY = PadT + plotH - earnedH;
+        var escrowY = earnedY - escrowH;
         var cx = PadL + slot * i + slot / 2;
         var isLast = i == Model.Count - 1;
+        var tip = p.EscrowAmount > 0
+            ? $"{p.Label}: ৳{p.Amount:N0} {L["earned"].Value} + ৳{p.EscrowAmount:N0} {L["in escrow"].Value}"
+            : $"{p.Label}: ৳{p.Amount:N0}";
 
         <g class="chart-bar-group">
-            <rect x="@x.ToString("0.#")" y="@y.ToString("0.#")" width="@barW.ToString("0.#")" height="@h.ToString("0.#")" rx="3"
-                  class="chart-bar @(isLast ? "chart-bar-current" : "")">
-                <title>@p.Label: ৳@p.Amount.ToString("N0")</title>
-            </rect>
-            @if (p.Amount > 0 && slot >= 28)
+            <title>@tip</title>
+            @if (earnedH > 0)
             {
-                @SvgText(cx, y - 5, "middle", "chart-value", Compact(p.Amount))
+                <rect x="@x.ToString("0.#")" y="@earnedY.ToString("0.#")" width="@barW.ToString("0.#")" height="@earnedH.ToString("0.#")" rx="3"
+                      class="chart-bar @(isLast ? "chart-bar-current" : "")" />
+            }
+            @if (escrowH > 0)
+            {
+                <rect x="@x.ToString("0.#")" y="@escrowY.ToString("0.#")" width="@barW.ToString("0.#")" height="@escrowH.ToString("0.#")" rx="3"
+                      class="chart-bar-escrow" />
+            }
+            @if (p.Total > 0 && slot >= 28)
+            {
+                @SvgText(cx, escrowY - 5, "middle", "chart-value", Compact(p.Total))
             }
             @if (i % labelEvery == 0 || isLast)
             {
@@ -64,6 +78,21 @@
 
     @if (max == 0)
     {
-        @SvgText(PadL + plotW / 2.0, PadT + plotH / 2.0, "middle", "chart-empty", L["No completed bookings in this period"].Value)
+        @SvgText(PadL + plotW / 2.0, PadT + plotH / 2.0, "middle", "chart-empty", L["No completed or paid bookings in this period"].Value)
     }
 </svg>
+
+@if (max > 0)
+{
+    <div class="d-flex flex-wrap justify-content-center gap-3 small mt-1" style="color: var(--krishi-text-muted);">
+        <span class="d-inline-flex align-items-center gap-1">
+            <span class="krishi-chart-key krishi-chart-key-earned"></span>@L["Earned (completed)"]
+        </span>
+        @if (hasEscrow)
+        {
+            <span class="d-inline-flex align-items-center gap-1">
+                <span class="krishi-chart-key krishi-chart-key-escrow"></span>@L["In escrow (paid, awaiting completion)"]
+            </span>
+        }
+    </div>
+}

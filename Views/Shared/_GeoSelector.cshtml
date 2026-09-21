@@ -1,0 +1,128 @@
+@model KrishiLink.Models.ViewModels.GeoSelectorViewModel
+@using KrishiLink.BLL.Helpers
+@using System.Text.Json
+@*
+    Shared Partial: cascading Division -> District picker.
+    The whole 8-division / 64-district table is emitted once per page as JSON and the district
+    list is narrowed client side, so changing division costs no round trip. With scripting
+    unavailable every district is still listed, so the form degrades to a plain select.
+*@
+@{
+    var emitShared = !Context.Items.ContainsKey("GeoSelectorShared");
+    Context.Items["GeoSelectorShared"] = true;
+
+    var divisionId = Model.DivisionId ?? Model.IdPrefix + "Division";
+    var districtId = Model.DistrictId ?? Model.IdPrefix + "District";
+    var anyText = Model.AnyOptionText;
+
+    // Stored records may hold a pre-2018 spelling; match it against the current name.
+    var selectedDistrict = BangladeshGeo.Canonical(Model.SelectedDistrict);
+
+    // With a district already chosen but no division, show the division it belongs to.
+    var selectedDivision = !string.IsNullOrWhiteSpace(Model.SelectedDivision)
+        ? Model.SelectedDivision
+        : (!string.IsNullOrWhiteSpace(selectedDistrict) ? BangladeshGeo.GetDivision(selectedDistrict) : null);
+
+    var changeHooks = (Model.SubmitOnChange ? "this.form.submit();" : string.Empty);
+    var districtHooks = changeHooks + (string.IsNullOrEmpty(Model.OnDistrictChanged) ? string.Empty : Model.OnDistrictChanged);
+}
+
+@if (emitShared)
+{
+    <script type="application/json" id="bdGeoData">@Html.Raw(JsonSerializer.Serialize(BangladeshGeo.DistrictsByDivision))</script>
+    <script>
+        // Narrows a district <select> to the chosen division, keeping the current value when it still fits.
+        window.krishiGeo = (function () {
+            var map = JSON.parse(document.getElementById('bdGeoData').textContent);
+            function attach(divisionId, districtId) {
+                var division = document.getElementById(divisionId);
+                var district = document.getElementById(districtId);
+                if (!division || !district) return;
+                var anyLabel = district.dataset.anyLabel;
+                division.addEventListener('change', function () {
+                    var keep = district.value;
+                    var names = map[division.value] || Object.keys(map).reduce(function (all, key) {
+                        return all.concat(map[key]);
+                    }, []).sort();
+                    district.innerHTML = '';
+                    if (typeof anyLabel === 'string') {
+                        district.add(new Option(anyLabel, ''));
+                    }
+                    names.forEach(function (name) { district.add(new Option(name, name)); });
+                    district.value = names.indexOf(keep) >= 0 ? keep : '';
+                    district.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            }
+            return { attach: attach };
+        })();
+    </script>
+}
+
+<div class="@Model.ColumnClass">
+    @if (Model.ShowLabels)
+    {
+        <label for="@divisionId" class="form-label fw-semibold text-dark small">
+            @L[Model.DivisionLabel]@if (Model.Required) {<span class="text-danger"> *</span>}
+        </label>
+    }
+    <div class="input-group krishi-geo-group">
+        <span class="input-group-text bg-light text-success border-end-0">
+            <i class="bi bi-map-fill"></i>
+        </span>
+        <select name="@Model.DivisionField" id="@divisionId"
+                class="form-select border-start-0 @Model.SizeClass krishi-geo-select"
+                onchange="@changeHooks" required="@(Model.Required ? "required" : null)">
+            @if (anyText is not null)
+            {
+                <option value="">@L[anyText]</option>
+            }
+            else
+            {
+                <option value="">@L["-- Select Division --"]</option>
+            }
+            @foreach (var division in BangladeshGeo.Divisions)
+            {
+                <option value="@division" selected="@(string.Equals(selectedDivision, division, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@L[division]</option>
+            }
+        </select>
+    </div>
+</div>
+
+<div class="@Model.ColumnClass">
+    @if (Model.ShowLabels)
+    {
+        <label for="@districtId" class="form-label fw-semibold text-dark small">
+            @L[Model.DistrictLabel]@if (Model.Required) {<span class="text-danger"> *</span>}
+        </label>
+    }
+    <div class="input-group krishi-geo-group">
+        <span class="input-group-text bg-light text-success border-end-0">
+            <i class="bi bi-geo-alt-fill"></i>
+        </span>
+        <select name="@Model.DistrictField" id="@districtId"
+                class="form-select border-start-0 @Model.SizeClass krishi-geo-select"
+                data-any-label="@(anyText is null ? null : L[anyText].Value)"
+                onchange="@districtHooks" required="@(Model.Required ? "required" : null)">
+            @if (anyText is not null)
+            {
+                <option value="">@L[anyText]</option>
+            }
+            else
+            {
+                <option value="">@L["-- Select District --"]</option>
+            }
+            @foreach (var district in string.IsNullOrWhiteSpace(selectedDivision)
+                ? BangladeshGeo.AllDistricts
+                : BangladeshGeo.DistrictsByDivision[selectedDivision])
+            {
+                <option value="@district" selected="@(string.Equals(selectedDistrict, district, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@L[district]</option>
+            }
+        </select>
+    </div>
+    @if (!string.IsNullOrEmpty(Model.HelpText))
+    {
+        <div class="form-text small text-muted">@L[Model.HelpText]</div>
+    }
+</div>
+
+<script>window.krishiGeo.attach('@divisionId', '@districtId');</script>

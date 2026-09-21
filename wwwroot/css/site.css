@@ -724,6 +724,30 @@ a:hover {
     fill: var(--krishi-primary-hover);
 }
 
+/* Paid into escrow but not yet completed: stacked above the earned segment. */
+.krishi-revenue-chart .chart-bar-escrow {
+    fill: #5eead4;
+}
+
+.krishi-revenue-chart .chart-bar-group:hover .chart-bar-escrow {
+    fill: #2dd4bf;
+}
+
+.krishi-chart-key {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+}
+
+.krishi-chart-key-earned {
+    background: var(--krishi-accent);
+}
+
+.krishi-chart-key-escrow {
+    background: #5eead4;
+}
+
 .krishi-revenue-chart .chart-value {
     fill: var(--krishi-text-primary);
     font-size: 10px;
@@ -824,4 +848,47 @@ a:hover {
     background-color: #f59e0b !important;
 }
 
+/* ==========================================================================
+   Cascading Division / District picker (Views/Shared/_GeoSelector.cshtml)
+   ========================================================================== */
+.krishi-geo-group {
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(45, 106, 79, 0.05);
+    transition: box-shadow 0.2s ease;
+}
 
+.krishi-geo-group:focus-within {
+    box-shadow: 0 0 0 0.2rem rgba(45, 106, 79, 0.15);
+}
+
+.krishi-geo-group .input-group-text {
+    border-color: var(--krishi-border-color);
+    background-color: var(--krishi-primary-light) !important;
+}
+
+.krishi-geo-select {
+    border-color: var(--krishi-border-color);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+/* Bootstrap draws its own focus ring; the wrapper already shows focus. */
+.krishi-geo-select:focus {
+    border-color: var(--krishi-border-color);
+    box-shadow: none;
+}
+
+/* A chosen value reads as active, an unchosen one as placeholder text. */
+.krishi-geo-select:has(option[value=""]:checked) {
+    color: var(--krishi-text-muted);
+}
+
+.krishi-geo-select option {
+    color: var(--krishi-text-primary);
+    padding: 0.35rem 0.5rem;
+}
+
+.krishi-geo-select option[value=""] {
+    color: var(--krishi-text-muted);
+}

@@ -115,6 +115,14 @@ namespace KrishiLink.BLL.Services
             }
 
             var rawDistrict = !string.IsNullOrWhiteSpace(c.District) ? c.District : c.Location;
+
+            // A division on its own means "anywhere in this division"; a district always wins.
+            if (string.IsNullOrWhiteSpace(rawDistrict) && BangladeshGeo.IsDivision(c.Division))
+            {
+                var inDivision = BangladeshGeo.GetDistrictsForDivision(c.Division);
+                query = query.Where(g => g.District != null && inDivision.Contains(g.District));
+            }
+
             if (!string.IsNullOrWhiteSpace(rawDistrict))
             {
                 var targetDistrict = OnboardingOptions.GuessDistrict(rawDistrict.Trim()) ?? rawDistrict.Trim();
@@ -246,6 +254,7 @@ namespace KrishiLink.BLL.Services
             {
                 SearchTerm = c.SearchTerm,
                 SelectedStorageTypes = c.SelectedStorageTypes ?? new List<string>(),
+                Division = c.Division,
                 District = rawDistrict,
                 Location = rawDistrict,
                 SelectedMinCapacity = c.SelectedMinCapacity,

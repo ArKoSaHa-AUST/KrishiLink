@@ -146,7 +146,14 @@ namespace KrishiLink.Models.ViewModels
     public class RevenueTrendPoint
     {
         public string Label { get; set; } = string.Empty;
+
+        /// <summary>Earned revenue: completed bookings, recognised on their end date.</summary>
         public decimal Amount { get; set; }
+
+        /// <summary>Paid into escrow but not yet completed, recognised on the date the farmer paid.</summary>
+        public decimal EscrowAmount { get; set; }
+
+        public decimal Total => Amount + EscrowAmount;
     }
 
     public class ListingRevenueBreakdownItem
@@ -277,6 +284,11 @@ namespace KrishiLink.Models.ViewModels
         public decimal NetPayable => Gross - Commission;
         public string Status { get; set; } = string.Empty;
 
+        /// <summary>True until the booking completes: the amounts are agreed but not yet earned or settled.</summary>
+        public bool IsProforma { get; set; }
+
+        public string DocumentTitle => IsProforma ? $"Proforma {Title}" : Title;
+
         // Farmer's escrow payment
         public string? PaymentMethod { get; set; }
         public string? PaymentReference { get; set; }
@@ -298,6 +310,9 @@ namespace KrishiLink.Models.ViewModels
 
         public List<ExpenseCategorySummary> ExpensesByCategory { get; set; } = new();
         public decimal TotalExpenses { get; set; }
+
+        /// <summary>General expenses left out of a single-listing view because they are not attributed to any listing.</summary>
+        public decimal UnallocatedExpenses { get; set; }
         public decimal NetProfit => NetEarned - TotalExpenses;
         public double MarginPercent => Gross > 0 ? Math.Round((double)(NetProfit / Gross * 100), 1) : 0;
         public int ExpenseCount { get; set; }

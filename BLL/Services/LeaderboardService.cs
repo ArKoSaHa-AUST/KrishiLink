@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using KrishiLink.BLL.Helpers;
 using KrishiLink.DAL;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
@@ -14,7 +15,7 @@ namespace KrishiLink.BLL.Services
 {
     public interface ILeaderboardService
     {
-        Task<LeaderboardPageViewModel> GetLeaderboardAsync(string category = "All", string sortBy = "trust", string? district = null, bool forceRefresh = false);
+        Task<LeaderboardPageViewModel> GetLeaderboardAsync(string category = "All", string sortBy = "trust", string? district = null, string? division = null, bool forceRefresh = false);
         Task<(int? Rank, double TrustScore, int TotalRanked)> GetOwnerRankAsync(string ownerId);
         void InvalidateCache();
     }
@@ -47,6 +48,7 @@ namespace KrishiLink.BLL.Services
             string category = "All",
             string sortBy = "trust",
             string? district = null,
+            string? division = null,
             bool forceRefresh = false)
         {
             var safeCategory = category switch
@@ -65,7 +67,13 @@ namespace KrishiLink.BLL.Services
                 ? "all"
                 : System.Text.RegularExpressions.Regex.Replace(district.Trim(), @"[^a-zA-Z0-9_\-]", string.Empty);
 
-            var cacheKey = $"{CacheKeyPrefix}{safeCategory.ToLowerInvariant()}_{safeSortBy}_{safeDistrict.ToLowerInvariant()}";
+            // A division on its own widens the board to every district in it; a district always wins.
+            var divisionDistricts = safeDistrict == "all" && BangladeshGeo.IsDivision(division)
+                ? BangladeshGeo.GetDistrictsForDivision(division)
+                : null;
+            var safeDivision = divisionDistricts is null ? string.Empty : division!.Trim();
+
+            var cacheKey = $"{CacheKeyPrefix}{safeCategory.ToLowerInvariant()}_{safeSortBy}_{safeDistrict.ToLowerInvariant()}_{safeDivision.ToLowerInvariant()}";
 
             if (!forceRefresh && _cache.TryGetValue(cacheKey, out LeaderboardPageViewModel? cachedModel) && cachedModel != null)
             {
@@ -197,6 +205,12 @@ namespace KrishiLink.BLL.Services
                     e.District.Equals(safeDistrict, StringComparison.OrdinalIgnoreCase) ||
                     e.Location.IndexOf(safeDistrict, StringComparison.OrdinalIgnoreCase) >= 0);
             }
+            else if (divisionDistricts is not null)
+            {
+                filtered = filtered.Where(e =>
+                    divisionDistricts.Contains(e.District, StringComparer.OrdinalIgnoreCase) ||
+                    divisionDistricts.Any(name => e.Location.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0));
+            }
 
             // Apply Sorting
             filtered = safeSortBy switch
@@ -231,6 +245,7 @@ namespace KrishiLink.BLL.Services
                 Category = safeCategory,
                 SortBy = safeSortBy,
                 District = safeDistrict.Equals("all", StringComparison.OrdinalIgnoreCase) ? "" : safeDistrict,
+                Division = safeDivision,
                 TopPodium = topPodium,
                 RankedList = remainingList,
                 AllEntries = rankedEntries,

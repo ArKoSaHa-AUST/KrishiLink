@@ -84,6 +84,19 @@ namespace KrishiLink.BLL.Services
                 CreatedAt = DateTime.UtcNow
             };
 
+            // Seed the baseline with what already matches, so the first scheduler run only alerts on
+            // listings that appear *after* the search was saved.
+            try
+            {
+                var (matchedIds, _) = await GetMatchingListingsAsync(entity);
+                entity.KnownListingIds = string.Join(",", matchedIds);
+                entity.LastRunAt = DateTime.UtcNow;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not seed the baseline for a new saved search; the first run may alert on existing listings.");
+            }
+
             await _savedSearches.AddAsync(entity);
             await _savedSearches.SaveChangesAsync();
 

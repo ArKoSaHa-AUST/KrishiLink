@@ -23,9 +23,11 @@ namespace KrishiLink.Controllers
             [FromQuery] string category = "All",
             [FromQuery] string sortBy = "trust",
             [FromQuery] string? district = null,
+            [FromQuery] string? division = null,
             [FromQuery] bool refresh = false)
         {
-            var model = await _leaderboardService.GetLeaderboardAsync(category, sortBy, district, forceRefresh: refresh);
+            // A division on its own means "anywhere in this division"; a district always wins.
+            var model = await _leaderboardService.GetLeaderboardAsync(category, sortBy, district, division, forceRefresh: refresh);
             return View(model);
         }
 

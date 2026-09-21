@@ -1,15 +1,18 @@
 @model KrishiLink.Models.ViewModels.BookingInvoiceViewModel
 @{
-    ViewData["Title"] = $"Invoice {Model.InvoiceNumber}";
+    ViewData["Title"] = $"{Model.DocumentTitle} {Model.InvoiceNumber}";
     string Money(decimal v) => "৳" + v.ToString("N2");
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3 d-print-none">
     <a asp-action="Revenue" class="btn btn-krishi-outline rounded-pill px-3 py-2 fw-semibold"><i class="bi bi-arrow-left me-1"></i>@L["Back to Revenue"]</a>
     <div class="d-flex gap-2">
-        <a href="@AppLinks.BookingReceipt(Model.BookingType, Model.BookingId)" class="btn btn-krishi-outline rounded-pill px-4 py-2 fw-semibold" target="_blank">
-            <i class="bi bi-receipt me-1"></i>@L["Farmer receipt"]
-        </a>
+        @if (Model.PaymentReference is not null)
+        {
+            <a href="@AppLinks.BookingReceipt(Model.BookingType, Model.BookingId)" class="btn btn-krishi-outline rounded-pill px-4 py-2 fw-semibold" target="_blank">
+                <i class="bi bi-receipt me-1"></i>@L["Farmer receipt"]
+            </a>
+        }
         <button type="button" class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-semibold" onclick="window.print()">
             <i class="bi bi-printer me-1"></i>@L["Print / Save as PDF"]
         </button>
@@ -22,7 +25,7 @@
             <img src="~/images/dp.png" alt="KrishiLink" class="rounded-circle object-fit-cover" style="width: 44px; height: 44px;" />
             <div>
                 <div class="fw-bold fs-4" style="color: var(--krishi-primary);">KrishiLink</div>
-                <div class="small" style="color: var(--krishi-text-muted);">@L[Model.Title]</div>
+                <div class="small" style="color: var(--krishi-text-muted);">@L[Model.DocumentTitle]</div>
             </div>
         </div>
         <div class="text-sm-end">
@@ -96,6 +99,10 @@
         @if (Model.PaymentReference is not null)
         {
             <span class="d-block mb-1"><i class="bi bi-shield-check text-success me-1"></i>@L["Paid by farmer via {0} on {1}, ref {2}", Model.PaymentMethod ?? "—", Model.PaidOn?.ToString("dd MMM yyyy") ?? "—", Model.PaymentReference]</span>
+        }
+        @if (Model.IsProforma)
+        {
+            <span class="d-block mb-1"><i class="bi bi-hourglass-split me-1" style="color: var(--krishi-status-pending-text);"></i>@L["Proforma: these are the amounts agreed at acceptance. Nothing is earned or settled until the booking is marked completed."]</span>
         }
         @L["Charged at the rate agreed at acceptance for the booked period. Collected into KrishiLink escrow and settled to the provider net of commission; keep this receipt for your records."]
     </p>

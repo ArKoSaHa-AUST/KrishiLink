@@ -60,12 +60,13 @@ namespace KrishiLink.Controllers
         /// </summary>
         public async Task<IActionResult> Alerts(
             string? district = null,
+            string? division = null,
             string? crop = null,
             double? temp = null,
             double? humidity = null,
             string? condition = null)
         {
-            var safeDistrict = SanitizeDistrict(district);
+            var safeDistrict = SanitizeDistrict(district, division);
             var safeCrop = SanitizeCrop(crop);
             var safeCondition = SanitizeCondition(condition);
             double? safeTemp = temp.HasValue ? Math.Clamp(temp.Value, -10.0, 60.0) : null;
@@ -79,9 +80,9 @@ namespace KrishiLink.Controllers
         /// GET: /Advisory/Suggestions
         /// Proactive weather-triggered crop & machinery suggestions based on regional weather & crop calendar stages.
         /// </summary>
-        public async Task<IActionResult> Suggestions(string? district = null, string? crop = null, int? month = null)
+        public async Task<IActionResult> Suggestions(string? district = null, string? division = null, string? crop = null, int? month = null)
         {
-            var safeDistrict = SanitizeDistrict(district);
+            var safeDistrict = SanitizeDistrict(district, division);
             var safeCrop = string.IsNullOrWhiteSpace(crop) ? "Rice (Boro)" : crop.Trim();
 
             var suggestion = await _weatherSuggestionService.GenerateSuggestionForDistrictAndCropAsync(safeDistrict, safeCrop, month);
@@ -102,9 +103,9 @@ namespace KrishiLink.Controllers
         /// JSON endpoint returning proactive suggestions for dynamic client-side filtering.
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> WeatherSuggestionsJson(string? district, string? crop, int? month = null)
+        public async Task<IActionResult> WeatherSuggestionsJson(string? district, string? division, string? crop, int? month = null)
         {
-            var safeDistrict = SanitizeDistrict(district);
+            var safeDistrict = SanitizeDistrict(district, division);
             var safeCrop = string.IsNullOrWhiteSpace(crop) ? "Rice (Boro)" : crop.Trim();
             var suggestion = await _weatherSuggestionService.GenerateSuggestionForDistrictAndCropAsync(safeDistrict, safeCrop, month);
             return Json(new { success = true, suggestion });
@@ -115,9 +116,9 @@ namespace KrishiLink.Controllers
         /// JSON endpoint returning live weather and triggered disease alerts for a district.
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> WeatherAlertsJson(string? district)
+        public async Task<IActionResult> WeatherAlertsJson(string? district, string? division)
         {
-            var safeDistrict = SanitizeDistrict(district);
+            var safeDistrict = SanitizeDistrict(district, division);
             var weather = await _pestAlertService.GetRegionalWeatherAsync(safeDistrict);
             var alerts = await _pestAlertService.EvaluateAlertsAsync(weather);
             return Json(new { success = true, weather, alerts });
@@ -262,6 +263,13 @@ namespace KrishiLink.Controllers
             { "Warm & Humid with Stagnant Air", "Warm & Humid with Stagnant Air" },
             { "Clear & Dry Skies", "Clear & Dry Skies" }
         };
+
+        /// <summary>
+        /// Falls back to the division's headquarters district when only a division was picked.
+        /// Every Bangladeshi division shares its name with its principal district.
+        /// </summary>
+        private static string SanitizeDistrict(string? district, string? division) =>
+            SanitizeDistrict(!string.IsNullOrWhiteSpace(district) ? district : division);
 
         private static string SanitizeDistrict(string? input)
         {

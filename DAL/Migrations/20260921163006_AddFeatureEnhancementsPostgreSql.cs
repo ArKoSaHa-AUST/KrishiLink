@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -159,7 +159,7 @@ namespace KrishiLink.DAL.Migrations
                 table: "BookingExpenses",
                 type: "timestamp with time zone",
                 nullable: false,
-                defaultValueSql: "GETUTCDATE()");
+                defaultValueSql: "now()");
 
             migrationBuilder.AddColumn<int>(
                 name: "ListingId",

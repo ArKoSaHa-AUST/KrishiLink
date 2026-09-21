@@ -101,23 +101,17 @@
             </div>
 
             <!-- 2. Location / District Filter -->
-            <div class="mb-4">
-                <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="desktopLocationSelect">
-                    @L["Location / District"]
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0 text-muted">
-                        <i class="bi bi-geo-alt-fill text-success"></i>
-                    </span>
-                    <select class="form-select border-start-0 filter-input" id="desktopLocationSelect" onchange="syncLocation(this.value); onFilterChanged(1);">
-                        <option value="">@L["All Locations (Bangladesh)"]</option>
-                        @foreach (var loc in Model.AvailableLocations)
-                        {
-                            <option value="@loc" selected="@((Model.District == loc || Model.Location == loc) ? "selected" : null)">@L[loc]</option>
-                        }
-                    </select>
-                </div>
-            </div>
+            <partial name="_GeoSelector" model="@(new GeoSelectorViewModel {
+                DivisionId = "desktopDivisionSelect",
+                DistrictId = "desktopLocationSelect",
+                SelectedDivision = Model.Division,
+                SelectedDistrict = Model.District ?? Model.Location,
+                DivisionLabel = "Division",
+                DistrictLabel = "Location / District",
+                AnyOptionText = "All Locations (Bangladesh)",
+                OnDistrictChanged = "syncLocation(this.value); onFilterChanged(1);",
+                ColumnClass = "mb-4"
+            })" />
 
             <!-- 3. Price Range (Daily Rate) -->
             <div class="mb-4">
@@ -536,16 +530,17 @@
         </div>
 
         <!-- Mobile: Location -->
-        <div class="mb-4">
-            <label class="form-label fw-bold text-dark small text-uppercase tracking-wider mb-2" for="mobileLocationSelect">@L["Location / District"]</label>
-            <select class="form-select" id="mobileLocationSelect" onchange="syncLocation(this.value); onFilterChanged(1);">
-                <option value="">@L["All Locations (Bangladesh)"]</option>
-                @foreach (var loc in Model.AvailableLocations)
-                {
-                    <option value="@loc" selected="@((Model.District == loc || Model.Location == loc) ? "selected" : null)">@L[loc]</option>
-                }
-            </select>
-        </div>
+        <partial name="_GeoSelector" model="@(new GeoSelectorViewModel {
+            DivisionId = "mobileDivisionSelect",
+            DistrictId = "mobileLocationSelect",
+            SelectedDivision = Model.Division,
+            SelectedDistrict = Model.District ?? Model.Location,
+            DivisionLabel = "Division",
+            DistrictLabel = "Location / District",
+            AnyOptionText = "All Locations (Bangladesh)",
+            OnDistrictChanged = "syncLocation(this.value); onFilterChanged(1);",
+            ColumnClass = "mb-4"
+        })" />
 
         <!-- Mobile: Price Range Inputs -->
         <div class="mb-4">
@@ -685,6 +680,15 @@
             const mobLoc = document.getElementById('mobileLocationSelect');
             if (deskLoc && deskLoc.value !== val) deskLoc.value = val;
             if (mobLoc && mobLoc.value !== val) mobLoc.value = val;
+            // Mirror the division too, so the desktop and mobile district lists stay narrowed alike.
+            const deskDiv = document.getElementById('desktopDivisionSelect');
+            const mobDiv = document.getElementById('mobileDivisionSelect');
+            if (deskDiv && mobDiv && deskDiv.value !== mobDiv.value) {
+                const source = document.activeElement === mobLoc || document.activeElement === mobDiv ? mobDiv : deskDiv;
+                const target = source === deskDiv ? mobDiv : deskDiv;
+                target.value = source.value;
+                target.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         }
 
         function syncDates() {
@@ -799,6 +803,7 @@
             const searchTerm = document.getElementById('mainSearchInput')?.value || '';
             const selectedCategories = Array.from(document.querySelectorAll('.desktop-cat-filter:checked')).map(cb => cb.value);
             const location = document.getElementById('desktopLocationSelect')?.value || '';
+            const division = document.getElementById('desktopDivisionSelect')?.value || '';
             const minPrice = Number(document.getElementById('desktopMinPriceInput')?.value || DEFAULT_MIN_PRICE);
             const maxPrice = Number(document.getElementById('desktopMaxPriceInput')?.value || DEFAULT_MAX_PRICE);
             const startDate = document.getElementById('desktopStartDateInput')?.value || '';
@@ -819,6 +824,7 @@
             if (searchTerm.trim()) params.append('searchTerm', searchTerm.trim());
             selectedCategories.forEach(cat => params.append('selectedCategories', cat));
             if (location) params.append('district', location);
+            else if (division) params.append('division', division);
             if (minPrice > DEFAULT_MIN_PRICE) params.append('selectedMinPrice', minPrice);
             if (maxPrice < DEFAULT_MAX_PRICE) params.append('selectedMaxPrice', maxPrice);
             if (startDate) params.append('startDate', startDate);
@@ -864,6 +870,7 @@
             const searchTerm = document.getElementById('mainSearchInput')?.value || '';
             const selectedCategories = Array.from(document.querySelectorAll('.desktop-cat-filter:checked')).map(cb => cb.value);
             const location = document.getElementById('desktopLocationSelect')?.value || '';
+            const division = document.getElementById('desktopDivisionSelect')?.value || '';
             const minPrice = Number(document.getElementById('desktopMinPriceInput')?.value || DEFAULT_MIN_PRICE);
             const maxPrice = Number(document.getElementById('desktopMaxPriceInput')?.value || DEFAULT_MAX_PRICE);
             const startDate = document.getElementById('desktopStartDateInput')?.value || '';
@@ -873,7 +880,7 @@
             let activeCount = 0;
             if (searchTerm.trim()) activeCount++;
             activeCount += selectedCategories.length;
-            if (location) activeCount++;
+            if (location || division) activeCount++;
             if (minPrice > DEFAULT_MIN_PRICE) activeCount++;
             if (maxPrice < DEFAULT_MAX_PRICE) activeCount++;
             if (startDate || endDate) activeCount++;

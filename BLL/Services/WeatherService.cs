@@ -76,6 +76,8 @@ namespace KrishiLink.BLL.Services
                     if (meteoData?.Daily != null && meteoData.Daily.Time.Count > 0)
                     {
                         var forecast = MapToRegionalForecast(cleanDistrict, division, meteoData.Daily);
+                        forecast.Source = WeatherSource.Live;
+                        forecast.RetrievedAtUtc = DateTime.UtcNow;
 
                         // Persist or update in DB
                         try
@@ -143,6 +145,9 @@ namespace KrishiLink.BLL.Services
                         }).ToList()
                     };
 
+                    fallbackForecast.Source = WeatherSource.Recent;
+                    fallbackForecast.RetrievedAtUtc = latest.FetchedAt;
+
                     _cache.Set(cacheKey, fallbackForecast, TimeSpan.FromMinutes(30));
                     return fallbackForecast;
                 }
@@ -154,6 +159,7 @@ namespace KrishiLink.BLL.Services
 
             // Ultimate Fallback: Realistic seasonal baseline
             var simulated = GenerateSeasonalFallback(cleanDistrict, division);
+            simulated.Source = WeatherSource.Estimated;
             _cache.Set(cacheKey, simulated, TimeSpan.FromMinutes(15));
             return simulated;
         }

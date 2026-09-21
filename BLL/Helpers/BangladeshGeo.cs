@@ -105,6 +105,41 @@ namespace KrishiLink.BLL.Helpers
         };
 
         /// <summary>
+        /// Pre-2018 spellings kept in the lookup map so old records still resolve, but never offered
+        /// in a picker: the canonical name is always shown instead.
+        /// </summary>
+        private static readonly Dictionary<string, string> LegacySpellings = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Barisal"] = "Barishal",
+            ["Bogra"] = "Bogura",
+            ["Chittagong"] = "Chattogram",
+            ["Comilla"] = "Cumilla",
+            ["Jessore"] = "Jashore",
+            ["Maulvibazar"] = "Moulvibazar",
+            ["Nawabganj"] = "Chapainawabganj"
+        };
+
+        /// <summary>The 64 canonical district names, alphabetically ordered.</summary>
+        public static readonly IReadOnlyList<string> AllDistricts = DistrictToDivisionMap.Keys
+            .Where(name => !LegacySpellings.ContainsKey(name))
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList();
+
+        /// <summary>
+        /// Division to its canonical districts, in the order the divisions themselves are listed.
+        /// Backs the cascading division/district pickers.
+        /// </summary>
+        public static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> DistrictsByDivision =
+            Divisions.ToDictionary(
+                division => division,
+                division => (IReadOnlyList<string>)DistrictToDivisionMap
+                    .Where(pair => pair.Value == division && !LegacySpellings.ContainsKey(pair.Key))
+                    .Select(pair => pair.Key)
+                    .OrderBy(name => name, StringComparer.Ordinal)
+                    .ToList(),
+                StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
         /// Gets the administrative division for a given district name or alias.
         /// </summary>
         public static string GetDivision(string? district)
@@ -125,15 +160,28 @@ namespace KrishiLink.BLL.Helpers
         {
             if (string.IsNullOrWhiteSpace(division) || division.Equals("All", StringComparison.OrdinalIgnoreCase))
             {
-                return DistrictToDivisionMap.Keys.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                return AllDistricts.ToList();
             }
 
-            return DistrictToDivisionMap
-                .Where(kvp => kvp.Value.Equals(division.Trim(), StringComparison.OrdinalIgnoreCase))
-                .Select(kvp => kvp.Key)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            return DistrictsByDivision.TryGetValue(division.Trim(), out var districts)
+                ? districts.ToList()
+                : new List<string>();
         }
+
+        /// <summary>
+        /// Maps a legacy spelling to its current district name so stored values and pickers agree.
+        /// Unknown names are returned unchanged.
+        /// </summary>
+        public static string? Canonical(string? district)
+        {
+            if (string.IsNullOrWhiteSpace(district)) return district;
+            var trimmed = district.Trim();
+            return LegacySpellings.TryGetValue(trimmed, out var current) ? current : trimmed;
+        }
+
+        /// <summary>True when the name is one of the 8 divisions.</summary>
+        public static bool IsDivision(string? name) =>
+            !string.IsNullOrWhiteSpace(name) && Divisions.Contains(name.Trim(), StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Checks whether a given district matches a crop's suitable division / region filter.

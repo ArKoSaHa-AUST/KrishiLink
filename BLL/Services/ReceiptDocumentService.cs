@@ -58,8 +58,8 @@ namespace KrishiLink.BLL.Services
 
                 if (!isPaidOrRefunded) return null;
 
-                var code = $"KL-EQ-{b.RequestedOn.Year}-{b.Id:D3}";
-                var verifyUrl = $"{host.TrimEnd('/')}/Verify/{code}";
+                var code = BookingService.BuildBookingCode("EQ", b.RequestedOn, b.Id);
+                var verifyUrl = BookingService.BuildVerifyUrl(host, code, b.VerifyToken);
                 var qrB64 = _qrCode.GenerateBase64Png(verifyUrl, 6);
                 var rawB64 = qrB64.Contains(',') ? qrB64.Split(',')[1] : qrB64;
                 var qrBytes = Convert.FromBase64String(rawB64);
@@ -127,8 +127,8 @@ namespace KrishiLink.BLL.Services
 
                 if (!isPaidOrRefunded) return null;
 
-                var code = $"KL-GD-{b.RequestedOn.Year}-{b.Id:D3}";
-                var verifyUrl = $"{host.TrimEnd('/')}/Verify/{code}";
+                var code = BookingService.BuildBookingCode("GD", b.RequestedOn, b.Id);
+                var verifyUrl = BookingService.BuildVerifyUrl(host, code, b.VerifyToken);
                 var qrB64 = _qrCode.GenerateBase64Png(verifyUrl, 6);
                 var rawB64 = qrB64.Contains(',') ? qrB64.Split(',')[1] : qrB64;
                 var qrBytes = Convert.FromBase64String(rawB64);
