@@ -2,9 +2,9 @@
 @{
     ViewData["Title"] = L["User Profile"];
     var roleName = Model.Role ?? "Farmer";
-    var roleIcon = roleName == "EquipmentOwner" ? "bi-truck" : (roleName == "GodownOwner" ? "bi-building" : "bi-flower1");
-    var roleDisplay = roleName == "EquipmentOwner" ? L["Equipment Owner"] : (roleName == "GodownOwner" ? L["Godown Owner"] : L["Farmer"]);
-    var dashboardController = roleName == "EquipmentOwner" ? "EquipmentOwner" : (roleName == "GodownOwner" ? "GodownOwner" : "Farmer");
+    var roleIcon = roleName == "Admin" ? "bi-shield-lock" : (roleName == "EquipmentOwner" ? "bi-truck" : (roleName == "GodownOwner" ? "bi-building" : "bi-flower1"));
+    var roleDisplay = roleName == "Admin" ? L["Administrator"] : (roleName == "EquipmentOwner" ? L["Equipment Owner"] : (roleName == "GodownOwner" ? L["Godown Owner"] : L["Farmer"]));
+    var dashboardController = roleName == "Admin" ? "Home" : (roleName == "EquipmentOwner" ? "EquipmentOwner" : (roleName == "GodownOwner" ? "GodownOwner" : "Farmer"));
     var dashboardAction = roleName == "Farmer" ? "Dashboard" : "Index";
 }
 
@@ -215,9 +215,10 @@
                                         <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
                                             <i class="bi bi-envelope"></i>
                                         </span>
-                                        <input asp-for="Email" class="form-control border-start-0 rounded-end-pill pe-3 py-2 profile-input" id="inputEmail" type="email" />
+                                        <input asp-for="Email" class="form-control border-start-0 rounded-end-pill pe-3 py-2 profile-input" id="inputEmail" type="email" required />
                                     </div>
                                     <span asp-validation-for="Email" class="text-danger small mt-1 d-block ms-2"></span>
+                                    <small class="text-muted">Email changes require confirmation. <a asp-action="VerifyEmail" asp-route-purpose="email_change">Verify email change</a></small>
                                 </div>
 
                                 <div class="col-12 col-md-6">
@@ -317,7 +318,7 @@
                                         <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
                                             <i class="bi bi-shield-lock"></i>
                                         </span>
-                                        <input type="password" name="NewPassword" class="form-control border-start-0 border-end-0 py-2" id="inputNewPassword" placeholder="@L["Min. 6 characters"]" required />
+                                        <input type="password" name="NewPassword" class="form-control border-start-0 border-end-0 py-2" id="inputNewPassword" placeholder="@L["Min. 8 characters"]" required />
                                         <button type="button" class="input-group-text bg-white text-muted border-start-0 rounded-end-pill pe-3 toggle-password-btn" data-target="inputNewPassword">
                                             <i class="bi bi-eye"></i>
                                         </button>
@@ -558,10 +559,10 @@
                 const confirmPassGroup = $('#inputConfirmPassword').closest('.input-group');
 
                 // Check length
-                if (newPass.length > 0 && newPass.length < 6) {
+                if (newPass.length > 0 && newPass.length < 8) {
                     newPassGroup.addClass('has-error').removeClass('is-valid-field');
-                    $('#newPasswordError').text('@L["Password must be at least 6 characters."]');
-                } else if (newPass.length >= 6) {
+                    $('#newPasswordError').text('@L["Password must be at least 8 characters."]');
+                } else if (newPass.length >= 8) {
                     newPassGroup.removeClass('has-error').addClass('is-valid-field');
                     $('#newPasswordError').text('');
                 } else {
@@ -597,7 +598,7 @@
                 const newLocation = $('#inputLocation').val().trim();
                 const newBusiness = $('#inputBusiness').length ? $('#inputBusiness').val().trim() : '';
 
-                if (!newName || !newPhone || !newLocation) {
+                if (!newName || !newPhone || !newEmail || !newLocation) {
                     KrishiToast.show('@L["Please fill in all required fields."]', { iconClass: 'bi-exclamation-circle-fill text-warning' });
                     return false;
                 }
@@ -620,7 +621,8 @@
                             // Update read-only views
                             $('#viewFullName').text(newName);
                             $('#viewPhone').text(newPhone);
-                            $('#viewEmail').text(newEmail || '@L["Not provided"]');
+                            $('#viewEmail').text(response.email);
+                            $('#inputEmail').val(response.email);
                             $('#viewLocation').text(newLocation);
                             if ($('#viewBusiness').length) {
                                 $('#viewBusiness').text(newBusiness || '@L["Not specified"]');
@@ -629,7 +631,7 @@
                             // Update sidebar metadata
                             $('#profileSidebarName').text(newName);
                             $('#sidebarPhone').text(newPhone);
-                            $('#sidebarEmail').text(newEmail || '@L["Not specified"]');
+                            $('#sidebarEmail').text(response.email);
                             $('#sidebarLocation').text(newLocation);
 
                             // Recalculate initials
@@ -646,12 +648,12 @@
                             initialValues = {
                                 fullName: newName,
                                 phone: newPhone,
-                                email: newEmail,
+                                email: response.email,
                                 location: newLocation,
                                 business: newBusiness
                             };
 
-                            KrishiToast.show('@L["Profile updated successfully!"]', { iconClass: 'bi-check-circle-fill text-success' });
+                            KrishiToast.show(response.message, { iconClass: 'bi-check-circle-fill text-success' });
                             exitEditMode(false);
                         } else {
                             KrishiToast.show(response.message || '@L["Failed to update profile."]', { iconClass: 'bi-exclamation-triangle-fill text-danger' });
@@ -683,8 +685,8 @@
                     return false;
                 }
 
-                if (newPass.length < 6) {
-                    $('#newPasswordError').text('@L["Password must be at least 6 characters."]');
+                if (newPass.length < 8) {
+                    $('#newPasswordError').text('@L["Password must be at least 8 characters."]');
                     $('#inputNewPassword').focus();
                     return false;
                 }
@@ -715,6 +717,7 @@
                     success: function (response) {
                         if (response.success) {
                             KrishiToast.show(response.message || '@L["Password changed successfully!"]', { iconClass: 'bi-shield-check text-success' });
+                            if (response.redirectUrl) location.assign(response.redirectUrl);
                             $('#changePasswordForm')[0].reset();
                             $('.input-group').removeClass('has-error is-valid-field');
                             $('#currentPasswordError, #newPasswordError, #confirmPasswordError').text('');

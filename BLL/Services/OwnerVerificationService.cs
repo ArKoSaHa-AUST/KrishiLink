@@ -167,87 +167,80 @@ namespace KrishiLink.BLL.Services
             var protectedNid = _protector.Protect(cleanNid);
             var maskedNid = $"***-***-{last4}";
 
-            // 2. Validate Front Image
-            string? frontPath = user.NidFrontImagePath;
-            var userUploadFolder = $"verifications/{user.Id}";
-            if (model.NidFrontImage is not null && model.NidFrontImage.Length > 0)
-            {
-                var validationErrors = _files.ValidateFiles(new[] { model.NidFrontImage });
-                if (validationErrors.Any())
-                    return (false, string.Join(" ", validationErrors));
+            var newFront = model.NidFrontImage is { Length: > 0 };
+            var newBack = model.NidBackImage is { Length: > 0 };
+            var newTrade = model.TradeLicenseImage is { Length: > 0 };
+            var uploads = new[] { model.NidFrontImage, model.NidBackImage, model.TradeLicenseImage }
+                .OfType<Microsoft.AspNetCore.Http.IFormFile>().Where(file => file.Length > 0).ToList();
+            var validationErrors = _files.ValidateFiles(uploads);
+            if (validationErrors.Count > 0)
+                return (false, string.Join(" ", validationErrors));
 
-                var savedFront = await _files.SavePrivateFilesAsync(new[] { model.NidFrontImage }, userUploadFolder);
-                if (savedFront.Any())
-                {
-                    frontPath = savedFront.First();
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(frontPath))
+            if (!newFront && string.IsNullOrWhiteSpace(user.NidFrontImagePath))
             {
                 return (false, "Please upload a clear photo of the front side of your National ID (NID).");
             }
 
-            // 3. Validate Back Image (optional/recommended)
-            string? backPath = user.NidBackImagePath;
-            if (model.NidBackImage is not null && model.NidBackImage.Length > 0)
+            // Validate the entire submission before any upload; a partial upload cleans itself up.
+            var savedPaths = await _files.SavePrivateFilesAsync(uploads, $"{UploadFolder}/{user.Id}");
+            var nextPath = 0;
+            var frontPath = newFront ? savedPaths[nextPath++] : user.NidFrontImagePath!;
+            var backPath = newBack ? savedPaths[nextPath++] : user.NidBackImagePath;
+            var tradeLicensePath = newTrade ? savedPaths[nextPath++] : user.TradeLicenseImagePath;
+            OwnerVerificationRequest request;
+            var commitAttempted = false;
+            try
             {
-                var validationErrors = _files.ValidateFiles(new[] { model.NidBackImage });
-                if (validationErrors.Any())
-                    return (false, string.Join(" ", validationErrors));
+                await using var transaction = await _db.Database.BeginTransactionAsync();
+                user.NidNumber = maskedNid;
+                user.NidFrontImagePath = frontPath;
+                user.NidBackImagePath = backPath;
+                user.TradeLicenseImagePath = tradeLicensePath;
+                user.VerificationStatus = "Pending";
+                user.IsVerified = false;
+                user.VerificationSubmittedAt = DateTime.UtcNow;
+                user.VerificationRejectionReason = null;
+                user.VerificationNotes = null;
 
-                var savedBack = await _files.SavePrivateFilesAsync(new[] { model.NidBackImage }, userUploadFolder);
-                if (savedBack.Any())
+                var update = await _userManager.UpdateAsync(user);
+                if (!update.Succeeded)
+                    throw new InvalidOperationException("The verification profile could not be saved.");
+
+                request = new OwnerVerificationRequest
                 {
-                    backPath = savedBack.First();
+                    UserId = user.Id,
+                    NidNumber = protectedNid,
+                    NidLast4 = last4,
+                    NidFrontImagePath = frontPath,
+                    NidBackImagePath = backPath,
+                    TradeLicenseImagePath = tradeLicensePath,
+                    Status = "Pending",
+                    SubmittedAt = DateTime.UtcNow
+                };
+                _db.VerificationRequests.Add(request);
+                await _db.SaveChangesAsync();
+                commitAttempted = true;
+                await transaction.CommitAsync();
+            }
+            catch (Exception saveError)
+            {
+                // A lost COMMIT acknowledgement does not prove rollback. Keep potentially referenced objects.
+                if (commitAttempted)
+                    throw new InvalidOperationException(
+                        "Verification commit outcome is uncertain. Uploaded documents were retained for reconciliation.",
+                        saveError);
+                try
+                {
+                    await _files.DeletePrivateFilesAsync(savedPaths, user.Id);
                 }
+                catch (Exception cleanupError)
+                {
+                    throw new AggregateException("Verification save and document cleanup failed.", saveError, cleanupError);
+                }
+                throw;
             }
 
-            // 4. Validate Trade License (optional for business owners)
-            string? tradeLicensePath = user.TradeLicenseImagePath;
-            if (model.TradeLicenseImage is not null && model.TradeLicenseImage.Length > 0)
-            {
-                var validationErrors = _files.ValidateFiles(new[] { model.TradeLicenseImage });
-                if (validationErrors.Any())
-                    return (false, string.Join(" ", validationErrors));
-
-                var savedTrade = await _files.SavePrivateFilesAsync(new[] { model.TradeLicenseImage }, userUploadFolder);
-                if (savedTrade.Any())
-                {
-                    tradeLicensePath = savedTrade.First();
-                }
-            }
-
-            // 5. Update ApplicationUser with masked NID to prevent plain-text PII storage
-            user.NidNumber = maskedNid;
-            user.NidFrontImagePath = frontPath;
-            user.NidBackImagePath = backPath;
-            user.TradeLicenseImagePath = tradeLicensePath;
-            user.VerificationStatus = "Pending";
-            user.IsVerified = false;
-            user.VerificationSubmittedAt = DateTime.UtcNow;
-            user.VerificationRejectionReason = null;
-            user.VerificationNotes = null;
-
-            await _userManager.UpdateAsync(user);
-
-            // 6. Record Verification Request in audit log with encrypted NID
-            var request = new OwnerVerificationRequest
-            {
-                UserId = user.Id,
-                NidNumber = protectedNid,
-                NidLast4 = last4,
-                NidFrontImagePath = frontPath,
-                NidBackImagePath = backPath,
-                TradeLicenseImagePath = tradeLicensePath,
-                Status = "Pending",
-                SubmittedAt = DateTime.UtcNow
-            };
-
-            _db.VerificationRequests.Add(request);
-            await _db.SaveChangesAsync();
-
-            // 7. Send user in-app notification
+            // Historical requests retain their documents. Notification failures must not remove committed files.
             await _notifications.NotifyAsync(new NotificationRequest
             {
                 UserId = user.Id,

@@ -4,20 +4,21 @@ using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
+EnvironmentConfiguration.AddLocalEnvironmentFiles(builder.Configuration, builder.Environment.ContentRootPath, args);
 
 // QuestPDF community licence (free for organisations under USD 1M annual revenue)
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
-// Add DbContext with MsSQL
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var connectionString = DatabaseConfiguration.GetConnectionString(builder.Configuration);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseNpgsql(connectionString,
+        postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", DatabaseConfiguration.Schema)));
 
 // Add Identity role-based services
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -37,6 +38,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LoginPath = "/Account/Login";
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
+builder.Services.AddSupabaseAuthentication(builder.Configuration);
 
 builder.Services.AddAntiforgery(options =>
 {
@@ -75,7 +77,7 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(optio
 {
     options.MultipartBodyLengthLimit = 32 * 1024 * 1024; // 32 MB
 });
-builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.AddSupabaseStorage(builder.Configuration);
 builder.Services.AddScoped<IEquipmentService, EquipmentService>();
 builder.Services.AddScoped<IGodownService, GodownService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
@@ -96,7 +98,10 @@ builder.Services.AddScoped<ILoyaltyService, LoyaltyService>();
 
 builder.Services.Configure<AppOptions>(builder.Configuration.GetSection(AppOptions.SectionName));
 builder.Services.AddHttpClient();
-builder.Services.AddDataProtection();
+var keyPath = builder.Configuration["DataProtection:KeyPath"] ?? "App_Data/keys";
+builder.Services.AddDataProtection()
+    .SetApplicationName("KrishiLink")
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.GetFullPath(keyPath, builder.Environment.ContentRootPath)));
 
 builder.Services.AddScoped<IPayoutSettlementService, PayoutSettlementService>();
 
@@ -129,10 +134,21 @@ builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// Apply migrations, ensure roles exist and (in Development) load demo data on first run
+// Schema changes use a session/direct connection, never transaction pooling.
+if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+{
+    var migrationOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
+        .UseNpgsql(DatabaseConfiguration.GetConnectionString(builder.Configuration, forMigrations: true),
+            postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", DatabaseConfiguration.Schema))
+        .Options;
+    await using var migrationDb = new ApplicationDbContext(migrationOptions);
+    await migrationDb.Database.MigrateAsync();
+}
+
 using (var scope = app.Services.CreateScope())
 {
-    await DbInitializer.InitializeAsync(scope.ServiceProvider, seedDemoData: app.Environment.IsDevelopment());
+    await scope.ServiceProvider.GetRequiredService<SupabaseStorageClient>().InitializeBucketsAsync();
+    await DbInitializer.InitializeAsync(scope.ServiceProvider);
 }
 
 app.UseRequestLocalization();

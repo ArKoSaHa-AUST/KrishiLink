@@ -87,29 +87,36 @@ namespace KrishiLink.BLL.Services
 
             if (!string.IsNullOrWhiteSpace(c.SearchTerm))
             {
-                var term = c.SearchTerm.Trim();
-                query = query.Where(g => g.Name.Contains(term) || g.StorageType.Contains(term)
-                    || g.Location.Contains(term) || (g.District != null && g.District.Contains(term))
-                    || g.Description.Contains(term) || g.Facilities.Contains(term)
-                    || g.Owner!.FullName.Contains(term));
+                var term = PostgresSearch.Contains(c.SearchTerm.Trim());
+                query = query.Where(g => EF.Functions.ILike(g.Name, term, "\\") || EF.Functions.ILike(g.StorageType, term, "\\")
+                    || EF.Functions.ILike(g.Location, term, "\\") || (g.District != null && EF.Functions.ILike(g.District, term, "\\"))
+                    || EF.Functions.ILike(g.Description, term, "\\") || EF.Functions.ILike(g.Facilities, term, "\\")
+                    || EF.Functions.ILike(g.Owner!.FullName, term, "\\"));
             }
             if (c.SelectedStorageTypes is { Count: > 0 })
-                query = query.Where(g => c.SelectedStorageTypes.Contains(g.StorageType));
+            {
+                var storageTypes = c.SelectedStorageTypes.Select(x => x.ToLowerInvariant()).ToArray();
+                query = query.Where(g => storageTypes.Contains(g.StorageType.ToLower()));
+            }
 
             var rawDistrict = !string.IsNullOrWhiteSpace(c.District) ? c.District : c.Location;
             if (!string.IsNullOrWhiteSpace(rawDistrict))
             {
                 var targetDistrict = OnboardingOptions.GuessDistrict(rawDistrict.Trim()) ?? rawDistrict.Trim();
                 var alt = GetDistrictAlias(targetDistrict);
+                var districtPattern = PostgresSearch.Literal(targetDistrict);
+                var locationPattern = PostgresSearch.Contains(targetDistrict);
                 if (!string.IsNullOrEmpty(alt) && !alt.Equals(targetDistrict, StringComparison.OrdinalIgnoreCase))
                 {
-                    query = query.Where(g => (g.District != null && (g.District == targetDistrict || g.District == alt))
-                        || (g.District == null && (g.Location.Contains(targetDistrict) || g.Location.Contains(alt))));
+                    var aliasPattern = PostgresSearch.Literal(alt);
+                    var aliasLocationPattern = PostgresSearch.Contains(alt);
+                    query = query.Where(g => (g.District != null && (EF.Functions.ILike(g.District, districtPattern, "\\") || EF.Functions.ILike(g.District, aliasPattern, "\\")))
+                        || (g.District == null && (EF.Functions.ILike(g.Location, locationPattern, "\\") || EF.Functions.ILike(g.Location, aliasLocationPattern, "\\"))));
                 }
                 else
                 {
-                    query = query.Where(g => (g.District != null && g.District == targetDistrict)
-                        || (g.District == null && g.Location.Contains(targetDistrict)));
+                    query = query.Where(g => (g.District != null && EF.Functions.ILike(g.District, districtPattern, "\\"))
+                        || (g.District == null && EF.Functions.ILike(g.Location, locationPattern, "\\")));
                 }
             }
 
@@ -354,6 +361,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel r, string? promoCode = null, int? pointsToRedeem = null)
         {
+            await using var transaction = await _bookings.BeginWorkflowAsync();
             if (r.StartDate is null || r.EndDate is null) return ("Please choose a start and end date.", null);
             var s = r.StartDate.Value.Date;
             var t = r.EndDate.Value.Date;
@@ -399,7 +407,7 @@ namespace KrishiLink.BLL.Services
                 EndDate = t,
                 Note = string.IsNullOrWhiteSpace(r.BookingNotes) ? null : r.BookingNotes.Trim(),
                 Status = BookingStatus.Pending,
-                RequestedOn = DateTime.Now,
+                RequestedOn = DateTime.UtcNow,
                 DiscountAmount = discountAmount,
                 AppliedPromoCode = appliedPromo,
                 PointsUsed = pointsUsed
@@ -411,16 +419,18 @@ namespace KrishiLink.BLL.Services
             // If points or promo were redeemed, deduct from farmer's balance and record ledger transaction
             if (pointsUsed > 0 || discountAmount > 0)
             {
-                await _loyalty.RedeemPointsForBookingAsync(
+                var redemption = await _loyalty.RedeemPointsForBookingAsync(
                     farmerId,
-                    appliedPromo,
-                    pointsUsed,
+                    promoCode,
+                    pointsToRedeem,
                     gross,
                     "Godown",
                     newBooking.Id,
                     $"#GD-{newBooking.Id:D4}"
                 );
+                if (!redemption.Success) return (redemption.Error ?? "The loyalty discount could not be applied.", null);
             }
+            await transaction.CommitAsync();
 
             // Notify godown owner of new pending storage request
             var farmer = await _users.FirstOrDefaultAsync(u => u.Id == farmerId);
@@ -477,6 +487,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<DecisionResult> RespondAsync(string ownerId, int bookingId, string decision, string? reason)
         {
+            await using var transaction = await _bookings.BeginWorkflowAsync();
             var booking = await _bookings.QueryTracked().Include(b => b.Godown).Include(b => b.Payment)
                 .FirstOrDefaultAsync(b => b.Id == bookingId && b.Godown!.OwnerId == ownerId);
             if (booking is null) return DecisionResult.Fail("This booking request could not be found.");
@@ -495,6 +506,7 @@ namespace KrishiLink.BLL.Services
             }
 
             var autoRejected = new List<int>();
+            var rejectionNotifications = new List<NotificationRequest>();
             if (next == BookingStatus.Accepted)
             {
                 var godown = booking.Godown!;
@@ -512,7 +524,7 @@ namespace KrishiLink.BLL.Services
                     if (occupied + other.StorageTons <= godown.CapacityInTons) continue;
                     other.Status = BookingStatus.Rejected;
                     other.RejectReason = BookingWorkflow.AutoRejectReason;
-                    other.UpdatedOn = DateTime.Now;
+                    other.UpdatedOn = DateTime.UtcNow;
                     autoRejected.Add(other.Id);
 
                     // Refund points if promo/points were redeemed on auto-rejected booking
@@ -523,7 +535,7 @@ namespace KrishiLink.BLL.Services
 
                     // Notify auto-rejected farmer
                     var otherUser = await _users.FirstOrDefaultAsync(u => u.Id == other.FarmerId);
-                    await _notifications.NotifyAsync(new NotificationRequest
+                    rejectionNotifications.Add(new NotificationRequest
                     {
                         UserId = other.FarmerId,
                         Type = NotificationTypes.BookingRejected,
@@ -543,8 +555,19 @@ namespace KrishiLink.BLL.Services
                 listing.PricePerTonPerMonth, BookingPricing.GodownGross(booking.StartDate, booking.EndDate, booking.StorageTons, listing.PricePerTonPerMonth), _revenue.PlatformCommissionRate);
             booking.Status = next!;
             booking.RejectReason = next == BookingStatus.Rejected && !string.IsNullOrWhiteSpace(reason) ? reason.Trim() : null;
-            booking.UpdatedOn = DateTime.Now;
+            booking.UpdatedOn = DateTime.UtcNow;
             await _bookings.SaveChangesAsync();
+
+            if (next == BookingStatus.Rejected && (booking.PointsUsed > 0 || booking.DiscountAmount > 0))
+                await _loyalty.RefundPointsForCancelledBookingAsync(booking.FarmerId, "Godown", booking.Id, $"#GD-{booking.Id:D4}");
+            else if (next == BookingStatus.Completed)
+                await _loyalty.AwardPointsForCompletedBookingAsync(
+                    booking.FarmerId, "Godown", booking.Id,
+                    Math.Max(0m, (booking.AgreedGross ?? 0) - booking.DiscountAmount), $"#GD-{booking.Id:D4}");
+
+            await transaction.CommitAsync();
+            foreach (var notification in rejectionNotifications)
+                await _notifications.NotifyAsync(notification);
 
             // Notify farmer of owner decision
             var farmer = await _users.FirstOrDefaultAsync(u => u.Id == booking.FarmerId);
@@ -582,12 +605,6 @@ namespace KrishiLink.BLL.Services
                     SendEmail = true,
                     RecipientEmail = farmer?.Email
                 });
-
-                // Refund points if promo/points were redeemed
-                if (booking.PointsUsed > 0 || booking.DiscountAmount > 0)
-                {
-                    await _loyalty.RefundPointsForCancelledBookingAsync(booking.FarmerId, "Godown", booking.Id, $"#GD-{booking.Id:D4}");
-                }
             }
             else if (next == BookingStatus.Completed)
             {
@@ -602,16 +619,6 @@ namespace KrishiLink.BLL.Services
                     DedupeKey = $"booking:godown:{booking.Id}:Completed",
                     SendEmail = false
                 });
-
-                // Award loyalty points on what the farmer actually paid (snapshot), net of discounts
-                decimal netSpent = Math.Max(0m, (booking.AgreedGross ?? 0) - booking.DiscountAmount);
-                await _loyalty.AwardPointsForCompletedBookingAsync(
-                    booking.FarmerId,
-                    "Godown",
-                    booking.Id,
-                    netSpent,
-                    $"#GD-{booking.Id:D4}"
-                );
             }
 
             return DecisionResult.Ok(autoRejected);
@@ -647,6 +654,8 @@ namespace KrishiLink.BLL.Services
         {
             Godown entity;
             List<string> previousImagesToDelete = new();
+            List<string> retainedUrls = new();
+            var storageFolder = $"{UploadFolder}/{ownerId}";
 
             if (model.IsEditMode)
             {
@@ -656,8 +665,10 @@ namespace KrishiLink.BLL.Services
 
                 // Identify removed images to delete after successful save
                 var previousImages = ListingFormat.Split(entity.ImageUrls);
-                var retainedExisting = model.ExistingImageUrls ?? new List<string>();
-                previousImagesToDelete = previousImages.Where(img => !retainedExisting.Contains(img, StringComparer.OrdinalIgnoreCase)).ToList();
+                retainedUrls = (model.ExistingImageUrls ?? new List<string>())
+                    .Where(img => previousImages.Contains(img, StringComparer.Ordinal))
+                    .Distinct(StringComparer.Ordinal).ToList();
+                previousImagesToDelete = previousImages.Where(img => !retainedUrls.Contains(img, StringComparer.Ordinal)).ToList();
             }
             else
             {
@@ -665,10 +676,10 @@ namespace KrishiLink.BLL.Services
                 await _godowns.AddAsync(entity);
             }
 
-            var savedNewImages = await _files.SaveImagesAsync(model.ImageFiles, UploadFolder);
+            var savedNewImages = await _files.SaveImagesAsync(model.ImageFiles, storageFolder);
+            var databaseSaveAttempted = false;
             try
             {
-                var retainedUrls = model.ExistingImageUrls ?? new List<string>();
                 var orderedImages = ArrangeImagesWithPrimary(retainedUrls, savedNewImages, model.PrimaryImageKey);
 
                 entity.Name = model.Name.Trim();
@@ -697,22 +708,33 @@ namespace KrishiLink.BLL.Services
                 entity.Facilities = ListingFormat.Join(model.SelectedFacilities);
                 entity.ImageUrls = ListingFormat.Join(orderedImages);
 
+                databaseSaveAttempted = true;
                 await _godowns.SaveChangesAsync();
-
-                // On successful commit, delete previously removed images from disk
-                _files.DeleteFiles(previousImagesToDelete);
 
                 model.Id = entity.Id;
                 model.Latitude = entity.Latitude;
                 model.Longitude = entity.Longitude;
-                return true;
             }
-            catch
+            catch (Exception saveError)
             {
-                // Rollback: clean up newly saved images so orphaned files are not left on disk
-                _files.DeleteFiles(savedNewImages);
+                if (databaseSaveAttempted)
+                    throw new InvalidOperationException(
+                        "Listing save outcome is uncertain. Uploaded images were retained for reconciliation.",
+                        saveError);
+                try
+                {
+                    await _files.DeleteFilesAsync(savedNewImages, storageFolder);
+                }
+                catch (Exception cleanupError)
+                {
+                    throw new AggregateException("Listing save and image cleanup failed.", saveError, cleanupError);
+                }
                 throw;
             }
+
+            // Cleanup errors after commit must never delete new images now referenced by the listing.
+            await _files.DeleteFilesAsync(previousImagesToDelete, storageFolder);
+            return true;
         }
 
         private static List<string> ArrangeImagesWithPrimary(List<string> existingUrls, List<string> newUrls, string? primaryKey)
@@ -780,6 +802,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<bool> SaveAvailabilityAsync(string ownerId, int godownId, DateTime month, IEnumerable<DateTime> blockedDates)
         {
+            await using var transaction = await _blockedDates.BeginWorkflowAsync();
             if (!await _godowns.Query().AnyAsync(x => x.Id == godownId && x.OwnerId == ownerId)) return false;
 
             var first = new DateTime(month.Year, month.Month, 1);
@@ -795,6 +818,7 @@ namespace KrishiLink.BLL.Services
                 await _blockedDates.AddAsync(new GodownBlockedDate { GodownId = godownId, Date = date });
 
             await _blockedDates.SaveChangesAsync();
+            await transaction.CommitAsync();
             return true;
         }
 

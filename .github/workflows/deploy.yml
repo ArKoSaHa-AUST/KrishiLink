@@ -24,10 +24,17 @@ jobs:
     - name: Publish Production Release Bundle
       run: dotnet publish KrishiLink.csproj --configuration Release --output ./publish
 
-    - name: Deploy Placeholder Step
-      env:
-        DB_CONNECTION_STRING: ${{ secrets.PROD_DB_CONNECTION_STRING }}
+    - name: Upload Release Bundle
+      uses: actions/upload-artifact@v4
+      with:
+        name: krishilink-production
+        path: ./publish
+
+    - name: Deployment Configuration Reminder
       run: |
         echo "Verified GitHub Environment 'production' approval gate."
         echo "Production release bundle prepared in ./publish."
-        echo "Ready for production deployment."
+        echo "No hosting target is configured: this workflow does not deploy."
+        echo "Configure Supabase Auth/Storage keys and PostgreSQL connections as host secrets."
+        echo "Apply the reviewed PostgreSQL migrations through a session/direct connection."
+        echo "Persist the Data Protection key directory on private durable storage."

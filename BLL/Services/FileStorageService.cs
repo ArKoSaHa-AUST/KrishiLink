@@ -1,10 +1,10 @@
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace KrishiLink.BLL.Services
 {
@@ -13,24 +13,21 @@ namespace KrishiLink.BLL.Services
         /// <summary>Validates uploaded files against allowed image extensions, MIME types, magic byte signatures, and size limits (5 MB). Returns a list of human-readable error messages, or an empty list if all are valid.</summary>
         List<string> ValidateFiles(IEnumerable<IFormFile>? files);
 
-        /// <summary>Stores validated uploaded images under wwwroot/uploads/{folder} with unique GUID filenames and returns their public URLs.</summary>
+        /// <summary>Stores validated images in Supabase's public bucket and returns public URLs.</summary>
         Task<List<string>> SaveImagesAsync(IEnumerable<IFormFile>? files, string folder);
 
-        /// <summary>Stores validated uploaded identity documents under App_Data/{folder} with unique GUID filenames and returns their relative private paths.</summary>
+        /// <summary>Stores validated identity images in the private bucket and returns object keys, never public URLs.</summary>
         Task<List<string>> SavePrivateFilesAsync(IEnumerable<IFormFile>? files, string folder);
 
-        /// <summary>Safely deletes an image file from the wwwroot/uploads/ directory. Returns true if the file was found and deleted.</summary>
-        bool DeleteImage(string? relativeUrl);
+        Task DeleteFilesAsync(IEnumerable<string>? urls, string folder);
+        Task DeletePrivateFilesAsync(IEnumerable<string>? paths, string ownerId);
 
-        /// <summary>Safely deletes multiple image files from the wwwroot/uploads/ directory.</summary>
-        void DeleteFiles(IEnumerable<string>? relativeUrls);
-
-        /// <summary>Safely deletes a private file from the App_Data/ directory. Returns true if the file was found and deleted.</summary>
-        bool DeletePrivateFile(string? relativePath);
-
-        /// <summary>Safely deletes multiple private files from the App_Data/ directory.</summary>
-        void DeletePrivateFiles(IEnumerable<string>? relativePaths);
+        /// <summary>Call only after owner/admin authorization; the key must also belong to the target owner.</summary>
+        Task<StoredPrivateFile?> ReadPrivateFileAsync(string? path, string ownerId, CancellationToken cancellationToken = default);
+        Task InitializeBucketsAsync(CancellationToken cancellationToken = default);
     }
+
+    public sealed record StoredPrivateFile(byte[] Content, string ContentType);
 
     public class FileStorageService : IFileStorageService
     {
@@ -38,11 +35,11 @@ namespace KrishiLink.BLL.Services
         private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase) { ".jpg", ".jpeg", ".png", ".webp" };
         private static readonly HashSet<string> AllowedMimeTypes = new(StringComparer.OrdinalIgnoreCase) { "image/jpeg", "image/pjpeg", "image/png", "image/webp" };
 
-        private readonly IWebHostEnvironment _env;
+        private readonly SupabaseStorageClient _storage;
 
-        public FileStorageService(IWebHostEnvironment env)
+        public FileStorageService(SupabaseStorageClient storage)
         {
-            _env = env;
+            _storage = storage;
         }
 
         public List<string> ValidateFiles(IEnumerable<IFormFile>? files)
@@ -97,147 +94,101 @@ namespace KrishiLink.BLL.Services
             return errors;
         }
 
-        public async Task<List<string>> SaveImagesAsync(IEnumerable<IFormFile>? files, string folder)
+        public Task InitializeBucketsAsync(CancellationToken cancellationToken = default) =>
+            _storage.InitializeBucketsAsync(cancellationToken);
+
+        public Task<List<string>> SaveImagesAsync(IEnumerable<IFormFile>? files, string folder) =>
+            SaveAsync(files, folder, false);
+
+        public Task<List<string>> SavePrivateFilesAsync(IEnumerable<IFormFile>? files, string folder) =>
+            SaveAsync(files, folder, true);
+
+        private async Task<List<string>> SaveAsync(IEnumerable<IFormFile>? files, string folder, bool isPrivate)
         {
-            var urls = new List<string>();
-            if (files is null) return urls;
+            ValidateFolder(folder, isPrivate);
+            var uploads = files?.Where(file => file is not null).ToList() ?? new List<IFormFile>();
+            var errors = ValidateFiles(uploads);
+            if (errors.Count > 0)
+                throw new ArgumentException(string.Join(" ", errors), nameof(files));
 
-            var uploadsRoot = Path.Combine(_env.WebRootPath, "uploads", folder);
-            Directory.CreateDirectory(uploadsRoot);
-
-            foreach (var file in files)
-            {
-                if (file is null || file.Length == 0 || file.Length > MaxFileSizeBytes) continue;
-
-                var extension = Path.GetExtension(file.FileName);
-                if (string.IsNullOrWhiteSpace(extension) || !AllowedExtensions.Contains(extension)) continue;
-                if (!IsValidImageHeader(file, extension)) continue;
-
-                var uniqueFileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
-                var destinationPath = Path.Combine(uploadsRoot, uniqueFileName);
-
-                await using (var stream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None))
-                {
-                    await file.CopyToAsync(stream);
-                }
-
-                urls.Add($"/uploads/{folder}/{uniqueFileName}");
-            }
-
-            return urls;
-        }
-
-        public async Task<List<string>> SavePrivateFilesAsync(IEnumerable<IFormFile>? files, string folder)
-        {
-            var paths = new List<string>();
-            if (files is null) return paths;
-
-            var targetDir = Path.Combine(_env.ContentRootPath, "App_Data", folder);
-            Directory.CreateDirectory(targetDir);
-
-            foreach (var file in files)
-            {
-                if (file is null || file.Length == 0 || file.Length > MaxFileSizeBytes) continue;
-
-                var extension = Path.GetExtension(file.FileName);
-                if (string.IsNullOrWhiteSpace(extension) || !AllowedExtensions.Contains(extension)) continue;
-                if (!IsValidImageHeader(file, extension)) continue;
-
-                var uniqueFileName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
-                var destinationPath = Path.Combine(targetDir, uniqueFileName);
-
-                await using (var stream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None))
-                {
-                    await file.CopyToAsync(stream);
-                }
-
-                paths.Add(Path.Combine(folder, uniqueFileName).Replace('\\', '/'));
-            }
-
-            return paths;
-        }
-
-        public bool DeletePrivateFile(string? relativePath)
-        {
-            if (string.IsNullOrWhiteSpace(relativePath)) return false;
-
+            var attemptedKeys = new List<string>();
             try
             {
-                var cleanPath = relativePath.TrimStart('~', '/').Replace('/', Path.DirectorySeparatorChar);
-                var fullPath = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "App_Data", cleanPath));
-                var appDataDir = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "App_Data"));
-
-                if (!fullPath.StartsWith(appDataDir, StringComparison.OrdinalIgnoreCase))
+                foreach (var file in uploads)
                 {
-                    return false;
-                }
-
-                if (File.Exists(fullPath))
-                {
-                    File.Delete(fullPath);
-                    return true;
+                    var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                    var key = $"{folder}/{Guid.NewGuid():N}{extension}";
+                    // Include the in-flight object: a transport failure may occur after Storage persisted it.
+                    attemptedKeys.Add(key);
+                    await using var stream = file.OpenReadStream();
+                    await _storage.UploadAsync(key, isPrivate, stream, ContentType(extension), CancellationToken.None);
                 }
             }
-            catch
+            catch (Exception uploadError)
             {
-                // Silently ignore
+                try
+                {
+                    await _storage.DeleteAsync(attemptedKeys, isPrivate, CancellationToken.None);
+                }
+                catch (Exception cleanupError)
+                {
+                    throw new AggregateException("Storage upload and cleanup failed.", uploadError, cleanupError);
+                }
+                throw;
             }
-
-            return false;
+            return isPrivate ? attemptedKeys : attemptedKeys.Select(_storage.PublicObjectUrl).ToList();
         }
 
-        public void DeletePrivateFiles(IEnumerable<string>? relativePaths)
+        public Task DeleteFilesAsync(IEnumerable<string>? urls, string folder)
         {
-            if (relativePaths is null) return;
-            foreach (var path in relativePaths)
-            {
-                DeletePrivateFile(path);
-            }
+            ValidateFolder(folder, false);
+            var keys = (urls ?? Enumerable.Empty<string>())
+                .Where(url => url is not null && url.StartsWith(_storage.PublicObjectPrefix, StringComparison.Ordinal))
+                .Select(url => url[_storage.PublicObjectPrefix.Length..])
+                .Where(key => IsObjectKey(key, folder));
+            return _storage.DeleteAsync(keys, false, CancellationToken.None);
         }
 
-        public bool DeleteImage(string? relativeUrl)
+        public Task DeletePrivateFilesAsync(IEnumerable<string>? paths, string ownerId)
         {
-            if (string.IsNullOrWhiteSpace(relativeUrl)) return false;
-
-            try
-            {
-                var cleanPath = relativeUrl.TrimStart('~', '/').Replace('/', Path.DirectorySeparatorChar);
-                if (!cleanPath.StartsWith("uploads" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-                {
-                    return false; // Only delete files inside wwwroot/uploads/
-                }
-
-                var fullPath = Path.GetFullPath(Path.Combine(_env.WebRootPath, cleanPath));
-                var uploadsDir = Path.GetFullPath(Path.Combine(_env.WebRootPath, "uploads"));
-
-                // Path traversal check
-                if (!fullPath.StartsWith(uploadsDir, StringComparison.OrdinalIgnoreCase))
-                {
-                    return false;
-                }
-
-                if (File.Exists(fullPath))
-                {
-                    File.Delete(fullPath);
-                    return true;
-                }
-            }
-            catch
-            {
-                // Silently ignore file deletion errors (e.g. file lock or permissions)
-            }
-
-            return false;
+            var folder = $"verifications/{ownerId}";
+            ValidateFolder(folder, true);
+            return _storage.DeleteAsync((paths ?? Enumerable.Empty<string>()).Where(key => IsObjectKey(key, folder)),
+                true, CancellationToken.None);
         }
 
-        public void DeleteFiles(IEnumerable<string>? relativeUrls)
+        public async Task<StoredPrivateFile?> ReadPrivateFileAsync(string? path, string ownerId, CancellationToken cancellationToken = default)
         {
-            if (relativeUrls is null) return;
-            foreach (var url in relativeUrls)
-            {
-                DeleteImage(url);
-            }
+            var folder = $"verifications/{ownerId}";
+            ValidateFolder(folder, true);
+            if (!IsObjectKey(path, folder)) return null;
+            var content = await _storage.DownloadPrivateAsync(path!, cancellationToken);
+            return content is null ? null : new StoredPrivateFile(content, ContentType(Path.GetExtension(path!)));
         }
+
+        private static void ValidateFolder(string folder, bool isPrivate)
+        {
+            var pattern = isPrivate
+                ? @"\Averifications/[A-Za-z0-9_-]{1,128}\z"
+                : @"\A(?:equipment|godowns)/[A-Za-z0-9_-]{1,128}\z";
+            if (string.IsNullOrEmpty(folder) || !Regex.IsMatch(folder, pattern, RegexOptions.CultureInvariant))
+                throw new ArgumentException("Invalid storage folder.", nameof(folder));
+        }
+
+        private static bool IsObjectKey(string? key, string folder)
+        {
+            if (key is null || !key.StartsWith(folder + "/", StringComparison.Ordinal)) return false;
+            var fileName = key[(folder.Length + 1)..];
+            return Regex.IsMatch(fileName, @"\A[a-f0-9]{32}\.(?:jpg|jpeg|png|webp)\z", RegexOptions.CultureInvariant);
+        }
+
+        private static string ContentType(string extension) => extension switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".webp" => "image/webp",
+            _ => throw new ArgumentException("Unsupported image extension.", nameof(extension))
+        };
 
         private static bool IsValidImageHeader(IFormFile file, string extension)
         {
@@ -272,7 +223,7 @@ namespace KrishiLink.BLL.Services
                     return isRiff && isWebp;
                 }
             }
-            catch
+            catch (IOException)
             {
                 return false;
             }

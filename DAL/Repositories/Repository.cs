@@ -26,10 +26,15 @@ namespace KrishiLink.DAL.Repositories
 
         public void Update(T entity) => _set.Update(entity);
 
+        public void Detach(T entity) => _db.Entry(entity).State = EntityState.Detached;
+
         public void Remove(T entity) => _set.Remove(entity);
 
         public void RemoveRange(IEnumerable<T> entities) => _set.RemoveRange(entities);
 
         public Task<int> SaveChangesAsync() => _db.SaveChangesAsync();
+
+        public Task<WorkflowTransaction> BeginWorkflowAsync(CancellationToken ct = default) =>
+            WorkflowTransaction.BeginAsync(_db, ct);
     }
 }

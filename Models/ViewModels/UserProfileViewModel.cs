@@ -14,6 +14,8 @@ namespace KrishiLink.Models.ViewModels
         [Display(Name = "Phone Number")]
         public string PhoneNumber { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "A real email address is required.")]
+        [StringLength(254)]
         [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
         [Display(Name = "Email Address")]
         public string? Email { get; set; }
@@ -62,7 +64,7 @@ namespace KrishiLink.Models.ViewModels
         public string CurrentPassword { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "New Password is required.")]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "New Password must be at least 6 characters long.")]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "New Password must be at least 8 characters long.")]
         [DataType(DataType.Password)]
         [Display(Name = "New Password")]
         public string NewPassword { get; set; } = string.Empty;

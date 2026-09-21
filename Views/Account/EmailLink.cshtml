@@ -1,0 +1,30 @@
+@model KrishiLink.Models.ViewModels.EmailLinkViewModel
+@{
+    ViewData["Title"] = Model.IsRecovery ? "Reset password" : "Confirm email";
+}
+<div class="container py-5" style="max-width: 540px;">
+    <h1 class="h3">@ViewData["Title"]</h1>
+    <partial name="_AuthMessages" />
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <form asp-action="EmailLink" method="post">
+        <input asp-for="LinkId" type="hidden" />
+        @if (Model.IsRecovery)
+        {
+            <p>Choose your new password. All existing KrishiLink sessions will be signed out.</p>
+            <div class="mb-3">
+                <label asp-for="NewPassword" class="form-label"></label>
+                <input asp-for="NewPassword" autocomplete="new-password" class="form-control" required />
+            </div>
+            <div class="mb-3">
+                <label asp-for="ConfirmPassword" class="form-label"></label>
+                <input asp-for="ConfirmPassword" autocomplete="new-password" class="form-control" required />
+            </div>
+        }
+        else
+        {
+            <p>Continue to confirm the email address associated with this link.</p>
+        }
+        <button class="btn btn-success" type="submit">@(Model.IsRecovery ? "Reset password" : "Confirm email")</button>
+    </form>
+    <p class="mt-3"><a asp-action="Login">Back to login</a></p>
+</div>

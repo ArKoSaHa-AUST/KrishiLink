@@ -69,6 +69,7 @@ namespace KrishiLink.BLL.Services
 
             try
             {
+                await using var transaction = await _reviews.BeginWorkflowAsync();
                 if (isEquipment)
                 {
                     var booking = await _equipmentBookings.QueryTracked()
@@ -149,6 +150,7 @@ namespace KrishiLink.BLL.Services
 
                     // Single atomic SaveChangesAsync
                     await _reviews.SaveChangesAsync();
+                    await transaction.CommitAsync();
 
                     // Notify equipment owner of new review
                     if (eq != null && !string.IsNullOrEmpty(eq.OwnerId))
@@ -257,6 +259,7 @@ namespace KrishiLink.BLL.Services
 
                     // Single atomic SaveChangesAsync
                     await _reviews.SaveChangesAsync();
+                    await transaction.CommitAsync();
 
                     // Notify godown owner of new review
                     if (gd != null && !string.IsNullOrEmpty(gd.OwnerId))
@@ -485,6 +488,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task RecomputeAllAggregatesAsync()
         {
+            await using var transaction = await _reviews.BeginWorkflowAsync();
             var equipmentList = await _equipment.QueryTracked().ToListAsync();
             foreach (var eq in equipmentList)
             {
@@ -525,6 +529,7 @@ namespace KrishiLink.BLL.Services
             }
 
             await _reviews.SaveChangesAsync();
+            await transaction.CommitAsync();
         }
     }
 }

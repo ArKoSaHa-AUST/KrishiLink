@@ -1,14 +1,14 @@
 # 🌾 KrishiLink — Smart Agriculture Platform
 
-[![.NET Version](https://img.shields.io/badge/.NET-9.0%20%7C%208.0%20LTS-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![Framework](https://img.shields.io/badge/ASP.NET%20Core-MVC-blue?logo=aspnet)](https://dotnet.microsoft.com/apps/aspnet)
-[![ORM](https://img.shields.io/badge/Entity%20Framework-Core%209.0-68217A?logo=nuget)](https://docs.microsoft.com/ef/)
-[![Database](https://img.shields.io/badge/Database-MsSQL-CC292B?logo=microsoftsqlserver)](https://www.microsoft.com/sql-server)
+[![ORM](https://img.shields.io/badge/Entity%20Framework-Core%208.0-68217A?logo=nuget)](https://docs.microsoft.com/ef/)
+[![Database](https://img.shields.io/badge/Database-Supabase%20PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com/)
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-7952B3?logo=bootstrap)](https://getbootstrap.com/)
 [![Localization](https://img.shields.io/badge/Localization-EN%20%7C%20BN%20(বাংলা)-28a745)](https://github.com/ArKoSaHa-AUST/KrishiLink)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**KrishiLink** is an enterprise-grade 3-tier ASP.NET Core MVC platform designed to empower agricultural communities in Bangladesh by seamlessly connecting **Farmers**, **Agricultural Equipment Owners**, and **Godown / Storage Facility Owners** into a transparent, secure, and highly efficient marketplace.
+**KrishiLink** is a 3-tier ASP.NET Core MVC agriculture marketplace for Bangladesh, connecting **Farmers**, **Agricultural Equipment Owners**, and **Godown / Storage Facility Owners**. Supabase provides PostgreSQL, authentication, and object storage. Razor MVC remains the frontend; sensitive data access stays on the ASP.NET backend.
 
 ---
 
@@ -32,7 +32,7 @@
 
 ### 1. 🛡️ Identity Verification & Private PII Vault
 - **Encrypted NID at Rest**: National ID numbers are encrypted at rest using ASP.NET Core `IDataProtectionProvider` (`KrishiLink.Nid`), preventing plain-text data exposure. Masked representations (`***-***-1234`) are served for profiles and administrative lists.
-- **Private Physical Storage**: Sensitive identity documents (NID front/back, trade licenses) are stored outside web-accessible roots (`App_Data/verifications/{userId}/`) and streamed through authenticated, role-guarded endpoints (`/Account/VerificationDocument`) with `Cache-Control: private, no-store`.
+- **Private Supabase Storage**: Sensitive identity documents (NID front/back, trade licenses) are stored in the private `verification-documents` bucket and streamed through authenticated, role-guarded endpoints (`/Account/VerificationDocument`) with `Cache-Control: private, no-store`. Listing images use the public `listing-images` bucket.
 - **Admin Review Portal**: Dedicated administrator workflow (`/Admin/Verifications`) supporting document inspection, one-click approvals, and structured rejection reasons with automated owner notifications.
 - **Single Pending Constraint**: Prevents duplicate concurrent verification requests while allowing seamless resubmission upon rejection.
 
@@ -80,7 +80,7 @@ Pending ──reject──▶ Rejected ──undo──▶ Pending              
 - Only a **Paid** booking can be completed; completing posts `CommissionEarned`, undo posts `CommissionReversed`.
 - `RequestPayout` refuses any Completed booking without a succeeded payment; the payout starts `Processing` and the `PayoutSettlementScheduler` settles it automatically to `Completed` (ledger `PayoutOut`) or `Failed` (bookings return to the owed balance).
 
-**Ledger accounts**: `FarmerExternal`, `PlatformEscrow`, `PlatformCommission`, `OwnerExternal`. Conservation invariant, checked at startup and via `GET /Home/LedgerCheck` (Development only):
+**Ledger accounts**: `FarmerExternal`, `PlatformEscrow`, `PlatformCommission`, `OwnerExternal`. Conservation invariant, available via `GET /Home/LedgerCheck` (Development only):
 
 ```
 Σ PaymentIn − Σ Refund = EscrowBalance + Σ CommissionEarned − Σ CommissionReversed + Σ PayoutOut
@@ -145,10 +145,12 @@ KrishiLink/
 │   │   ├── ReviewService.cs       # Verified Reviews & Atomic Aggregations
 │   │   └── WeatherService.cs      # Open-Meteo Live 7-Day Forecast Integrator
 ├── DAL/                           # Data Access Layer
-│   ├── ApplicationDbContext.cs    # EF Core DbContext with Identity Integration
-│   ├── DbInitializer.cs           # Database Migrations, Seeding & Geographic Data
+│   ├── ApplicationDbContext.cs    # PostgreSQL DbContext, application profiles and roles
+│   ├── ApplicationDbContextFactory.cs # EF tooling using the migration connection
+│   ├── EnvironmentConfiguration.cs # Local dotenv and deployment environment loading
+│   ├── DbInitializer.cs           # Roles and reference crop calendar seeding
 │   ├── Repositories/              # Generic EF Repository<T> + Specialized Repositories
-│   └── Migrations/                # EF Core Database Migrations
+│   └── Migrations/                # Fresh PostgreSQL baseline and subsequent migrations
 ├── Resources/                     # Localization Resources (SharedResource.en.resx, SharedResource.bn.resx)
 ├── wwwroot/                       # Static Assets (Bootstrap 5, Vanilla JS, CSS, Icons)
 └── appsettings.json               # Application Configuration Settings
@@ -158,9 +160,11 @@ KrishiLink/
 
 ## 💻 Tech Stack
 
-- **Backend Framework**: C# / ASP.NET Core MVC (.NET 8 LTS / .NET 9)
-- **Data Access & ORM**: Entity Framework Core 9.0, Microsoft SQL Server / LocalDB
-- **Security & Cryptography**: ASP.NET Core Identity (RBAC), `IDataProtectionProvider` (NID Data at Rest)
+- **Backend Framework**: C# / ASP.NET Core MVC targeting .NET 8 (also builds using the .NET 9 SDK)
+- **Data Access & ORM**: Entity Framework Core 8, Npgsql, Supabase PostgreSQL
+- **Authentication**: Supabase Auth; ASP.NET Identity tables are retained only for application profiles, roles and MVC cookie integration, not local password authentication
+- **Object Storage**: Supabase Storage, with separate public listing and private verification buckets
+- **Cryptography**: ASP.NET Data Protection for NID data and protected authentication state; persist and protect its key ring
 - **PDF Generation**: QuestPDF (Community license) for monthly owner accounting statements
 - **Frontend Architecture**: Razor Views (HTML5), Bootstrap 5.3, Bootstrap Icons, Vanilla JavaScript (no heavy runtime dependencies)
 - **Localization**: Full Bilingual Support — English (`en-US`) and Bengali (`bn-BD` বাংলা)
@@ -169,38 +173,73 @@ KrishiLink/
 
 ## ⚙️ Configuration & Environment Settings
 
-The application is configured through `appsettings.json` and environment variables:
+Configuration precedence, lowest to highest: ASP.NET JSON settings, root `.env`, root `.env.local`, process environment, command-line arguments. Local files are loaded explicitly by the app and EF design-time factory; ASP.NET does not load dotenv files by itself.
 
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=.\\SQLEXPRESS;Database=KrishiLinkDb;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
-  },
-  "App": {
-    "PublicBaseUrl": "https://localhost:7276"
-  },
-  "Revenue": {
-    "PlatformCommissionRate": 0.05
-  },
-  "Payments": {
-    "Provider": "Simulated",
-    "SettlementDelay": "00:02:00",
-    "SettlementPollSeconds": 15,
-    "FailAccountSuffix": "0000"
-  },
-  "Upload": {
-    "MaxImagesPerListing": 8,
-    "MaxFileSizeMb": 5
-  },
-  "Email": {
-    "Enabled": false,
-    "Host": "smtp.example.com",
-    "Port": 587,
-    "Username": "notifications@krishilink.com",
-    "FromAddress": "no-reply@krishilink.com"
-  }
-}
+Copy [`.env.example`](.env.example) to `.env.local` and fill it locally. Both real environment files are Git-ignored and excluded from build/publish output. Use deployment secrets instead of shipping them.
+
+| Setting | Purpose |
+| --- | --- |
+| `SUPABASE_URL` | Project HTTPS URL |
+| `SUPABASE_PUBLISHABLE_KEY` | Auth API publishable key |
+| `SUPABASE_SECRET_KEY` | Full server-only secret key; masked keys cannot work |
+| `ConnectionStrings__SessionConnection` or `DIRECT_URL` | Preferred runtime session/direct connection on port 5432 |
+| `DATABASE_URL` or `ConnectionStrings__DefaultConnection` | Runtime fallback when no session setting is supplied; must also use port 5432 |
+| `DIRECT_URL` or `ConnectionStrings__MigrationConnection` | Session/direct connection for migrations; explicit migration setting takes priority |
+| `SUPABASE_PUBLIC_BUCKET` / `SUPABASE_PRIVATE_BUCKET` | Defaults: `listing-images` / `verification-documents` |
+| `App__PublicBaseUrl` | Actual externally reachable app origin, including HTTPS |
+| `DataProtection__KeyPath` | Durable private key-ring directory; default `App_Data/keys` |
+| `Database__ApplyMigrationsOnStartup` | Default `false`; opt in for local setup only |
+
+`SUPABASE_*` aliases map to `Supabase:*`; ASP.NET `Supabase__Url`-style settings are also supported. The supplied `NEXT_PUBLIC_*` keys, `DB_*` components, project reference and JWKS URL are not needed by this server-rendered application. No database credentials or service-secret keys are emitted to JavaScript.
+
+**Connections:** copy exact values from Dashboard **Connect**. This persistent ASP.NET application uses direct PostgreSQL or **session pooling (`5432`)** for runtime requests and migrations. Transaction-pooler (`6543`) settings are rejected: live validation against the supplied transaction endpoint stalled on repeated commands, while session pooling passed those checks. The supplied `DIRECT_URL` is used for runtime as well as migrations unless an explicit `ConnectionStrings__SessionConnection` is configured; legacy `6543` values elsewhere in the local files are therefore not selected. For a separate restricted runtime role, set `ConnectionStrings__SessionConnection` explicitly and keep privileged migration credentials separate.
+
+Direct hosts commonly require IPv6; session pooling is the IPv4 alternative. Do not guess the pooler hostname from the region. TLS certificate/hostname validation is enforced (`VerifyFull`), prepared statements are disabled, and connection errors do not include server detail or parameters.
+
+The public [Supabase CA certificate](supabase-ca.crt), downloaded from the Dashboard's **Database > Settings > SSL configuration**, is bundled for certificate verification. It is not a private key. Set `Database__RootCertificate` (or Npgsql `Root Certificate`) to a replacement trusted CA file when needed. Never resolve TLS errors by disabling certificate validation.
+
+**Database isolation:** application tables and EF migration history live in the `krishilink` schema, not Supabase's exposed `public` schema. Do not add `krishilink` to exposed Data API schemas or grant `anon`/`authenticated` direct access. MVC controllers/services enforce application authorization; Supabase Auth UUIDs identify corresponding application profiles. Database migrations do not replace Supabase-owned `auth` or `storage` schemas.
+
+**Dates:** calendar dates (booking ranges, blocked days, forecast days, maintenance days and statement months) use PostgreSQL `date`. Recorded instants use `timestamp with time zone` and UTC. Decimal financial columns retain their configured precision.
+
+**Production storage:** back up PostgreSQL, Storage objects and the Data Protection key ring together. Persist the key directory across redeployments. Losing these keys prevents decryption of existing NID data and invalidates protected sessions. Use a private volume and appropriate OS access controls/encryption at rest.
+
+If a database write/commit acknowledgement is lost after an upload, the application reports the error and conservatively retains the uploaded objects: deleting them could break a record that actually committed. Inspect the persisted listing/verification request before retrying or cleaning up unreferenced objects. This favors preserving documents over automatic deletion when the outcome is uncertain.
+
+**Authentication sessions:** Supabase access/refresh tokens remain in server memory, never browser storage. This implementation targets a single app instance; restarting it logs users out. Do not deploy multiple replicas without implementing a shared protected token-session store. The backend checks Supabase's `auth.sessions` to reject revoked/expired sessions; a restricted runtime database role needs `USAGE` on `auth` and `SELECT (id, user_id, not_after)` on `auth.sessions`, in addition to access to application tables. These are read-only accesses to Supabase-managed tables, not application migrations.
+
+Authentication cookies require HTTPS, including local testing. Use the `https` launch profile; an HTTP-only launch can render public pages but will not maintain authenticated sessions. Behind a reverse proxy, configure trusted forwarding/HTTPS termination for your hosting environment rather than relaxing cookie security.
+
+Revenue, simulated payment, upload limit, localization and email settings remain in [appsettings.json](appsettings.json). Supabase Auth emails are configured in the Supabase Dashboard; application notification/statement emails use the separate `Email` SMTP section.
+
+### Supabase email delivery (required before public registration)
+
+The account screens use one-time email codes. In Dashboard **Authentication > Emails**:
+
+1. Configure custom SMTP with a verified sender for production delivery. Supabase's built-in sender has restrictions and is not a general-purpose production mail service.
+2. In **Confirm sign up**, **Reset password** and **Change email address** templates, include the literal `{{ .Token }}` so users can enter the code in KrishiLink. Do not send only a confirmation link to an app that expects an OTP.
+3. Keep email confirmation enabled and test delivery to a non-team-member address.
+
+Template editing may require custom SMTP or a paid Supabase plan. SMTP and email-template configuration remain external setup requirements; valid database/API keys alone do not make email verification or password recovery deliverable.
+
+Email links are also supported through a server-side token-hash callback. Set Supabase's Site URL to the application's HTTPS origin and allow the exact `/Account/AuthCallback` redirect URL. A custom confirmation template can use:
+
+```html
+<a href="{{ .SiteURL }}/Account/AuthCallback?token_hash={{ .TokenHash }}&amp;type=signup">Confirm email</a>
+<p>Or enter this code in KrishiLink: {{ .Token }}</p>
 ```
+
+Use `type=recovery` for password resets and `type=email_change` for email changes. The callback stores the hash server-side and redirects to a clean confirmation page; a GET/email preview does not consume it. Do not use default implicit-fragment `ConfirmationURL` links. Redact callback query strings in hosting/reverse-proxy logs.
+
+### Administrator provisioning
+
+There are no default administrator passwords. Provision a real, email-confirmed Supabase Auth user (or confirm a normal signup), set the exact verified address in server-only `SUPABASE_ADMIN_EMAIL`, and sign in. The backend creates/promotes the matching passwordless application profile and assigns the Admin role. Client-submitted roles and Auth user metadata cannot grant it.
+
+Remove the bootstrap setting afterward if it is no longer needed. Removing it does **not** revoke an already granted Admin role; manage existing role membership separately through trusted administration.
+
+### Transaction consistency
+
+Booking, payment, payout, loyalty and review mutations use a shared PostgreSQL transaction-scoped advisory lock. Nested service calls reuse their transaction, protecting multi-step writes and coordinating reviews with booking reopening. This deliberately serializes those mutations for correctness, so throughput is limited under heavy write load. Do not enable EF automatic retries without wrapping the entire transaction in an execution strategy; do not wrap these services in unrelated external transactions.
 
 ---
 
@@ -209,7 +248,7 @@ The application is configured through `appsettings.json` and environment variabl
 ### Prerequisites
 
 - [.NET 8.0 SDK or .NET 9.0 SDK](https://dotnet.microsoft.com/download)
-- [Microsoft SQL Server](https://www.microsoft.com/sql-server) or SQL Server LocalDB
+- A [Supabase project](https://supabase.com/) with PostgreSQL, Email Auth and Storage enabled
 - [Git](https://git-scm.com/)
 
 ### Installation & Setup
@@ -220,35 +259,47 @@ The application is configured through `appsettings.json` and environment variabl
    cd KrishiLink
    ```
 
-2. **Configure Database Connection**:
-   Update `appsettings.json` or `appsettings.Development.json` with your SQL Server connection string.
+2. **Configure Supabase**:
+   Fill `.env.local` using `.env.example`. Obtain the full keys and the session/direct connection strings from your project's Dashboard. Use a real email address for registration; phone numbers remain profile/contact identifiers.
 
-3. **Build the Application**:
+3. **Restore and Build**:
    ```bash
+   dotnet tool restore
+   dotnet restore
    dotnet build -c Release
    ```
 
-4. **Run the Application**:
+4. **Create the Fresh Database Schema**:
    ```bash
-   dotnet run
+   dotnet ef database update
    ```
-   On startup in `Development` mode, `DbInitializer` automatically applies pending EF Core migrations, seeds all application roles, inserts the 23 DAE crop calendars, and provisions demo seed data (including escrow payments, a failed payment attempt, and completed / processing / failed payouts with a balanced ledger). `Payments:SettlementDelay` defaults to 2 minutes in Development (30 minutes otherwise).
+   This repository now has a PostgreSQL migration baseline. It is for a **fresh database**, not an in-place conversion of an existing database. Historical SQL Server migrations and development demo credentials/data have been removed. No business records or fake accounts are inserted.
 
-5. **Access the Portal**:
-   Open your browser at `https://localhost:7276` or `http://localhost:5141`.
+   For deployments, generate and review a migration script with `dotnet ef migrations script --idempotent`, apply it through a session/direct connection before starting the new release, and leave startup migration disabled.
+
+5. **Run the Application**:
+   ```bash
+   dotnet run --launch-profile https
+   ```
+   Startup seeds application roles and the 23 DAE reference crop calendars in every environment. It does not create demo users or payments. Register your own accounts using Supabase Auth. `Payments:SettlementDelay` still defaults to 2 minutes in Development and 30 minutes otherwise.
+
+6. **Access the Portal**:
+   Open your browser at `https://localhost:7276`. The HTTP endpoint is for redirection, not authenticated use.
 
 ---
 
-## 👥 Demo Accounts (Development Environment)
+## Deployment and Verification
 
-All demo accounts use the standard password: **`Krishi@123`**
+- Configure Supabase Auth's Site URL, allowed redirect URLs, email templates and SMTP for your real application origin before production signups.
+- Register separate farmer and owner accounts; confirm email, complete onboarding, create listings and verify images load from Supabase Storage.
+- Test a booking through acceptance, simulated payment, completion, review and payout; check the database records and ledger.
+- Verify anonymous users cannot access dashboards or private identity documents, and one owner cannot access another owner's documents.
+- Keep the `verification-documents` bucket private; never grant blanket public policies to private objects.
+- Payments remain **simulated**, not real bKash/Nagad/Rocket/card integrations. The deployment workflow prepares an artifact; it does not deploy to a configured hosting provider.
+- Existing billing caveat: checkout uses `AgreedGross`, while confirmation/loyalty calculations also subtract `DiscountAmount`. Promo-discount charging and commission policy need a separate business-rule reconciliation before real payments; the migration does not redefine that policy.
+- CI builds and checks the PostgreSQL migration model/script without contacting your Supabase project. There is no existing unit-test project; an empty `dotnet test` run is not evidence of end-to-end coverage.
 
-| Role | Email | Phone | Capabilities |
-| :--- | :--- | :--- | :--- |
-| 🛡️ **Administrator** | `admin@krishilink.com` | `01710000000` | Review NID Verifications, System Audits |
-| 🌾 **Farmer** | `farmer@krishilink.com` | `01711000001` | Browse Equipment & Godowns, Bookings, Advisory & Weather |
-| 🚜 **Equipment Owner** | `equipment@krishilink.com` | `01712000001` | List Machinery, Accept/Reject Rentals, Revenue & Payouts |
-| 🏭 **Godown Owner** | `godown@krishilink.com` | `01713000001` | List Warehouses, Capacity Management, Revenue & Invoices |
+Official references: [Supabase PostgreSQL connections](https://supabase.com/docs/guides/database/connecting-to-postgres), [Supabase Auth](https://supabase.com/docs/guides/auth), [Storage access control](https://supabase.com/docs/guides/storage/security/access-control), [Npgsql date/time mapping](https://www.npgsql.org/doc/types/datetime.html).
 
 ---
 

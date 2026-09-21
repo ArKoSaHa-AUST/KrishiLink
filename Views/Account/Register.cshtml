@@ -123,11 +123,11 @@
                         <span asp-validation-for="PhoneNumber" class="text-danger small mt-1 d-block ms-2" id="phoneError"></span>
                     </div>
 
-                    <!-- Email (Optional) -->
+                    <!-- Verification email -->
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <label asp-for="Email" class="form-label fw-semibold small text-dark mb-0">@L["Email Address"]</label>
-                            <span class="text-muted small" style="font-size: 0.75rem;">@L["Optional"]</span>
+                            <span class="text-danger small">*</span>
                         </div>
                         <div class="input-group">
                             <span class="input-group-text bg-white text-muted border-end-0 rounded-start-pill ps-3">
@@ -137,8 +137,9 @@
                                    class="form-control border-start-0 rounded-end-pill pe-3 py-2"
                                    placeholder="name@example.com"
                                    autocomplete="email"
-                                   type="email" />
+                                   type="email" required />
                         </div>
+                        <small class="text-muted">Required for email verification and password recovery.</small>
                         <span asp-validation-for="Email" class="text-danger small mt-1 d-block ms-2"></span>
                     </div>
 
@@ -210,7 +211,7 @@
                             <input asp-for="Password"
                                    type="password"
                                    class="form-control border-start-0 border-end-0 py-2"
-                                   placeholder="@L["At least 6 characters"]"
+                                   placeholder="@L["At least 8 characters"]"
                                    id="passwordInput"
                                    autocomplete="new-password"
                                    required />
@@ -223,7 +224,7 @@
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-1 ms-2">
                             <span asp-validation-for="Password" class="text-danger small" id="passwordError"></span>
-                            <span class="text-muted small ms-auto" id="passwordLengthHint" style="font-size: 0.75rem;">@L["Min. 6 chars"]</span>
+                            <span class="text-muted small ms-auto" id="passwordLengthHint" style="font-size: 0.75rem;">@L["Min. 8 chars"]</span>
                         </div>
                     </div>
 

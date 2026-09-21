@@ -4,26 +4,37 @@ using Microsoft.AspNetCore.Mvc;
 using KrishiLink.BLL.Services;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
+using KrishiLink.DAL;
+using Microsoft.EntityFrameworkCore;
 
 namespace KrishiLink.Controllers
 {
-    public class AccountController : Controller
+    public partial class AccountController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly SupabaseAuthClient _auth;
+        private readonly SupabaseSessionService _sessions;
+        private readonly SupabaseAdminBootstrap _adminBootstrap;
+        private readonly ApplicationDbContext _db;
         private readonly IOwnerVerificationService _verificationService;
         private readonly IWebHostEnvironment _env;
         private readonly ILogger<AccountController> _logger;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager,
+            SupabaseAuthClient auth,
+            SupabaseSessionService sessions,
+            SupabaseAdminBootstrap adminBootstrap,
+            ApplicationDbContext db,
             IOwnerVerificationService verificationService,
             IWebHostEnvironment env,
             ILogger<AccountController> logger)
         {
             _userManager = userManager;
-            _signInManager = signInManager;
+            _auth = auth;
+            _sessions = sessions;
+            _adminBootstrap = adminBootstrap;
+            _db = db;
             _verificationService = verificationService;
             _env = env;
             _logger = logger;
@@ -38,7 +49,7 @@ namespace KrishiLink.Controllers
                 return RedirectBasedOnRole(role);
             }
 
-            var validRoles = AppRoles.All;
+            var validRoles = new[] { AppRoles.Farmer, AppRoles.EquipmentOwner, AppRoles.GodownOwner };
             var selectedRole = !string.IsNullOrEmpty(role) && validRoles.Contains(role, StringComparer.OrdinalIgnoreCase)
                 ? validRoles.First(r => r.Equals(role, StringComparison.OrdinalIgnoreCase))
                 : "Farmer";
@@ -53,6 +64,7 @@ namespace KrishiLink.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [ServiceFilter(typeof(SupabaseAuthRateLimitFilter))]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
             if (!ModelState.IsValid)
@@ -60,24 +72,21 @@ namespace KrishiLink.Controllers
                 return View(model);
             }
 
-            // Normalise role string
-            if (!AppRoles.All.Contains(model.Role))
+            if (model.Role != AppRoles.Farmer && model.Role != AppRoles.EquipmentOwner && model.Role != AppRoles.GodownOwner)
             {
-                model.Role = AppRoles.Farmer;
+                ModelState.AddModelError(nameof(model.Role), "Please select a public account role.");
+                return View(model);
             }
 
-            // Check if phone already registered
-            var existingByPhone = _userManager.Users.FirstOrDefault(u => u.PhoneNumber == model.PhoneNumber);
+            var phone = NormalizePhone(model.PhoneNumber);
+            var existingByPhone = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phone);
             if (existingByPhone != null)
             {
                 ModelState.AddModelError(nameof(model.PhoneNumber), "An account with this phone number is already registered.");
                 return View(model);
             }
 
-            // Check if email already registered if provided
-            var emailAddress = !string.IsNullOrWhiteSpace(model.Email)
-                ? model.Email.Trim()
-                : $"{model.PhoneNumber.Trim()}@krishilink.local";
+            var emailAddress = model.Email!.Trim();
 
             var existingByEmail = await _userManager.FindByEmailAsync(emailAddress);
             if (existingByEmail != null)
@@ -86,12 +95,26 @@ namespace KrishiLink.Controllers
                 return View(model);
             }
 
-            // Create ApplicationUser
+            SupabaseAuthUser remote;
+            try
+            {
+                // Admin create rejects duplicate remote accounts and returns only a newly-created UUID.
+                // This makes compensation safe; public /signup may conceal duplicates with a fake user.
+                remote = await _auth.CreateUserAsync(emailAddress, model.Password);
+            }
+            catch (SupabaseAuthException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return View(model);
+            }
+
             var user = new ApplicationUser
             {
+                Id = remote.Id,
                 UserName = emailAddress,
                 Email = emailAddress,
-                PhoneNumber = model.PhoneNumber.Trim(),
+                EmailConfirmed = false,
+                PhoneNumber = phone,
                 FullName = model.FullName.Trim(),
                 UserRole = model.Role,
                 Location = model.Location.Trim(),
@@ -101,37 +124,56 @@ namespace KrishiLink.Controllers
                 CreatedAt = DateTime.UtcNow
             };
 
-            var result = await _userManager.CreateAsync(user, model.Password);
-            if (result.Succeeded)
+            try
             {
-                // Assign role
-                await _userManager.AddToRoleAsync(user, model.Role);
-
-                // Sign in user
-                await _signInManager.SignInAsync(user, isPersistent: true);
-
-                // Walk the new user through the short setup before their dashboard
-                return RedirectToAction(nameof(Onboarding));
+                await using var transaction = await _db.Database.BeginTransactionAsync();
+                var created = await _userManager.CreateAsync(user);
+                if (!created.Succeeded) throw new InvalidOperationException("Profile creation failed.");
+                var assigned = await _userManager.AddToRoleAsync(user, model.Role);
+                if (!assigned.Succeeded) throw new InvalidOperationException("Role assignment failed.");
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Registration profile creation failed ({ErrorType}).", ex.GetType().Name);
+                bool? committed = null;
+                try
+                {
+                    // A lost commit acknowledgement must not make us delete a successfully linked Auth user.
+                    committed = await _userManager.Users.AsNoTracking().AnyAsync(u => u.Id == remote.Id);
+                }
+                catch (Exception)
+                {
+                    _logger.LogError("Registration commit outcome is unknown for Supabase user {UserId}; reconcile before retrying.", remote.Id);
+                }
+                if (committed == true)
+                {
+                    TempData["SuccessMessage"] = "Your account was created. Use Resend code to verify your email.";
+                    return RedirectToAction(nameof(VerifyEmail));
+                }
+                if (committed == false)
+                {
+                    try { await _auth.DeleteUserAsync(remote.Id); }
+                    catch (SupabaseAuthException)
+                    {
+                        _logger.LogError("Registration compensation failed for Supabase user {UserId}; remove the unlinked Auth account before retrying.", remote.Id);
+                    }
+                }
+                ModelState.AddModelError(string.Empty, "Registration could not be completed. Please retry or contact support.");
+                return View(model);
             }
 
-            // Append Identity errors to ModelState
-            foreach (var error in result.Errors)
+            try
             {
-                if (error.Code.Contains("Password", StringComparison.OrdinalIgnoreCase))
-                {
-                    ModelState.AddModelError(nameof(model.Password), error.Description);
-                }
-                else if (error.Code.Contains("Email", StringComparison.OrdinalIgnoreCase) || error.Code.Contains("UserName", StringComparison.OrdinalIgnoreCase))
-                {
-                    ModelState.AddModelError(nameof(model.Email), error.Description);
-                }
-                else
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
+                await _auth.SendConfirmationAsync(emailAddress);
+                TempData["SuccessMessage"] = "Account created. Check your email for a verification code.";
             }
-
-            return View(model);
+            catch (SupabaseAuthException)
+            {
+                // Keep both records: the user can safely resend without recreating either account.
+                TempData["ErrorMessage"] = "Account created, but the verification email could not be sent. Use Resend code.";
+            }
+            return RedirectToAction(nameof(VerifyEmail));
         }
 
         [HttpGet]
@@ -153,6 +195,7 @@ namespace KrishiLink.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [ServiceFilter(typeof(SupabaseAuthRateLimitFilter))]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (!ModelState.IsValid)
@@ -162,22 +205,28 @@ namespace KrishiLink.Controllers
 
             var identifier = model.Identifier.Trim();
 
-            // Attempt to find user by Phone Number or Email/UserName
-            ApplicationUser? user = _userManager.Users.FirstOrDefault(u => u.PhoneNumber == identifier);
-            if (user == null)
+            var email = identifier;
+            if (!identifier.Contains('@'))
             {
-                user = await _userManager.FindByEmailAsync(identifier) ?? await _userManager.FindByNameAsync(identifier);
+                var phone = NormalizePhone(identifier);
+                var byPhone = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phone);
+                if (byPhone == null)
+                {
+                    ModelState.AddModelError(string.Empty, "Unable to sign in. Check your credentials, verify your email, or try again shortly.");
+                    return View(model);
+                }
+                email = byPhone.Email!;
             }
 
-            if (user == null)
+            SupabaseAuthTokens? tokens = null;
+            var signedIn = false;
+            try
             {
-                ModelState.AddModelError(nameof(model.Identifier), "Incorrect phone number or password.");
-                return View(model);
-            }
-
-            var result = await _signInManager.PasswordSignInAsync(user.UserName!, model.Password, model.RememberMe, lockoutOnFailure: false);
-            if (result.Succeeded)
-            {
+                tokens = await _auth.SignInAsync(email, model.Password);
+                var user = await _adminBootstrap.ResolveUserAsync(tokens.AccessToken);
+                if (user == null) throw new SupabaseAuthException("Account profile not found. Contact support.");
+                await _sessions.SignInAsync(HttpContext, user, tokens, model.RememberMe);
+                signedIn = true;
                 if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
                 {
                     return Redirect(model.ReturnUrl);
@@ -187,8 +236,14 @@ namespace KrishiLink.Controllers
                     ? RedirectToAction(nameof(Onboarding))
                     : RedirectBasedOnRole(user.UserRole);
             }
-
-            ModelState.AddModelError(nameof(model.Password), "Incorrect phone number or password.");
+            catch (SupabaseAuthException)
+            {
+                ModelState.AddModelError(string.Empty, "Unable to sign in. Check your credentials, verify your email, or try again shortly.");
+            }
+            finally
+            {
+                if (!signedIn && tokens != null) await RevokeProofSessionAsync(tokens.AccessToken);
+            }
             return View(model);
         }
 
@@ -196,8 +251,20 @@ namespace KrishiLink.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await _signInManager.SignOutAsync();
+            if (!await _sessions.SignOutAsync(HttpContext))
+            {
+                TempData["ErrorMessage"] = "You are signed out of KrishiLink. The authentication provider was unavailable, so its session could not be revoked.";
+                return RedirectToAction(nameof(Login));
+            }
             return RedirectToAction("Index", "Home");
+        }
+
+        private static string NormalizePhone(string value)
+        {
+            var phone = value.Trim().TrimStart('+');
+            if (phone.StartsWith("880", StringComparison.Ordinal)) phone = phone[2..];
+            if (phone.Length == 10 && phone.StartsWith('1')) phone = "0" + phone;
+            return phone;
         }
 
         [HttpGet]
@@ -295,6 +362,7 @@ namespace KrishiLink.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
+        [ServiceFilter(typeof(SupabaseAuthRateLimitFilter))]
         public async Task<IActionResult> UpdateProfile(UserProfileViewModel model)
         {
             var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
@@ -312,20 +380,50 @@ namespace KrishiLink.Controllers
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser is null) return Challenge();
 
+            var phone = NormalizePhone(model.PhoneNumber);
+            if (await _userManager.Users.AnyAsync(u => u.Id != currentUser.Id && u.PhoneNumber == phone))
+            {
+                if (isAjax) return Json(new { success = false, message = "This phone number is already registered." });
+                ModelState.AddModelError(nameof(model.PhoneNumber), "This phone number is already registered.");
+                return View("Profile", model);
+            }
+            var emailChanged = !string.Equals(currentUser.Email, model.Email?.Trim(), StringComparison.OrdinalIgnoreCase);
+            if (emailChanged && await _userManager.FindByEmailAsync(model.Email!.Trim()) is { } duplicate && duplicate.Id != currentUser.Id)
+            {
+                if (isAjax) return Json(new { success = false, message = "This email address is already registered." });
+                ModelState.AddModelError(nameof(model.Email), "This email address is already registered.");
+                return View("Profile", model);
+            }
             currentUser.FullName = model.FullName.Trim();
-            currentUser.PhoneNumber = model.PhoneNumber.Trim();
-            currentUser.Email = !string.IsNullOrWhiteSpace(model.Email) ? model.Email.Trim() : currentUser.Email;
+            currentUser.PhoneNumber = phone;
             currentUser.Location = model.Location.Trim();
             currentUser.BusinessOrFarmName = model.BusinessOrFarmName?.Trim();
 
             var result = await _userManager.UpdateAsync(currentUser);
             if (result.Succeeded)
             {
+                var message = "Profile updated successfully.";
+                if (emailChanged)
+                {
+                    var session = _sessions.Current(User);
+                    if (session == null) return Challenge();
+                    try
+                    {
+                        await _auth.ChangeEmailAsync(session.Tokens.AccessToken, model.Email!.Trim());
+                        message += " Confirm the codes sent to your old and new email addresses using Verify email. Your sign-in email stays unchanged until confirmation.";
+                    }
+                    catch (SupabaseAuthException ex)
+                    {
+                        if (isAjax) return Json(new { success = false, message = "Other profile changes were saved. Email change failed: " + ex.Message });
+                        TempData["ErrorMessage"] = "Other profile changes were saved. Email change failed: " + ex.Message;
+                        return RedirectToAction(nameof(Profile));
+                    }
+                }
                 if (isAjax)
                 {
-                    return Json(new { success = true, message = "Profile updated successfully." });
+                    return Json(new { success = true, message, email = currentUser.Email });
                 }
-                TempData["SuccessMessage"] = "Profile updated successfully.";
+                TempData["SuccessMessage"] = message;
                 return RedirectToAction(nameof(Profile));
             }
 
@@ -341,6 +439,7 @@ namespace KrishiLink.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
+        [ServiceFilter(typeof(SupabaseAuthRateLimitFilter))]
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
         {
             if (!ModelState.IsValid)
@@ -352,14 +451,24 @@ namespace KrishiLink.Controllers
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser is null) return Challenge();
 
-            var result = await _userManager.ChangePasswordAsync(currentUser, model.CurrentPassword, model.NewPassword);
-            if (result.Succeeded)
+            SupabaseAuthTokens? proof = null;
+            try
             {
-                await _signInManager.RefreshSignInAsync(currentUser);
-                return Json(new { success = true, message = "Password updated successfully." });
+                proof = await _auth.SignInAsync(currentUser.Email!, model.CurrentPassword);
+                var remote = await _auth.GetUserAsync(proof.AccessToken);
+                if (remote.Id != currentUser.Id) throw new SupabaseAuthException("Account verification failed.");
+                await _auth.ChangePasswordAsync(proof.AccessToken, model.NewPassword);
+                await InvalidatePasswordSessionsAsync(currentUser, proof.AccessToken);
+                return Json(new { success = true, message = "Password updated. All KrishiLink sessions have been signed out; please log in with your new password.", redirectUrl = Url.Action(nameof(Login)) });
             }
-
-            return Json(new { success = false, message = string.Join(" ", result.Errors.Select(e => e.Description)) });
+            catch (SupabaseAuthException ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+            finally
+            {
+                if (proof != null) await RevokeProofSessionAsync(proof.AccessToken);
+            }
         }
 
         // ==========================================
@@ -400,12 +509,13 @@ namespace KrishiLink.Controllers
         }
 
         /// <summary>
-        /// Serves identity verification documents securely from private storage (App_Data).
+        /// Streams identity documents from the private Supabase bucket.
         /// Only accessible to the document owner or an Admin.
         /// </summary>
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> VerificationDocument(string kind, string? userId = null)
+        public async Task<IActionResult> VerificationDocument(
+            [FromServices] IFileStorageService files, string kind, string? userId = null)
         {
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser is null) return Challenge();
@@ -431,46 +541,11 @@ namespace KrishiLink.Controllers
 
             if (string.IsNullOrWhiteSpace(relativePath)) return NotFound();
 
-            var cleanRelative = relativePath.TrimStart('~', '/');
-            if (cleanRelative.StartsWith("App_Data/", StringComparison.OrdinalIgnoreCase))
-            {
-                cleanRelative = cleanRelative.Substring("App_Data/".Length);
-            }
-            else if (cleanRelative.StartsWith("uploads/", StringComparison.OrdinalIgnoreCase))
-            {
-                // Fallback for any legacy file in wwwroot
-                var legacyPath = Path.Combine(_env.WebRootPath, cleanRelative.Replace('/', Path.DirectorySeparatorChar));
-                if (System.IO.File.Exists(legacyPath))
-                {
-                    Response.Headers["Cache-Control"] = "private, no-store";
-                    var legacyMime = GetMimeType(legacyPath);
-                    return PhysicalFile(legacyPath, legacyMime);
-                }
-            }
-
-            var fullPath = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "App_Data", cleanRelative.Replace('/', Path.DirectorySeparatorChar)));
-            var appDataDir = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "App_Data"));
-
-            if (!fullPath.StartsWith(appDataDir, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(fullPath))
-            {
-                return NotFound();
-            }
-
+            var document = await files.ReadPrivateFileAsync(relativePath, targetUserId, HttpContext.RequestAborted);
+            if (document is null) return NotFound();
             Response.Headers["Cache-Control"] = "private, no-store";
-            var mimeType = GetMimeType(fullPath);
-            return PhysicalFile(fullPath, mimeType);
-        }
-
-        private static string GetMimeType(string path)
-        {
-            var ext = Path.GetExtension(path).ToLowerInvariant();
-            return ext switch
-            {
-                ".jpg" or ".jpeg" => "image/jpeg",
-                ".png" => "image/png",
-                ".webp" => "image/webp",
-                _ => "application/octet-stream"
-            };
+            Response.Headers["X-Content-Type-Options"] = "nosniff";
+            return File(document.Content, document.ContentType);
         }
 
         /// <summary>
@@ -520,6 +595,10 @@ namespace KrishiLink.Controllers
 
         private IActionResult RedirectBasedOnRole(string? role)
         {
+            if (string.Equals(role, AppRoles.Admin, StringComparison.OrdinalIgnoreCase))
+            {
+                return RedirectToAction("Index", "Home");
+            }
             if (string.Equals(role, AppRoles.EquipmentOwner, StringComparison.OrdinalIgnoreCase))
             {
                 return RedirectToAction("Index", "EquipmentOwner");

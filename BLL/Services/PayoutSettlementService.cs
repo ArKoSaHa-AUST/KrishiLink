@@ -46,7 +46,8 @@ namespace KrishiLink.BLL.Services
 
         public async Task<int> SettleDuePayoutsAsync(bool ignoreDelay = false, string? ownerId = null, CancellationToken ct = default)
         {
-            var cutoff = DateTime.Now - (_options.SettlementDelay ?? TimeSpan.FromMinutes(30));
+            await using var transaction = await WorkflowTransaction.BeginAsync(_db, ct);
+            var cutoff = DateTime.UtcNow - (_options.SettlementDelay ?? TimeSpan.FromMinutes(30));
             var query = _db.Transactions.Include(t => t.User).Where(t => t.Status == PayoutStatus.Processing);
             if (!ignoreDelay) query = query.Where(t => t.TransactionDate <= cutoff);
             if (!string.IsNullOrWhiteSpace(ownerId)) query = query.Where(t => t.UserId == ownerId);
@@ -54,7 +55,7 @@ namespace KrishiLink.BLL.Services
             var due = await query.ToListAsync(ct);
             if (due.Count == 0) return 0;
 
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow;
             foreach (var t in due)
             {
                 t.SettledOn = now;
@@ -74,6 +75,7 @@ namespace KrishiLink.BLL.Services
                 }
             }
             await _db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
 
             foreach (var t in due)
             {

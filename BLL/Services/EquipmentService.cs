@@ -93,28 +93,35 @@ namespace KrishiLink.BLL.Services
 
             if (!string.IsNullOrWhiteSpace(c.SearchTerm))
             {
-                var term = c.SearchTerm.Trim();
-                query = query.Where(e => e.Name.Contains(term) || e.Category.Contains(term)
-                    || e.Location.Contains(term) || (e.District != null && e.District.Contains(term))
-                    || e.Description.Contains(term) || e.Owner!.FullName.Contains(term));
+                var term = PostgresSearch.Contains(c.SearchTerm.Trim());
+                query = query.Where(e => EF.Functions.ILike(e.Name, term, "\\") || EF.Functions.ILike(e.Category, term, "\\")
+                    || EF.Functions.ILike(e.Location, term, "\\") || (e.District != null && EF.Functions.ILike(e.District, term, "\\"))
+                    || EF.Functions.ILike(e.Description, term, "\\") || EF.Functions.ILike(e.Owner!.FullName, term, "\\"));
             }
             if (c.SelectedCategories is { Count: > 0 })
-                query = query.Where(e => c.SelectedCategories.Contains(e.Category));
+            {
+                var categories = c.SelectedCategories.Select(x => x.ToLowerInvariant()).ToArray();
+                query = query.Where(e => categories.Contains(e.Category.ToLower()));
+            }
 
             var rawDistrict = !string.IsNullOrWhiteSpace(c.District) ? c.District : c.Location;
             if (!string.IsNullOrWhiteSpace(rawDistrict))
             {
                 var targetDistrict = OnboardingOptions.GuessDistrict(rawDistrict.Trim()) ?? rawDistrict.Trim();
                 var alt = GetDistrictAlias(targetDistrict);
+                var districtPattern = PostgresSearch.Literal(targetDistrict);
+                var locationPattern = PostgresSearch.Contains(targetDistrict);
                 if (!string.IsNullOrEmpty(alt) && !alt.Equals(targetDistrict, StringComparison.OrdinalIgnoreCase))
                 {
-                    query = query.Where(e => (e.District != null && (e.District == targetDistrict || e.District == alt))
-                        || (e.District == null && (e.Location.Contains(targetDistrict) || e.Location.Contains(alt))));
+                    var aliasPattern = PostgresSearch.Literal(alt);
+                    var aliasLocationPattern = PostgresSearch.Contains(alt);
+                    query = query.Where(e => (e.District != null && (EF.Functions.ILike(e.District, districtPattern, "\\") || EF.Functions.ILike(e.District, aliasPattern, "\\")))
+                        || (e.District == null && (EF.Functions.ILike(e.Location, locationPattern, "\\") || EF.Functions.ILike(e.Location, aliasLocationPattern, "\\"))));
                 }
                 else
                 {
-                    query = query.Where(e => (e.District != null && e.District == targetDistrict)
-                        || (e.District == null && e.Location.Contains(targetDistrict)));
+                    query = query.Where(e => (e.District != null && EF.Functions.ILike(e.District, districtPattern, "\\"))
+                        || (e.District == null && EF.Functions.ILike(e.Location, locationPattern, "\\")));
                 }
             }
 
@@ -393,6 +400,7 @@ namespace KrishiLink.BLL.Services
             string? promoCode = null,
             int? pointsToRedeem = null)
         {
+            await using var transaction = await _bookings.BeginWorkflowAsync();
             if (start is null || end is null) return ("Please choose a start and end date.", null);
             var s = start.Value.Date;
             var t = end.Value.Date;
@@ -435,7 +443,7 @@ namespace KrishiLink.BLL.Services
                 EndDate = t,
                 Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim(),
                 Status = BookingStatus.Pending,
-                RequestedOn = DateTime.Now,
+                RequestedOn = DateTime.UtcNow,
                 DiscountAmount = discountAmount,
                 AppliedPromoCode = appliedPromo,
                 PointsUsed = pointsUsed
@@ -447,16 +455,18 @@ namespace KrishiLink.BLL.Services
             // If points or promo were redeemed, deduct from farmer's balance and record ledger transaction
             if (pointsUsed > 0 || discountAmount > 0)
             {
-                await _loyalty.RedeemPointsForBookingAsync(
+                var redemption = await _loyalty.RedeemPointsForBookingAsync(
                     farmerId,
-                    appliedPromo,
-                    pointsUsed,
+                    promoCode,
+                    pointsToRedeem,
                     gross,
                     "Equipment",
                     newBooking.Id,
                     $"#EQ-{newBooking.Id:D4}"
                 );
+                if (!redemption.Success) return (redemption.Error ?? "The loyalty discount could not be applied.", null);
             }
+            await transaction.CommitAsync();
 
             // Notify equipment owner of new pending rental request
             var farmer = await _users.FirstOrDefaultAsync(u => u.Id == farmerId);
@@ -564,6 +574,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<DecisionResult> RespondAsync(string ownerId, int bookingId, string decision, string? reason)
         {
+            await using var transaction = await _bookings.BeginWorkflowAsync();
             var booking = await _bookings.QueryTracked().Include(b => b.Equipment).Include(b => b.Payment)
                 .FirstOrDefaultAsync(b => b.Id == bookingId && b.Equipment!.OwnerId == ownerId);
             if (booking is null) return DecisionResult.Fail("This request could not be found.");
@@ -582,6 +593,7 @@ namespace KrishiLink.BLL.Services
             }
 
             var autoRejected = new List<int>();
+            var rejectionNotifications = new List<NotificationRequest>();
             if (next == BookingStatus.Accepted)
             {
                 var clash = await FindConflictAsync(booking.EquipmentId, booking.StartDate, booking.EndDate, excludeBookingId: booking.Id);
@@ -596,12 +608,15 @@ namespace KrishiLink.BLL.Services
                 {
                     loser.Status = BookingStatus.Rejected;
                     loser.RejectReason = BookingWorkflow.AutoRejectReason;
-                    loser.UpdatedOn = DateTime.Now;
+                    loser.UpdatedOn = DateTime.UtcNow;
                     autoRejected.Add(loser.Id);
+
+                    if (loser.PointsUsed > 0 || loser.DiscountAmount > 0)
+                        await _loyalty.RefundPointsForCancelledBookingAsync(loser.FarmerId, "Equipment", loser.Id, $"#EQ-{loser.Id:D4}");
 
                     // Notify conflicting farmer of auto-rejection
                     var loserUser = await _users.FirstOrDefaultAsync(u => u.Id == loser.FarmerId);
-                    await _notifications.NotifyAsync(new NotificationRequest
+                    rejectionNotifications.Add(new NotificationRequest
                     {
                         UserId = loser.FarmerId,
                         Type = NotificationTypes.BookingRejected,
@@ -621,8 +636,19 @@ namespace KrishiLink.BLL.Services
                 equipment.DailyRate, BookingPricing.EquipmentGross(booking.StartDate, booking.EndDate, equipment.DailyRate), _revenue.PlatformCommissionRate);
             booking.Status = next!;
             booking.RejectReason = next == BookingStatus.Rejected && !string.IsNullOrWhiteSpace(reason) ? reason.Trim() : null;
-            booking.UpdatedOn = DateTime.Now;
+            booking.UpdatedOn = DateTime.UtcNow;
             await _bookings.SaveChangesAsync();
+
+            if (next == BookingStatus.Rejected && (booking.PointsUsed > 0 || booking.DiscountAmount > 0))
+                await _loyalty.RefundPointsForCancelledBookingAsync(booking.FarmerId, "Equipment", booking.Id, $"#EQ-{booking.Id:D4}");
+            else if (next == BookingStatus.Completed)
+                await _loyalty.AwardPointsForCompletedBookingAsync(
+                    booking.FarmerId, "Equipment", booking.Id,
+                    Math.Max(0m, (booking.AgreedGross ?? 0) - booking.DiscountAmount), $"#EQ-{booking.Id:D4}");
+
+            await transaction.CommitAsync();
+            foreach (var notification in rejectionNotifications)
+                await _notifications.NotifyAsync(notification);
 
             // Notify farmer of owner decision
             var farmer = await _users.FirstOrDefaultAsync(u => u.Id == booking.FarmerId);
@@ -660,12 +686,6 @@ namespace KrishiLink.BLL.Services
                     SendEmail = true,
                     RecipientEmail = farmer?.Email
                 });
-
-                // Refund points if promo/points were redeemed
-                if (booking.PointsUsed > 0 || booking.DiscountAmount > 0)
-                {
-                    await _loyalty.RefundPointsForCancelledBookingAsync(booking.FarmerId, "Equipment", booking.Id, $"#EQ-{booking.Id:D4}");
-                }
             }
             else if (next == BookingStatus.Completed)
             {
@@ -680,16 +700,6 @@ namespace KrishiLink.BLL.Services
                     DedupeKey = $"booking:equipment:{booking.Id}:Completed",
                     SendEmail = false
                 });
-
-                // Award loyalty points on what the farmer actually paid (snapshot), net of discounts
-                decimal grossSpent = (booking.AgreedGross ?? 0) - booking.DiscountAmount;
-                await _loyalty.AwardPointsForCompletedBookingAsync(
-                    booking.FarmerId,
-                    "Equipment",
-                    booking.Id,
-                    Math.Max(0m, grossSpent),
-                    $"#EQ-{booking.Id:D4}"
-                );
             }
 
             return DecisionResult.Ok(autoRejected);
@@ -721,6 +731,8 @@ namespace KrishiLink.BLL.Services
         {
             Equipment entity;
             List<string> previousImagesToDelete = new();
+            List<string> retainedUrls = new();
+            var storageFolder = $"{UploadFolder}/{ownerId}";
 
             if (model.IsEditMode)
             {
@@ -730,8 +742,10 @@ namespace KrishiLink.BLL.Services
 
                 // Identify removed images to delete after successful save
                 var previousImages = ListingFormat.Split(entity.ImageUrls);
-                var retainedExisting = model.ExistingImageUrls ?? new List<string>();
-                previousImagesToDelete = previousImages.Where(img => !retainedExisting.Contains(img, StringComparer.OrdinalIgnoreCase)).ToList();
+                retainedUrls = (model.ExistingImageUrls ?? new List<string>())
+                    .Where(img => previousImages.Contains(img, StringComparer.Ordinal))
+                    .Distinct(StringComparer.Ordinal).ToList();
+                previousImagesToDelete = previousImages.Where(img => !retainedUrls.Contains(img, StringComparer.Ordinal)).ToList();
             }
             else
             {
@@ -739,10 +753,10 @@ namespace KrishiLink.BLL.Services
                 await _equipment.AddAsync(entity);
             }
 
-            var savedNewImages = await _files.SaveImagesAsync(model.ImageFiles, UploadFolder);
+            var savedNewImages = await _files.SaveImagesAsync(model.ImageFiles, storageFolder);
+            var databaseSaveAttempted = false;
             try
             {
-                var retainedUrls = model.ExistingImageUrls ?? new List<string>();
                 var orderedImages = ArrangeImagesWithPrimary(retainedUrls, savedNewImages, model.PrimaryImageKey);
 
                 entity.Name = model.Name.Trim();
@@ -770,22 +784,33 @@ namespace KrishiLink.BLL.Services
                 entity.IsAvailable = model.IsAvailable;
                 entity.ImageUrls = ListingFormat.Join(orderedImages);
 
+                databaseSaveAttempted = true;
                 await _equipment.SaveChangesAsync();
-
-                // On successful commit, delete previously removed images from disk
-                _files.DeleteFiles(previousImagesToDelete);
 
                 model.Id = entity.Id;
                 model.Latitude = entity.Latitude;
                 model.Longitude = entity.Longitude;
-                return true;
             }
-            catch
+            catch (Exception saveError)
             {
-                // Rollback: clean up newly saved images so orphaned files are not left on disk
-                _files.DeleteFiles(savedNewImages);
+                if (databaseSaveAttempted)
+                    throw new InvalidOperationException(
+                        "Listing save outcome is uncertain. Uploaded images were retained for reconciliation.",
+                        saveError);
+                try
+                {
+                    await _files.DeleteFilesAsync(savedNewImages, storageFolder);
+                }
+                catch (Exception cleanupError)
+                {
+                    throw new AggregateException("Listing save and image cleanup failed.", saveError, cleanupError);
+                }
                 throw;
             }
+
+            // Cleanup errors after commit must never delete new images now referenced by the listing.
+            await _files.DeleteFilesAsync(previousImagesToDelete, storageFolder);
+            return true;
         }
 
         private static List<string> ArrangeImagesWithPrimary(List<string> existingUrls, List<string> newUrls, string? primaryKey)
@@ -859,6 +884,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<bool> SaveAvailabilityAsync(string ownerId, int equipmentId, DateTime month, IEnumerable<DateTime> blockedDates)
         {
+            await using var transaction = await _blockedDates.BeginWorkflowAsync();
             if (!await _equipment.Query().AnyAsync(x => x.Id == equipmentId && x.OwnerId == ownerId)) return false;
 
             var first = new DateTime(month.Year, month.Month, 1);
@@ -880,6 +906,7 @@ namespace KrishiLink.BLL.Services
                 await _blockedDates.AddAsync(new EquipmentBlockedDate { EquipmentId = equipmentId, Date = date });
 
             await _blockedDates.SaveChangesAsync();
+            await transaction.CommitAsync();
             return true;
         }
 

@@ -18,8 +18,11 @@ namespace KrishiLink.Models.ViewModels
         [Display(Name = "Phone Number")]
         public string PhoneNumber { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "A real email address is required for verification and password recovery.")]
         [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
-        [Display(Name = "Email (Optional)")]
+        [StringLength(254)]
+        [RegularExpression(@"(?i)^(?!.*@krishilink\.local$).+$", ErrorMessage = "Please use a real, deliverable email address.")]
+        [Display(Name = "Email")]
         public string? Email { get; set; }
 
         [Required(ErrorMessage = "Please select or specify your location.")]
@@ -31,7 +34,7 @@ namespace KrishiLink.Models.ViewModels
         public string? BusinessOrFarmName { get; set; }
 
         [Required(ErrorMessage = "Password is required.")]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters long.")]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters long.")]
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
         public string Password { get; set; } = string.Empty;
