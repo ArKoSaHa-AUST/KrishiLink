@@ -14,8 +14,10 @@ namespace KrishiLink.DAL.Repositories
         Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
         Task AddAsync(T entity);
         void Update(T entity);
+        void Detach(T entity);
         void Remove(T entity);
         void RemoveRange(IEnumerable<T> entities);
         Task<int> SaveChangesAsync();
+        Task<WorkflowTransaction> BeginWorkflowAsync(CancellationToken ct = default);
     }
 }

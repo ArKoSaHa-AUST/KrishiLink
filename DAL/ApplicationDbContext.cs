@@ -40,6 +40,7 @@ namespace KrishiLink.DAL
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+            builder.HasDefaultSchema(DatabaseConfiguration.Schema);
 
             builder.Entity<ApplicationUser>(u =>
             {
@@ -56,6 +57,7 @@ namespace KrishiLink.DAL
                 u.Property(x => x.OwnerReviewCount).HasDefaultValue(0);
                 u.HasIndex(x => x.IsVerified);
                 u.HasIndex(x => x.VerificationStatus);
+                u.HasIndex(x => x.PhoneNumber).IsUnique().HasFilter("\"PhoneNumber\" IS NOT NULL");
             });
 
             builder.Entity<Equipment>(e =>
@@ -245,7 +247,7 @@ namespace KrishiLink.DAL
                 n.HasIndex(x => new { x.UserId, x.CreatedAt });
                 n.HasIndex(x => new { x.UserId, x.DedupeKey })
                     .IsUnique()
-                    .HasFilter("[DedupeKey] IS NOT NULL");
+                    .HasFilter("\"DedupeKey\" IS NOT NULL");
 
                 n.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             });
@@ -264,6 +266,7 @@ namespace KrishiLink.DAL
 
                 v.HasIndex(x => new { x.UserId, x.Status });
                 v.HasIndex(x => x.SubmittedAt);
+                v.HasIndex(x => x.UserId).IsUnique().HasFilter("\"Status\" = 'Pending'");
                 v.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             });
 
@@ -427,6 +430,23 @@ namespace KrishiLink.DAL
                     .HasForeignKey(x => x.GodownBookingId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
+
+            // Calendar dates are not instants: they must not shift with a server's timezone.
+            var calendarDates = new HashSet<string>
+            {
+                "Date", "StartDate", "EndDate", "ServiceDate", "ForecastDate", "LastStatementSentMonth", "IntakeDate"
+            };
+            var utcConverter = new UtcDateTimeConverter();
+            var calendarConverter = new CalendarDateTimeConverter();
+            foreach (var entity in builder.Model.GetEntityTypes())
+                foreach (var property in entity.GetProperties())
+                {
+                    if ((Nullable.GetUnderlyingType(property.ClrType) ?? property.ClrType) != typeof(DateTime))
+                        continue;
+                    var isCalendarDate = calendarDates.Contains(property.Name);
+                    property.SetColumnType(isCalendarDate ? "date" : "timestamp with time zone");
+                    property.SetValueConverter(isCalendarDate ? calendarConverter : utcConverter);
+                }
         }
     }
 }

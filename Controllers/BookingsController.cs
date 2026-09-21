@@ -1,8 +1,10 @@
 using System.Security.Claims;
 using KrishiLink.BLL.Services;
+using KrishiLink.DAL;
 using KrishiLink.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace KrishiLink.Controllers
 {
@@ -12,12 +14,14 @@ namespace KrishiLink.Controllers
         private readonly IBookingService _bookings;
         private readonly IPaymentService _payments;
         private readonly IStorageIntakeService _intakeService;
+        private readonly ApplicationDbContext _db;
 
-        public BookingsController(IBookingService bookings, IPaymentService payments, IStorageIntakeService intakeService)
+        public BookingsController(IBookingService bookings, IPaymentService payments, IStorageIntakeService intakeService, ApplicationDbContext db)
         {
             _bookings = bookings;
             _payments = payments;
             _intakeService = intakeService;
+            _db = db;
         }
 
         /// <summary>GET: /Bookings — the farmer's rental and storage booking history.</summary>
@@ -176,6 +180,7 @@ namespace KrishiLink.Controllers
         [Authorize(Roles = AppRoles.Farmer)]
         public async Task<IActionResult> Gateway(string @ref)
         {
+            if (!await OwnsPaymentAsync(@ref)) return NotFound();
             var payment = await _payments.GetByGatewayReferenceAsync(@ref ?? string.Empty);
             if (payment is null) return NotFound();
             if (payment.Status != PaymentStatus.Pending)
@@ -193,6 +198,8 @@ namespace KrishiLink.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> PaymentCallback(string @ref, string outcome)
         {
+            if (!await OwnsPaymentAsync(@ref)) return NotFound();
+
             var (error, payment) = await _payments.CompleteAsync(@ref ?? string.Empty, outcome ?? string.Empty);
             if (payment is null) return NotFound();
 
@@ -202,6 +209,13 @@ namespace KrishiLink.Controllers
                 TempData["ErrorMessage"] = $"Payment failed: {error}. You can try again from your bookings.";
 
             return LocalRedirect(AppLinks.FarmerBookings(payment.BookingType, payment.BookingId));
+        }
+
+        private Task<bool> OwnsPaymentAsync(string? reference)
+        {
+            var farmerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return _db.Payments.AnyAsync(payment =>
+                payment.GatewayReference == reference && payment.FarmerId == farmerId);
         }
 
         /// <summary>GET: /Bookings/WarehouseReceipt/5 — download official Warehouse Receipt PDF as farmer.</summary>

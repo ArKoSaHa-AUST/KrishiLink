@@ -198,6 +198,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<(string? Error, decimal? Refunded)> CancelAsync(string farmerId, string bookingType, int bookingId)
         {
+            await using var transaction = await _rentals.BeginWorkflowAsync();
             if (bookingType.Equals("Equipment", StringComparison.OrdinalIgnoreCase))
             {
                 var b = await _rentals.QueryTracked()
@@ -214,6 +215,7 @@ namespace KrishiLink.BLL.Services
                 {
                     await _loyalty.RefundPointsForCancelledBookingAsync(farmerId, "Equipment", b.Id, $"#EQ-{b.Id:D4}");
                 }
+                await transaction.CommitAsync();
 
                 if (b.Equipment != null && !string.IsNullOrEmpty(b.Equipment.OwnerId))
                 {
@@ -248,6 +250,7 @@ namespace KrishiLink.BLL.Services
             {
                 await _loyalty.RefundPointsForCancelledBookingAsync(farmerId, "Godown", g.Id, $"#GD-{g.Id:D4}");
             }
+            await transaction.CommitAsync();
 
             if (g.Godown != null && !string.IsNullOrEmpty(g.Godown.OwnerId))
             {
@@ -278,7 +281,7 @@ namespace KrishiLink.BLL.Services
                 refunded = b.Payment.Amount;
             }
             b.Status = BookingStatus.Cancelled;
-            b.CancelledOn = b.UpdatedOn = DateTime.Now;
+            b.CancelledOn = b.UpdatedOn = DateTime.UtcNow;
             return refunded;
         }
 

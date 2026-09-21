@@ -516,6 +516,11 @@ namespace KrishiLink.BLL.Services
             int bookingId,
             string? bookingCode)
         {
+            await using var transaction = await _transactions.BeginWorkflowAsync();
+            if (await _transactions.Query().AnyAsync(t => t.UserId == farmerId && t.BookingType == bookingType
+                    && t.BookingId == bookingId && t.Type == LoyaltyTransactionTypes.Redeemed))
+                return (false, "Points have already been redeemed for this booking.", null);
+
             var valResult = await ValidateAndCalculateDiscountAsync(farmerId, promoCode, pointsToRedeem, totalBookingAmount);
             if (!valResult.IsValid || valResult.DiscountAmount <= 0)
             {
@@ -529,7 +534,7 @@ namespace KrishiLink.BLL.Services
             if (valResult.PointsRequired > 0)
             {
                 user.LoyaltyPoints = Math.Max(0, user.LoyaltyPoints - valResult.PointsRequired);
-                await _userManager.UpdateAsync(user);
+                await UpdateBalanceAsync(user);
             }
 
             // Record transaction ledger entry
@@ -550,6 +555,7 @@ namespace KrishiLink.BLL.Services
 
             await _transactions.AddAsync(tx);
             await _transactions.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             return (true, null, valResult);
         }
@@ -562,6 +568,7 @@ namespace KrishiLink.BLL.Services
             string? bookingCode = null)
         {
             if (string.IsNullOrEmpty(farmerId)) return;
+            await using var transaction = await _transactions.BeginWorkflowAsync();
 
             // Prevent duplicate awards
             bool alreadyAwarded = await _transactions.Query()
@@ -578,7 +585,7 @@ namespace KrishiLink.BLL.Services
             if (user == null) return;
 
             user.LoyaltyPoints += earnedPoints;
-            await _userManager.UpdateAsync(user);
+            await UpdateBalanceAsync(user);
 
             string codeDisplay = bookingCode ?? $"#{bookingId}";
             var tx = new LoyaltyPointTransaction
@@ -600,7 +607,7 @@ namespace KrishiLink.BLL.Services
             // Mark booking as points awarded
             if (bookingType.Equals("Equipment", StringComparison.OrdinalIgnoreCase))
             {
-                var eqBooking = await _equipmentBookings.Query().FirstOrDefaultAsync(b => b.Id == bookingId);
+                var eqBooking = await _equipmentBookings.QueryTracked().FirstOrDefaultAsync(b => b.Id == bookingId);
                 if (eqBooking != null)
                 {
                     eqBooking.PointsEarned = earnedPoints;
@@ -610,7 +617,7 @@ namespace KrishiLink.BLL.Services
             }
             else if (bookingType.Equals("Godown", StringComparison.OrdinalIgnoreCase))
             {
-                var gdBooking = await _godownBookings.Query().FirstOrDefaultAsync(b => b.Id == bookingId);
+                var gdBooking = await _godownBookings.QueryTracked().FirstOrDefaultAsync(b => b.Id == bookingId);
                 if (gdBooking != null)
                 {
                     gdBooking.PointsEarned = earnedPoints;
@@ -619,6 +626,7 @@ namespace KrishiLink.BLL.Services
                 }
             }
 
+            await transaction.CommitAsync();
             // In-app notification
             await _notifications.CreateAsync(
                 farmerId,
@@ -636,6 +644,10 @@ namespace KrishiLink.BLL.Services
             string? bookingCode = null)
         {
             if (string.IsNullOrEmpty(farmerId)) return;
+            await using var transaction = await _transactions.BeginWorkflowAsync();
+            if (await _transactions.Query().AnyAsync(t => t.UserId == farmerId && t.BookingType == bookingType
+                    && t.BookingId == bookingId && t.Type == LoyaltyTransactionTypes.Refunded))
+                return;
 
             // Find redemption transaction
             var redemptionTx = await _transactions.Query()
@@ -652,7 +664,7 @@ namespace KrishiLink.BLL.Services
             if (user == null) return;
 
             user.LoyaltyPoints += pointsToRefund;
-            await _userManager.UpdateAsync(user);
+            await UpdateBalanceAsync(user);
 
             string codeDisplay = bookingCode ?? $"#{bookingId}";
             var refundTx = new LoyaltyPointTransaction
@@ -669,6 +681,7 @@ namespace KrishiLink.BLL.Services
 
             await _transactions.AddAsync(refundTx);
             await _transactions.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             await _notifications.CreateAsync(
                 farmerId,
@@ -681,6 +694,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<LoyaltyVoucherViewModel> GenerateVoucherAsync(string farmerId, int pointsTier)
         {
+            await using var transaction = await _transactions.BeginWorkflowAsync();
             var tiers = GetConversionTiers();
             var tier = tiers.FirstOrDefault(t => t.PointsRequired == pointsTier)
                        ?? throw new InvalidOperationException("Invalid points tier specified.");
@@ -695,7 +709,7 @@ namespace KrishiLink.BLL.Services
 
             // Deduct points
             user.LoyaltyPoints -= tier.PointsRequired;
-            await _userManager.UpdateAsync(user);
+            await UpdateBalanceAsync(user);
 
             string randomSuffix = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
             string voucherCode = $"{tier.PromoCodePrefix}-{randomSuffix}";
@@ -713,6 +727,7 @@ namespace KrishiLink.BLL.Services
 
             await _transactions.AddAsync(tx);
             await _transactions.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             return new LoyaltyVoucherViewModel
             {
@@ -722,6 +737,13 @@ namespace KrishiLink.BLL.Services
                 GeneratedAt = tx.CreatedAt,
                 IsRedeemed = false
             };
+        }
+
+        private async Task UpdateBalanceAsync(ApplicationUser user)
+        {
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+                throw new DbUpdateConcurrencyException("The loyalty balance could not be saved. Please retry the operation.");
         }
 
         private static string FormatRelativeTime(DateTime dt)

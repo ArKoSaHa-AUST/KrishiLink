@@ -24,6 +24,7 @@ namespace KrishiLink.Models.ViewModels
     /// <summary>Read-only projection of a <c>Payment</c> for the sandbox gateway page and confirmations.</summary>
     public record PaymentSummary(
         int Id,
+        string FarmerId,
         string BookingType,
         int BookingId,
         string ItemName,

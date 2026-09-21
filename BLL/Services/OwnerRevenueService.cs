@@ -323,6 +323,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<string?> RequestPayoutAsync(string ownerId, string method, string? account)
         {
+            await using var transaction = await _repo.BeginWorkflowAsync();
             if (!PayoutHistoryViewModel.PayoutMethods.Contains(method)) return "Please choose a valid payout method.";
             if (string.IsNullOrWhiteSpace(account) || account.Trim().Length < 6) return "Please enter the account or wallet number the payout should go to.";
 
@@ -353,9 +354,10 @@ namespace KrishiLink.BLL.Services
                 PaymentMethod = method,
                 PayoutAccount = account.Trim(),
                 Status = PayoutStatus.Processing,
-                TransactionDate = DateTime.Now
+                TransactionDate = DateTime.UtcNow
             });
             _repo.MarkBookingsPaid(unpaid.Select(b => b.Id), payoutId);
+            await transaction.CommitAsync();
 
             var payoutLink = AppLinks.OwnerPayouts(_profile.ListingLabel);
 

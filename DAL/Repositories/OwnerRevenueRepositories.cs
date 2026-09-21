@@ -18,6 +18,9 @@ namespace KrishiLink.DAL.Repositories
 
         public abstract IReadOnlyList<RevenueListing> GetListings(string ownerId);
 
+        public Task<WorkflowTransaction> BeginWorkflowAsync(CancellationToken ct = default) =>
+            WorkflowTransaction.BeginAsync(Db, ct);
+
         public abstract IReadOnlyList<RevenueBooking> GetBookings(string ownerId);
 
         public IReadOnlyList<Transaction> GetPayouts(string ownerId) =>

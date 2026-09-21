@@ -43,6 +43,7 @@ namespace KrishiLink.DAL.Repositories
     /// </summary>
     public interface IOwnerRevenueRepository
     {
+        Task<WorkflowTransaction> BeginWorkflowAsync(CancellationToken ct = default);
         IReadOnlyList<RevenueListing> GetListings(string ownerId);
         IReadOnlyList<RevenueBooking> GetBookings(string ownerId);
 

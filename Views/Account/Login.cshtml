@@ -17,6 +17,7 @@
             </div>
 
             <div class="card-body p-4">
+                <partial name="_AuthMessages" />
                 <!-- Server-Side Error Alert -->
                 @if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty]?.Errors.Count > 0)
                 {
@@ -88,7 +89,7 @@
                                 @L["Remember me"]
                             </label>
                         </div>
-                        <a href="javascript:void(0)" class="small text-decoration-none fw-semibold" style="color: var(--krishi-primary);" onclick="KrishiToast.show('@L["Please contact helpline 16123 or support@krishilink.gov.bd to reset your password."]', { iconClass: 'bi-info-circle-fill text-success' })">
+                        <a asp-action="ForgotPassword" class="small text-decoration-none fw-semibold" style="color: var(--krishi-primary);">
                             @L["Forgot password?"]
                         </a>
                     </div>
@@ -106,6 +107,7 @@
 
                     <!-- Secondary Register Link -->
                     <div class="text-center pt-3 border-top">
+                        <p class="small"><a asp-action="VerifyEmail">Verify email or resend a code</a></p>
                         <p class="small text-muted mb-0">
                             @L["Don't have an account?"]
                             <a asp-controller="Account" asp-action="Register" class="fw-bold text-decoration-none ms-1" style="color: var(--krishi-primary);">

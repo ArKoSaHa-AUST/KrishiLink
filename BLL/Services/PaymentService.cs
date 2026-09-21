@@ -98,6 +98,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<(string? Error, string? RedirectUrl)> InitiateAsync(string farmerId, string bookingType, int bookingId, string method, string? account)
         {
+            await using var transaction = await _payments.BeginWorkflowAsync();
             var b = await LoadAsync(bookingType, bookingId);
             if (b is null || b.Booking.FarmerId != farmerId) return ("This booking could not be found.", null);
             if (b.Booking.Status != BookingStatus.Accepted) return ($"A {b.Booking.Status.ToLowerInvariant()} booking cannot be paid for.", null);
@@ -130,6 +131,7 @@ namespace KrishiLink.BLL.Services
             await _payments.AddAsync(payment);
             b.Booking.Payment = payment;
             await _payments.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             return (null, initiation.RedirectUrl);
         }
@@ -144,6 +146,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<(string? Error, PaymentSummary? Payment)> CompleteAsync(string gatewayReference, string outcome)
         {
+            await using var transaction = await _payments.BeginWorkflowAsync();
             var payment = await _payments.QueryTracked().FirstOrDefaultAsync(p => p.GatewayReference == gatewayReference);
             if (payment is null) return ("This payment could not be found.", null);
 
@@ -156,7 +159,7 @@ namespace KrishiLink.BLL.Services
 
             var result = await _gateway.VerifyAsync(payment, outcome);
             var booking = b?.Booking;
-            if (result.Succeeded && (booking is null || booking.Status != BookingStatus.Accepted))
+            if (result.Succeeded && (booking is null || booking.Status != BookingStatus.Accepted || booking.PaymentId != payment.Id))
                 result = new GatewayResult(false, "The booking is no longer awaiting payment.");
 
             if (result.Succeeded)
@@ -164,7 +167,7 @@ namespace KrishiLink.BLL.Services
                 payment.Status = PaymentStatus.Succeeded;
                 payment.PaidOn = DateTime.UtcNow;
                 booking!.Status = BookingWorkflow.Next(booking.Status, "paid")!;
-                booking.PaidOn = booking.UpdatedOn = DateTime.Now;
+                booking.PaidOn = booking.UpdatedOn = DateTime.UtcNow;
                 _ledger.Add(LedgerPostings.PaymentIn(payment));
             }
             else
@@ -178,6 +181,7 @@ namespace KrishiLink.BLL.Services
                 }
             }
             await _payments.SaveChangesAsync();
+            await transaction.CommitAsync();
 
             if (result.Succeeded && b is not null)
             {
@@ -283,6 +287,6 @@ namespace KrishiLink.BLL.Services
         }
 
         private static PaymentSummary ToSummary(Payment p, string itemName) =>
-            new(p.Id, p.BookingType, p.BookingId, itemName, p.Amount, p.Method, p.PayerAccount, p.Reference, p.GatewayReference ?? string.Empty, p.Status, p.PaidOn, p.FailureReason);
+            new(p.Id, p.FarmerId, p.BookingType, p.BookingId, itemName, p.Amount, p.Method, p.PayerAccount, p.Reference, p.GatewayReference ?? string.Empty, p.Status, p.PaidOn, p.FailureReason);
     }
 }

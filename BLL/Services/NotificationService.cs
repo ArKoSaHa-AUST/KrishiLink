@@ -94,15 +94,18 @@ namespace KrishiLink.BLL.Services
             try
             {
                 await _notifications.AddAsync(notification);
+                // EF's default automatic savepoint restores an ambient PostgreSQL transaction on failure.
                 await _notifications.SaveChangesAsync();
             }
             catch (DbUpdateException ex) when (DbErrors.IsUniqueViolation(ex))
             {
+                _notifications.Detach(notification);
                 _logger.LogInformation("Notification with DedupeKey {DedupeKey} for user {UserId} already exists. Skipping duplicate.", request.DedupeKey, request.UserId);
                 return false;
             }
             catch (Exception ex)
             {
+                _notifications.Detach(notification);
                 _logger.LogError(ex, "Failed to save notification for user {UserId}", request.UserId);
                 return false;
             }
