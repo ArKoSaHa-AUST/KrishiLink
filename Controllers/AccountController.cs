@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using KrishiLink.BLL.Services;
@@ -100,7 +100,9 @@ namespace KrishiLink.Controllers
             {
                 // Admin create rejects duplicate remote accounts and returns only a newly-created UUID.
                 // This makes compensation safe; public /signup may conceal duplicates with a fake user.
-                remote = await _auth.CreateUserAsync(emailAddress, model.Password);
+                // Email verification is disabled: the Auth user is created already confirmed so the
+                // account is usable immediately, without waiting for a confirmation email.
+                remote = await _auth.CreateUserAsync(emailAddress, model.Password, confirmed: true);
             }
             catch (SupabaseAuthException ex)
             {
@@ -113,7 +115,7 @@ namespace KrishiLink.Controllers
                 Id = remote.Id,
                 UserName = emailAddress,
                 Email = emailAddress,
-                EmailConfirmed = false,
+                EmailConfirmed = true,
                 PhoneNumber = phone,
                 FullName = model.FullName.Trim(),
                 UserRole = model.Role,
@@ -148,8 +150,8 @@ namespace KrishiLink.Controllers
                 }
                 if (committed == true)
                 {
-                    TempData["SuccessMessage"] = "Your account was created. Use Resend code to verify your email.";
-                    return RedirectToAction(nameof(VerifyEmail));
+                    TempData["SuccessMessage"] = "Your account was created. Please sign in to continue.";
+                    return RedirectToAction(nameof(Login));
                 }
                 if (committed == false)
                 {
@@ -163,17 +165,29 @@ namespace KrishiLink.Controllers
                 return View(model);
             }
 
+            // No verification step stands between registration and the app: sign the new account in
+            // straight away and continue to onboarding.
+            SupabaseAuthTokens? tokens = null;
+            var signedIn = false;
             try
             {
-                await _auth.SendConfirmationAsync(emailAddress);
-                TempData["SuccessMessage"] = "Account created. Check your email for a verification code.";
+                tokens = await _auth.SignInAsync(emailAddress, model.Password);
+                await _sessions.SignInAsync(HttpContext, user, tokens, persistent: false);
+                signedIn = true;
+                TempData["SuccessMessage"] = $"Welcome to KrishiLink, {user.FullName}! Your account has been created.";
+                return RedirectToAction(nameof(Onboarding));
             }
             catch (SupabaseAuthException)
             {
-                // Keep both records: the user can safely resend without recreating either account.
-                TempData["ErrorMessage"] = "Account created, but the verification email could not be sent. Use Resend code.";
+                // The profile is saved either way; the user can simply sign in.
+                _logger.LogWarning("Automatic sign-in after registration failed for {UserId}.", user.Id);
+                TempData["SuccessMessage"] = "Your account was created. Please sign in to continue.";
+                return RedirectToAction(nameof(Login));
             }
-            return RedirectToAction(nameof(VerifyEmail));
+            finally
+            {
+                if (!signedIn && tokens != null) await RevokeProofSessionAsync(tokens.AccessToken);
+            }
         }
 
         [HttpGet]

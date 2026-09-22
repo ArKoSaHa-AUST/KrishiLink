@@ -37,12 +37,8 @@ namespace KrishiLink.BLL.Services
 
         public async Task<RegionalWeatherForecast> GetForecastAsync(string district, CancellationToken cancellationToken = default)
         {
-            var cleanDistrict = string.IsNullOrWhiteSpace(district) ? "Bogra" : district.Trim();
-            if (cleanDistrict.Equals("Bogura", StringComparison.OrdinalIgnoreCase)) cleanDistrict = "Bogra";
-            if (cleanDistrict.Equals("Jessore", StringComparison.OrdinalIgnoreCase)) cleanDistrict = "Jashore";
-            if (cleanDistrict.Equals("Barisal", StringComparison.OrdinalIgnoreCase)) cleanDistrict = "Barishal";
-            if (cleanDistrict.Equals("Chittagong", StringComparison.OrdinalIgnoreCase)) cleanDistrict = "Chattogram";
-            if (cleanDistrict.Equals("Comilla", StringComparison.OrdinalIgnoreCase)) cleanDistrict = "Cumilla";
+            // One normalisation for every pre-2018 spelling, so the label shown matches the picker.
+            var cleanDistrict = BangladeshGeo.Canonical(district) is { Length: > 0 } name ? name : "Bogura";
 
             string cacheKey = $"Weather:Forecast:{cleanDistrict}";
             if (_cache.TryGetValue(cacheKey, out RegionalWeatherForecast? cached) && cached != null)

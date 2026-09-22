@@ -1,4 +1,4 @@
-@model KrishiLink.Models.ViewModels.GodownBrowseViewModel
+﻿@model KrishiLink.Models.ViewModels.GodownBrowseViewModel
 @using System.Text.Json
 @{
     ViewData["Title"] = L["Browse Godowns"];
@@ -18,7 +18,7 @@
 <!-- Page Header & Hero Banner -->
 <div class="krishi-browse-header rounded-4 p-4 p-md-5 mb-4 text-white position-relative overflow-hidden shadow-sm" style="background: linear-gradient(135deg, #193826 0%, #2d6a4f 60%, #40916c 100%);">
     <div class="row align-items-center position-relative" style="z-index: 2;">
-        <div class="col-lg-8">
+        <div class="col-lg-7">
             <span class="badge bg-light text-success fw-bold px-3 py-1.5 rounded-pill mb-2 mb-md-3">
                 <i class="bi bi-building-check me-1"></i> @L["Harvest Preservation Network"]
             </span>
@@ -27,16 +27,17 @@
                 @L["Protect your crops, grains, and perishable produce in verified climate-controlled cold storages and fumigated warehouses across Bangladesh."]
             </p>
         </div>
-        <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
-            <div class="d-inline-flex flex-column align-items-lg-end bg-white bg-opacity-10 border border-white border-opacity-25 rounded-3 p-3 text-white text-start">
-                <span class="small text-white-50">@L["Verified Facilities"]</span>
-                <span class="fs-4 fw-bold" id="heroListingCount">@L["{0} Storage Options", Model.TotalCount]</span>
-                <span class="small text-white-50"><i class="bi bi-shield-check text-warning me-1"></i>@L["Pest-controlled & insured"]</span>
+        <div class="col-lg-5 text-lg-end mt-3 mt-lg-0">
+            <div class="d-flex align-items-center justify-content-lg-end gap-4">
+                <!-- Decorative mark: a layout sibling of the stat card, so it can never overlap it -->
+                <i class="bi bi-buildings krishi-hero-mark" aria-hidden="true"></i>
+                <div class="d-inline-flex flex-column align-items-lg-end bg-white bg-opacity-10 border border-white border-opacity-25 rounded-3 p-3 text-white text-start">
+                    <span class="small text-white-50">@L["Verified Facilities"]</span>
+                    <span class="fs-4 fw-bold" id="heroListingCount">@L["{0} Storage Options", Model.TotalCount]</span>
+                    <span class="small text-white-50"><i class="bi bi-shield-check text-warning me-1"></i>@L["Pest-controlled & insured"]</span>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="position-absolute end-0 bottom-0 opacity-10" style="transform: translate(15%, 25%); pointer-events: none;">
-        <i class="bi bi-building" style="font-size: 22rem; color: #fff;"></i>
     </div>
 </div>
 
