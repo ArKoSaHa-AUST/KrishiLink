@@ -1,4 +1,4 @@
-@model KrishiLink.Models.ViewModels.EquipmentMaintenanceDashboardViewModel
+﻿@model KrishiLink.Models.ViewModels.EquipmentMaintenanceDashboardViewModel
 @{
     ViewData["Title"] = $"{L["Health Tracker"]} — {Model.EquipmentName}";
     ViewData["BodyClass"] = "krishi-body-gradient";
@@ -53,8 +53,8 @@
         </div>
     </div>
     <!-- Decorative background icon -->
-    <div class="position-absolute end-0 bottom-0 opacity-10" style="transform: translate(20%, 20%); pointer-events: none;">
-        <i class="bi bi-tools text-white" style="font-size: 14rem;"></i>
+    <div class="krishi-hero-watermark" aria-hidden="true">
+        <i class="bi bi-tools"></i>
     </div>
 </div>
 

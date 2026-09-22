@@ -1,3 +1,4 @@
+using KrishiLink.BLL.Helpers;
 using KrishiLink.BLL.Services;
 using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -226,21 +227,6 @@ namespace KrishiLink.Controllers
             };
         }
 
-        private static readonly Dictionary<string, string> AllowedDistricts = new(StringComparer.OrdinalIgnoreCase)
-        {
-            { "Bogra", "Bogra" },
-            { "Bogura", "Bogra" },
-            { "Dinajpur", "Dinajpur" },
-            { "Rangpur", "Rangpur" },
-            { "Rajshahi", "Rajshahi" },
-            { "Jessore", "Jessore" },
-            { "Barisal", "Barisal" },
-            { "Mymensingh", "Mymensingh" },
-            { "Comilla", "Comilla" },
-            { "Sylhet", "Sylhet" },
-            { "Dhaka", "Dhaka" }
-        };
-
         private static readonly Dictionary<string, string> AllowedCrops = new(StringComparer.OrdinalIgnoreCase)
         {
             { "All", "All" },
@@ -271,20 +257,17 @@ namespace KrishiLink.Controllers
         private static string SanitizeDistrict(string? district, string? division) =>
             SanitizeDistrict(!string.IsNullOrWhiteSpace(district) ? district : division);
 
+        /// <summary>
+        /// Accepts any of the 64 districts (or a pre-2018 spelling) and returns its current name.
+        /// Anything unrecognised falls back to Bogura rather than trusting the caller's string.
+        /// </summary>
         private static string SanitizeDistrict(string? input)
         {
-            if (!string.IsNullOrWhiteSpace(input))
-            {
-                var trimmed = input.Trim();
-                foreach (var entry in AllowedDistricts)
-                {
-                    if (trimmed.Contains(entry.Key, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return entry.Value;
-                    }
-                }
-            }
-            return "Bogra";
+            var canonical = BangladeshGeo.Canonical(input);
+            return !string.IsNullOrWhiteSpace(canonical)
+                && BangladeshGeo.AllDistricts.Contains(canonical, StringComparer.OrdinalIgnoreCase)
+                    ? canonical
+                    : "Bogura";
         }
 
         private static string SanitizeCrop(string? input)

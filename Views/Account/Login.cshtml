@@ -1,4 +1,4 @@
-@model KrishiLink.Models.ViewModels.LoginViewModel
+﻿@model KrishiLink.Models.ViewModels.LoginViewModel
 @{
     ViewData["Title"] = L["Login - Account Access"];
 }
@@ -107,7 +107,6 @@
 
                     <!-- Secondary Register Link -->
                     <div class="text-center pt-3 border-top">
-                        <p class="small"><a asp-action="VerifyEmail">Verify email or resend a code</a></p>
                         <p class="small text-muted mb-0">
                             @L["Don't have an account?"]
                             <a asp-controller="Account" asp-action="Register" class="fw-bold text-decoration-none ms-1" style="color: var(--krishi-primary);">
