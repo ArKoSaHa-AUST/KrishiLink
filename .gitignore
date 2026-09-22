@@ -26,6 +26,10 @@ appsettings.Development.json
 appsettings.Local.json
 *.Development.json
 *.secret.json
+.env
+.env.*
+!.env.example
+
 
 # User-uploaded listing images
 wwwroot/uploads/
