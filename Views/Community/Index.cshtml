@@ -1,0 +1,579 @@
+@model KrishiLink.Models.ViewModels.CommunityFeedViewModel
+@{
+    ViewData["Title"] = "কৃষক কমিউনিটি - KrishiLink";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/community.css" asp-append-version="true" />
+}
+
+<div class="community-hub-wrapper py-4 py-lg-5">
+    <div class="container-xl" style="max-width: 1440px;">
+        <div class="row g-4 g-xl-4 justify-content-center">
+
+            <!-- ========================================== -->
+            <!-- 1. LEFT SIDEBAR: PROFILE, NAV, GEO FILTER  -->
+            <!-- ========================================== -->
+            <aside class="col-lg-3 d-none d-lg-block community-sidebar-left">
+                <div class="sticky-top" style="top: 88px; z-index: 10;                    <!-- User Profile Card -->
+                    @if (Model.IsAuthenticated && Model.CurrentUser != null)
+                    {
+                        <div class="card community-sidebar-card p-4 mb-4">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div class="avatar-circle-lg bg-success text-white fw-bold rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 54px; height: 54px; font-size: 20px;">
+                                    <span>@Model.CurrentUser.FullName.Substring(0, 1).ToUpper()</span>
+                                </div>
+                                <div class="overflow-hidden">
+                                    <h6 class="community-author-name mb-1 text-truncate">@Model.CurrentUser.FullName</h6>
+                                    <div>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2.5 rounded-pill d-inline-flex align-items-center" style="font-size: 0.82rem;">
+                                            <i class="bi bi-patch-check-fill me-1.5" aria-hidden="true"></i>
+                                            <span>@(Model.UserBadgeTitle ?? "কৃষক")</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-muted d-flex align-items-center gap-2 mb-3" style="font-size: 0.9rem;">
+                                <i class="bi bi-geo-alt-fill text-success me-1.5" aria-hidden="true"></i>
+                                <span>@(Model.CurrentUser.District ?? "বাংলাদেশ")</span>
+                            </div>
+                            <div class="border-top pt-3 d-flex justify-content-between text-center" style="font-size: 0.95rem;">
+                                <div>
+                                    <span class="fw-bold text-success fs-5 d-block">@Model.CurrentUser.LoyaltyPoints</span>
+                                    <span class="text-muted" style="font-size: 0.8rem;">কৃষি পয়েন্ট</span>
+                                </div>
+                                <div class="border-start"></div>
+                                <div>
+                                    <span class="fw-bold text-dark fs-5 d-block">@Model.MyPostsCount</span>
+                                    <span class="text-muted" style="font-size: 0.8rem;">আমার পোস্ট</span>
+                                </div>
+                                <div class="border-start"></div>
+                                <div>
+                                    <span class="fw-bold text-dark fs-5 d-block">@Model.MySavedCount</span>
+                                    <span class="text-muted" style="font-size: 0.8rem;">সংরক্ষিত</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Navigation Category Tree -->
+                    <div class="card community-sidebar-card p-3 mb-4">
+                        <div class="px-2 pt-1 pb-2 community-section-title">
+                            ফিড ক্যাটাগরি
+                        </div>
+                        <div class="d-flex flex-column gap-1">
+                            <a href="@Url.Action("Index", new { category = "All", district = Model.CurrentDistrict, sort = Model.CurrentSort })" 
+                               class="community-nav-link @(Model.CurrentCategory == "All" ? "active" : "text-dark")">
+                                <span class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-grid-fill fs-5 me-2.5 @(Model.CurrentCategory == "All" ? "text-white" : "text-success")" aria-hidden="true"></i>
+                                    <span>সব আলোচনা ও আপডেট</span>
+                                </span>
+                                <span class="badge @(Model.CurrentCategory == "All" ? "bg-white text-success" : "bg-light text-muted border") rounded-pill px-2.5 py-1" style="font-size: 0.82rem;">@Model.TotalCount</span>
+                            </a>
+
+                            <a href="@Url.Action("Index", new { category = "HelpNeeded", district = Model.CurrentDistrict, sort = Model.CurrentSort })" 
+                               class="community-nav-link @(Model.CurrentCategory.Equals("HelpNeeded", StringComparison.OrdinalIgnoreCase) ? "active-danger" : "text-dark")">
+                                <span class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-exclamation-triangle-fill fs-5 me-2.5 @(Model.CurrentCategory.Equals("HelpNeeded", StringComparison.OrdinalIgnoreCase) ? "text-white" : "text-danger")" aria-hidden="true"></i>
+                                    <span>জরুরি সাহায্য ও রোগবালাই</span>
+                                </span>
+                                <span class="badge @(Model.CurrentCategory.Equals("HelpNeeded", StringComparison.OrdinalIgnoreCase) ? "bg-white text-danger" : "bg-danger text-white") rounded-pill px-2.5 py-1" style="font-size: 0.82rem;">@Model.UrgentNeedsCount</span>
+                            </a>
+
+                            <a href="@Url.Action("Index", new { category = "Experience", district = Model.CurrentDistrict, sort = Model.CurrentSort })" 
+                               class="community-nav-link @(Model.CurrentCategory.Equals("Experience", StringComparison.OrdinalIgnoreCase) ? "active" : "text-dark")">
+                                <span class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-journal-richtext fs-5 me-2.5 @(Model.CurrentCategory.Equals("Experience", StringComparison.OrdinalIgnoreCase) ? "text-white" : "text-success")" aria-hidden="true"></i>
+                                    <span>কৃষক অভিজ্ঞতা ও সাফল্য</span>
+                                </span>
+                                <span class="badge @(Model.CurrentCategory.Equals("Experience", StringComparison.OrdinalIgnoreCase) ? "bg-white text-success" : "bg-light text-muted border") rounded-pill px-2.5 py-1" style="font-size: 0.82rem;">@Model.ExperiencesCount</span>
+                            </a>
+
+                            <a href="@Url.Action("Index", new { category = "AgritechTip", district = Model.CurrentDistrict, sort = Model.CurrentSort })" 
+                               class="community-nav-link @(Model.CurrentCategory.Equals("AgritechTip", StringComparison.OrdinalIgnoreCase) ? "active" : "text-dark")">
+                                <span class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-lightbulb-fill fs-5 me-2.5 @(Model.CurrentCategory.Equals("AgritechTip", StringComparison.OrdinalIgnoreCase) ? "text-white" : "text-warning")" aria-hidden="true"></i>
+                                    <span>আধুনিক টিপস ও প্রযুক্তি</span>
+                                </span>
+                                <span class="badge @(Model.CurrentCategory.Equals("AgritechTip", StringComparison.OrdinalIgnoreCase) ? "bg-white text-success" : "bg-light text-muted border") rounded-pill px-2.5 py-1" style="font-size: 0.82rem;">@Model.TipsCount</span>
+                            </a>
+
+                            <a href="@Url.Action("Index", new { category = "Solved", district = Model.CurrentDistrict, sort = Model.CurrentSort })" 
+                               class="community-nav-link @(Model.CurrentCategory.Equals("Solved", StringComparison.OrdinalIgnoreCase) ? "active" : "text-dark")">
+                                <span class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-patch-check-fill fs-5 me-2.5 @(Model.CurrentCategory.Equals("Solved", StringComparison.OrdinalIgnoreCase) ? "text-white" : "text-success")" aria-hidden="true"></i>
+                                    <span>সমাধানকৃত আর্কাইভ</span>
+                                </span>
+                                <span class="badge @(Model.CurrentCategory.Equals("Solved", StringComparison.OrdinalIgnoreCase) ? "bg-white text-success" : "bg-light text-muted border") rounded-pill px-2.5 py-1" style="font-size: 0.82rem;">@Model.SolvedCount</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Regional District Selector -->
+                    <div class="card community-sidebar-card p-4 mb-4">
+                        <div class="community-section-title mb-2.5 d-flex align-items-center">
+                            <i class="bi bi-geo-alt-fill text-success me-2.5" aria-hidden="true"></i> <span>এলাকা ফিল্টার</span>
+                        </div>
+                        <form method="get" asp-action="Index">
+                            <input type="hidden" name="category" value="@Model.CurrentCategory" />
+                            <input type="hidden" name="sort" value="@Model.CurrentSort" />
+                            <select name="district" class="form-select py-2 px-3" style="font-size: 0.95rem; border-radius: 10px;" onchange="this.form.submit()">
+                                <option value="">সমগ্র বাংলাদেশ (সকল জেলা)</option>
+                                @foreach (var d in Model.DistrictList)
+                                {
+                                    <option value="@d" selected="@(d.Equals(Model.CurrentDistrict, StringComparison.OrdinalIgnoreCase))">@d</option>
+                                }
+                            </select>
+                        </form>
+                    </div>
+
+                    <!-- My Activity Section -->
+                    @if (Model.IsAuthenticated)
+                    {
+                        <div class="card community-sidebar-card p-3">
+                            <div class="px-2 pt-1 pb-2 community-section-title">
+                                আমার কার্যকলাপ
+                            </div>
+                            <div class="d-flex flex-column gap-1">
+                                <a href="@Url.Action("Index", new { category = "MyPosts" })" class="community-nav-link text-dark @(Model.CurrentCategory == "MyPosts" ? "active" : "")">
+                                    <span class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-file-earmark-text fs-5 me-2.5 @(Model.CurrentCategory == "MyPosts" ? "text-white" : "text-muted")" aria-hidden="true"></i>
+                                        <span>আমার পোস্টসমূহ</span>
+                                    </span>
+                                    <span class="badge @(Model.CurrentCategory == "MyPosts" ? "bg-white text-success" : "bg-light text-muted border") rounded-pill px-2.5 py-1" style="font-size: 0.82rem;">@Model.MyPostsCount</span>
+                                </a>
+                                <a href="@Url.Action("Index", new { category = "Saved" })" class="community-nav-link text-dark @(Model.CurrentCategory == "Saved" ? "active" : "")">
+                                    <span class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-bookmark fs-5 me-2.5 @(Model.CurrentCategory == "Saved" ? "text-white" : "text-muted")" aria-hidden="true"></i>
+                                        <span>সংরক্ষিত পোস্ট</span>
+                                    </span>
+                                    <span class="badge @(Model.CurrentCategory == "Saved" ? "bg-white text-success" : "bg-light text-muted border") rounded-pill px-2.5 py-1" style="font-size: 0.82rem;">@Model.MySavedCount</span>
+                                </a>
+                            </div>
+                        </div>
+                    }
+
+                </div>
+            </aside>
+
+            <!-- ========================================== -->
+            <!-- 2. CENTRAL FEED: COMPOSER, FILTERS, POSTS  -->
+            <!-- ========================================== -->
+            <main class="col-12 col-lg-6 col-xl-6 community-main-feed">
+
+                <!-- Alert Feedback Messages -->
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4 p-3.5 d-flex align-items-center" role="alert">
+                        <i class="bi bi-check-circle-fill fs-5 me-2.5" aria-hidden="true"></i>
+                        <span class="fs-6">@TempData["SuccessMessage"]</span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4 p-3.5 d-flex align-items-center" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 me-2.5" aria-hidden="true"></i>
+                        <span class="fs-6">@TempData["ErrorMessage"]</span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <!-- In-page Collapsed Post Composer Card -->
+                <div class="card community-card community-composer-trigger mb-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="avatar-circle bg-success-subtle text-success fw-bold rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 48px; height: 48px; font-size: 18px;">
+                            @if (Model.CurrentUser != null)
+                            {
+                                <span>@Model.CurrentUser.FullName.Substring(0, 1).ToUpper()</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-person-fill" aria-hidden="true"></i>
+                            }
+                        </div>
+                        <button type="button" class="btn composer-fake-input w-100" data-bs-toggle="modal" data-bs-target="#createPostModal">
+                            @(Model.CurrentUser != null ? $"{Model.CurrentUser.FullName}, আজ আপনার ফসলের কোনো সমস্যা বা অভিজ্ঞতা আছে কি? লিখুন..." : "কমিউনিটিতে অভিজ্ঞতা শেয়ার বা ফসলের সাহায্য চাইতে ক্লিক করুন...")
+                        </button>
+                    </div>
+                    <div class="border-top pt-3 d-flex align-items-center justify-content-around text-muted">
+                        <button type="button" class="btn btn-link text-decoration-none text-muted composer-action-btn d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createPostModal" data-post-tab="Experience">
+                            <i class="bi bi-camera-fill text-success fs-5 me-2" aria-hidden="true"></i>
+                            <span class="d-none d-sm-inline">ছবি / ভিডিও</span>
+                        </button>
+                        <div class="border-start" style="height: 22px;"></div>
+                        <button type="button" class="btn btn-link text-decoration-none text-danger composer-action-btn d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createPostModal" data-post-tab="HelpNeeded">
+                            <i class="bi bi-exclamation-octagon-fill text-danger fs-5 me-2" aria-hidden="true"></i>
+                            <span>জরুরি সাহায্য চান</span>
+                        </button>
+                        <div class="border-start" style="height: 22px;"></div>
+                        <button type="button" class="btn btn-link text-decoration-none text-muted composer-action-btn d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#createPostModal" data-post-tab="Voice">
+                            <i class="bi bi-mic-fill text-primary fs-5 me-2" aria-hidden="true"></i>
+                            <span class="d-none d-sm-inline">ভয়েস বার্তা</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stream Controller Toolbar: Filters & Sorting -->
+                <div class="card community-card community-filter-bar mb-4">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <!-- Horizontal Scrollable Category Pills -->
+                        <div class="d-flex align-items-center gap-2 overflow-x-auto py-1" style="scrollbar-width: none;">
+                            <a href="@Url.Action("Index", new { category = "All", district = Model.CurrentDistrict, sort = Model.CurrentSort })" class="filter-pill @(Model.CurrentCategory == "All" ? "btn btn-success" : "btn btn-light text-dark border")">
+                                সব আলোচনা
+                            </a>
+                            <a href="@Url.Action("Index", new { category = "HelpNeeded", district = Model.CurrentDistrict, sort = Model.CurrentSort })" class="filter-pill @(Model.CurrentCategory == "HelpNeeded" ? "btn btn-danger" : "btn btn-light text-dark border")">
+                                <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i> সাহায্য প্রয়োজন (@Model.UrgentNeedsCount)
+                            </a>
+                            <a href="@Url.Action("Index", new { category = "Experience", district = Model.CurrentDistrict, sort = Model.CurrentSort })" class="filter-pill @(Model.CurrentCategory == "Experience" ? "btn btn-success" : "btn btn-light text-dark border")">
+                                অভিজ্ঞতা
+                            </a>
+                            <a href="@Url.Action("Index", new { category = "Solved", district = Model.CurrentDistrict, sort = Model.CurrentSort })" class="filter-pill @(Model.CurrentCategory == "Solved" ? "btn btn-success" : "btn btn-light text-dark border")">
+                                সমাধানকৃত
+                            </a>
+                        </div>
+
+                        <!-- Sorting Selector -->
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted fw-semibold d-none d-sm-inline" style="font-size: 0.9rem;">সাজান:</span>
+                            <form method="get" asp-action="Index">
+                                <input type="hidden" name="category" value="@Model.CurrentCategory" />
+                                <input type="hidden" name="district" value="@Model.CurrentDistrict" />
+                                <select name="sort" class="form-select form-select-sm py-1.5 px-3 border bg-light fw-medium" style="font-size: 0.9rem; border-radius: 8px;" onchange="this.form.submit()">
+                                    <option value="Latest" selected="@(Model.CurrentSort == "Latest")">সর্বশেষ পোস্ট</option>
+                                    <option value="Popular" selected="@(Model.CurrentSort == "Popular")">জনপ্রিয় ও আলোচিত</option>
+                                    <option value="Urgent" selected="@(Model.CurrentSort == "Urgent")">জরুরি সমস্যা</option>
+                                    <option value="Proximity" selected="@(Model.CurrentSort == "Proximity")">নিকটবর্তী এলাকা</option>
+                                </select>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Filter Indicator Ribbon (if non-default) -->
+                @if (!string.IsNullOrEmpty(Model.CurrentDistrict) || Model.CurrentCategory != "All")
+                {
+                    <div class="alert alert-light border d-flex align-items-center justify-content-between py-2.5 px-3.5 mb-4 rounded-3 shadow-sm" style="font-size: 0.92rem;">
+                        <div>
+                            <span class="text-muted fw-medium">সক্রিয় ফিল্টার:</span>
+                            @if (!string.IsNullOrEmpty(Model.CurrentDistrict))
+                            {
+                                <span class="badge bg-success-subtle text-success border border-success-subtle ms-2 py-1 px-2.5 rounded-pill">জেলা: @Model.CurrentDistrict</span>
+                            }
+                            @if (Model.CurrentCategory != "All")
+                            {
+                                <span class="badge bg-light text-dark border ms-2 py-1 px-2.5 rounded-pill">ক্যাটাগরি: @Model.CurrentCategory</span>
+                            }
+                        </div>
+                        <a href="@Url.Action("Index")" class="text-danger text-decoration-none fw-semibold d-inline-flex align-items-center">
+                            <i class="bi bi-x-circle me-1.5" aria-hidden="true"></i> <span>ফিল্টার মুছুন</span>
+                        </a>
+                    </div>
+                }
+
+                <!-- Post Stream Container -->
+                <div id="community-posts-stream">
+                    <partial name="_PostListPartial" model="Model" />
+                </div>
+
+            </main>
+
+            <!-- ========================================== -->
+            <!-- 3. RIGHT SIDEBAR: EMERGENCY, WEATHER, LEADER-->
+            <!-- ========================================== -->
+            <aside class="col-lg-3 col-xl-3 d-none d-xl-block community-sidebar-right">
+                <div class="sticky-top" style="top: 88px; z-index: 10;">
+
+                    <!-- Emergency District Dispatch Board -->
+                    @if (Model.EmergencyAlerts != null && Model.EmergencyAlerts.Any())
+                    {
+                        <div class="card community-sidebar-card mb-4 overflow-hidden p-0">
+                            <div class="card-header bg-danger text-white py-2.5 px-3.5 d-flex align-items-center justify-content-between border-0">
+                                <span class="fw-bold d-inline-flex align-items-center" style="font-size: 0.9rem;">
+                                    <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i> <span>জরুরি স্থানীয় সমস্যা</span>
+                                </span>
+                                <span class="badge bg-white text-danger rounded-pill px-2 py-0.5" style="font-size: 0.75rem;">LIVE</span>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                @foreach (var alert in Model.EmergencyAlerts)
+                                {
+                                    <a href="/Community/Post/@alert.PostId" class="list-group-item list-group-item-action p-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-1.5">
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle py-1 px-2 rounded-pill" style="font-size: 0.78rem;">@alert.CropName</span>
+                                            <small class="text-muted" style="font-size: 0.8rem;">@alert.TimeAgo</small>
+                                        </div>
+                                        <div class="fw-semibold text-dark text-truncate mb-1" style="font-size: 0.95rem;">@alert.IssueTitle</div>
+                                        <div class="d-flex justify-content-between align-items-center text-muted" style="font-size: 0.85rem;">
+                                            <span class="d-inline-flex align-items-center"><i class="bi bi-geo-alt text-danger me-1.5"></i><span>@alert.Location</span></span>
+                                            <span class="text-success fw-semibold">সমাধান দিন &rarr;</span>
+                                        </div>
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Agro-Weather & Spray Advisor Widget -->
+                    @if (Model.WeatherAdvisor != null)
+                    {
+                        <div class="card community-sidebar-card p-4 mb-4">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <span class="community-section-title d-inline-flex align-items-center">
+                                    <i class="bi bi-cloud-sun-fill text-warning me-2" aria-hidden="true"></i> <span>স্থানীয় আবহাওয়া</span>
+                                </span>
+                                <span class="badge bg-light text-muted border px-2.5 py-1" style="font-size: 0.82rem;">@Model.WeatherAdvisor.District</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-3 my-2">
+                                <div class="display-6 fw-bold text-dark" style="font-size: 2.25rem;">@Model.WeatherAdvisor.Temperature.ToString("0.0")&deg;C</div>
+                                <div class="text-muted" style="font-size: 0.95rem;">
+                                    <div class="fw-semibold text-dark">@Model.WeatherAdvisor.ConditionText</div>
+                                    <div>আর্দ্রতা: @Model.WeatherAdvisor.Humidity%</div>
+                                </div>
+                            </div>
+                            <div class="spray-advice-box mt-3 @(Model.WeatherAdvisor.IsSprayFavorable ? "bg-success-subtle text-success-emphasis border border-success-subtle" : "bg-warning-subtle text-warning-emphasis border border-warning-subtle")">
+                                <strong class="d-block mb-1 d-inline-flex align-items-center"><i class="bi bi-info-circle me-1.5"></i><span>স্প্রে পরামর্শ:</span></strong>
+                                <span>@Model.WeatherAdvisor.SprayAdviceText</span>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Top Community Mentors (Leaderboard) -->
+                    @if (Model.TopMentors != null && Model.TopMentors.Any())
+                    {
+                        <div class="card community-sidebar-card p-4 mb-4">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <span class="community-section-title d-inline-flex align-items-center">
+                                    <i class="bi bi-trophy-fill text-warning me-2" aria-hidden="true"></i> <span>সেরা কৃষি পরামর্শক</span>
+                                </span>
+                                <a asp-controller="Leaderboard" asp-action="Index" class="text-success fw-semibold text-decoration-none" style="font-size: 0.9rem;">সব দেখুন</a>
+                            </div>
+                            <div class="d-flex flex-column gap-2.5">
+                                @foreach (var mentor in Model.TopMentors)
+                                {
+                                    <div class="leaderboard-row d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center gap-2.5">
+                                            <span class="badge @(mentor.Rank == 1 ? "bg-warning text-dark" : (mentor.Rank == 2 ? "bg-secondary text-white" : "bg-dark text-white")) rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 12px;">
+                                                @mentor.Rank
+                                            </span>
+                                            <div class="overflow-hidden" style="max-width: 130px;">
+                                                <div class="fw-semibold text-dark text-truncate" style="font-size: 0.95rem;">@mentor.FullName</div>
+                                                <small class="text-muted d-block" style="font-size: 0.8rem;">@mentor.SolutionsCount সমাধান গৃহীত</small>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1" style="font-size: 0.82rem;">@mentor.Points pts</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Emergency Helplines Direct Dial -->
+                    <div class="card community-sidebar-card p-4">
+                        <div class="community-section-title mb-3 d-inline-flex align-items-center">
+                            <i class="bi bi-telephone-fill text-success me-2" aria-hidden="true"></i> <span>জরুরি হেল্পলাইন</span>
+                        </div>
+                        <div class="d-flex flex-column gap-2">
+                            <a href="tel:16123" class="emergency-hotline-btn">
+                                <span class="fw-medium">কৃষি কল সেন্টার</span>
+                                <strong class="text-success fs-5">১৬১২৩</strong>
+                            </a>
+                            <a href="tel:1090" class="emergency-hotline-btn">
+                                <span class="fw-medium">দুর্যোগ বার্তা</span>
+                                <strong class="fs-5">১০৯০</strong>
+                            </a>
+                            <a href="tel:333" class="emergency-hotline-btn">
+                                <span class="fw-medium">জাতীয় তথ্য সেবা</span>
+                                <strong class="fs-5">৩৩৩</strong>
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </aside>
+
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- 4. EXPANDED CREATE POST MODAL DIALOG       -->
+<!-- ========================================== -->
+<div class="modal fade" id="createPostModal" tabindex="-1" aria-labelledby="createPostModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+            <form asp-controller="Community" asp-action="CreatePost" method="post" enctype="multipart/form-data" id="mainPostCreateForm">
+                @Html.AntiForgeryToken()
+
+                <div class="modal-header border-bottom py-3.5 px-4 bg-light bg-opacity-50">
+                    <h5 class="modal-title fw-bold text-dark fs-5 d-inline-flex align-items-center" id="createPostModalLabel">
+                        <i class="bi bi-pencil-square text-success me-2.5" aria-hidden="true"></i>
+                        <span>নতুন পোস্ট তৈরি করুন</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <!-- Post Type Selector Tabs -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase mb-2.5" style="letter-spacing: 0.5px;">পোস্টের ধরন নির্বাচন করুন:</label>
+                        <div class="row g-2.5">
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="PostType" id="typeExperience" value="Experience" checked>
+                                <label class="btn btn-outline-success w-100 py-3 rounded-3 text-center" for="typeExperience">
+                                    <i class="bi bi-journal-richtext d-block fs-4 mb-1" aria-hidden="true"></i>
+                                    <span class="fw-semibold" style="font-size: 0.95rem;">অভিজ্ঞতা ও গল্প</span>
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="PostType" id="typeHelpNeeded" value="HelpNeeded">
+                                <label class="btn btn-outline-danger w-100 py-3 rounded-3 text-center" for="typeHelpNeeded">
+                                    <i class="bi bi-exclamation-octagon-fill d-block fs-4 mb-1" aria-hidden="true"></i>
+                                    <span class="fw-semibold" style="font-size: 0.95rem;">সাহায্য প্রয়োজন</span>
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="PostType" id="typeAgritechTip" value="AgritechTip">
+                                <label class="btn btn-outline-primary w-100 py-3 rounded-3 text-center" for="typeAgritechTip">
+                                    <i class="bi bi-lightbulb-fill d-block fs-4 mb-1" aria-hidden="true"></i>
+                                    <span class="fw-semibold" style="font-size: 0.95rem;">আধুনিক টিপস</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conditional Help Needed Diagnostic Form -->
+                    <div id="helpNeededFieldsContainer" class="p-3.5 bg-danger-subtle bg-opacity-25 rounded-3 border border-danger-subtle mb-4" style="display: none;">
+                        <h6 class="fw-bold text-danger mb-3 text-uppercase d-inline-flex align-items-center" style="font-size: 0.9rem; letter-spacing: 0.5px;">
+                            <i class="bi bi-shield-exclamation me-2" aria-hidden="true"></i> <span>ফসলের সমস্যার বিবরণ (Diagnostic Information)</span>
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size: 0.92rem;">ফসলের নাম <span class="text-danger">*</span></label>
+                                <select name="CropCategory" class="form-select py-2">
+                                    <option value="">-- ফসল নির্বাচন করুন --</option>
+                                    @foreach (var crop in Model.CropCategories)
+                                    {
+                                        <option value="@crop">@crop</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size: 0.92rem;">সমস্যার ধরন <span class="text-danger">*</span></label>
+                                <select name="IssueCategory" class="form-select py-2">
+                                    <option value="">-- সমস্যার ধরন --</option>
+                                    @foreach (var issue in Model.IssueCategories)
+                                    {
+                                        <option value="@issue">@issue</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold" style="font-size: 0.92rem;">ফসলের বয়স বা পর্যায়</label>
+                                <input type="text" name="CropAge" class="form-control py-2" placeholder="যেমন: ৩৫ দিন বা চারা অবস্থা" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold" style="font-size: 0.92rem;">আক্রান্ত জমির পরিমাণ</label>
+                                <input type="text" name="AffectedArea" class="form-control py-2" placeholder="যেমন: ৩ বিঘা" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold" style="font-size: 0.92rem;">জরুরি অবস্থা</label>
+                                <select name="UrgencyLevel" class="form-select py-2">
+                                    <option value="Normal">সাধারণ পরামর্শ</option>
+                                    <option value="Moderate">মাঝারি জরুরি</option>
+                                    <option value="High" selected>অত্যন্ত জরুরি (ফসল নষ্ট হচ্ছে)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location selector -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted" style="font-size: 0.92rem;">জেলা:</label>
+                            <select name="District" class="form-select py-2">
+                                <option value="">আপনার এলাকা (@(Model.CurrentUser?.District ?? "জাতীয়"))</option>
+                                @foreach (var d in Model.DistrictList)
+                                {
+                                    <option value="@d">@d</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-muted" style="font-size: 0.92rem;">উপজেলা / গ্রাম:</label>
+                            <input type="text" name="Upazila" class="form-control py-2" placeholder="যেমন: শিবগঞ্জ" value="@Model.CurrentUser?.Location" />
+                        </div>
+                    </div>
+
+                    <!-- Main Textarea -->
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-dark" style="font-size: 0.95rem;">পোস্টের বিবরণ <span class="text-danger">*</span></label>
+                        <textarea name="Content" class="form-control p-3" rows="5" placeholder="আপনার ফসলের অবস্থা, রোগবালাইয়ের লক্ষণ বা চাষের অভিজ্ঞতা বিস্তারিত লিখুন... ট্যাগ ব্যবহার করতে পারেন যেমন: #ধান #ব্লাস্ট_রোগ" required style="font-size: 1rem; line-height: 1.6;"></textarea>
+                    </div>
+
+                    <!-- Media Previews Tray -->
+                    <div id="composerMediaPreviewTray" class="d-flex gap-2.5 flex-wrap mb-3"></div>
+
+                    <!-- Voice Recorder Preview Tray -->
+                    <div id="composerVoicePreview" class="p-3 bg-light rounded-3 border mb-4 d-flex align-items-center justify-content-between" style="display: none !important;">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-mic-fill text-success fs-4" aria-hidden="true"></i>
+                            <div>
+                                <strong class="text-dark d-block" style="font-size: 0.95rem;">ভয়েস record সম্পন্ন</strong>
+                                <span class="text-muted" style="font-size: 0.82rem;" id="voiceRecordedTimer">0:00</span>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-danger rounded-pill px-3 py-1.5 d-inline-flex align-items-center" id="deleteVoiceRecordingBtn" style="font-size: 0.88rem;">
+                            <i class="bi bi-trash3 me-1.5" aria-hidden="true"></i> <span>মুছে ফেলুন</span>
+                        </button>
+                    </div>
+
+                    <!-- Attachment Tools Bar -->
+                    <div class="p-3 bg-light rounded-3 border d-flex align-items-center justify-content-between flex-wrap gap-2.5">
+                        <span class="fw-semibold text-muted" style="font-size: 0.92rem;">পোস্টে যোগ করুন:</span>
+                        <div class="d-flex align-items-center gap-2.5 flex-wrap">
+                            <!-- Image Input -->
+                            <label class="btn btn-outline-success rounded-pill px-3.5 py-1.5 cursor-pointer d-inline-flex align-items-center" style="font-size: 0.9rem;">
+                                <i class="bi bi-images me-2" aria-hidden="true"></i> <span>ছবি (Max 5)</span>
+                                <input type="file" name="ImageFiles" accept="image/*" multiple class="d-none" id="composerImageFileInput" />
+                            </label>
+
+                            <!-- Video Input -->
+                            <label class="btn btn-outline-secondary rounded-pill px-3.5 py-1.5 cursor-pointer d-inline-flex align-items-center" style="font-size: 0.9rem;">
+                                <i class="bi bi-camera-video me-2" aria-hidden="true"></i> <span>ভিডিও (Max 60s)</span>
+                                <input type="file" name="VideoFile" accept="video/mp4,video/webm" class="d-none" id="composerVideoFileInput" />
+                            </label>
+
+                            <!-- Live Audio Recorder Trigger -->
+                            <button type="button" class="btn btn-outline-primary rounded-pill px-3.5 py-1.5 d-inline-flex align-items-center" id="startVoiceRecordingBtn" style="font-size: 0.9rem;">
+                                <i class="bi bi-mic me-2" aria-hidden="true"></i> <span>ভয়েস রেকর্ড</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-top py-3 px-4 bg-light bg-opacity-50">
+                    <button type="button" class="btn btn-light rounded-pill px-4 py-2" data-bs-dismiss="modal" style="font-size: 0.95rem;">বাতিল</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-5 py-2 fw-semibold d-inline-flex align-items-center" id="submitPostBtn" style="font-size: 1rem;">
+                        <i class="bi bi-send-fill me-2" aria-hidden="true"></i> <span>পোস্ট প্রকাশ করুন</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Floating Action Button (FAB) -->
+<button type="button" class="btn btn-success rounded-circle shadow-lg community-mobile-fab d-lg-none d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#createPostModal" title="নতুন পোস্ট তৈরি করুন">
+    <i class="bi bi-plus-lg fs-3" aria-hidden="true"></i>
+</button>
+
+<!-- ========================================== -->
+<!-- 5. DYNAMIC CENTERED COMMENTS MODAL CONTAINER -->
+<!-- ========================================== -->
+<div class="modal fade" id="communityCommentsModal" tabindex="-1" aria-labelledby="communityCommentsModalLabel" aria-hidden="true">
+    <!-- Populated asynchronously via AJAX -->
+</div>
+
+@section Scripts {
+    <script src="~/js/community.js" asp-append-version="true"></script>
+}
