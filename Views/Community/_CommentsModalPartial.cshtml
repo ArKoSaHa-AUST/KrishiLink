@@ -1,0 +1,138 @@
+@model KrishiLink.Models.ViewModels.CommunityPostViewModel
+
+<div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden;">
+        <!-- Modal Header -->
+        <div class="modal-header border-bottom py-3.5 px-4 bg-light bg-opacity-75">
+            <h5 class="modal-title fw-bold text-dark d-flex align-items-center fs-5 mb-0">
+                <i class="bi bi-chat-left-text-fill text-success fs-5 me-2.5" aria-hidden="true"></i>
+                <span class="me-2.5">মন্তব্য ও সমাধানসমূহ</span>
+                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1" id="modal-comment-badge-count" style="font-size: 0.85rem;">
+                    @Model.CommentCount টি
+                </span>
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <!-- Modal Body (Scrollable Post Context + Comments Stream) -->
+        <div class="modal-body p-4" style="max-height: 60vh;">
+            
+            <!-- Brief Post Context Summary Box -->
+            <div class="p-3.5 mb-4 rounded-3 bg-light border border-light-subtle shadow-sm">
+                <div class="d-flex align-items-center gap-3 mb-2.5">
+                    <div class="avatar-circle-sm bg-success text-white fw-bold rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; font-size: 15px;">
+                        <span>@(string.IsNullOrEmpty(Model.AuthorName) ? "K" : Model.AuthorName.Substring(0, 1).ToUpper())</span>
+                    </div>
+                    <div class="overflow-hidden">
+                        <div class="fw-bold text-dark" style="font-size: 1rem;">@Model.AuthorName</div>
+                        <div class="text-muted d-flex align-items-center gap-2" style="font-size: 0.85rem;">
+                            @if (!string.IsNullOrEmpty(Model.District))
+                            {
+                                <span><i class="bi bi-geo-alt-fill text-success me-1.5"></i>@Model.District • </span>
+                            }
+                            <span>@Model.TimeAgo</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Crop/Issue badge if help needed -->
+                @if (Model.IsHelpRequest)
+                {
+                    <div class="d-flex gap-2 flex-wrap mb-2.5">
+                        @if (!string.IsNullOrEmpty(Model.CropCategory))
+                        {
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1.5 d-inline-flex align-items-center" style="font-size: 0.84rem;">
+                                <i class="bi bi-flower1 me-2"></i><span>ফসল: @Model.CropCategory</span>
+                            </span>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.IssueCategory))
+                        {
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1.5 d-inline-flex align-items-center" style="font-size: 0.84rem;">
+                                <i class="bi bi-bug-fill me-2"></i><span>সমস্যা: @Model.IssueCategory</span>
+                            </span>
+                        }
+                    </div>
+                }
+
+                <div class="text-secondary" style="font-size: 0.98rem; line-height: 1.65; white-space: pre-line;">
+                    @Model.Content
+                </div>
+            </div>
+
+            <!-- Accepted Solution Highlight (if any) -->
+            @if (Model.AcceptedComment != null)
+            {
+                <div class="accepted-solution-pinned-box p-3.5 mb-4 rounded-3 bg-success-subtle bg-opacity-35 border border-success">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="d-flex align-items-center text-success fw-bold" style="font-size: 0.95rem;">
+                            <i class="bi bi-patch-check-fill fs-5 me-2.5" aria-hidden="true"></i>
+                            <span>গৃহীত সঠিক সমাধান</span>
+                        </div>
+                        <span class="badge bg-success text-white py-1 px-2.5 rounded-pill d-inline-flex align-items-center" style="font-size: 0.78rem;">
+                            <i class="bi bi-star-fill me-1.5"></i><span>+৫০ কৃষি পয়েন্ট</span>
+                        </span>
+                    </div>
+                    <div class="fw-semibold text-dark mb-1" style="font-size: 0.95rem;">@Model.AcceptedComment.AuthorName</div>
+                    <p class="mb-0 text-dark" style="font-size: 0.96rem; line-height: 1.65; white-space: pre-line;">
+                        @Model.AcceptedComment.Content
+                    </p>
+                </div>
+            }
+
+            <!-- Comments Stream Section -->
+            <h6 class="fw-bold text-dark mb-3.5 d-flex align-items-center" style="font-size: 1rem;">
+                <i class="bi bi-chat-dots-fill text-success fs-5 me-2.5" aria-hidden="true"></i>
+                <span>সকল মন্তব্য ও আলোচনা</span>
+            </h6>
+
+            <div class="modal-comments-stream d-flex flex-column gap-3" id="modal-comments-list-@Model.Id">
+                @if (Model.Comments != null && Model.Comments.Any())
+                {
+                    foreach (var comment in Model.Comments)
+                    {
+                        <partial name="_CommentItemPartial" model="comment" />
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted modal-no-comments-msg" style="font-size: 0.95rem;">
+                        <i class="bi bi-chat-square-text fs-2 d-block mb-2 text-muted opacity-50" aria-hidden="true"></i>
+                        <span>এখনও কোনো মন্তব্য বা সমাধান নেই। প্রথম মন্তব্যটি দিয়ে আলোচনা শুরু করুন!</span>
+                    </div>
+                }
+            </div>
+
+        </div>
+
+        <!-- Modal Footer: In-Modal Comment Input Form -->
+        <div class="modal-footer border-top p-3.5 bg-light bg-opacity-75 d-block">
+            <form class="modal-comment-form" data-post-id="@Model.Id" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="PostId" value="@Model.Id" />
+                <div class="d-flex gap-3 align-items-start">
+                    <div class="avatar-circle-sm bg-success-subtle text-success fw-bold rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 40px; height: 40px; font-size: 16px;">
+                        <i class="bi bi-person-fill" aria-hidden="true"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="position-relative">
+                            <textarea name="Content" class="form-control rounded-4 py-2.5 px-3.5 pe-5 border shadow-sm modal-comment-textarea" rows="2" placeholder="একটি সমাধান বা গঠনমূলক পরামর্শ লিখুন..." required style="resize: none; font-size: 0.98rem; line-height: 1.5;"></textarea>
+                            <button type="submit" class="btn btn-success rounded-circle position-absolute end-0 top-50 translate-middle-y me-2.5 d-flex align-items-center justify-content-center shadow-sm" style="width: 36px; height: 36px; padding: 0;" title="পাঠান">
+                                <i class="bi bi-send-fill fs-6" aria-hidden="true"></i>
+                            </button>
+                        </div>
+
+                        <!-- Quick Attachments inside comment form -->
+                        <div class="d-flex align-items-center justify-content-between mt-2.5 px-1" style="font-size: 0.9rem;">
+                            <label class="btn btn-link btn-sm p-0 text-muted text-decoration-none d-inline-flex align-items-center cursor-pointer" title="ছবি যুক্ত করুন">
+                                <i class="bi bi-camera-fill text-success fs-5 me-2.5" aria-hidden="true"></i> 
+                                <span class="fw-medium">ছবি যোগ করুন</span>
+                                <input type="file" name="ImageFile" accept="image/*" class="d-none modal-comment-image-input" />
+                            </label>
+                            <span class="modal-selected-file-name text-success fw-medium" style="font-size: 0.85rem;"></span>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
