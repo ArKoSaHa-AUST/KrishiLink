@@ -36,6 +36,12 @@ namespace KrishiLink.DAL
         public DbSet<Favorite> Favorites { get; set; } = null!;
         public DbSet<SavedSearch> SavedSearches { get; set; } = null!;
         public DbSet<StorageIntakeLot> StorageIntakeLots { get; set; } = null!;
+        public DbSet<CommunityPost> CommunityPosts { get; set; } = null!;
+        public DbSet<PostMedia> PostMedia { get; set; } = null!;
+        public DbSet<CommunityComment> CommunityComments { get; set; } = null!;
+        public DbSet<CommunityReaction> CommunityReactions { get; set; } = null!;
+        public DbSet<CommunityBookmark> CommunityBookmarks { get; set; } = null!;
+        public DbSet<CommunityPostReport> CommunityPostReports { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -425,6 +431,132 @@ namespace KrishiLink.DAL
                 lot.HasOne(x => x.Booking)
                     .WithMany(b => b.IntakeLots)
                     .HasForeignKey(x => x.GodownBookingId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<CommunityPost>(p =>
+            {
+                p.Property(x => x.Content).IsRequired();
+                p.Property(x => x.PostType).HasMaxLength(30).IsRequired().HasDefaultValue(CommunityPostTypes.Experience);
+                p.Property(x => x.CropCategory).HasMaxLength(60);
+                p.Property(x => x.IssueCategory).HasMaxLength(60);
+                p.Property(x => x.UrgencyLevel).HasMaxLength(20).HasDefaultValue(CommunityUrgencyLevels.Normal);
+                p.Property(x => x.CropAge).HasMaxLength(40);
+                p.Property(x => x.AffectedArea).HasMaxLength(40);
+                p.Property(x => x.District).HasMaxLength(60);
+                p.Property(x => x.Upazila).HasMaxLength(60);
+                p.Property(x => x.AudioRecordingUrl).HasMaxLength(255);
+
+                p.HasIndex(x => x.AuthorId);
+                p.HasIndex(x => x.PostType);
+                p.HasIndex(x => x.IsHelpRequest);
+                p.HasIndex(x => x.IsSolved);
+                p.HasIndex(x => x.UrgencyLevel);
+                p.HasIndex(x => x.District);
+                p.HasIndex(x => x.CreatedAt);
+
+                p.HasOne(x => x.Author)
+                    .WithMany()
+                    .HasForeignKey(x => x.AuthorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                p.HasOne(x => x.AcceptedComment)
+                    .WithMany()
+                    .HasForeignKey(x => x.AcceptedCommentId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
+
+            builder.Entity<PostMedia>(m =>
+            {
+                m.Property(x => x.MediaUrl).HasMaxLength(255).IsRequired();
+                m.Property(x => x.MediaType).HasMaxLength(20).HasDefaultValue(PostMediaTypes.Image);
+                m.Property(x => x.ThumbnailUrl).HasMaxLength(255);
+
+                m.HasIndex(x => x.PostId);
+                m.HasOne(x => x.Post)
+                    .WithMany(p => p.MediaList)
+                    .HasForeignKey(x => x.PostId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<CommunityComment>(c =>
+            {
+                c.Property(x => x.Content).IsRequired();
+                c.Property(x => x.AttachmentImageUrl).HasMaxLength(255);
+                c.Property(x => x.AudioRecordingUrl).HasMaxLength(255);
+
+                c.HasIndex(x => x.PostId);
+                c.HasIndex(x => x.AuthorId);
+                c.HasIndex(x => x.ParentCommentId);
+                c.HasIndex(x => x.CreatedAt);
+
+                c.HasOne(x => x.Post)
+                    .WithMany(p => p.Comments)
+                    .HasForeignKey(x => x.PostId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                c.HasOne(x => x.Author)
+                    .WithMany()
+                    .HasForeignKey(x => x.AuthorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                c.HasOne(x => x.ParentComment)
+                    .WithMany(c => c.Replies)
+                    .HasForeignKey(x => x.ParentCommentId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
+
+            builder.Entity<CommunityReaction>(r =>
+            {
+                r.Property(x => x.ReactionType).HasMaxLength(20).HasDefaultValue(CommunityReactionTypes.Helpful);
+
+                r.HasIndex(x => new { x.UserId, x.PostId, x.CommentId }).IsUnique();
+                r.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                r.HasOne(x => x.Post)
+                    .WithMany(p => p.Reactions)
+                    .HasForeignKey(x => x.PostId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                r.HasOne(x => x.Comment)
+                    .WithMany(c => c.Reactions)
+                    .HasForeignKey(x => x.CommentId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
+
+            builder.Entity<CommunityBookmark>(b =>
+            {
+                b.HasIndex(x => new { x.UserId, x.PostId }).IsUnique();
+                b.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasOne(x => x.Post)
+                    .WithMany(p => p.Bookmarks)
+                    .HasForeignKey(x => x.PostId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<CommunityPostReport>(rep =>
+            {
+                rep.Property(x => x.Reason).HasMaxLength(300).IsRequired();
+                rep.Property(x => x.Status).HasMaxLength(20).HasDefaultValue("Pending");
+
+                rep.HasIndex(x => x.PostId);
+                rep.HasIndex(x => x.Status);
+
+                rep.HasOne(x => x.Reporter)
+                    .WithMany()
+                    .HasForeignKey(x => x.ReporterId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                rep.HasOne(x => x.Post)
+                    .WithMany(p => p.Reports)
+                    .HasForeignKey(x => x.PostId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }

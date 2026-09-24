@@ -34,6 +34,9 @@ namespace KrishiLink.DAL
             else if (seedDemoData && !await db.Reviews.AnyAsync())
                 await SeedDemoReviewsAsync(db);
 
+            if (seedDemoData && !await db.CommunityPosts.AnyAsync())
+                await SeedDemoCommunityPostsAsync(db, services.GetRequiredService<UserManager<ApplicationUser>>());
+
             var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(DbInitializer));
             var commissionRate = services.GetRequiredService<IOptions<RevenueOptions>>().Value.PlatformCommissionRate;
             var backfilled = await BackfillPriceSnapshotsAsync(db, commissionRate);
@@ -1777,6 +1780,164 @@ namespace KrishiLink.DAL
                 db.BookingExpenses.AddRange(generalExpenses);
                 await db.SaveChangesAsync();
             }
+        }
+
+        private static async Task SeedDemoCommunityPostsAsync(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+        {
+            if (await db.CommunityPosts.AnyAsync()) return;
+
+            var farmer = await userManager.FindByEmailAsync("farmer@krishilink.com")
+                ?? await db.Users.FirstOrDefaultAsync(u => u.UserRole == AppRoles.Farmer);
+
+            var eqOwner = await userManager.FindByEmailAsync("equipment@krishilink.com")
+                ?? await db.Users.FirstOrDefaultAsync(u => u.UserRole == AppRoles.EquipmentOwner);
+
+            var gdOwner = await userManager.FindByEmailAsync("godown@krishilink.com")
+                ?? await db.Users.FirstOrDefaultAsync(u => u.UserRole == AppRoles.GodownOwner);
+
+            var admin = await userManager.FindByEmailAsync("admin@krishilink.com")
+                ?? await db.Users.FirstOrDefaultAsync(u => u.UserRole == AppRoles.Admin);
+
+            if (farmer == null || admin == null) return;
+
+            var now = DateTime.UtcNow;
+
+            // 1. Solved Crisis: Potato Late Blight in Bogura
+            var post1 = new CommunityPost
+            {
+                AuthorId = farmer.Id,
+                PostType = CommunityPostTypes.HelpNeeded,
+                CropCategory = "গোল আলু (Potato)",
+                IssueCategory = "রোগবালাই ও ছত্রাক (Fungal/Blight Disease)",
+                UrgencyLevel = CommunityUrgencyLevels.High,
+                CropAge = "৫০ দিন",
+                AffectedArea = "২ বিঘা",
+                District = "Bogura",
+                Upazila = "শিবগঞ্জ সদর",
+                IsHelpRequest = true,
+                IsSolved = true,
+                LikeCount = 38,
+                CommentCount = 4,
+                ShareCount = 7,
+                CreatedAt = now.AddDays(-2).AddHours(-4),
+                Content = "আলুর জমিতে হঠাৎ করে কুয়াশার পর পাতার আগা তামাটে হয়ে পাতা পচে ঝরে যাচ্ছে। কার্বেনডাজিম স্প্রে করেছিলাম কিন্তু কাজ হচ্ছে না। দ্রুত সঠিক সমাধান দিলে ফসল রক্ষা পাবে ভাই!"
+            };
+            db.CommunityPosts.Add(post1);
+            await db.SaveChangesAsync();
+
+            // Comment 1: Admin / DAE Agronomist Solution
+            var comment1 = new CommunityComment
+            {
+                PostId = post1.Id,
+                AuthorId = admin.Id,
+                Content = "করিম ভাই, এটি আলুর মারাত্মক নাবী ধসা (Late Blight) রোগ। অবিলম্বে সাইমোক্সানিল + ম্যানকোজেব (যেমন কার্জেট বা সিকিউর) প্রতি লিটার পানিতে ২ গ্রাম হারে মিশিয়ে আজ বিকেলেই স্প্রে করুন। জমিতে অতিরিক্ত সেচ বা ইউরিয়া সার বন্ধ রাখুন। আক্রমণ বেশি থাকলে ৩ দিন পর ডাইমেথোমর্ফ স্প্রে করবেন।",
+                IsAcceptedSolution = true,
+                UpvoteCount = 19,
+                CreatedAt = now.AddDays(-2).AddHours(-2)
+            };
+            db.CommunityComments.Add(comment1);
+
+            // Comment 2: Farmer peer advice
+            var comment2 = new CommunityComment
+            {
+                PostId = post1.Id,
+                AuthorId = eqOwner?.Id ?? admin.Id,
+                Content = "অফিসার স্যারের পরামর্শ মেনেই স্প্রে করুন। আমার জমিতেও একই সমস্যা হয়েছিল, ৩ দিনের মধ্যে শুকিয়ে নতুন কচি পাতা বের হয়েছে।",
+                IsAcceptedSolution = false,
+                UpvoteCount = 8,
+                CreatedAt = now.AddDays(-2).AddHours(-1)
+            };
+            db.CommunityComments.Add(comment2);
+            await db.SaveChangesAsync();
+
+            // Link accepted comment to post1
+            post1.AcceptedCommentId = comment1.Id;
+            await db.SaveChangesAsync();
+
+            // 2. Success Story: Boro Rice Bumper Harvest in Dinajpur
+            var post2 = new CommunityPost
+            {
+                AuthorId = farmer.Id,
+                PostType = CommunityPostTypes.Experience,
+                CropCategory = "আমন ধান (Aman Rice)",
+                District = "Dinajpur",
+                Upazila = "দিনাজপুর সদর",
+                IsHelpRequest = false,
+                IsSolved = false,
+                LikeCount = 64,
+                CommentCount = 8,
+                ShareCount = 14,
+                CreatedAt = now.AddDays(-1).AddHours(-6),
+                Content = "এ বছর ব্রি ধান-২৮ ও ৪৯ জাতের ফলন আলহামদুলিল্লাহ চমৎকার হয়েছে! বিঘা প্রতি প্রায় ২২ মণ ধান পেয়েছি। কম্বাইন হারভেস্টার দিয়ে ধান কাটায় সময় ও খরচ দুটোই অর্ধেক বেঁচে গেছে। সঠিক সময়ে সুষম সার ও কৃষি পরামর্শ অনুযায়ী বালাইনাশক প্রয়োগই সাফল্যের চাবিকাঠি।"
+            };
+            db.CommunityPosts.Add(post2);
+            await db.SaveChangesAsync();
+
+            // 3. Agritech Tip: Machinery Maintenance
+            if (eqOwner != null)
+            {
+                var post3 = new CommunityPost
+                {
+                    AuthorId = eqOwner.Id,
+                    PostType = CommunityPostTypes.AgritechTip,
+                    CropCategory = "অন্যান্য (Other)",
+                    District = "Rajshahi",
+                    Upazila = "পবা",
+                    IsHelpRequest = false,
+                    IsSolved = false,
+                    LikeCount = 29,
+                    CommentCount = 3,
+                    ShareCount = 5,
+                    CreatedAt = now.AddDays(-1).AddHours(-1),
+                    Content = "হার্ভেস্ট মৌসুমের পূর্বে কম্বাইন হার্ভেস্টারের কাটার বার, ব্লেড এবং চেইনের টান সঠিকভাবে পরীক্ষা করে নিন। প্রতিদিন সকালে গ্রিজ ও ইঞ্জিন অয়েল চেক করলে মেশিন দীর্ঘস্থায়ী হবে এবং জমিতে ব্রেকডাউন হবে না।"
+                };
+                db.CommunityPosts.Add(post3);
+            }
+
+            // 4. Agritech Tip: Godown Grain Storage Moisture Control
+            if (gdOwner != null)
+            {
+                var post4 = new CommunityPost
+                {
+                    AuthorId = gdOwner.Id,
+                    PostType = CommunityPostTypes.AgritechTip,
+                    CropCategory = "বোরো ধান (Boro Rice)",
+                    District = "Naogaon",
+                    Upazila = "নওগাঁ সদর",
+                    IsHelpRequest = false,
+                    IsSolved = false,
+                    LikeCount = 41,
+                    CommentCount = 5,
+                    ShareCount = 9,
+                    CreatedAt = now.AddHours(-18),
+                    Content = "ধান গুদামে সংরক্ষণের পূর্বে আর্দ্রতা ১২-১৪% এর মধ্যে নিয়ে আসা নিশ্চিত করুন। প্রতি বস্তা কাঠের মাচার ওপর রাখুন যাতে মেঝে থেকে আর্দ্রতা না ওঠে। পোকা প্রতিরোধে গুদামের প্রবেশপথ নিয়মিত পরিষ্কার রাখুন।"
+                };
+                db.CommunityPosts.Add(post4);
+            }
+
+            // 5. Active Crisis: Chilli Leaf Curl in Jashore (Seeking Solution)
+            var post5 = new CommunityPost
+            {
+                AuthorId = farmer.Id,
+                PostType = CommunityPostTypes.HelpNeeded,
+                CropCategory = "মরিচ (Chilli)",
+                IssueCategory = "ক্ষতিকর কীটপতঙ্গ (Insect Pest Attack)",
+                UrgencyLevel = CommunityUrgencyLevels.High,
+                CropAge = "৩৫ দিন",
+                AffectedArea = "১ বিঘা",
+                District = "Jashore",
+                Upazila = "যশোর সদর",
+                IsHelpRequest = true,
+                IsSolved = false,
+                LikeCount = 14,
+                CommentCount = 2,
+                ShareCount = 3,
+                CreatedAt = now.AddHours(-3),
+                Content = "মরিচের গাছের ডগা ও পাতা উপরের দিকে কুঁকড়ে নৌকার মতো হয়ে যাচ্ছে। গাছের বৃদ্ধি একদম থেমে গেছে। সাদা মাছি বা থ্রিপসের জন্য কী স্প্রে করা যায়? অভিজ্ঞ কৃষক ও অফিসার ভাইদের দ্রুত পরামর্শ চাই।"
+            };
+            db.CommunityPosts.Add(post5);
+
+            await db.SaveChangesAsync();
         }
     }
 }
