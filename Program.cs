@@ -100,6 +100,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IBadgeService, BadgeService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<ILoyaltyService, LoyaltyService>();
+builder.Services.AddScoped<ICommunityService, CommunityService>();
 
 builder.Services.Configure<AppOptions>(builder.Configuration.GetSection(AppOptions.SectionName));
 builder.Services.AddHttpClient();
