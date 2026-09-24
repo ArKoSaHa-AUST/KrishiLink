@@ -56,6 +56,7 @@ ehthumbs.db
 !readme.md
 !README*.md
 
-bin/
-obj/
+# Agent workspace configurations & skills
+.agents/
+.agents
 
