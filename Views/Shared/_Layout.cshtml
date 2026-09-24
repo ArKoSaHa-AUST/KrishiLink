@@ -83,6 +83,12 @@
                                 <span>@L["Leaderboard"]</span>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Community" ? "active" : "") d-flex align-items-center gap-1.5" asp-controller="Community" asp-action="Index" title="@L["Community"]">
+                                <i class="bi bi-people-fill" aria-hidden="true"></i>
+                                <span>@L["Community"]</span>
+                            </a>
+                        </li>
                     </ul>
 
                     <!-- Desktop Right Side Auth Navigation -->
@@ -294,8 +300,13 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2" asp-controller="Leaderboard" asp-action="Index">
+                                <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2 @(ViewContext.RouteData.Values["controller"]?.ToString() == "Leaderboard" ? "bg-white bg-opacity-25" : "")" asp-controller="Leaderboard" asp-action="Index">
                                     <i class="bi bi-trophy"></i> @L["Leaderboard"]
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link rounded px-3 py-2 text-white d-flex align-items-center gap-2 @(ViewContext.RouteData.Values["controller"]?.ToString() == "Community" ? "bg-white bg-opacity-25" : "")" asp-controller="Community" asp-action="Index">
+                                    <i class="bi bi-people-fill"></i> @L["Community"]
                                 </a>
                             </li>
                             @if (SignInManager.IsSignedIn(User))
