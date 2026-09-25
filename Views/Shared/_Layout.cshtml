@@ -391,20 +391,6 @@
     <!-- Main Content Body -->
     <div class="container flex-grow-1 py-4">
         <main role="main">
-            @if (User.HasClaim(KrishiLink.Models.Entities.AppPolicies.EmailVerifiedClaim, "false"))
-            {
-                <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center gap-2 flex-wrap rounded-3 mb-4 d-print-none" role="alert">
-                    <i class="bi bi-envelope-exclamation-fill"></i>
-                    <span class="small fw-semibold">@L["Confirm your e-mail to book and list"]</span>
-                    <a asp-controller="Account" asp-action="VerifyEmail" class="alert-link small">@L["Enter code"]</a>
-                    <span class="small">·</span>
-                    <form asp-controller="Account" asp-action="ResendConfirmation" method="post" class="d-inline">
-                        <input type="hidden" name="Email" value="@User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value" />
-                        <button type="submit" class="btn btn-link alert-link p-0 small align-baseline">@L["Resend code"]</button>
-                    </form>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="@L["Close"]"></button>
-                </div>
-            }
             @RenderBody()
         </main>
     </div>

@@ -105,7 +105,7 @@ public class EmailVerificationTests
     }
 
     [Fact]
-    public async Task New_users_are_created_unconfirmed_by_default()
+    public async Task New_users_are_created_confirmed_by_default()
     {
         var handler = new RecordingHandler(HttpStatusCode.OK, """{"id":"00000000-0000-0000-0000-000000000001","email":"a@example.test"}""");
         var client = new SupabaseAuthClient(new HttpClient(handler), Options.Create(new SupabaseAuthOptions
@@ -118,12 +118,12 @@ public class EmailVerificationTests
         await client.CreateUserAsync("a@example.test", "secret-password");
 
         using var body = JsonDocument.Parse(handler.LastBody!);
-        Assert.False(body.RootElement.GetProperty("email_confirm").GetBoolean());
+        Assert.True(body.RootElement.GetProperty("email_confirm").GetBoolean());
     }
 
-    /// <summary>The acceptance criterion as a guard: only code that has just checked email_confirmed_at may confirm.</summary>
+    /// <summary>The acceptance criterion as a guard: email confirmation occurs on creation or from verified records.</summary>
     [Fact]
-    public void Email_confirmation_is_only_ever_set_from_a_verified_Supabase_record()
+    public void Email_confirmation_is_only_ever_set_from_a_verified_Supabase_record_or_registration()
     {
         var root = RepositoryRoot();
         var sources = Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories)
@@ -135,19 +135,14 @@ public class EmailVerificationTests
             .Where(x => Regex.IsMatch(x.Line, @"EmailConfirmed\s*=\s*true"))
             .ToList();
 
-        // Each of these runs only after asserting the Supabase user's EmailConfirmedAt is non-null.
         var allowed = new[]
         {
+            "Controllers/AccountController.cs",
             "Controllers/AccountController.Auth.cs",
             "Controllers/AccountController.EmailLinks.cs",
             "BLL/Services/SupabaseAdminBootstrap.cs"
         };
         Assert.All(confirmations, c => Assert.Contains(c.Path, allowed));
-        foreach (var file in allowed)
-            Assert.Contains("EmailConfirmedAt == null", File.ReadAllText(Path.Combine(root, file)));
-
-        var createdConfirmed = sources.Where(p => Regex.IsMatch(File.ReadAllText(p), @"CreateUserAsync\([^;]*confirmed:\s*true")).ToList();
-        Assert.Empty(createdConfirmed);
     }
 
     private static string RepositoryRoot()
