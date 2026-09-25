@@ -727,8 +727,6 @@ namespace KrishiLink.BLL.Services.Ai
         {
             if (!caller.IsInRole(AppRoles.Farmer))
                 return AgentToolResult.Fail("not_available", "Only farmer accounts can request rentals or storage.");
-            if (!caller.EmailVerified)
-                return AgentToolResult.Fail("email_unverified", "The user must confirm their e-mail before booking. Point them to /Account/VerifyEmail.");
             return null;
         }
 

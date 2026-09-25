@@ -46,9 +46,16 @@ public sealed class SupabaseAuthClient(HttpClient http, IOptions<SupabaseAuthOpt
 {
     private readonly SupabaseAuthOptions _options = options.Value;
 
-    public Task<SupabaseAuthUser> CreateUserAsync(string email, string password, bool confirmed = false) =>
-        SendAsync<SupabaseAuthUser>(HttpMethod.Post, "admin/users",
-            new { email, password, email_confirm = confirmed }, admin: true);
+    public Task<SupabaseAuthUser> CreateUserAsync(string email, string password, bool confirmed = true, object? userMetadata = null) =>
+        userMetadata != null
+            ? SendAsync<SupabaseAuthUser>(HttpMethod.Post, "admin/users",
+                new { email, password, email_confirm = confirmed, user_metadata = userMetadata }, admin: true)
+            : SendAsync<SupabaseAuthUser>(HttpMethod.Post, "admin/users",
+                new { email, password, email_confirm = confirmed }, admin: true);
+
+    public Task<SupabaseAuthUser> ConfirmUserAsync(string id) =>
+        SendAsync<SupabaseAuthUser>(HttpMethod.Put, $"admin/users/{Uri.EscapeDataString(id)}",
+            new { email_confirm = true }, admin: true);
 
     public async Task DeleteUserAsync(string id) =>
         _ = await SendAsync<JsonElement>(HttpMethod.Delete, $"admin/users/{Uri.EscapeDataString(id)}", admin: true);

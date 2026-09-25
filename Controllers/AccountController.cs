@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -105,10 +105,18 @@ namespace KrishiLink.Controllers
             SupabaseAuthUser remote;
             try
             {
-                // Admin create rejects duplicate remote accounts and returns only a newly-created UUID.
-                // This makes compensation safe; public /signup may conceal duplicates with a fake user.
-                // The address stays unconfirmed until the owner enters the code Supabase e-mails to it.
-                remote = await _auth.CreateUserAsync(emailAddress, model.Password, confirmed: false);
+                var metadata = new Dictionary<string, string?>
+                {
+                    ["full_name"] = model.FullName.Trim(),
+                    ["name"] = model.FullName.Trim(),
+                    ["user_role"] = model.Role,
+                    ["role"] = model.Role,
+                    ["location"] = model.Location.Trim(),
+                    ["phone"] = phone,
+                    ["phone_number"] = phone
+                };
+                // Admin create creates the user directly with email confirmed = true so no email verification is required.
+                remote = await _auth.CreateUserAsync(emailAddress, model.Password, confirmed: true, userMetadata: metadata);
             }
             catch (SupabaseAuthException ex)
             {
@@ -121,7 +129,7 @@ namespace KrishiLink.Controllers
                 Id = remote.Id,
                 UserName = emailAddress,
                 Email = emailAddress,
-                EmailConfirmed = false,
+                EmailConfirmed = true,
                 PhoneNumber = phone,
                 FullName = model.FullName.Trim(),
                 UserRole = model.Role,
@@ -135,10 +143,36 @@ namespace KrishiLink.Controllers
             try
             {
                 await using var transaction = await _db.Database.BeginTransactionAsync();
-                var created = await _userManager.CreateAsync(user);
-                if (!created.Succeeded) throw new InvalidOperationException("Profile creation failed.");
-                var assigned = await _userManager.AddToRoleAsync(user, model.Role);
-                if (!assigned.Succeeded) throw new InvalidOperationException("Role assignment failed.");
+                var existingUser = await _userManager.FindByIdAsync(remote.Id);
+                if (existingUser != null)
+                {
+                    existingUser.UserName = emailAddress;
+                    existingUser.Email = emailAddress;
+                    existingUser.PhoneNumber = phone;
+                    existingUser.FullName = model.FullName.Trim();
+                    existingUser.UserRole = model.Role;
+                    existingUser.Location = model.Location.Trim();
+                    existingUser.BusinessOrFarmName = (model.Role == AppRoles.EquipmentOwner || model.Role == AppRoles.GodownOwner)
+                        ? model.BusinessOrFarmName?.Trim()
+                        : null;
+                    existingUser.EmailConfirmed = true;
+                    var updated = await _userManager.UpdateAsync(existingUser);
+                    if (!updated.Succeeded) throw new InvalidOperationException("Profile update failed.");
+
+                    if (!await _userManager.IsInRoleAsync(existingUser, model.Role))
+                    {
+                        var assigned = await _userManager.AddToRoleAsync(existingUser, model.Role);
+                        if (!assigned.Succeeded) throw new InvalidOperationException("Role assignment failed.");
+                    }
+                    user = existingUser;
+                }
+                else
+                {
+                    var created = await _userManager.CreateAsync(user);
+                    if (!created.Succeeded) throw new InvalidOperationException("Profile creation failed.");
+                    var assigned = await _userManager.AddToRoleAsync(user, model.Role);
+                    if (!assigned.Succeeded) throw new InvalidOperationException("Role assignment failed.");
+                }
                 await transaction.CommitAsync();
             }
             catch (Exception ex)
@@ -156,7 +190,6 @@ namespace KrishiLink.Controllers
                 }
                 if (committed == true)
                 {
-                    await RequestConfirmationEmailAsync(remote.Id, emailAddress);
                     TempData["SuccessMessage"] = _localizer["Your account was created. Please sign in to continue."].Value;
                     return RedirectToAction(nameof(Login));
                 }
@@ -172,10 +205,7 @@ namespace KrishiLink.Controllers
                 return View(model);
             }
 
-            await RequestConfirmationEmailAsync(user.Id, emailAddress);
-
-            // The account can sign in and browse straight away; booking, listing, paying, payouts and NID
-            // submission stay locked (VerifiedEmail policy) until the e-mailed code is entered.
+            // The account can sign in and use all features immediately.
             SupabaseAuthTokens? tokens = null;
             var signedIn = false;
             try
@@ -183,18 +213,12 @@ namespace KrishiLink.Controllers
                 tokens = await _auth.SignInAsync(emailAddress, model.Password);
                 await _sessions.SignInAsync(HttpContext, user, tokens, persistent: false);
                 signedIn = true;
-                TempData["SuccessMessage"] = _localizer["Welcome to KrishiLink, {0}! We e-mailed a code to {1}. Confirm your e-mail to book, list and pay.", user.FullName, emailAddress].Value;
+                TempData["SuccessMessage"] = _localizer["Welcome to KrishiLink, {0}!", user.FullName].Value;
                 return RedirectToAction(nameof(Onboarding));
-            }
-            catch (SupabaseAuthException ex) when (ex.ErrorCode == SupabaseAuthException.EmailNotConfirmed)
-            {
-                // Supabase itself requires confirmation before issuing a session ("Confirm email" is on).
-                TempData["SuccessMessage"] = _localizer["Your account was created. Enter the code we e-mailed to {0} to confirm your address, then sign in.", emailAddress].Value;
-                return RedirectToAction(nameof(VerifyEmail));
             }
             catch (SupabaseAuthException)
             {
-                // The profile is saved either way; the user can simply sign in.
+                // The profile is saved; the user can simply sign in.
                 _logger.LogWarning("Automatic sign-in after registration failed for {UserId}.", user.Id);
                 TempData["SuccessMessage"] = _localizer["Your account was created. Please sign in to continue."].Value;
                 return RedirectToAction(nameof(Login));
@@ -241,9 +265,18 @@ namespace KrishiLink.Controllers
             {
                 var phone = NormalizePhone(identifier);
                 var byPhone = await _userManager.Users.FirstOrDefaultAsync(u => u.PhoneNumber == phone);
+                if (byPhone == null && phone.Length == 11 && phone.StartsWith("0"))
+                {
+                    var with880 = "+88" + phone;
+                    var withoutZero = phone[1..];
+                    byPhone = await _userManager.Users.FirstOrDefaultAsync(u =>
+                        u.PhoneNumber == with880 ||
+                        u.PhoneNumber == "88" + phone ||
+                        (u.PhoneNumber != null && u.PhoneNumber.EndsWith(withoutZero)));
+                }
                 if (byPhone == null)
                 {
-                    ModelState.AddModelError(string.Empty, "Unable to sign in. Check your credentials, verify your email, or try again shortly.");
+                    ModelState.AddModelError(string.Empty, "Unable to sign in. Check your credentials and try again.");
                     return View(model);
                 }
                 email = byPhone.Email!;
@@ -269,13 +302,40 @@ namespace KrishiLink.Controllers
             }
             catch (SupabaseAuthException ex) when (ex.ErrorCode == SupabaseAuthException.EmailNotConfirmed)
             {
-                // Only reachable after Supabase accepted the password, so this reveals nothing to a guesser.
-                TempData["ErrorMessage"] = _localizer["Your e-mail address is not confirmed yet. Enter the code we e-mailed you, or request a new one."].Value;
-                return RedirectToAction(nameof(VerifyEmail));
+                // Auto-confirm unconfirmed legacy accounts via admin API and complete sign-in
+                var userToConfirm = await _userManager.FindByEmailAsync(email);
+                if (userToConfirm != null)
+                {
+                    try
+                    {
+                        await _auth.ConfirmUserAsync(userToConfirm.Id);
+                        userToConfirm.EmailConfirmed = true;
+                        await _userManager.UpdateAsync(userToConfirm);
+                        tokens = await _auth.SignInAsync(email, model.Password);
+                        var user = await _adminBootstrap.ResolveUserAsync(tokens.AccessToken);
+                        if (user != null)
+                        {
+                            await _sessions.SignInAsync(HttpContext, user, tokens, model.RememberMe);
+                            signedIn = true;
+                            if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+                            {
+                                return Redirect(model.ReturnUrl);
+                            }
+                            return user.OnboardingCompletedAt is null
+                                ? RedirectToAction(nameof(Onboarding))
+                                : RedirectBasedOnRole(user.UserRole);
+                        }
+                    }
+                    catch (Exception confirmEx)
+                    {
+                        _logger.LogWarning(confirmEx, "Auto-confirm failed during sign-in for {Email}", email);
+                    }
+                }
+                ModelState.AddModelError(string.Empty, "Unable to sign in. Check your credentials and try again.");
             }
             catch (SupabaseAuthException)
             {
-                ModelState.AddModelError(string.Empty, "Unable to sign in. Check your credentials, verify your email, or try again shortly.");
+                ModelState.AddModelError(string.Empty, "Unable to sign in. Check your credentials and try again.");
             }
             finally
             {
@@ -658,8 +718,7 @@ namespace KrishiLink.Controllers
         [HttpGet]
         public IActionResult AccessDenied(string? reason = null)
         {
-            ViewData["EmailUnconfirmed"] = reason == VerifiedEmailResultHandler.Reason
-                && User.HasClaim(AppPolicies.EmailVerifiedClaim, "false");
+            ViewData["EmailUnconfirmed"] = false;
             return View();
         }
 
