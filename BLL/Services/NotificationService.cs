@@ -335,15 +335,6 @@ namespace KrishiLink.BLL.Services
             }
             catch { }
 
-            if (args.Length > 0)
-            {
-                try
-                {
-                    return string.Format(key, args);
-                }
-                catch { }
-            }
-
             return key;
         }
 
