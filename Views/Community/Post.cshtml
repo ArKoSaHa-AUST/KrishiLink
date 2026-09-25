@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = $"{Model.AuthorName} এর পোস্ট - KrishiLink কমিউনিটি";
 }
+@Html.AntiForgeryToken()
 
 @section Styles {
     <link rel="stylesheet" href="~/css/community.css" asp-append-version="true" />

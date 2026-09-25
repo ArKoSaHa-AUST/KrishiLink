@@ -331,17 +331,64 @@ function initReactionButtons() {
         if (btn.dataset.reactionBound) return;
         btn.dataset.reactionBound = "true";
 
-        btn.addEventListener("click", async function () {
+        btn.addEventListener("click", async function (e) {
+            e.preventDefault();
+            if (this.dataset.busy === "true") return;
+            this.dataset.busy = "true";
+
             const postId = this.getAttribute("data-post-id");
             const commentId = this.getAttribute("data-comment-id");
 
-            const tokenInput = document.querySelector("input[name='__RequestVerificationToken']");
+            const tokenInput = document.querySelector("input[name='__RequestVerificationToken']") ||
+                               document.querySelector("#antiForgeryForm input[name='__RequestVerificationToken']");
             const token = tokenInput ? tokenInput.value : "";
 
             const formData = new FormData();
             if (postId) formData.append("postId", postId);
             if (commentId) formData.append("commentId", commentId);
             formData.append("reactionType", "Helpful");
+            if (token) formData.append("__RequestVerificationToken", token);
+
+            // Optimistic UI state tracking
+            const wasLiked = this.classList.contains("text-success");
+            const icon = this.querySelector("i");
+            const card = postId ? document.getElementById(`post-card-${postId}`) : null;
+            const countDisplay = card ? card.querySelector(".post-like-count-display .count-val") : null;
+            const prevCount = countDisplay ? (parseInt(countDisplay.textContent.trim(), 10) || 0) : 0;
+
+            const commentCountSpan = commentId ? this.querySelector(".like-count") : null;
+            const prevCommentCount = commentCountSpan ? (parseInt(commentCountSpan.textContent.trim(), 10) || 0) : 0;
+
+            // Apply optimistic UI immediately
+            if (wasLiked) {
+                this.classList.remove("text-success", "fw-bold");
+                this.classList.add("text-muted");
+                if (icon) { icon.classList.remove("bi-hand-thumbs-up-fill"); icon.classList.add("bi-hand-thumbs-up"); }
+                if (countDisplay) countDisplay.textContent = Math.max(0, prevCount - 1);
+                if (commentCountSpan) commentCountSpan.textContent = prevCommentCount > 1 ? (prevCommentCount - 1) : "";
+            } else {
+                this.classList.remove("text-muted");
+                this.classList.add("text-success", "fw-bold");
+                if (icon) { icon.classList.remove("bi-hand-thumbs-up"); icon.classList.add("bi-hand-thumbs-up-fill"); }
+                if (countDisplay) countDisplay.textContent = prevCount + 1;
+                if (commentCountSpan) commentCountSpan.textContent = prevCommentCount + 1;
+            }
+
+            const revertUI = () => {
+                if (wasLiked) {
+                    this.classList.remove("text-muted");
+                    this.classList.add("text-success", "fw-bold");
+                    if (icon) { icon.classList.remove("bi-hand-thumbs-up"); icon.classList.add("bi-hand-thumbs-up-fill"); }
+                    if (countDisplay) countDisplay.textContent = prevCount;
+                    if (commentCountSpan) commentCountSpan.textContent = prevCommentCount > 0 ? prevCommentCount : "";
+                } else {
+                    this.classList.remove("text-success", "fw-bold");
+                    this.classList.add("text-muted");
+                    if (icon) { icon.classList.remove("bi-hand-thumbs-up-fill"); icon.classList.add("bi-hand-thumbs-up"); }
+                    if (countDisplay) countDisplay.textContent = prevCount;
+                    if (commentCountSpan) commentCountSpan.textContent = prevCommentCount > 0 ? prevCommentCount : "";
+                }
+            };
 
             try {
                 const res = await fetch("/Community/ToggleReaction", {
@@ -355,13 +402,15 @@ function initReactionButtons() {
 
                 if (res.ok) {
                     const data = await res.json();
+                    if (data.requireLogin) {
+                        revertUI();
+                        window.location.href = data.redirectUrl || "/Account/Login";
+                        return;
+                    }
+
                     if (data.success) {
                         if (postId) {
-                            const card = document.getElementById(`post-card-${postId}`);
-                            const countDisplay = card ? card.querySelector(".post-like-count-display .count-val") : null;
                             if (countDisplay) countDisplay.textContent = data.likeCount;
-
-                            const icon = this.querySelector("i");
                             if (data.action === "Added") {
                                 this.classList.remove("text-muted");
                                 this.classList.add("text-success", "fw-bold");
@@ -372,15 +421,22 @@ function initReactionButtons() {
                                 if (icon) { icon.classList.remove("bi-hand-thumbs-up-fill"); icon.classList.add("bi-hand-thumbs-up"); }
                             }
                         } else if (commentId) {
-                            const countSpan = this.querySelector(".like-count");
-                            if (countSpan) countSpan.textContent = data.likeCount > 0 ? data.likeCount : "";
+                            if (commentCountSpan) commentCountSpan.textContent = data.likeCount > 0 ? data.likeCount : "";
                         }
+                    } else {
+                        revertUI();
                     }
                 } else if (res.status === 401) {
+                    revertUI();
                     window.location.href = "/Account/Login";
+                } else {
+                    revertUI();
                 }
             } catch (err) {
                 console.error("Reaction toggle failed:", err);
+                revertUI();
+            } finally {
+                this.dataset.busy = "false";
             }
         });
     });

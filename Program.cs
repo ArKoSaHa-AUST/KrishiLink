@@ -63,6 +63,17 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
     options.AccessDeniedPath = "/Account/AccessDenied";
+    options.Events.OnRedirectToLogin = context =>
+    {
+        if (context.Request.Headers.XRequestedWith == "XMLHttpRequest" ||
+            (context.Request.Headers.Accept.ToString().Contains("application/json", StringComparison.OrdinalIgnoreCase)))
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        }
+        context.Response.Redirect(context.RedirectUri);
+        return Task.CompletedTask;
+    };
 });
 // Database sessions survive restarts and are shared across instances; memory is for local development only.
 var sessionStore = builder.Configuration["Authentication:SessionStore"] ?? (builder.Environment.IsDevelopment() ? "Memory" : "Database");
