@@ -160,6 +160,7 @@ namespace KrishiLink.Models.ViewModels
         public List<IFormFile>? ImageFiles { get; set; }
         public IFormFile? VideoFile { get; set; }
         public IFormFile? AudioFile { get; set; }
+        public IFormFile? AudioRecordingFile { get; set; }
         public int? AudioDurationSeconds { get; set; }
     }
 
@@ -176,6 +177,7 @@ namespace KrishiLink.Models.ViewModels
 
         public IFormFile? ImageFile { get; set; }
         public IFormFile? AudioFile { get; set; }
+        public IFormFile? AudioRecordingFile { get; set; }
         public int? AudioDurationSeconds { get; set; }
     }
 

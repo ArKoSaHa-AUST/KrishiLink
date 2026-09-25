@@ -307,9 +307,10 @@ namespace KrishiLink.BLL.Services
             };
 
             // Process Audio Note if present
-            if (model.AudioFile != null && model.AudioFile.Length > 0)
+            var voiceFile = model.AudioFile ?? model.AudioRecordingFile;
+            if (voiceFile != null && voiceFile.Length > 0)
             {
-                post.AudioRecordingUrl = await SaveMediaFileAsync(model.AudioFile, "community/audio");
+                post.AudioRecordingUrl = await SaveMediaFileAsync(voiceFile, "community/audio");
             }
 
             _db.CommunityPosts.Add(post);
@@ -390,9 +391,10 @@ namespace KrishiLink.BLL.Services
             }
 
             // Process voice note in comment
-            if (model.AudioFile != null && model.AudioFile.Length > 0)
+            var commentVoiceFile = model.AudioFile ?? model.AudioRecordingFile;
+            if (commentVoiceFile != null && commentVoiceFile.Length > 0)
             {
-                comment.AudioRecordingUrl = await SaveMediaFileAsync(model.AudioFile, "community/audio");
+                comment.AudioRecordingUrl = await SaveMediaFileAsync(commentVoiceFile, "community/audio");
             }
 
             _db.CommunityComments.Add(comment);
