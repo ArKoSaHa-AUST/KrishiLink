@@ -1,0 +1,352 @@
+@model KrishiLink.Models.ViewModels.CommunityPostViewModel
+
+<article class="community-post-card card border-0 shadow-sm rounded-3 mb-4 overflow-hidden" id="post-card-@Model.Id" data-post-id="@Model.Id">
+    <!-- Card Header -->
+    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-3">
+            <!-- Author Avatar -->
+            <div class="author-avatar flex-shrink-0">
+                <div class="avatar-circle bg-success-subtle text-success-emphasis fw-bold rounded-circle d-flex align-items-center justify-content-center border border-success-subtle shadow-sm" style="width: 50px; height: 50px; font-size: 18px;">
+                    @if (!string.IsNullOrEmpty(Model.AuthorName) && Model.AuthorName.Length > 0)
+                    {
+                        <span>@Model.AuthorName.Substring(0, 1).ToUpper()</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-person" aria-hidden="true"></i>
+                    }
+                </div>
+            </div>
+
+            <!-- Author Name, Role, Location, Time -->
+            <div>
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-0.5">
+                    <span class="community-author-name">@Model.AuthorName</span>
+                    @if (Model.AuthorRole == KrishiLink.Models.Entities.AppRoles.Admin)
+                    {
+                        <span class="badge bg-primary text-white py-1 px-2.5 rounded-pill d-inline-flex align-items-center" style="font-size: 0.8rem;">
+                            <i class="bi bi-shield-check me-1.5" aria-hidden="true"></i>
+                            <span>কৃষি কর্মকর্তা (DAE)</span>
+                        </span>
+                    }
+                    else if (Model.AuthorRole == KrishiLink.Models.Entities.AppRoles.EquipmentOwner)
+                    {
+                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle py-1 px-2.5 rounded-pill d-inline-flex align-items-center" style="font-size: 0.8rem;">
+                            <i class="bi bi-gear-fill me-1.5" aria-hidden="true"></i>
+                            <span>যন্ত্রপাতি মালিক</span>
+                        </span>
+                    }
+                    else if (Model.AuthorRole == KrishiLink.Models.Entities.AppRoles.GodownOwner)
+                    {
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1 px-2.5 rounded-pill d-inline-flex align-items-center" style="font-size: 0.8rem;">
+                            <i class="bi bi-building-fill me-1.5" aria-hidden="true"></i>
+                            <span>গুদাম মালিক</span>
+                        </span>
+                    }
+                    else if (Model.AuthorIsVerified)
+                    {
+                        <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2.5 rounded-pill d-inline-flex align-items-center" style="font-size: 0.8rem;">
+                            <i class="bi bi-patch-check-fill me-1.5" aria-hidden="true"></i>
+                            <span>ভেরিফাইড কৃষক</span>
+                        </span>
+                    }
+                </div>
+                <div class="community-author-meta d-flex align-items-center gap-2 flex-wrap">
+                    @if (!string.IsNullOrEmpty(Model.Upazila) || !string.IsNullOrEmpty(Model.District))
+                    {
+                        <span class="d-inline-flex align-items-center"><i class="bi bi-geo-alt-fill text-success me-1.5" aria-hidden="true"></i><span>@(Model.Upazila ?? Model.District)</span></span>
+                        <span>•</span>
+                    }
+                    <span>@Model.TimeAgo</span>
+                    <span>•</span>
+                    <span title="Public post"><i class="bi bi-globe text-muted" aria-hidden="true"></i></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kebab Options Menu -->
+        <div class="dropdown">
+            <button class="btn btn-light border-0 rounded-circle d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 38px; height: 38px; padding: 0;">
+                <i class="bi bi-three-dots fs-5" aria-hidden="true"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-2" style="font-size: 0.92rem; border-radius: 12px;">
+                <li>
+                    <button class="dropdown-item bookmark-toggle-btn py-2 px-3 d-flex align-items-center" type="button" data-post-id="@Model.Id">
+                        <i class="bi @(Model.IsBookmarkedByCurrentUser ? "bi-bookmark-fill text-success" : "bi-bookmark") me-2.5" aria-hidden="true"></i>
+                        <span>@(Model.IsBookmarkedByCurrentUser ? "সংরক্ষিত থেকে সরান" : "পোস্ট সংরক্ষণ করুন")</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="dropdown-item copy-link-btn py-2 px-3 d-flex align-items-center" type="button" data-link="/Community/Post/@Model.Id">
+                        <i class="bi bi-link-45deg me-2.5 fs-5" aria-hidden="true"></i>
+                        <span>পোস্ট লিংক কপি করুন</span>
+                    </button>
+                </li>
+                <li><hr class="dropdown-divider my-1"></li>
+                @if (Model.CanDelete)
+                {
+                    <li>
+                        <form asp-controller="Community" asp-action="DeletePost" method="post" data-onsubmit="return confirm('আপনি কি নিশ্চিত যে এই পোস্টটি মুছে ফেলতে চান?');">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <button type="submit" class="dropdown-item text-danger py-2 px-3 d-flex align-items-center">
+                                <i class="bi bi-trash3 me-2.5" aria-hidden="true"></i>
+                                <span>পোস্ট মুছে ফেলুন</span>
+                            </button>
+                        </form>
+                    </li>
+                }
+                else
+                {
+                    <li>
+                        <button class="dropdown-item text-danger report-post-btn py-2 px-3 d-flex align-items-center" type="button" data-post-id="@Model.Id">
+                            <i class="bi bi-flag me-2.5" aria-hidden="true"></i>
+                            <span>ভুল বা আপত্তিকর তথ্য রিপোর্ট করুন</span>
+                        </button>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+
+    <!-- Crisis / Help Needed Alert Banner (Conditional) -->
+    @if (Model.IsHelpRequest)
+    {
+        <div class="crisis-alert-banner px-4 py-3 mx-4 mb-3 rounded-3 @(Model.UrgencyLevel == KrishiLink.Models.Entities.CommunityUrgencyLevels.High ? "bg-danger-subtle text-danger-emphasis" : (Model.UrgencyLevel == KrishiLink.Models.Entities.CommunityUrgencyLevels.Moderate ? "bg-warning-subtle text-warning-emphasis" : "bg-success-subtle text-success-emphasis"))">
+            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-2.5">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge @(Model.UrgencyLevel == KrishiLink.Models.Entities.CommunityUrgencyLevels.High ? "bg-danger" : (Model.UrgencyLevel == KrishiLink.Models.Entities.CommunityUrgencyLevels.Moderate ? "bg-warning text-dark" : "bg-success")) px-3 py-1.5 rounded-pill d-inline-flex align-items-center" style="font-size: 0.88rem;">
+                        <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>
+                        <span>@(Model.UrgencyLevel == KrishiLink.Models.Entities.CommunityUrgencyLevels.High ? "জরুরি কৃষি সমস্যা" : "সাহায্য প্রয়োজন")</span>
+                    </span>
+                    @if (Model.IsSolved)
+                    {
+                        <span class="badge bg-success px-3 py-1.5 rounded-pill d-inline-flex align-items-center" style="font-size: 0.88rem;">
+                            <i class="bi bi-patch-check-fill me-2" aria-hidden="true"></i>
+                            <span>সমাধান পাওয়া গেছে</span>
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis border px-3 py-1.5 rounded-pill d-inline-flex align-items-center" style="font-size: 0.88rem;">
+                            <i class="bi bi-hourglass-split me-2" aria-hidden="true"></i>
+                            <span>সমাধান খুঁজছেন</span>
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <!-- Structured Metadata Chips -->
+            <div class="d-flex align-items-center gap-2.5 flex-wrap">
+                @if (!string.IsNullOrEmpty(Model.CropCategory))
+                {
+                    <span class="crisis-chip shadow-sm d-inline-flex align-items-center">
+                        <i class="bi bi-flower1 text-danger me-2" aria-hidden="true"></i>
+                        <span><strong>ফসল:</strong> @Model.CropCategory</span>
+                    </span>
+                }
+                @if (!string.IsNullOrEmpty(Model.IssueCategory))
+                {
+                    <span class="crisis-chip shadow-sm d-inline-flex align-items-center">
+                        <i class="bi bi-bug-fill text-danger me-2" aria-hidden="true"></i>
+                        <span><strong>সমস্যা:</strong> @Model.IssueCategory</span>
+                    </span>
+                }
+                @if (!string.IsNullOrEmpty(Model.CropAge))
+                {
+                    <span class="crisis-chip shadow-sm d-inline-flex align-items-center">
+                        <i class="bi bi-calendar-check text-muted me-2" aria-hidden="true"></i>
+                        <span><strong>বয়স:</strong> @Model.CropAge</span>
+                    </span>
+                }
+                @if (!string.IsNullOrEmpty(Model.AffectedArea))
+                {
+                    <span class="crisis-chip shadow-sm d-inline-flex align-items-center">
+                        <i class="bi bi-bounding-box text-muted me-2" aria-hidden="true"></i>
+                        <span><strong>আক্রান্ত জমি:</strong> @Model.AffectedArea</span>
+                    </span>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Post Text Content -->
+    <div class="card-body pt-1 pb-3 px-4">
+        <div class="post-content-text" style="white-space: pre-line;">
+            @Model.Content
+        </div>
+
+        <!-- Audio Voice Note Player (if present) -->
+        @if (!string.IsNullOrEmpty(Model.AudioRecordingUrl))
+        {
+            <div class="community-audio-player my-3.5 d-flex align-items-center gap-3">
+                <button type="button" class="btn btn-success rounded-circle audio-play-btn flex-shrink-0 d-flex align-items-center justify-content-center shadow-sm" data-audio-src="@Model.AudioRecordingUrl">
+                    <i class="bi bi-play-fill fs-4" aria-hidden="true"></i>
+                </button>
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center justify-content-between mb-1.5">
+                        <span class="fw-bold text-success-emphasis d-inline-flex align-items-center" style="font-size: 0.9rem;">
+                            <i class="bi bi-soundwave me-2"></i><span>ভয়েস বার্তা শুনুন</span>
+                        </span>
+                        <span class="text-muted fw-medium audio-time" style="font-size: 0.85rem;">@(Model.AudioDurationSeconds.HasValue ? $"{Model.AudioDurationSeconds}s" : "0:00")</span>
+                    </div>
+                    <div class="progress" style="height: 8px; cursor: pointer; border-radius: 4px;">
+                        <div class="progress-bar bg-success audio-progress" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Media Layout Container -->
+    @if (Model.MediaList != null && Model.MediaList.Any())
+    {
+        var mediaCount = Model.MediaList.Count;
+        var videoItem = Model.MediaList.FirstOrDefault(m => m.MediaType == KrishiLink.Models.Entities.PostMediaTypes.Video);
+
+        if (videoItem != null)
+        {
+            <div class="post-video-container bg-black position-relative text-center">
+                <video controls class="w-100" style="max-height: 460px; object-fit: contain;" preload="metadata">
+                    <source src="@videoItem.MediaUrl" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+        }
+        else if (mediaCount == 1)
+        {
+            <div class="post-single-image-container border-top border-bottom overflow-hidden text-center bg-light">
+                <a href="@Model.MediaList[0].MediaUrl" target="_blank" class="d-block">
+                    <img src="@Model.MediaList[0].MediaUrl" alt="Post photo" class="img-fluid w-100" style="max-height: 480px; object-fit: cover;" loading="lazy" />
+                </a>
+            </div>
+        }
+        else if (mediaCount == 2)
+        {
+            <div class="row g-1 border-top border-bottom">
+                <div class="col-6">
+                    <a href="@Model.MediaList[0].MediaUrl" target="_blank" class="d-block overflow-hidden" style="height: 280px;">
+                        <img src="@Model.MediaList[0].MediaUrl" alt="Post photo" class="w-100 h-100" style="object-fit: cover;" loading="lazy" />
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="@Model.MediaList[1].MediaUrl" target="_blank" class="d-block overflow-hidden" style="height: 280px;">
+                        <img src="@Model.MediaList[1].MediaUrl" alt="Post photo" class="w-100 h-100" style="object-fit: cover;" loading="lazy" />
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row g-1 border-top border-bottom">
+                <div class="col-8">
+                    <a href="@Model.MediaList[0].MediaUrl" target="_blank" class="d-block overflow-hidden" style="height: 320px;">
+                        <img src="@Model.MediaList[0].MediaUrl" alt="Post photo" class="w-100 h-100" style="object-fit: cover;" loading="lazy" />
+                    </a>
+                </div>
+                <div class="col-4 d-flex flex-column gap-1">
+                    @foreach (var img in Model.MediaList.Skip(1).Take(2))
+                    {
+                        <a href="@img.MediaUrl" target="_blank" class="d-block overflow-hidden flex-fill" style="height: 158px;">
+                            <img src="@img.MediaUrl" alt="Post photo" class="w-100 h-100" style="object-fit: cover;" loading="lazy" />
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+    }
+
+    <!-- Accepted Solution Pinned Highlight Box -->
+    @if (Model.AcceptedComment != null)
+    {
+        <div class="accepted-solution-pinned-box mx-4 my-3 p-4">
+            <div class="d-flex align-items-center justify-content-between mb-2.5">
+                <div class="d-flex align-items-center text-success fw-bold fs-6">
+                    <i class="bi bi-patch-check-fill fs-5 me-2.5" aria-hidden="true"></i>
+                    <span>গৃহীত সঠিক সমাধান (Accepted Solution)</span>
+                </div>
+                <span class="badge bg-success text-white py-1 px-2.5 rounded-pill d-inline-flex align-items-center" style="font-size: 0.8rem;">
+                    <i class="bi bi-star-fill me-1.5" aria-hidden="true"></i>
+                    <span>+৫০ কৃষি পয়েন্ট অর্জিত</span>
+                </span>
+            </div>
+
+            <div class="d-flex align-items-center gap-2.5 mb-2.5">
+                <div class="avatar-circle-sm bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; font-size: 14px;">
+                    <span>@Model.AcceptedComment.AuthorName.Substring(0, 1).ToUpper()</span>
+                </div>
+                <span class="fw-semibold text-dark" style="font-size: 0.95rem;">@Model.AcceptedComment.AuthorName</span>
+                @if (Model.AcceptedComment.IsOfficialExpert)
+                {
+                    <span class="badge bg-primary text-white py-0.5 px-2 rounded-pill" style="font-size: 0.75rem;">DAE বিশেষজ্ঞ</span>
+                }
+            </div>
+
+            <p class="mb-2 text-dark" style="font-size: 0.98rem; line-height: 1.65; white-space: pre-line;">
+                @Model.AcceptedComment.Content
+            </p>
+
+            @if (!string.IsNullOrEmpty(Model.AcceptedComment.AttachmentImageUrl))
+            {
+                <div class="my-2.5">
+                    <img src="@Model.AcceptedComment.AttachmentImageUrl" alt="Solution attachment" class="img-fluid rounded-3 border" style="max-height: 180px;" />
+                </div>
+            }
+
+            <small class="text-muted d-block mt-1" style="font-size: 0.82rem;">লেখক কর্তৃক যাচাইকৃত ও গৃহীত সঠিক কৃষি সমাধান</small>
+        </div>
+    }
+
+    <!-- Social Reaction Metrics Counter (Share count removed as requested) -->
+    <div class="card-body py-2.5 px-4 border-bottom d-flex align-items-center justify-content-between text-muted" style="font-size: 0.9rem;">
+        <div>
+            <span class="post-like-count-display d-inline-flex align-items-center">
+                <i class="bi bi-hand-thumbs-up-fill text-success me-2" aria-hidden="true"></i>
+                <span><span class="count-val fw-semibold">@Model.LikeCount</span> জন কৃষক উপকৃত হয়েছেন</span>
+            </span>
+        </div>
+        <div>
+            <button type="button" class="btn btn-link p-0 text-muted text-decoration-none open-comments-modal-btn d-inline-flex align-items-center" data-post-id="@Model.Id" title="সকল মন্তব্য ও সমাধান দেখুন">
+                <i class="bi bi-chat-text fs-6 text-success me-2" aria-hidden="true"></i>
+                <span><span class="comment-count-val fw-semibold">@Model.CommentCount</span>টি মন্তব্য</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Action Toolbar (Like, Comment, WhatsApp Share, Bookmark) -->
+    <div class="card-footer bg-white border-bottom py-2 px-3">
+        <div class="row g-2 text-center">
+            <!-- Helpful / Like Button -->
+            <div class="col">
+                <button type="button" class="btn btn-sm w-100 post-action-btn post-reaction-btn @(Model.IsLikedByCurrentUser ? "text-success fw-bold" : "text-muted")" data-post-id="@Model.Id">
+                    <i class="bi @(Model.IsLikedByCurrentUser ? "bi-hand-thumbs-up-fill fs-5" : "bi-hand-thumbs-up fs-5") me-2" aria-hidden="true"></i>
+                    <span>সহায়ক</span>
+                </button>
+            </div>
+
+            <!-- Comment Trigger Button (Opens centered Comments Modal) -->
+            <div class="col">
+                <button type="button" class="btn btn-sm w-100 post-action-btn text-muted open-comments-modal-btn" data-post-id="@Model.Id" title="মন্তব্য ও সমাধান বক্স খুলুন">
+                    <i class="bi bi-chat-left-text fs-5 text-success me-2" aria-hidden="true"></i>
+                    <span class="fw-semibold">মন্তব্য করুন</span>
+                </button>
+            </div>
+
+            <!-- WhatsApp Direct Share -->
+            <div class="col">
+                <a href="https://api.whatsapp.com/send?text=@Uri.EscapeDataString($"{Model.AuthorName} এর পোস্ট: {Model.Content}\n\nকৃষিলিঙ্ক কমিউনিটিতে দেখুন: https://krishilink.com/Community/Post/{Model.Id}")" target="_blank" class="btn btn-sm w-100 post-action-btn text-success text-decoration-none" title="হোয়াটসঅ্যাপে শেয়ার করুন">
+                    <i class="bi bi-whatsapp fs-5 me-2" aria-hidden="true"></i>
+                    <span>হোয়াটসঅ্যাপ</span>
+                </a>
+            </div>
+
+            <!-- Bookmark Button -->
+            <div class="col">
+                <button type="button" class="btn btn-sm w-100 post-action-btn bookmark-toggle-btn @(Model.IsBookmarkedByCurrentUser ? "text-success fw-bold" : "text-muted")" data-post-id="@Model.Id">
+                    <i class="bi @(Model.IsBookmarkedByCurrentUser ? "bi-bookmark-fill fs-5" : "bi-bookmark fs-5") me-2" aria-hidden="true"></i>
+                    <span>সংরক্ষণ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</article>

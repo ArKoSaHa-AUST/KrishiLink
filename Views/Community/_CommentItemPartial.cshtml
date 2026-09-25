@@ -1,0 +1,102 @@
+@model KrishiLink.Models.ViewModels.CommunityCommentViewModel
+
+<div class="community-comment-item d-flex gap-3 mb-3" id="comment-@Model.Id" data-comment-id="@Model.Id">
+    <!-- Commenter Avatar -->
+    <div class="flex-shrink-0">
+        <div class="avatar-circle-sm bg-success-subtle text-success-emphasis fw-bold rounded-circle d-flex align-items-center justify-content-center border border-success-subtle shadow-sm" style="width: 38px; height: 38px; font-size: 15px;">
+            @if (!string.IsNullOrEmpty(Model.AuthorName) && Model.AuthorName.Length > 0)
+            {
+                <span>@Model.AuthorName.Substring(0, 1).ToUpper()</span>
+            }
+            else
+            {
+                <i class="bi bi-person" aria-hidden="true"></i>
+            }
+        </div>
+    </div>
+
+    <!-- Comment Body Container -->
+    <div class="flex-grow-1">
+        <div class="comment-bubble p-3 rounded-3 @(Model.IsAcceptedSolution ? "border border-success bg-success-subtle bg-opacity-25" : (Model.IsOfficialExpert ? "border border-primary-subtle bg-primary-subtle bg-opacity-10" : "bg-white")) shadow-sm">
+            <!-- Author Name & Role Header -->
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-1.5">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="fw-semibold text-dark" style="font-size: 0.98rem;">@Model.AuthorName</span>
+                    @if (Model.IsOfficialExpert)
+                    {
+                        <span class="badge bg-primary text-white py-0.5 px-2 rounded-pill d-inline-flex align-items-center" style="font-size: 0.75rem;">
+                            <i class="bi bi-award-fill me-1.5" aria-hidden="true"></i>
+                            <span>অফিসিয়াল পরামর্শ (DAE)</span>
+                        </span>
+                    }
+                    else if (Model.AuthorIsVerified)
+                    {
+                        <span class="badge bg-success-subtle text-success border border-success-subtle py-0.5 px-2 rounded-pill d-inline-flex align-items-center" style="font-size: 0.75rem;">
+                            <i class="bi bi-patch-check-fill me-1.5" aria-hidden="true"></i>
+                            <span>ভেরিফাইড</span>
+                        </span>
+                    }
+                </div>
+                <small class="text-muted" style="font-size: 0.82rem;">@Model.TimeAgo</small>
+            </div>
+
+            <!-- Accepted Solution Badge (if marked) -->
+            @if (Model.IsAcceptedSolution)
+            {
+                <div class="d-inline-flex align-items-center text-success fw-semibold px-2.5 py-1 mb-2 rounded bg-success bg-opacity-10 border border-success border-opacity-25" style="font-size: 0.82rem;">
+                    <i class="bi bi-check-circle-fill me-2" aria-hidden="true"></i>
+                    <span>গৃহীত সঠিক সমাধান</span>
+                </div>
+            }
+
+            <!-- Text Content -->
+            <div class="comment-text mb-2" style="white-space: pre-line;">
+                @Model.Content
+            </div>
+
+            <!-- Attached Image (if any) -->
+            @if (!string.IsNullOrEmpty(Model.AttachmentImageUrl))
+            {
+                <div class="comment-image-attachment my-2.5">
+                    <a href="@Model.AttachmentImageUrl" target="_blank" class="d-inline-block rounded-3 overflow-hidden border">
+                        <img src="@Model.AttachmentImageUrl" alt="Comment attachment" class="img-fluid rounded-3" style="max-height: 200px; object-fit: cover;" />
+                    </a>
+                </div>
+            }
+
+            <!-- Attached Audio Voice Note (if any) -->
+            @if (!string.IsNullOrEmpty(Model.AudioRecordingUrl))
+            {
+                <div class="comment-audio-attachment my-2.5 p-2.5 bg-light rounded-3 border d-flex align-items-center gap-2.5" style="max-width: 360px;">
+                    <button type="button" class="btn btn-sm btn-outline-success rounded-circle audio-play-btn d-flex align-items-center justify-content-center" data-audio-src="@Model.AudioRecordingUrl" style="width: 36px; height: 36px; padding: 0;">
+                        <i class="bi bi-play-fill fs-5" aria-hidden="true"></i>
+                    </button>
+                    <div class="flex-grow-1">
+                        <div class="progress" style="height: 6px; border-radius: 3px;">
+                            <div class="progress-bar bg-success audio-progress" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <small class="text-muted audio-time fw-medium" style="font-size: 0.78rem;">@(Model.AudioDurationSeconds.HasValue ? $"{Model.AudioDurationSeconds}s" : "অডিও")</small>
+                </div>
+            }
+        </div>
+
+        <!-- Sub Actions Line -->
+        <div class="comment-actions d-flex align-items-center gap-3.5 px-2 pt-1.5" style="font-size: 0.85rem;">
+            <button type="button" class="btn btn-link p-0 text-decoration-none text-muted comment-like-btn d-inline-flex align-items-center" data-comment-id="@Model.Id">
+                <i class="bi bi-hand-thumbs-up fs-6 me-1.5" aria-hidden="true"></i>
+                <span class="like-count fw-semibold me-1">@(Model.UpvoteCount > 0 ? Model.UpvoteCount.ToString() : "")</span>
+                <span>সহায়ক</span>
+            </button>
+
+            @if (Model.CanAcceptThisComment)
+            {
+                <button type="button" class="btn btn-link p-0 text-decoration-none text-success fw-semibold accept-solution-btn d-inline-flex align-items-center" data-comment-id="@Model.Id" data-post-id="@Model.PostId">
+                    <i class="bi bi-check-circle fs-6 me-2" aria-hidden="true"></i>
+                    <span>সঠিক সমাধান হিসেবে গ্রহণ করুন</span>
+                </button>
+            }
+        </div>
+
+    </div>
+</div>

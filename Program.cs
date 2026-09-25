@@ -165,6 +165,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IBadgeService, BadgeService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<ILoyaltyService, LoyaltyService>();
+builder.Services.AddScoped<ICommunityService, CommunityService>();
 
 // Read-only views of the booking services. The AI assistant depends on these alone, so it has no write path.
 builder.Services.AddScoped<IEquipmentQueries>(sp => sp.GetRequiredService<IEquipmentService>());

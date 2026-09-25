@@ -53,10 +53,12 @@ ehthumbs.db
 # Ignore markdown files except README.md and the prompt/ master prompts
 *.md
 !README.md
-!readme.md
 !README*.md
 !prompt/
 !prompt/*.md
+!COMMUNITY_*.md
 
-bin/
-obj/
+# Agent workspace configurations & skills
+.agents/
+.agents
+
