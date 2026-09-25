@@ -37,6 +37,7 @@ public class AuthorizationInvariantTests
         "Advisory.Planner *", "Advisory.PlannerIcs GET", "Advisory.CalendarJson GET",
 
         "Leaderboard.Index GET", "Leaderboard.OwnerBadges GET",
+        "Community.Index GET", "Community.Post GET", "Community.GetCommentsModal GET", "Community.GetFeedPartial GET",
         "Reviews.List GET",
         "Verify.Index GET", "Verify.Receipt GET",
     };

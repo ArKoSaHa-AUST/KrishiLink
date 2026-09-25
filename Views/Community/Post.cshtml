@@ -1,0 +1,58 @@
+@model KrishiLink.Models.ViewModels.CommunityPostViewModel
+@{
+    ViewData["Title"] = $"{Model.AuthorName} এর পোস্ট - KrishiLink কমিউনিটি";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/community.css" asp-append-version="true" />
+}
+
+<div class="community-single-post-wrapper py-4 py-lg-5">
+    <div class="container-xl" style="max-width: 900px;">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                
+                <!-- Back to Feed Link -->
+                <div class="mb-4">
+                    <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3.5 py-2 d-inline-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                        <i class="bi bi-arrow-left fs-5" aria-hidden="true"></i>
+                        <span>কমিউনিটি ফিডে ফিরুন</span>
+                    </a>
+                </div>
+
+                <!-- Alert Feedback Messages -->
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4 p-3.5" role="alert">
+                        <i class="bi bi-check-circle-fill fs-5 me-2" aria-hidden="true"></i>
+                        <span class="fs-6">@TempData["SuccessMessage"]</span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4 p-3.5" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill fs-5 me-2" aria-hidden="true"></i>
+                        <span class="fs-6">@TempData["ErrorMessage"]</span>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <!-- Post Card Render -->
+                <partial name="_PostCardPartial" model="Model" />
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- DYNAMIC CENTERED COMMENTS MODAL CONTAINER  -->
+<!-- ========================================== -->
+<div class="modal fade" id="communityCommentsModal" tabindex="-1" aria-labelledby="communityCommentsModalLabel" aria-hidden="true">
+    <!-- Populated asynchronously via AJAX -->
+</div>
+
+@section Scripts {
+    <script src="~/js/community.js" asp-append-version="true"></script>
+}
