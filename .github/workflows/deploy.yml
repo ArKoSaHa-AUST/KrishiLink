@@ -31,7 +31,7 @@ jobs:
         dotnet ef migrations script --idempotent --configuration Release --output ./publish/migrations.sql
 
     - name: Upload Release Bundle
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: krishilink-release
         path: ./publish
