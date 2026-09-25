@@ -4,6 +4,7 @@ using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace KrishiLink.Controllers
 {
@@ -11,10 +12,12 @@ namespace KrishiLink.Controllers
     public class LoyaltyController : Controller
     {
         private readonly ILoyaltyService _loyalty;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
-        public LoyaltyController(ILoyaltyService loyalty)
+        public LoyaltyController(ILoyaltyService loyalty, IStringLocalizer<SharedResource> localizer)
         {
             _loyalty = loyalty;
+            _localizer = localizer;
         }
 
         /// <summary>
@@ -54,11 +57,11 @@ namespace KrishiLink.Controllers
 
             if (voucher == null)
             {
-                TempData["ErrorMessage"] = "Unable to generate promo code. You may not have enough KrishiPoints for this tier.";
+                TempData["ErrorMessage"] = _localizer["Unable to generate promo code. You may not have enough KrishiPoints for this tier."].Value;
                 return RedirectToAction(nameof(Index));
             }
 
-            TempData["SuccessMessage"] = $"Promo Voucher generated successfully! Code: {voucher.PromoCode} (Save ৳{voucher.DiscountAmount:N0} on your next booking)";
+            TempData["SuccessMessage"] = _localizer["Promo Voucher generated successfully! Code: {0} (Save ৳{1} on your next booking)", voucher.PromoCode, $"{voucher.DiscountAmount:N0}"].Value;
             return RedirectToAction(nameof(Index));
         }
 

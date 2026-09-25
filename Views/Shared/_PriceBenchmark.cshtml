@@ -1,0 +1,49 @@
+@model KrishiLink.Models.ViewModels.PriceBenchmarkViewModel
+@using KrishiLink.BLL.Services
+@{
+    string Price(decimal v) => Model.PerTonMonth ? L["৳{0}/ton/month", v.ToString("N0")].Value : L["৳{0}/day", v.ToString("N0")].Value;
+    var category = L[Model.Category].Value;
+    var district = L[Model.District].Value;
+}
+@if (Model.Benchmark is not { } b)
+{
+    <p class="small text-muted d-flex align-items-start gap-2 mb-4">
+        <i class="bi bi-bar-chart" aria-hidden="true"></i>
+        <span>
+            @(Model.PerTonMonth
+                ? L["Not enough completed bookings of {0} in {1} yet to compare prices.", category, district]
+                : L["Not enough completed rentals of {0} in {1} yet to compare prices.", category, district])
+        </span>
+    </p>
+}
+else
+{
+    var position = b.PositionOf(Model.Price);
+    var lead = Model.ForOwner ? L["Your rate {0}", Price(Model.Price)].Value : Price(Model.Price);
+    var sentence = position switch
+    {
+        PricePosition.Below => L["{0} is below what most renters paid for {1} in {2} ({3}–{4}).", lead, category, district, Price(b.P25), Price(b.P75)],
+        PricePosition.Above => L["{0} is above what most renters paid for {1} in {2} ({3}–{4}).", lead, category, district, Price(b.P25), Price(b.P75)],
+        _ => L["{0} is about average for {1} in {2} (most paid {3}–{4}).", lead, category, district, Price(b.P25), Price(b.P75)]
+    };
+    var basis = b.Scope == BenchmarkScope.DistrictMonth
+        ? L["Median {0}, from {1} completed bookings in {2}.", Price(b.Median), b.SampleSize, System.Globalization.CultureInfo.CurrentUICulture.DateTimeFormat.GetMonthName(b.Month!.Value)]
+        : L["Median {0}, from {1} completed bookings across the year.", Price(b.Median), b.SampleSize];
+
+    // One shared scale for the middle half of paid prices and this price.
+    var low = Math.Min(b.P25, Model.Price) * 0.85m;
+    var high = Math.Max(b.P75, Model.Price) * 1.15m;
+    string Pct(decimal v) => (high > low ? Math.Clamp((v - low) / (high - low) * 100, 0, 100) : 50).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
+    <div class="mb-4">
+        <p class="small mb-2 d-flex align-items-start gap-2">
+            <i class="bi bi-bar-chart @(position == PricePosition.Typical ? "text-success" : "text-warning-emphasis")" aria-hidden="true"></i>
+            <span>@sentence</span>
+        </p>
+        <div class="krishi-range" role="img" aria-label="@sentence">
+            <span class="krishi-range-band" style="left: @Pct(b.P25)%; width: calc(@Pct(b.P75)% - @Pct(b.P25)%);"></span>
+            <span class="krishi-range-mark" style="left: @Pct(Model.Price)%;"></span>
+        </div>
+        <p class="small text-muted mt-2 mb-0">@basis</p>
+    </div>
+}

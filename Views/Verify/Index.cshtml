@@ -95,7 +95,7 @@
                 <div class="p-3.5 rounded-4 bg-light border mb-4 d-flex align-items-center gap-3">
                     @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
                     {
-                        <img src="@Model.ImageUrl" alt="@Model.ItemName" class="rounded-3 object-fit-cover shadow-xs border flex-shrink-0" style="width: 76px; height: 64px;" />
+                        <img src="@Model.ImageUrl" alt="@Model.ItemName" class="rounded-3 object-fit-cover shadow-xs border flex-shrink-0" style="width: 76px; height: 64px;" width="76" height="64" />
                     }
                     <div class="flex-grow-1 min-w-0">
                         <span class="badge bg-white text-muted border mb-1" style="font-size: 0.72rem;">@L[Model.Category]</span>
@@ -208,7 +208,7 @@
                                         <i class="bi bi-check-lg me-1"></i> @L["Accept Booking Request"]
                                     </button>
                                 </form>
-                                <form asp-action="QuickAction" asp-route-code="@Model.BookingCode" method="post" class="d-inline" onsubmit="return confirm('@L["Reject this booking request?"]');">
+                                <form asp-action="QuickAction" asp-route-code="@Model.BookingCode" method="post" class="d-inline" data-onsubmit="return confirm('@L["Reject this booking request?"]');">
                                     <input type="hidden" name="action" value="reject" />
                                     <button type="submit" class="btn btn-outline-danger rounded-pill px-3 py-2 fw-semibold">
                                         <i class="bi bi-x-lg me-1"></i> @L["Reject Request"]
@@ -218,7 +218,7 @@
 
                             @if (Model.CanConfirmPickup || Model.CanComplete)
                             {
-                                <form asp-action="QuickAction" asp-route-code="@Model.BookingCode" method="post" class="d-inline" onsubmit="return confirm('@L["Confirm farmer pickup & mark booking as completed?"]');">
+                                <form asp-action="QuickAction" asp-route-code="@Model.BookingCode" method="post" class="d-inline" data-onsubmit="return confirm('@L["Confirm farmer pickup & mark booking as completed?"]');">
                                     <input type="hidden" name="action" value="confirm-pickup" />
                                     <button type="submit" class="btn btn-success rounded-pill px-4 py-2 fw-bold shadow-sm">
                                         <i class="bi bi-shield-fill-check me-1"></i> @L["Confirm Pickup & Handover"]

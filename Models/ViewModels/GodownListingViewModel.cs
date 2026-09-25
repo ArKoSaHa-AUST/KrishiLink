@@ -61,6 +61,10 @@ namespace KrishiLink.Models.ViewModels
         [Display(Name = "Pricing Period")]
         public string PricePeriod { get; set; } = "Month"; // "Month" or "Day"
 
+        /// <summary>What renters paid for this storage type in the district (DIS-03); shown when editing.</summary>
+        [Microsoft.AspNetCore.Mvc.ModelBinding.BindNever]
+        public PriceBenchmarkViewModel? PriceBenchmark { get; set; }
+
         [Required(ErrorMessage = "Please provide facility specifications and description.")]
         [StringLength(2000, MinimumLength = 15, ErrorMessage = "Description must be between 15 and 2000 characters.")]
         [Display(Name = "Description & Specifications")]

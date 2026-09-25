@@ -35,6 +35,7 @@ namespace KrishiLink.BLL.Services
         private readonly IEquipmentService _equipmentService;
         private readonly IGodownService _godownService;
         private readonly INotificationService _notifications;
+        private readonly ICropCalendarService _calendar;
 
         public HarvestPlanService(
             IRepository<HarvestPlan> harvestPlans,
@@ -45,7 +46,8 @@ namespace KrishiLink.BLL.Services
             IRepository<GodownBooking> godownBookings,
             IEquipmentService equipmentService,
             IGodownService godownService,
-            INotificationService notifications)
+            INotificationService notifications,
+            ICropCalendarService calendar)
         {
             _harvestPlans = harvestPlans;
             _items = items;
@@ -56,6 +58,7 @@ namespace KrishiLink.BLL.Services
             _equipmentService = equipmentService;
             _godownService = godownService;
             _notifications = notifications;
+            _calendar = calendar;
         }
 
         public async Task<HarvestPlanIndexViewModel> GetPlansAsync(string farmerId)
@@ -247,7 +250,7 @@ namespace KrishiLink.BLL.Services
                     {
                         title = eq.Name;
                         category = eq.Category;
-                        imageUrl = ListingFormat.Split(eq.ImageUrls).FirstOrDefault() ?? string.Empty;
+                        imageUrl = ListingFormat.FirstThumbnail(eq.ImageUrls);
                         location = eq.Location;
                         ownerId = eq.OwnerId;
                         ownerName = eq.Owner?.FullName ?? "Equipment Owner";
@@ -289,7 +292,7 @@ namespace KrishiLink.BLL.Services
                     {
                         title = gd.Name;
                         category = gd.StorageType;
-                        imageUrl = ListingFormat.Split(gd.ImageUrls).FirstOrDefault() ?? string.Empty;
+                        imageUrl = ListingFormat.FirstThumbnail(gd.ImageUrls);
                         location = gd.Location;
                         ownerId = gd.OwnerId;
                         ownerName = gd.Owner?.FullName ?? "Godown Owner";
@@ -414,11 +417,21 @@ namespace KrishiLink.BLL.Services
                 })
                 .ToListAsync();
 
+            // ECO-02: items booked outside the crop's calendar window for what they are rented for. A warning, never a block.
+            var crops = CropTiming.Resolve(plan.Crop, plan.CropCalendarEntryId, await _calendar.GetAllCropsAsync());
+            var cropName = crops.Count == 1 ? crops[0].Name : plan.Crop ?? string.Empty;
+            var timingWarnings = itemVms
+                .Select(i => CropTiming.Check(i.Id, i.Title, i.ItemType, i.CategoryOrType, i.StartDate, i.EndDate, crops, cropName))
+                .OfType<CropTimingWarning>()
+                .ToList();
+
             return new HarvestPlanDetailsViewModel
             {
                 Id = plan.Id,
                 Name = plan.Name,
                 Crop = plan.Crop,
+                CropEntries = crops,
+                TimingWarnings = timingWarnings,
                 Note = plan.Note,
                 Status = plan.Status,
                 CreatedAt = plan.CreatedAt,

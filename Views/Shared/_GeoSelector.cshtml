@@ -71,7 +71,7 @@
         </span>
         <select name="@Model.DivisionField" id="@divisionId"
                 class="form-select border-start-0 @Model.SizeClass krishi-geo-select"
-                onchange="@changeHooks" required="@(Model.Required ? "required" : null)">
+                data-onchange="@changeHooks" required="@(Model.Required ? "required" : null)">
             @if (anyText is not null)
             {
                 <option value="">@L[anyText]</option>
@@ -102,7 +102,7 @@
         <select name="@Model.DistrictField" id="@districtId"
                 class="form-select border-start-0 @Model.SizeClass krishi-geo-select"
                 data-any-label="@(anyText is null ? null : L[anyText].Value)"
-                onchange="@districtHooks" required="@(Model.Required ? "required" : null)">
+                data-onchange="@districtHooks" required="@(Model.Required ? "required" : null)">
             @if (anyText is not null)
             {
                 <option value="">@L[anyText]</option>

@@ -47,3 +47,13 @@ public class EmailLinkViewModel
     [Display(Name = "Confirm new password")]
     public string? ConfirmPassword { get; set; }
 }
+
+/// <summary>An account whose e-mail is marked confirmed without Supabase ever having sent it a confirmation.</summary>
+public sealed record UnprovenEmailAccount(
+    string UserId,
+    string Email,
+    string FullName,
+    string Role,
+    bool LocalConfirmed,
+    DateTime? RemoteConfirmedAt,
+    DateTime? ConfirmationSentAt);

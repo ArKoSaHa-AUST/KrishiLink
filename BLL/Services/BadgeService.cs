@@ -179,7 +179,7 @@ namespace KrishiLink.BLL.Services
             {
                 Code = "TOP_RATED",
                 Title = _localizer["Top Rated Host"],
-                Description = _localizer["Maintains an average rating of 4.7★ or higher with trusted farmer reviews."],
+                Description = _localizer["Maintains an average rating of 4.7 or higher with trusted farmer reviews."],
                 CriteriaDescription = _localizer["Achieve 4.7+ star rating with at least 3 customer reviews."],
                 Category = "Quality",
                 IconClass = "bi-star-fill",
@@ -187,7 +187,7 @@ namespace KrishiLink.BLL.Services
                 GradientClass = "gradient-amber",
                 IsEarned = isTopRated,
                 ProgressPercentage = ratingProgress,
-                ProgressText = $"{avgRating:F1} ★ ({totalReviews} {_localizer["Reviews"]})",
+                ProgressText = $"{avgRating:F1} ({totalReviews} {_localizer["Reviews"]})",
                 DisplayOrder = 5
             });
 
@@ -245,7 +245,7 @@ namespace KrishiLink.BLL.Services
                 ProgressPercentage = registrationDays <= 90
                     ? Math.Min(100, (int)Math.Round((double)totalCompletedBookings / 2 * 50 + (avgRating >= 4.5 ? 50 : 25)))
                     : 0,
-                ProgressText = registrationDays <= 90 ? $"{totalCompletedBookings}/2 {_localizer["Bookings"]} • {avgRating:F1}★" : _localizer["Expired (>90d)"],
+                ProgressText = registrationDays <= 90 ? $"{totalCompletedBookings}/2 {_localizer["Bookings"]} • {avgRating:F1}" : _localizer["Expired (>90d)"],
                 DisplayOrder = 8
             });
 

@@ -16,9 +16,14 @@ public sealed class SupabaseAuthOptions
     public string AdminEmail { get; set; } = "";
 }
 
-public sealed class SupabaseAuthException(string message, HttpStatusCode? status = null) : Exception(message)
+public sealed class SupabaseAuthException(string message, HttpStatusCode? status = null, string? errorCode = null) : Exception(message)
 {
+    public const string EmailNotConfirmed = "email_not_confirmed";
+
     public HttpStatusCode? Status { get; } = status;
+
+    /// <summary>Supabase's machine-readable error_code (e.g. "email_not_confirmed"); never the response body.</summary>
+    public string? ErrorCode { get; } = errorCode;
 }
 
 public sealed class SupabaseAuthUser
@@ -106,7 +111,7 @@ public sealed class SupabaseAuthClient(HttpClient http, IOptions<SupabaseAuthOpt
                     ? "Too many authentication attempts. Please wait before trying again."
                     : "The authentication request could not be completed. Check your details or request a new email code.";
                 // Never expose upstream response bodies (which may contain account details or tokens).
-                throw new SupabaseAuthException(message, response.StatusCode);
+                throw new SupabaseAuthException(message, response.StatusCode, await ReadErrorCodeAsync(response));
             }
             var content = await response.Content.ReadAsStringAsync();
             if (string.IsNullOrWhiteSpace(content)) return default!;
@@ -116,6 +121,25 @@ public sealed class SupabaseAuthClient(HttpClient http, IOptions<SupabaseAuthOpt
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
         {
             throw new SupabaseAuthException("Authentication is temporarily unavailable. Please try again.");
+        }
+    }
+
+    private static async Task<string?> ReadErrorCodeAsync(HttpResponseMessage response)
+    {
+        try
+        {
+            using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            return json.RootElement.ValueKind == JsonValueKind.Object
+                   && json.RootElement.TryGetProperty("error_code", out var code)
+                   && code.ValueKind == JsonValueKind.String
+                   && code.GetString() is { Length: > 0 and <= 64 } value
+                   && value.All(c => char.IsAsciiLetterLower(c) || c == '_')
+                ? value
+                : null;
+        }
+        catch (JsonException)
+        {
+            return null;
         }
     }
 }

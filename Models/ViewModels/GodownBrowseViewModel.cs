@@ -49,6 +49,10 @@ namespace KrishiLink.Models.ViewModels
         public DateTime? AvailableStartDate { get; set; }
         public DateTime? AvailableEndDate { get; set; }
         public string SortBy { get; set; } = "newest";
+        /// <summary>"Within N km" (DIS-02): of the user's own position when given, otherwise of the chosen district.</summary>
+        public double? RadiusKm { get; set; }
+        public double? NearLat { get; set; }
+        public double? NearLng { get; set; }
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 24;
 
@@ -63,6 +67,8 @@ namespace KrishiLink.Models.ViewModels
     {
         // Filter & Search Parameters
         public string? SearchTerm { get; set; }
+        /// <summary>Nothing matched the search exactly; these are close (typo-tolerant) matches.</summary>
+        public bool IsFuzzyMatch { get; set; }
         public List<string> SelectedStorageTypes { get; set; } = new();
         public string? Division { get; set; }
         public string? District { get; set; }
@@ -84,6 +90,12 @@ namespace KrishiLink.Models.ViewModels
         public List<GodownItemViewModel> GodownList { get; set; } = new();
         public HashSet<int> FavoriteIds { get; set; } = new();
         public int TotalCount { get; set; }
+        public double? RadiusKm { get; set; }
+        public double? NearLat { get; set; }
+        public double? NearLng { get; set; }
+
+        /// <summary>A radius search is active, so "Nearest first" can sort by real distance.</summary>
+        public bool IsNearSearch { get; set; }
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 24;
         public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalCount / PageSize) : 0;

@@ -4,7 +4,10 @@ using KrishiLink.DAL;
 using KrishiLink.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Options;
 
 namespace KrishiLink.Controllers
 {
@@ -15,14 +18,23 @@ namespace KrishiLink.Controllers
         private readonly IPaymentService _payments;
         private readonly IStorageIntakeService _intakeService;
         private readonly ApplicationDbContext _db;
+        private readonly IOptions<AppOptions> _appOptions;
+        private readonly IWebHostEnvironment _env;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
-        public BookingsController(IBookingService bookings, IPaymentService payments, IStorageIntakeService intakeService, ApplicationDbContext db)
+        public BookingsController(IBookingService bookings, IPaymentService payments, IStorageIntakeService intakeService, ApplicationDbContext db,
+            IOptions<AppOptions> appOptions, IWebHostEnvironment env, IStringLocalizer<SharedResource> localizer)
         {
+            _localizer = localizer;
             _bookings = bookings;
             _payments = payments;
             _intakeService = intakeService;
             _db = db;
+            _appOptions = appOptions;
+            _env = env;
         }
+
+        private string PublicOrigin => AppLinks.PublicOrigin(_appOptions, _env, Request);
 
         /// <summary>GET: /Bookings — the farmer's rental and storage booking history.</summary>
         [Authorize(Roles = AppRoles.Farmer)]
@@ -42,12 +54,12 @@ namespace KrishiLink.Controllers
         public async Task<IActionResult> Confirmation(string type, int id, bool justCreated = false)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var host = $"{Request.Scheme}://{Request.Host}";
+            var host = PublicOrigin;
             var model = await _bookings.GetConfirmationAsync(userId, type, id, host, justCreated);
 
             if (model == null)
             {
-                TempData["ErrorMessage"] = "Booking confirmation could not be found.";
+                TempData["ErrorMessage"] = _localizer["Booking confirmation could not be found."].Value;
                 return RedirectToAction(nameof(Index));
             }
 
@@ -60,12 +72,12 @@ namespace KrishiLink.Controllers
         public async Task<IActionResult> Pass(string code)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var host = $"{Request.Scheme}://{Request.Host}";
+            var host = PublicOrigin;
             var model = await _bookings.GetConfirmationByCodeAsync(userId, code, host);
 
             if (model == null)
             {
-                TempData["ErrorMessage"] = "Booking pass could not be found.";
+                TempData["ErrorMessage"] = _localizer["Booking pass could not be found."].Value;
                 return RedirectToAction(nameof(Index));
             }
 
@@ -74,10 +86,11 @@ namespace KrishiLink.Controllers
 
         /// <summary>GET: /Bookings/GetQrData?type=Equipment&id=1 — JSON endpoint for fast modal QR popups.</summary>
         [HttpGet]
+        [EnableRateLimiting(RateLimitPolicies.ReadJson)]
         public async Task<IActionResult> GetQrData(string type, int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var host = $"{Request.Scheme}://{Request.Host}";
+            var host = PublicOrigin;
             var model = await _bookings.GetConfirmationAsync(userId, type, id, host, false);
 
             if (model == null) return NotFound(new { error = "Booking not found" });
@@ -101,14 +114,16 @@ namespace KrishiLink.Controllers
         [HttpPost]
         [Authorize(Roles = AppRoles.Farmer)]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
+        [SlowPath("booking")]
         public async Task<IActionResult> Cancel(string type, int id, string? returnUrl)
         {
             var farmerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var (error, refunded) = await _bookings.CancelAsync(farmerId, type ?? string.Empty, id);
-            if (error is not null) TempData["ErrorMessage"] = error;
-            else TempData["SuccessMessage"] = refunded is null
+            if (error is not null) TempData["ErrorMessage"] = _localizer[error].Value;
+            else TempData["SuccessMessage"] = _localizer[refunded is null
                 ? "Booking cancelled. The owner has been notified and the dates are free again."
-                : $"Booking cancelled and ৳{refunded:N0} refunded to your payment method. The owner has been notified.";
+                : "Booking cancelled and ৳{0} refunded to your payment method. The owner has been notified.", $"{refunded:N0}"].Value;
 
             return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Index));
         }
@@ -117,11 +132,13 @@ namespace KrishiLink.Controllers
         [HttpPost]
         [Authorize(Roles = AppRoles.Farmer)]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
+        [SlowPath("booking")]
         public async Task<IActionResult> Modify(string type, int id, DateTime? startDate, DateTime? endDate, int? units, double? tons, string? returnUrl)
         {
             if (startDate is null || endDate is null)
             {
-                TempData["ErrorMessage"] = "Please provide both start and end dates.";
+                TempData["ErrorMessage"] = _localizer["Please provide both start and end dates."].Value;
                 return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Index));
             }
 
@@ -130,13 +147,13 @@ namespace KrishiLink.Controllers
 
             if (error is not null)
             {
-                TempData["ErrorMessage"] = error;
+                TempData["ErrorMessage"] = _localizer[error].Value;
             }
             else
             {
-                TempData["SuccessMessage"] = needsReapproval
+                TempData["SuccessMessage"] = _localizer[needsReapproval
                     ? "Booking updated. Because this request was previously accepted, it has returned to pending for owner re-approval."
-                    : "Booking details updated successfully.";
+                    : "Booking details updated successfully."].Value;
             }
 
             return Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Index));
@@ -147,13 +164,14 @@ namespace KrishiLink.Controllers
         /// <summary>GET: /Bookings/Pay?type=Equipment&id=1 — checkout for an accepted, unpaid booking.</summary>
         [HttpGet]
         [Authorize(Roles = AppRoles.Farmer)]
+        [Authorize(Policy = AppPolicies.VerifiedEmail)]
         public async Task<IActionResult> Pay(string type, int id)
         {
             var farmerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var model = await _payments.GetCheckoutAsync(farmerId, type ?? string.Empty, id);
             if (model is null)
             {
-                TempData["ErrorMessage"] = "This booking is not awaiting payment.";
+                TempData["ErrorMessage"] = _localizer["This booking is not awaiting payment."].Value;
                 return RedirectToAction(nameof(Index));
             }
             return View(model);
@@ -162,14 +180,17 @@ namespace KrishiLink.Controllers
         /// <summary>POST: /Bookings/Pay — creates the pending payment and hands the farmer to the gateway.</summary>
         [HttpPost]
         [Authorize(Roles = AppRoles.Farmer)]
+        [Authorize(Policy = AppPolicies.VerifiedEmail)]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
+        [SlowPath("booking")]
         public async Task<IActionResult> Pay(string type, int id, string method, string? account)
         {
             var farmerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var (error, redirectUrl) = await _payments.InitiateAsync(farmerId, type ?? string.Empty, id, method ?? string.Empty, account);
             if (error is not null)
             {
-                TempData["ErrorMessage"] = error;
+                TempData["ErrorMessage"] = _localizer[error].Value;
                 return RedirectToAction(nameof(Pay), new { type, id });
             }
             return LocalRedirect(redirectUrl!);
@@ -178,6 +199,7 @@ namespace KrishiLink.Controllers
         /// <summary>GET: /Bookings/Gateway?ref=SIM-… — the sandbox "provider page" for the simulated gateway.</summary>
         [HttpGet]
         [Authorize(Roles = AppRoles.Farmer)]
+        [Authorize(Policy = AppPolicies.VerifiedEmail)]
         public async Task<IActionResult> Gateway(string @ref)
         {
             if (!await OwnsPaymentAsync(@ref)) return NotFound();
@@ -186,7 +208,7 @@ namespace KrishiLink.Controllers
             if (payment.Status != PaymentStatus.Pending)
             {
                 TempData[payment.Status == PaymentStatus.Succeeded ? "SuccessMessage" : "ErrorMessage"] =
-                    $"Payment {payment.Reference} is already {payment.Status.ToLowerInvariant()}.";
+                    _localizer["Payment {0} is already {1}.", payment.Reference, _localizer[payment.Status].Value.ToLowerInvariant()].Value;
                 return RedirectToAction(nameof(Index));
             }
             return View(payment);
@@ -195,7 +217,10 @@ namespace KrishiLink.Controllers
         /// <summary>POST: /Bookings/PaymentCallback — the gateway reports the outcome; idempotent.</summary>
         [HttpPost]
         [Authorize(Roles = AppRoles.Farmer)]
+        [Authorize(Policy = AppPolicies.VerifiedEmail)]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
+        [SlowPath("booking")]
         public async Task<IActionResult> PaymentCallback(string @ref, string outcome)
         {
             if (!await OwnsPaymentAsync(@ref)) return NotFound();
@@ -204,9 +229,9 @@ namespace KrishiLink.Controllers
             if (payment is null) return NotFound();
 
             if (error is null)
-                TempData["SuccessMessage"] = $"Payment of ৳{payment.Amount:N0} confirmed. Reference {payment.Reference}. Your booking is now confirmed.";
+                TempData["SuccessMessage"] = _localizer["Payment of ৳{0} confirmed. Reference {1}. Your booking is now confirmed.", $"{payment.Amount:N0}", payment.Reference].Value;
             else
-                TempData["ErrorMessage"] = $"Payment failed: {error}. You can try again from your bookings.";
+                TempData["ErrorMessage"] = _localizer["Payment failed: {0}. You can try again from your bookings.", _localizer[error].Value].Value;
 
             return LocalRedirect(AppLinks.FarmerBookings(payment.BookingType, payment.BookingId));
         }
@@ -225,7 +250,7 @@ namespace KrishiLink.Controllers
         public async Task<IActionResult> WarehouseReceipt(int id)
         {
             var farmerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            var result = await _intakeService.GetReceiptPdfAsync(id, farmerId, isOwner: false, $"{Request.Scheme}://{Request.Host}");
+            var result = await _intakeService.GetReceiptPdfAsync(id, farmerId, isOwner: false, PublicOrigin);
             if (result is null)
                 return NotFound();
 
@@ -238,7 +263,7 @@ namespace KrishiLink.Controllers
         public async Task<IActionResult> Receipt(string type, int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-            var host = $"{Request.Scheme}://{Request.Host}";
+            var host = PublicOrigin;
             var result = await _bookings.GetReceiptPdfAsync(userId, type, id, host);
             if (result is null)
                 return NotFound();

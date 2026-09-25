@@ -1,0 +1,411 @@
+{
+  "schemaVersion": 1,
+  "description": "KrishiLink agrometeorological pest and disease rules. Edit here, never in C#: validated at startup, a bad file stops the app.",
+  "reviewStatus": "Rules from the original DAE/BARI/BRRI-based knowledge base; Bangla spray and organic-control text added. Pending agronomist review.",
+  "rules": [
+    {
+      "targetCrops": [
+        "Boro Rice",
+        "T. Aman Rice",
+        "Aus Rice",
+        "Rice"
+      ],
+      "matchingWeatherConditions": [
+        "Cloudy",
+        "Rainy",
+        "Foggy",
+        "Humid",
+        "Overcast",
+        "Showers"
+      ],
+      "actionableRemedies": [
+        "Immediately stop applying top-dressing Urea fertilizer to prevent disease escalation.",
+        "Maintain 3-5 cm standing water in the field to keep plant canopy cool.",
+        "Spray Tricyclazole 75WP (Trooper / Beam) at 0.75 g/L or Nativo 75WG at 0.6 g/L in late afternoon."
+      ],
+      "banglaActionableRemedies": [
+        "জমিতে ইউরিয়া সারের উপরিপ্রয়োগ তাৎক্ষণিকভাবে বন্ধ রাখুন।",
+        "ক্ষেতে ৩-৫ সেমি পানি ধরে রাখুন যাতে চারার গোড়া শুকিয়ে না যায়।",
+        "বিকালে ট্রাইসাইক্লাজোল ৭৫ ডব্লিউপি (ট্রুপার / বিম) ০.৭৫ গ্রাম/লিটার অথবা নেটিভো ৭৫ ডব্লিউজি ০.৬ গ্রাম/লিটার স্প্রে করুন।"
+      ],
+      "diseaseName": "Rice Blast (Leaf & Neck Blast)",
+      "banglaName": "ধানের ব্লাস্ট রোগ (পাতা ও শিষ ব্লাস্ট)",
+      "pathogenOrPest": "Pyricularia oryzae (Fungus)",
+      "category": "Fungal Disease",
+      "severity": "Critical",
+      "symptoms": "Spindle-shaped grayish-white spots on leaves with brown margins; blackened rotten neck node preventing grain filling.",
+      "banglaSymptoms": "পাতায় দুই প্রান্ত চোখা লম্বাটে ধূসর দাগ; শিষের গোড়া কালো হয়ে পচে যায় এবং চিটা হয়ে যায়।",
+      "triggerReason": "Moderate temperature (20°C–29°C) combined with prolonged high relative humidity (≥ 85%) and dewy leaf wetness creates optimal spore germination conditions.",
+      "banglaTriggerReason": "২০°-২৯° সেলসিয়াস তাপমাত্রা ও ৮৫% এর বেশি আর্দ্রতার সাথে কুয়াশা বা শিশির জমে থাকা ধানের ব্লাস্ট ছত্রাকের বংশবৃদ্ধির জন্য অনুকূল।",
+      "preventiveSpray": "Tricyclazole 75WP (0.75 g/L) or Nativo 75WG (0.6 g/L)",
+      "organicControl": "Neem oil spray (3 ml/L) mixed with mild soapy water at early tillering stage.",
+      "iconClass": "bi-shield-fill-x",
+      "badgeClass": "danger",
+      "id": 1,
+      "minTemp": 20,
+      "maxTemp": 29,
+      "minHumidity": 85,
+      "maxHumidity": 100,
+      "preventiveSprayBn": "ট্রাইসাইক্লাজোল ৭৫ ডব্লিউপি (০.৭৫ গ্রাম/লিটার) অথবা নেটিভো ৭৫ ডব্লিউজি (০.৬ গ্রাম/লিটার)",
+      "organicControlBn": "কুশি গজানোর শুরুতে হালকা সাবান পানির সাথে নিম তেল (৩ মিলি/লিটার) মিশিয়ে স্প্রে করুন।",
+      "source": "BRRI"
+    },
+    {
+      "targetCrops": [
+        "Potato",
+        "Tomato",
+        "Winter Tomato"
+      ],
+      "matchingWeatherConditions": [
+        "Foggy",
+        "Overcast",
+        "Cloudy",
+        "Misty",
+        "Humid"
+      ],
+      "actionableRemedies": [
+        "Stop field irrigation immediately — moist soil accelerates tuber rot.",
+        "Spray prophylactic contact fungicide Mancozeb (Dithane M-45 / Indofil) at 2 g/L before heavy fog sets in.",
+        "If active spots appear, immediately switch to systemic fungicide: Cymoxanil + Mancozeb (Secure / Acrobat) at 2.5 g/L."
+      ],
+      "banglaActionableRemedies": [
+        "ক্ষেতে সেচ দেওয়া অবিলম্বে বন্ধ করুন — ভেজা মাটিতে কন্দ পচে যায়।",
+        "কুয়াশা পড়ার আগেই আগাম প্রতিরোধক হিসেবে ম্যানকোজেব (ডাইথেন এম-৪৫) ২ গ্রাম/লিটার স্প্রে করুন।",
+        "আক্রান্ত হলে তাৎক্ষণিক প্রতিষেধক সিকিউর / এক্রোব্যাট ২.৫ গ্রাম/লিটার হারে পানিতে মিশিয়ে স্প্রে করুন।"
+      ],
+      "diseaseName": "Potato & Tomato Late Blight",
+      "banglaName": "আলু ও টমেটোর নাবী ধসা (লেট ব্লাইট)",
+      "pathogenOrPest": "Phytophthora infestans (Oomycete)",
+      "category": "Fungal Disease",
+      "severity": "Critical",
+      "symptoms": "Water-soaked dark lesions on leaf tips that rapidly turn black; fluffy white fungal growth on undersides in morning dew; rotting tubers with foul odor.",
+      "banglaSymptoms": "পাতার ডগায় পানিভেজা কালচে দাগ দ্রুত ছড়িয়ে পাতা ঝলসে যায়; সকালে পাতার নিচের পিঠে সাদা ছত্রাক দেখা যায়।",
+      "triggerReason": "Cool temperatures (10°C–21°C) with dense fog, cloudy skies, and humidity > 88% create high late-blight epiphytotic risk within 48 hours.",
+      "banglaTriggerReason": "১০°-২১° সেলসিয়াস ঠান্ডা আবহাওয়া, ঘন কুয়াশা ও ৮৮% এর বেশি আর্দ্রতা আলুর নাবী ধসা মহামারী তৈরির প্রধান কারণ।",
+      "preventiveSpray": "Mancozeb 80WP (2 g/L) or Cymoxanil + Mancozeb (2.5 g/L)",
+      "organicControl": "Bordeaux mixture (1%) or Copper oxychloride (2 g/L) applied uniformly to foliage.",
+      "iconClass": "bi-virus",
+      "badgeClass": "danger",
+      "id": 2,
+      "minTemp": 10,
+      "maxTemp": 21,
+      "minHumidity": 88,
+      "maxHumidity": 100,
+      "requiresConsecutiveDays": true,
+      "preventiveSprayBn": "ম্যানকোজেব ৮০ ডব্লিউপি (২ গ্রাম/লিটার) অথবা সাইমোক্সানিল + ম্যানকোজেব (২.৫ গ্রাম/লিটার)",
+      "organicControlBn": "বোর্দো মিশ্রণ (১%) অথবা কপার অক্সিক্লোরাইড (২ গ্রাম/লিটার) পাতায় সমানভাবে স্প্রে করুন।",
+      "source": "BARI"
+    },
+    {
+      "targetCrops": [
+        "T. Aman Rice",
+        "Boro Rice",
+        "Rice"
+      ],
+      "matchingWeatherConditions": [
+        "Warm & Humid",
+        "Humid",
+        "Cloudy",
+        "Showers",
+        "Overcast"
+      ],
+      "actionableRemedies": [
+        "Create 30 cm alleyways ('Bili Kata') every 10-12 rows for sunlight and aeration to the tiller bases.",
+        "Drain all standing water from the field for 3-4 days to expose the insect colony.",
+        "Spray Pymetrozine (Chess 50WG) at 0.6 g/L or Dinotefuran (Oshin) directing spray nozzle directly at base of plants."
+      ],
+      "banglaActionableRemedies": [
+        "প্রতি ১০-১২ সারি পর পর বিলি কেটে (বিলি কাটা) আলো-বাতাস চলাচলের ব্যবস্থা করুন।",
+        "জমির পানি ৩-৪ দিনের জন্য পুরোপুরি নামিয়ে দিন যাতে পোকা মাটিতে পড়ে মারা যায়।",
+        "গাছের গোড়া লক্ষ্য করে পাইমেট্রোজিন (চেস ৫০ ডব্লিউজি) ০.৬ গ্রাম/লিটার স্প্রে করুন।"
+      ],
+      "diseaseName": "Brown Plant Hopper - BPH (Current Poka)",
+      "banglaName": "বাদামি গাছফড়িং (কারেন্ট পোকা)",
+      "pathogenOrPest": "Nilaparvata lugens (Insect Pest)",
+      "category": "Insect Pest",
+      "severity": "High",
+      "symptoms": "Circular drying patches ('Hopper Burn') where plants look burnt brown overnight due to sap sucking at the base of tillers.",
+      "banglaSymptoms": "ধানক্ষেতের ভেতর গোল গোল জায়গা পুড়ে যাওয়ার মতো শুকিয়ে মরে যায় (হপার বার্ন)। গাছের গোড়ায় দলবদ্ধ পোকা দেখা যায়।",
+      "triggerReason": "Warm, sultry humid weather (25°C–34°C, humidity ≥ 80%) in dense tillering plots triggers explosive reproductive cycle.",
+      "banglaTriggerReason": "গুমোট গরম ও আর্দ্র আবহাওয়ায় (২৫°-৩৪° সে., আর্দ্রতা ৮০%+) ঘন ধানের চারার গোড়ায় বাদামি গাছফড়িং বিদ্যুৎ গতিতে বংশবৃদ্ধি করে।",
+      "preventiveSpray": "Pymetrozine 50WG (0.6 g/L) or Dinotefuran 20SG",
+      "organicControl": "Conserve natural spider predators; place light traps at night to attract and destroy adult hoppers.",
+      "iconClass": "bi-bug-fill",
+      "badgeClass": "warning",
+      "id": 3,
+      "minTemp": 25,
+      "maxTemp": 34,
+      "minHumidity": 80,
+      "maxHumidity": 98,
+      "preventiveSprayBn": "পাইমেট্রোজিন ৫০ ডব্লিউজি (০.৬ গ্রাম/লিটার) অথবা ডাইনোটেফুরান ২০ এসজি",
+      "organicControlBn": "প্রাকৃতিক শত্রু মাকড়সা সংরক্ষণ করুন; রাতে আলোক ফাঁদ বসিয়ে পূর্ণবয়স্ক বাদামি গাছফড়িং ধরে ধ্বংস করুন।",
+      "source": "BRRI"
+    },
+    {
+      "targetCrops": [
+        "Wheat",
+        "High-Yield Wheat"
+      ],
+      "matchingWeatherConditions": [
+        "Cloudy",
+        "Overcast",
+        "Showers",
+        "Rainy",
+        "Misty"
+      ],
+      "actionableRemedies": [
+        "Cultivate blast-resistant wheat variety BARI Gom-33 in southwestern and high-risk districts.",
+        "Spray Nativo 75WG (Tebuconazole + Trifloxystrobin) at 0.6 g/L twice: 1st at 50% heading and 2nd 12-14 days later.",
+        "Never harvest seed stock from infected fields for next year's planting."
+      ],
+      "banglaActionableRemedies": [
+        "ব্লাস্ট প্রতিরোধী জাত বারি গম-৩৩ চাষ করুন।",
+        "গমের শিষ বের হওয়ার সময় (৫০% হেডিং) একবার এবং ১২-১৪ দিন পর আরেকবার নেটিভো ৭৫ ডব্লিউজি ০.৬ গ্রাম/লিটার স্প্রে করুন।",
+        "আক্রান্ত ক্ষেতের গম কোনোভাবেই পরবর্তী বছরের বীজ হিসেবে সংরক্ষণ করবেন না।"
+      ],
+      "diseaseName": "Wheat Blast",
+      "banglaName": "গমের ব্লাস্ট রোগ",
+      "pathogenOrPest": "Magnaporthe oryzae (Fungus)",
+      "category": "Fungal Disease",
+      "severity": "High",
+      "symptoms": "Complete bleaching/whitening of wheat spikes above the infected rachis node while lower parts remain green; grains become shriveled and chaffy.",
+      "banglaSymptoms": "গমের শিষের আক্রান্ত অংশের উপরের অংশ সাদা বা বিবর্ণ হয়ে শুকিয়ে যায় কিন্তু নিচের অংশ সবুজ থাকে; শিষের দানা চিটা হয়ে যায়।",
+      "triggerReason": "Unseasonal warm, cloudy days with light rain or mist (22°C–28°C, humidity > 85%) during heading/flowering stage in Feb-March.",
+      "banglaTriggerReason": "ফেব্রুয়ারি-মার্চে গমের শিষ বের হওয়ার সময় মেঘলা আকাশ, গুঁড়ি গুঁড়ি বৃষ্টি ও ৮৫%+ আর্দ্রতা থাকলে গম ব্লাস্টের মারাত্মক ঝুঁকি তৈরি হয়।",
+      "preventiveSpray": "Nativo 75WG (0.6 g/L) or Amistar Top (1 ml/L)",
+      "organicControl": "Seed treatment with Trichoderma viride bio-fungicide (5 g/kg seed) before sowing.",
+      "iconClass": "bi-tsunami",
+      "badgeClass": "warning",
+      "id": 4,
+      "minTemp": 22,
+      "maxTemp": 28,
+      "minHumidity": 85,
+      "maxHumidity": 100,
+      "preventiveSprayBn": "নেটিভো ৭৫ ডব্লিউজি (০.৬ গ্রাম/লিটার) অথবা এমিস্টার টপ (১ মিলি/লিটার)",
+      "organicControlBn": "বপনের আগে ট্রাইকোডার্মা ভিরিডি জৈব ছত্রাকনাশক (প্রতি কেজি বীজে ৫ গ্রাম) দিয়ে বীজ শোধন করুন।",
+      "source": "BWMRI"
+    },
+    {
+      "targetCrops": [
+        "Mustard",
+        "Rapeseed",
+        "Lentil"
+      ],
+      "matchingWeatherConditions": [
+        "Cloudy",
+        "Overcast",
+        "Foggy",
+        "Misty"
+      ],
+      "actionableRemedies": [
+        "Inspect flowering twigs in morning hours when aphids cluster densely.",
+        "Spray Imidacloprid (Admire 20SL / Gain) at 0.5 ml/L or Malathion 57EC at 2 ml/L in early morning before bees forage.",
+        "Set up yellow sticky traps (15-20 traps/acre) across the mustard field."
+      ],
+      "banglaActionableRemedies": [
+        "সকালে ফুল ও কচি ডাল ভালোভাবে পর্যবেক্ষণ করুন।",
+        "মৌমাছির ক্ষতি এড়াতে খুব সকালে ইমিডাক্লোপ্রিড (এডমায়ার ২০ এসএল) ০.৫ মিলি/লিটার স্প্রে করুন।",
+        "জমিতে প্রতি বিঘায় ৫-৬টি হলুদ আঠালো ফাঁদ (Yellow sticky trap) স্থাপন করুন।"
+      ],
+      "diseaseName": "Mustard Aphids (Jab Poka)",
+      "banglaName": "সরিষার জাবপোকা",
+      "pathogenOrPest": "Lipaphis erysimi (Insect Pest)",
+      "category": "Insect Pest",
+      "severity": "Moderate",
+      "symptoms": "Dense colonies of tiny greenish-black insects sucking sap from flower buds, pods, and tender shoots; leaves curl and turn black with sooty mold.",
+      "banglaSymptoms": "সরিষার ফুল, কুঁড়ি ও কচি শুঁটিতে অসংখ্য ছোট কালচে পোকা রস চুষে খায়; ফুল শুকিয়ে যায় এবং ফলন মারাত্মকভাবে কমে যায়।",
+      "triggerReason": "Cool, cloudy, overcast weather without rain (14°C–24°C, humidity 70%–88%) during flowering season (Dec–Jan).",
+      "banglaTriggerReason": "পৌষ-মাঘ মাসে মেঘলা, কুয়াশাচ্ছন্ন ও বৃষ্টিহীন আবহাওয়া (১৪°-২৪° সে.) সরিষার জাবপোকার দ্রুত বিস্তারের প্রধান কারণ।",
+      "preventiveSpray": "Imidacloprid 20SL (0.5 ml/L) or Acetamiprid 20SP (0.5 g/L)",
+      "organicControl": "Spray Neem seed kernel extract (NSKE 5%) or tobacco leaf decoction in evening.",
+      "iconClass": "bi-brightness-high-fill",
+      "badgeClass": "warning",
+      "id": 5,
+      "minTemp": 14,
+      "maxTemp": 24,
+      "minHumidity": 70,
+      "maxHumidity": 88,
+      "preventiveSprayBn": "ইমিডাক্লোপ্রিড ২০ এসএল (০.৫ মিলি/লিটার) অথবা এসিটামিপ্রিড ২০ এসপি (০.৫ গ্রাম/লিটার)",
+      "organicControlBn": "বিকালে নিম বীজের নির্যাস (৫%) অথবা তামাক পাতার নির্যাস স্প্রে করুন।",
+      "source": "BARI"
+    },
+    {
+      "targetCrops": [
+        "Maize",
+        "Hybrid Maize",
+        "Corn"
+      ],
+      "matchingWeatherConditions": [
+        "Warm & Humid",
+        "Clear & Warm",
+        "Sunny",
+        "Cloudy"
+      ],
+      "actionableRemedies": [
+        "Install FAW Sex Pheromone traps (Spodo-lure) at 5 traps/bigha for mass trapping.",
+        "Handpick and crush egg masses and early-instar larvae during weekly scouting.",
+        "Apply Emamectin Benzoate (Proclaim 5SG) at 1 g/L or Chlorantraniliprole (Coragen) at 0.4 ml/L directly into whorls."
+      ],
+      "banglaActionableRemedies": [
+        "প্রতি বিঘায় ৪-৫টি সেক্স ফেরোমোন ফাঁদ স্থাপন করুন।",
+        "সপ্তাহে ২ দিন মাঠ পরিদর্শন করে পাতার নিচের ডিমের গাদা ও কচি কীড়া হাত দিয়ে পিষে মারুন।",
+        "কীড়া দেখা দিলে ইমমেকটিন বেনজয়েট (প্রোক্লেইম ৫ এসজি) ১ গ্রাম/লিটার হারে ভুট্টার ভরের ভেতর সরাসরি স্প্রে করুন।"
+      ],
+      "diseaseName": "Fall Armyworm (FAW)",
+      "banglaName": "ভুট্টার ফল আর্মিওয়ার্ম",
+      "pathogenOrPest": "Spodoptera frugiperda (Caterpillar)",
+      "category": "Insect Pest",
+      "severity": "High",
+      "symptoms": "Shot-hole and window-pane feeding holes on leaves; copious sawdust-like frass (caterpillar droppings) inside whorls; boring into developing cobs.",
+      "banglaSymptoms": "পাতার মাঝে জালি কাটা ও বড় বড় ফুটো দাগ; ভুট্টার মোচড় ও ভরের ভেতর করাতের গুঁড়োর মতো পোকার মল দেখা যায়।",
+      "triggerReason": "Warm temperatures (24°C–33°C) and moderate humidity during maize vegetative whorl stage encourage rapid caterpillar feeding and egg hatching.",
+      "banglaTriggerReason": "২৪°-৩৩° সেলসিয়াস গরম আবহাওয়ায় ভুট্টার বাড়ন্ত পর্যায়ে ফল আর্মিওয়ার্ম কীড়ার খাবার গ্রহণের হার কয়েকগুণ বেড়ে যায়।",
+      "preventiveSpray": "Emamectin Benzoate 5SG (1 g/L) or Spinetoram 11.7SC (0.5 ml/L)",
+      "organicControl": "Apply dry sand mixed with wood ash (1:1 ratio) directly into central plant whorls.",
+      "iconClass": "bi-sun-fill",
+      "badgeClass": "warning",
+      "id": 6,
+      "minTemp": 24,
+      "maxTemp": 33,
+      "minHumidity": 60,
+      "maxHumidity": 85,
+      "preventiveSprayBn": "এমামেকটিন বেনজোয়েট ৫ এসজি (১ গ্রাম/লিটার) অথবা স্পিনেটোরাম ১১.৭ এসসি (০.৫ মিলি/লিটার)",
+      "organicControlBn": "শুকনো বালু ও কাঠের ছাই (১:১) মিশিয়ে সরাসরি গাছের মাঝখানের পাতার মোড়ায় দিন।",
+      "source": "DAE"
+    },
+    {
+      "targetCrops": [
+        "T. Aman Rice",
+        "Boro Rice",
+        "Rice"
+      ],
+      "matchingWeatherConditions": [
+        "Rainy",
+        "Thunderstorm",
+        "Showers",
+        "Cloudy",
+        "Humid"
+      ],
+      "actionableRemedies": [
+        "Apply supplemental Muriate of Potash (MoP) at 10 kg/acre to boost cell wall immunity.",
+        "Stop top-dressing Nitrogen/Urea immediately.",
+        "Spray Copper Oxychloride (Cuprocaffaro / Champion) at 2 g/L mixed with Validamycin at 2 ml/L."
+      ],
+      "banglaActionableRemedies": [
+        "রোগের প্রকোপ কমাতে জমিতে বিঘা প্রতি ৫ কেজি অতিরিক্ত পটাশ সার (MoP) প্রয়োগ করুন।",
+        "ইউরিয়া সারের উপরিপ্রয়োগ সম্পূর্ণ বন্ধ রাখুন।",
+        "কপার অক্সিক্লোরাইড ২ গ্রাম/লিটার এবং ভ্যালিডামাইসিন ২ মিলি/লিটার মিশিয়ে স্প্রে করুন।"
+      ],
+      "diseaseName": "Rice Bacterial Leaf Blight (BLB)",
+      "banglaName": "ধানের পাতা পোড়া রোগ (বিএলবি)",
+      "pathogenOrPest": "Xanthomonas oryzae pv. oryzae (Bacteria)",
+      "category": "Bacterial Disease",
+      "severity": "High",
+      "symptoms": "Water-soaked lesions on leaf margins turning wavy yellow-white with milky bacterial ooze droplets in early morning; entire leaf dries up from tip downward.",
+      "banglaSymptoms": "পাতার কিনারা দিয়ে ঢেউ খেলানো হলুদ বা সাদাটে দাগ হয়ে শুকিয়ে যায়; সকালে পাতার ওপর পুটুলির মতো ব্যাকটেরিয়ার রস দেখা যায়।",
+      "triggerReason": "Heavy rainstorms, stormy winds, and humidity > 85% with warm temperatures cause leaf injury and rapid bacterial transmission.",
+      "banglaTriggerReason": "ঝড়ো বাতাস ও ভারি বৃষ্টির সময় ধানের পাতায় ক্ষত সৃষ্টি হয়ে এবং ৮৫%+ আর্দ্রতায় ব্যাকটেরিয়ার দ্রুত সংক্রামণ ঘটে।",
+      "preventiveSpray": "Copper Oxychloride 50WP (2 g/L) + Validamycin 3L (2 ml/L)",
+      "organicControl": "Drain field water; apply fresh cow dung water supernatant (5%) as a biological barrier.",
+      "iconClass": "bi-flower2",
+      "badgeClass": "warning",
+      "id": 7,
+      "minTemp": 25,
+      "maxTemp": 35,
+      "minHumidity": 85,
+      "maxHumidity": 100,
+      "preventiveSprayBn": "কপার অক্সিক্লোরাইড ৫০ ডব্লিউপি (২ গ্রাম/লিটার) + ভ্যালিডামাইসিন ৩ এল (২ মিলি/লিটার)",
+      "organicControlBn": "জমির পানি বের করে দিন; জৈব প্রতিরোধক হিসেবে তাজা গোবর পানির (৫%) উপরের স্বচ্ছ অংশ প্রয়োগ করুন।",
+      "source": "BRRI"
+    },
+    {
+      "targetCrops": [
+        "Brinjal",
+        "Eggplant",
+        "Aubergine"
+      ],
+      "matchingWeatherConditions": [
+        "Warm & Humid",
+        "Cloudy",
+        "Sunny",
+        "Humid"
+      ],
+      "actionableRemedies": [
+        "Regularly clip off wilted shoots containing larvae and bury them deep in soil.",
+        "Install Lucin-lure sex pheromone traps (10-12 traps/acre) at canopy level.",
+        "Use bio-pesticide Bacillus thuringiensis (Bt) or Spinosad (Tracer 45SC) at 0.4 ml/L."
+      ],
+      "banglaActionableRemedies": [
+        "আক্রান্ত মরা ডগা পোকার কীড়াসহ কেটে মাটিতে পুঁতে ফেলুন।",
+        "জমিতে লিউসিন-লিউরের ফেরোমোন ফাঁদ (বিঘায় ৪-৫টি) পাতার উচ্চতায় ঝুলিয়ে দিন।",
+        "বায়ো-কীটনাশক স্পাইনোস্যাড (ট্রেসার ৪৫ এসসি) ০.৪ মিলি/লিটার স্প্রে করুন।"
+      ],
+      "diseaseName": "Eggplant Shoot & Fruit Borer (FSB)",
+      "banglaName": "বেগুনের ডগা ও ফল ছিদ্রকারী পোকা",
+      "pathogenOrPest": "Leucinodes orbonalis (Insect Pest)",
+      "category": "Insect Pest",
+      "severity": "Moderate",
+      "symptoms": "Wilting and drooping of top tender shoots; round exit holes in brinjal fruits with black excreta inside.",
+      "banglaSymptoms": "গাছের কচি ডগা নুয়ে শুকিয়ে মরে যায়; বেগুনের ভেতর পোকা ছিদ্র করে মল ত্যাগ করে ফল খাওয়ার অযোগ্য করে তোলে।",
+      "triggerReason": "Warm and humid conditions (25°C–36°C, humidity ≥ 75%) promote year-round breeding of female moths.",
+      "banglaTriggerReason": "উষ্ণ ও আর্দ্র আবহাওয়ায় বেগুনের জমিতে এই মথ পোকার ডিম পাড়ার হার ও কীড়ার আক্রমণ বৃদ্ধি পায়।",
+      "preventiveSpray": "Spinosad 45SC (0.4 ml/L) or Chlorantraniliprole 18.5SC",
+      "organicControl": "Plant Bt Brinjal varieties, which strongly resist this borer (still inspect weekly), or spray the microbial pesticide Beauveria bassiana.",
+      "iconClass": "bi-egg-fill",
+      "badgeClass": "warning",
+      "id": 8,
+      "minTemp": 25,
+      "maxTemp": 36,
+      "minHumidity": 75,
+      "maxHumidity": 95,
+      "preventiveSprayBn": "স্পিনোসাড ৪৫ এসসি (০.৪ মিলি/লিটার) অথবা ক্লোরানট্রানিলিপ্রোল ১৮.৫ এসসি",
+      "organicControlBn": "বিটি বেগুনের জাত লাগান, যা এই পোকা ভালোভাবে প্রতিরোধ করে (তবু প্রতি সপ্তাহে পরীক্ষা করুন), অথবা জৈব কীটনাশক বিউভেরিয়া বাসিয়ানা স্প্রে করুন।",
+      "source": "BARI"
+    },
+    {
+      "targetCrops": [
+        "Chili",
+        "Green Pepper",
+        "Pepper"
+      ],
+      "matchingWeatherConditions": [
+        "Rainy",
+        "Showers",
+        "Humid",
+        "Cloudy",
+        "Warm & Humid"
+      ],
+      "actionableRemedies": [
+        "Collect and destroy all diseased and fallen chilis to eliminate inoculum sources.",
+        "Spray Carbendazim (Autostin 50WP) at 2 g/L or Azoxystrobin + Difenoconazole (Amistar Top) at 1 ml/L at flowering stage.",
+        "Ensure swift furrow drainage so no standing water remains around chili roots."
+      ],
+      "banglaActionableRemedies": [
+        "আক্রান্ত ও ঝরে পড়া মরিচ কুড়িয়ে মাঠের বাইরে পুড়িয়ে ফেলুন।",
+        "ফুল ও ফল আসার সময় কার্বেনডাজিম (অটোস্টিন ৫০ ডব্লিউপি) ২ গ্রাম/লিটার বা এমিস্টার টপ ১ মিলি/লিটার স্প্রে করুন।",
+        "মরিচের জমিতে যাতে পানি জমে না থাকে সেজন্য নিকাশ নালা পরিষ্কার রাখুন।"
+      ],
+      "diseaseName": "Chili Anthracnose (Die-back & Fruit Rot)",
+      "banglaName": "মরিচের অ্যানথ্রাকনোজ (ফল পচা ও ডাই-ব্যাক)",
+      "pathogenOrPest": "Colletotrichum capsici (Fungus)",
+      "category": "Fungal Disease",
+      "severity": "Moderate",
+      "symptoms": "Circular sunken brown spots on ripe chili pods with concentric rings of fungal dots; drying of twigs from tip downward (die-back).",
+      "banglaSymptoms": "পাকা মরিচে ভেতরের দিকে দেবে যাওয়া গোলাকার কালচে দাগ এবং ডাল ওপর থেকে নিচের দিকে শুকিয়ে মরে যাওয়া (ডাই-ব্যাক)।",
+      "triggerReason": "Intermittent warm monsoon rains or heavy morning dew with humidity > 80% and temp 24°C–32°C.",
+      "banglaTriggerReason": "মাঝারি গরমের সাথে গুঁড়ি গুঁড়ি বৃষ্টি ও ৮০% এর বেশি আর্দ্রতা মরিচের ফল পচা রোগের অনুকূল পরিবেশ তৈরি করে।",
+      "preventiveSpray": "Carbendazim 50WP (2 g/L) or Difenoconazole 250EC (1 ml/L)",
+      "organicControl": "Seed treatment with hot water (50°C for 25 min) or Trichoderma harzianum bio-agent.",
+      "iconClass": "bi-fire",
+      "badgeClass": "warning",
+      "id": 9,
+      "minTemp": 24,
+      "maxTemp": 32,
+      "minHumidity": 80,
+      "maxHumidity": 98,
+      "preventiveSprayBn": "কার্বেন্ডাজিম ৫০ ডব্লিউপি (২ গ্রাম/লিটার) অথবা ডাইফেনোকোনাজল ২৫০ ইসি (১ মিলি/লিটার)",
+      "organicControlBn": "গরম পানিতে (৫০° সেলসিয়াস, ২৫ মিনিট) অথবা ট্রাইকোডার্মা হারজিয়ানাম জৈব উপাদান দিয়ে বীজ শোধন করুন।",
+      "source": "BARI"
+    }
+  ]
+}

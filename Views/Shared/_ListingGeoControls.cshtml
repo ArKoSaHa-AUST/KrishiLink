@@ -1,0 +1,45 @@
+@model KrishiLink.Models.ViewModels.ListingGeoControlsViewModel
+@{
+    var radii = new[] { 10, 25, 50, 100 };
+    var selected = Model.RadiusKm is { } r ? (int)Math.Round(r) : (int?)null;
+}
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-3 mt-3 border-top" id="listingGeoControls"
+     data-district-select="@Model.DistrictSelectId"
+     data-hide-in-map="@Model.HideInMap"
+     data-price-field="@Model.PriceField"
+     data-msg-near-you="@L["Within {0} km of your location", "{0}"]"
+     data-msg-near-district="@L["Within {0} km of {1}", "{0}", "{1}"]"
+     data-msg-need-origin="@L["Choose a district or use your location to search by distance."]"
+     data-msg-locating="@L["Finding your location…"]"
+     data-msg-geo-denied="@L["Location is off or was not allowed. Choose a district instead."]"
+     data-msg-no-geo="@L["This browser cannot share your location here. Choose a district instead."]"
+     data-msg-you="@L["You are here"]"
+     data-msg-km-away="@L["{0} km away", "{0}"]"
+     data-msg-map-capped="@L["The map shows the first {0} of {1} results; narrow the filters to see the rest.", "{0}", "{1}"]"
+     data-msg-unmapped="@L["{0} listings have no map location and appear only in the list.", "{0}"]"
+     data-msg-map-failed="@L["The map could not load. Check your connection, or use the list view."]">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <label for="radiusSelect" class="small text-muted fw-semibold text-nowrap">
+            <i class="bi bi-bullseye me-1" aria-hidden="true"></i>@L["Within"]
+        </label>
+        <select id="radiusSelect" class="form-select form-select-sm w-auto">
+            <option value="">@L["Any distance"]</option>
+            @foreach (var km in radii)
+            {
+                <option value="@km" selected="@(selected == km)">@L["{0} km", km]</option>
+            }
+        </select>
+        <button type="button" id="nearMeBtn" class="btn btn-sm btn-krishi-outline rounded-pill px-3" aria-pressed="false">
+            <i class="bi bi-crosshair me-1" aria-hidden="true"></i>@L["Use my location"]
+        </button>
+        <span id="nearStatus" class="small text-muted" role="status" aria-live="polite"></span>
+    </div>
+    <div class="btn-group btn-group-sm" role="group" aria-label="@L["Results view"]">
+        <button type="button" class="btn btn-outline-success active" data-view="list" aria-pressed="true">
+            <i class="bi bi-grid-3x2-gap me-1" aria-hidden="true"></i>@L["List"]
+        </button>
+        <button type="button" class="btn btn-outline-success" data-view="map" aria-pressed="false">
+            <i class="bi bi-map me-1" aria-hidden="true"></i>@L["Map"]
+        </button>
+    </div>
+</div>

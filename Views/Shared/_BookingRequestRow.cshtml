@@ -37,7 +37,7 @@
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     @if (!string.IsNullOrEmpty(Model.FarmerId))
                     {
-                        <a href="@AppLinks.FarmerProfile(Model.FarmerId)" class="fw-semibold text-decoration-none text-dark hover-underline" onclick="event.stopPropagation();">@Model.FarmerName</a>
+                        <a href="@AppLinks.FarmerProfile(Model.FarmerId)" class="fw-semibold text-decoration-none text-dark hover-underline" data-onclick="event.stopPropagation();">@Model.FarmerName</a>
                     }
                     else
                     {
@@ -63,7 +63,7 @@
                 @if (expandable && !string.IsNullOrEmpty(Model.FarmerMemberSince))
                 {
                     <span class="small d-block text-muted" style="font-size: 0.76rem;">
-                        @L["✔ {0} completed · {1}% cancellations · since {2}", Model.FarmerCompleted, (int)Math.Round(Model.FarmerCancellationRate * 100), Model.FarmerMemberSince]
+                        @L["{0} completed · {1}% cancellations · since {2}", Model.FarmerCompleted, (int)Math.Round(Model.FarmerCancellationRate * 100), Model.FarmerMemberSince]
                     </span>
                 }
                 <span class="small d-block" style="color: var(--krishi-text-muted);">
@@ -120,30 +120,30 @@
             @if (Model.Status == "Pending")
             {
                 <!-- stopPropagation keeps button clicks from toggling the row expansion -->
-                <div class="request-actions" onclick="event.stopPropagation()">
+                <div class="request-actions" data-onclick="event.stopPropagation()">
                     <button type="button" class="btn btn-krishi-primary btn-sm rounded-pill px-3 fw-semibold btn-accept"
-                            onclick="applyDecision(@Model.Id, 'accept', this)">
+                            data-onclick="applyDecision(@Model.Id, 'accept', this)">
                         <i class="bi bi-check-lg"></i> @L["Accept"]
                     </button>
                     <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-semibold btn-reject"
-                            onclick="promptReject(@Model.Id, this)">
+                            data-onclick="promptReject(@Model.Id, this)">
                         <i class="bi bi-x-lg"></i> @L["Reject"]
                     </button>
                 </div>
             }
             else if (expandable && Model.Status == "Paid")
             {
-                <div class="request-actions d-flex align-items-center gap-2" onclick="event.stopPropagation()">
+                <div class="request-actions d-flex align-items-center gap-2" data-onclick="event.stopPropagation()">
                     <span class="krishi-badge krishi-badge-paid payment-chip" title="@Model.PaymentReference"><i class="bi bi-shield-check"></i> @L["Paid {0}", gross]</span>
                     <button type="button" class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold btn-complete"
-                            onclick="markCompleted(@Model.Id, this)">
+                            data-onclick="markCompleted(@Model.Id, this)">
                         <i class="bi bi-check2-all"></i> @L["Mark Completed"]
                     </button>
                 </div>
             }
             else if (expandable && Model.Status == "Accepted")
             {
-                <div class="request-actions d-flex align-items-center gap-2" onclick="event.stopPropagation()">
+                <div class="request-actions d-flex align-items-center gap-2" data-onclick="event.stopPropagation()">
                     <span class="krishi-badge krishi-badge-pending payment-chip"><i class="bi bi-hourglass-split"></i> @L["Unpaid"]</span>
                     <span class="d-inline-block" tabindex="0" title="@L["Awaiting farmer payment"]">
                         <button type="button" class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold btn-complete" disabled style="pointer-events: none;">
@@ -201,7 +201,7 @@
                                     <span class="badge bg-white text-success border ms-1">@L["{0} / {1} t stored", Model.StoredTonsActual.ToString("N1"), Model.RequestedCapacityTons.ToString("N0")]</span>
                                 </span>
                                 <button type="button" class="btn btn-krishi-primary btn-sm rounded-pill px-3 fw-semibold"
-                                        onclick="openIntakeModal(@Model.Id, '@Model.FarmerName.Replace("'", "\\'")')">
+                                        data-onclick="openIntakeModal(@Model.Id, '@Model.FarmerName.Replace("'", "\\'")')">
                                     <i class="bi bi-plus-lg me-1"></i>@L["Record intake"]
                                 </button>
                             </div>
@@ -269,14 +269,14 @@
                                                             @if (!lot.IsReleased)
                                                             {
                                                                 <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 rounded-pill"
-                                                                        onclick="openEditIntakeModal(@lot.Id, @Model.Id, '@lot.IntakeDate.ToString("yyyy-MM-dd")', '@lot.Crop.Replace("'", "\\'")', '@(lot.Variety?.Replace("'", "\\'") ?? "")', @lot.Bags, @lot.BagWeightKg, @lot.NetWeightKg, '@(lot.MoisturePercent?.ToString() ?? "")', '@lot.Grade', '@(lot.Remarks?.Replace("'", "\\'") ?? "")')">
+                                                                        data-onclick="openEditIntakeModal(@lot.Id, @Model.Id, '@lot.IntakeDate.ToString("yyyy-MM-dd")', '@lot.Crop.Replace("'", "\\'")', '@(lot.Variety?.Replace("'", "\\'") ?? "")', @lot.Bags, @lot.BagWeightKg, @lot.NetWeightKg, '@(lot.MoisturePercent?.ToString() ?? "")', '@lot.Grade', '@(lot.Remarks?.Replace("'", "\\'") ?? "")')">
                                                                     <i class="bi bi-pencil"></i>
                                                                 </button>
                                                                 <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 rounded-pill"
-                                                                        onclick="openReleaseModal(@lot.Id, '@Model.FarmerName.Replace("'", "\\'")')">
+                                                                        data-onclick="openReleaseModal(@lot.Id, '@Model.FarmerName.Replace("'", "\\'")')">
                                                                     <i class="bi bi-box-arrow-right"></i> @L["Release"]
                                                                 </button>
-                                                                <form asp-controller="GodownOwner" asp-action="DeleteIntake" method="post" class="d-inline" onsubmit="return confirm('@L["Delete this intake lot?"]');">
+                                                                <form asp-controller="GodownOwner" asp-action="DeleteIntake" method="post" class="d-inline" data-onsubmit="return confirm('@L["Delete this intake lot?"]');">
                                                                     <input type="hidden" name="lotId" value="@lot.Id" />
                                                                     <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString#request-@Model.Id" />
                                                                     <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2 rounded-pill" title="@L["Delete"]">

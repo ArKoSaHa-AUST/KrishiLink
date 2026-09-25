@@ -154,7 +154,7 @@ else
                                     </form>
                                 }
 
-                                <form asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('Delete this notification?');">
+                                <form asp-action="Delete" method="post" class="d-inline" data-onsubmit="return confirm('Delete this notification?');">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="id" value="@item.Id" />
                                     <input type="hidden" name="returnUrl" value="@currentUrl" />

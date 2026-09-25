@@ -272,6 +272,9 @@
                     errorSpan.text('');
                 }
 
+                updateSubmitButtonState();
+            });
+
             // 4. Form Submit Loading Interaction
             $('#loginForm').on('submit', function (e) {
                 const identifierVal = identifierInput.val().trim();

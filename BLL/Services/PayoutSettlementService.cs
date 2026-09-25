@@ -46,13 +46,22 @@ namespace KrishiLink.BLL.Services
 
         public async Task<int> SettleDuePayoutsAsync(bool ignoreDelay = false, string? ownerId = null, CancellationToken ct = default)
         {
-            await using var transaction = await WorkflowTransaction.BeginAsync(_db, ct);
             var cutoff = DateTime.UtcNow - (_options.SettlementDelay ?? TimeSpan.FromMinutes(30));
-            var query = _db.Transactions.Include(t => t.User).Where(t => t.Status == PayoutStatus.Processing);
-            if (!ignoreDelay) query = query.Where(t => t.TransactionDate <= cutoff);
-            if (!string.IsNullOrWhiteSpace(ownerId)) query = query.Where(t => t.UserId == ownerId);
+            IQueryable<Transaction> Due()
+            {
+                var query = _db.Transactions.Where(t => t.Status == PayoutStatus.Processing);
+                if (!ignoreDelay) query = query.Where(t => t.TransactionDate <= cutoff);
+                if (!string.IsNullOrWhiteSpace(ownerId)) query = query.Where(t => t.UserId == ownerId);
+                return query;
+            }
 
-            var due = await query.ToListAsync(ct);
+            // Lock only the owners with something due (a failed payout releases their bookings back to "owed").
+            // A payout requested after this read simply waits for the next tick.
+            var owners = await Due().AsNoTracking().Select(t => t.UserId).Distinct().ToListAsync(ct);
+            if (owners.Count == 0) return 0;
+
+            await using var transaction = await WorkflowTransaction.BeginAsync(_db, owners.Select(WorkflowLock.User), ct);
+            var due = await Due().Include(t => t.User).Where(t => owners.Contains(t.UserId)).ToListAsync(ct);
             if (due.Count == 0) return 0;
 
             var now = DateTime.UtcNow;

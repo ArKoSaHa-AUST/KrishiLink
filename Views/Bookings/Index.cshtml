@@ -91,7 +91,7 @@
 
             <!-- Status Filter -->
             <div class="col-6 col-md-3 col-xl-3">
-                <select class="form-select form-select-sm py-2" name="status" onchange="this.form.submit()">
+                <select class="form-select form-select-sm py-2" name="status" data-onchange="this.form.submit()">
                     <option value="all" selected="@(Model.StatusFilter == "all" ? "selected" : null)">@L["All Statuses"]</option>
                     <option value="pending" selected="@(Model.StatusFilter == "pending" ? "selected" : null)">@L["Pending Approval ({0})", Model.PendingCount]</option>
                     <option value="accepted" selected="@(Model.StatusFilter == "accepted" ? "selected" : null)">@L["Accepted / Awaiting Payment ({0})", Model.AcceptedCount]</option>
@@ -106,10 +106,10 @@
             <div class="col-6 col-md-3 col-xl-3">
                 <div class="input-group input-group-sm">
                     <input type="date" class="form-control py-2" name="dateFrom" title="@L["From Date"]"
-                           value="@(Model.DateFrom.HasValue ? Model.DateFrom.Value.ToString("yyyy-MM-dd") : "")" onchange="this.form.submit()" />
+                           value="@(Model.DateFrom.HasValue ? Model.DateFrom.Value.ToString("yyyy-MM-dd") : "")" data-onchange="this.form.submit()" />
                     <span class="input-group-text bg-light text-muted px-1.5">@L["To"]</span>
                     <input type="date" class="form-control py-2" name="dateTo" title="@L["To Date"]"
-                           value="@(Model.DateTo.HasValue ? Model.DateTo.Value.ToString("yyyy-MM-dd") : "")" onchange="this.form.submit()" />
+                           value="@(Model.DateTo.HasValue ? Model.DateTo.Value.ToString("yyyy-MM-dd") : "")" data-onchange="this.form.submit()" />
                 </div>
             </div>
 
@@ -159,7 +159,7 @@
                             <!-- Item Image & Info -->
                             <td class="ps-4 py-3">
                                 <div class="d-flex align-items-center gap-3">
-                                    <img src="@b.ImageUrl" alt="@b.ItemName" class="rounded-3 object-fit-cover shadow-sm border" style="width: 58px; height: 50px;" />
+                                    <img src="@b.ImageUrl" alt="@b.ItemName" class="rounded-3 object-fit-cover shadow-sm border" style="width: 58px; height: 50px;" width="58" height="50" loading="lazy" decoding="async" />
                                     <div>
                                         <div class="d-flex align-items-center gap-2">
                                             <span class="fw-bold text-dark mb-0">@b.ItemName</span>
@@ -274,7 +274,7 @@
                                                     <div class="mt-2 pt-2 border-top">
                                                         <div class="d-flex align-items-center gap-1.5 text-warning small fw-bold mb-1">
                                                             <i class="bi bi-star-fill"></i>
-                                                            <span>★ @(b.ReviewRating ?? 0)/5 @L["Your Review:"]</span>
+                                                            <span>@(b.ReviewRating ?? 0)/5 @L["Your Review:"]</span>
                                                         </div>
                                                         @if (!string.IsNullOrWhiteSpace(b.ReviewComment))
                                                         {
@@ -348,14 +348,14 @@
                                                     {
                                                         <div id="reviewActionContainer_@(b.BookingType)_@(b.Id)" class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle small fw-bold">
                                                             <i class="bi bi-star-fill text-warning"></i>
-                                                            <span>★ @(b.ReviewRating ?? 0)/5 @L["Reviewed"]</span>
+                                                            <span>@(b.ReviewRating ?? 0)/5 @L["Reviewed"]</span>
                                                         </div>
                                                     }
                                                     else
                                                     {
                                                         <div id="reviewActionContainer_@(b.BookingType)_@(b.Id)">
                                                             <button type="button" class="btn btn-warning btn-sm rounded-pill px-3.5 py-1.5 fw-bold text-dark shadow-sm d-inline-flex align-items-center gap-1.5"
-                                                                    onclick="openReviewModal('@b.BookingType', @b.Id, '@b.ItemName.Replace("'", "\\'")', '@b.BookingCode', '@b.OwnerName.Replace("'", "\\'")', '@b.ImageUrl')">
+                                                                    data-onclick="openReviewModal('@b.BookingType', @b.Id, '@b.ItemName.Replace("'", "\\'")', '@b.BookingCode', '@b.OwnerName.Replace("'", "\\'")', '@b.ImageUrl')">
                                                                 <i class="bi bi-star-fill text-dark"></i>
                                                                 <span>@L["Rate & Review"]</span>
                                                             </button>
@@ -363,7 +363,7 @@
                                                     }
                                                 }
 
-                                                <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs" onclick="openBookingQrModal('@b.BookingType', @b.Id)">
+                                                <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5 shadow-xs" data-onclick="openBookingQrModal('@b.BookingType', @b.Id)">
                                                     <i class="bi bi-qr-code"></i>
                                                     <span>@L["Show QR Code"]</span>
                                                 </button>
@@ -381,7 +381,7 @@
                                                 @if (b.CanModify)
                                                 {
                                                     <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3.5 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5"
-                                                            onclick="openModifyModal('@b.BookingType', @b.Id, '@b.StartDate.ToString("yyyy-MM-dd")', '@b.EndDate.ToString("yyyy-MM-dd")', @b.Units, @b.StorageTons, @b.MaxUnits, @b.MinDays, '@b.ItemName.Replace("'", "\\'")')">
+                                                            data-onclick="openModifyModal('@b.BookingType', @b.Id, '@b.StartDate.ToString("yyyy-MM-dd")', '@b.EndDate.ToString("yyyy-MM-dd")', @b.Units, @b.StorageTons, @b.MaxUnits, @b.MinDays, '@b.ItemName.Replace("'", "\\'")')">
                                                         <i class="bi bi-pencil-square"></i>
                                                         <span>@L["Change dates"]</span>
                                                     </button>
@@ -403,7 +403,7 @@
                                                 }
                                                 @if (b.CanCancel)
                                                 {
-                                                    <form asp-action="Cancel" method="post" onsubmit="return confirm('@(b.Status == "Paid" ? L["Cancel this booking? Your payment will be refunded and the dates released."] : L["Cancel this booking? The dates will be released to other farmers."])');">
+                                                    <form asp-action="Cancel" method="post" data-onsubmit="return confirm('@(b.Status == "Paid" ? L["Cancel this booking? Your payment will be refunded and the dates released."] : L["Cancel this booking? The dates will be released to other farmers."])');">
                                                         <input type="hidden" name="type" value="@b.BookingType" />
                                                         <input type="hidden" name="id" value="@b.Id" />
                                                         <input type="hidden" name="returnUrl" value="@currentUrl" />
@@ -500,7 +500,7 @@
                 <div class="card krishi-card border shadow-sm rounded-3 overflow-hidden p-3">
                     
                     <div class="d-flex gap-3 mb-2.5">
-                        <img src="@b.ImageUrl" alt="@b.ItemName" class="rounded-3 object-fit-cover shadow-sm border flex-shrink-0" style="width: 72px; height: 60px;" />
+                        <img src="@b.ImageUrl" alt="@b.ItemName" class="rounded-3 object-fit-cover shadow-sm border flex-shrink-0" style="width: 72px; height: 60px;" width="72" height="60" loading="lazy" decoding="async" />
                         <div class="flex-grow-1 min-w-0">
                             <div class="d-flex justify-content-between align-items-start gap-1">
                                 <h6 class="fw-bold text-dark mb-1 text-truncate">@b.ItemName</h6>
@@ -599,7 +599,7 @@
                             <div class="p-2.5 bg-warning-subtle border border-warning-subtle rounded-3 mb-2">
                                 <div class="d-flex align-items-center gap-1.5 text-warning-emphasis small fw-bold mb-1">
                                     <i class="bi bi-star-fill text-warning"></i>
-                                    <span>★ @(b.ReviewRating ?? 0)/5 @L["Your Review:"]</span>
+                                    <span>@(b.ReviewRating ?? 0)/5 @L["Your Review:"]</span>
                                 </div>
                                 @if (!string.IsNullOrWhiteSpace(b.ReviewComment))
                                 {
@@ -611,7 +611,7 @@
                         @if (b.Status == "Completed" && !b.HasReview)
                         {
                             <button type="button" class="btn btn-warning btn-sm w-100 rounded-pill py-2 fw-bold text-dark shadow-sm mb-2 d-flex align-items-center justify-content-center gap-1.5"
-                                    onclick="openReviewModal('@b.BookingType', @b.Id, '@b.ItemName.Replace("'", "\\'")', '@b.BookingCode', '@b.OwnerName.Replace("'", "\\'")', '@b.ImageUrl')">
+                                    data-onclick="openReviewModal('@b.BookingType', @b.Id, '@b.ItemName.Replace("'", "\\'")', '@b.BookingCode', '@b.OwnerName.Replace("'", "\\'")', '@b.ImageUrl')">
                                 <i class="bi bi-star-fill text-dark"></i>
                                 <span>@L["Rate & Review This Booking"]</span>
                             </button>
@@ -645,7 +645,7 @@
                                     <i class="bi bi-credit-card-fill me-1"></i>@L["Pay now {0}", b.CostDisplay]
                                 </a>
                             }
-                            <button type="button" class="btn btn-outline-success btn-sm rounded-pill py-2 fw-semibold d-flex align-items-center justify-content-center gap-1.5" onclick="openBookingQrModal('@b.BookingType', @b.Id)">
+                            <button type="button" class="btn btn-outline-success btn-sm rounded-pill py-2 fw-semibold d-flex align-items-center justify-content-center gap-1.5" data-onclick="openBookingQrModal('@b.BookingType', @b.Id)">
                                 <i class="bi bi-qr-code"></i>
                                 <span>@L["Show QR Code"]</span>
                             </button>
@@ -663,7 +663,7 @@
                             @if (b.CanModify)
                             {
                                 <button type="button" class="btn btn-outline-warning btn-sm rounded-pill py-2 fw-semibold d-flex align-items-center justify-content-center gap-1.5"
-                                        onclick="openModifyModal('@b.BookingType', @b.Id, '@b.StartDate.ToString("yyyy-MM-dd")', '@b.EndDate.ToString("yyyy-MM-dd")', @b.Units, @b.StorageTons, @b.MaxUnits, @b.MinDays, '@b.ItemName.Replace("'", "\\'")')">
+                                        data-onclick="openModifyModal('@b.BookingType', @b.Id, '@b.StartDate.ToString("yyyy-MM-dd")', '@b.EndDate.ToString("yyyy-MM-dd")', @b.Units, @b.StorageTons, @b.MaxUnits, @b.MinDays, '@b.ItemName.Replace("'", "\\'")')">
                                     <i class="bi bi-pencil-square"></i>
                                     <span>@L["Change dates"]</span>
                                 </button>
@@ -683,7 +683,7 @@
                         </div>
                         @if (b.CanCancel)
                         {
-                            <form asp-action="Cancel" method="post" class="mt-2" onsubmit="return confirm('@(b.Status == "Paid" ? L["Cancel this booking? Your payment will be refunded and the dates released."] : L["Cancel this booking? The dates will be released to other farmers."])');">
+                            <form asp-action="Cancel" method="post" class="mt-2" data-onsubmit="return confirm('@(b.Status == "Paid" ? L["Cancel this booking? Your payment will be refunded and the dates released."] : L["Cancel this booking? The dates will be released to other farmers."])');">
                                 <input type="hidden" name="type" value="@b.BookingType" />
                                 <input type="hidden" name="id" value="@b.Id" />
                                 <input type="hidden" name="returnUrl" value="@currentUrl" />

@@ -45,21 +45,12 @@ namespace KrishiLink.Models.ViewModels
         /// <summary>The 64 districts, sourced from BangladeshGeo so there is one geography table.</summary>
         public static IReadOnlyList<string> Districts => BangladeshGeo.AllDistricts;
 
-        public static readonly IReadOnlyList<string> Crops = new[]
-        {
-            "Rice (Boro)", "Rice (Aman)", "Rice (Aus)", "Wheat", "Maize", "Potato", "Jute", "Vegetables", "Pulses", "Oilseeds", "Fruits", "Other"
-        };
+        public static readonly IReadOnlyList<string> Crops = KrishiLink.DAL.ReferenceDataSeed.CurrentCategories.Crops;
 
-        // Kept in sync with the category/type <select> lists on the listing forms
-        public static readonly IReadOnlyList<string> EquipmentCategories = new[]
-        {
-            "Tractor", "Power Tiller", "Combine Harvester", "Seed Drill / Seeder", "Power Sprayer", "Irrigation Pump", "Thresher", "Other"
-        };
+        // From App_Data/seed/categories.json (QLT-04); the listing forms, filters and onboarding all read these
+        public static readonly IReadOnlyList<string> EquipmentCategories = KrishiLink.DAL.ReferenceDataSeed.CurrentCategories.EquipmentCategories;
 
-        public static readonly IReadOnlyList<string> StorageTypes = new[]
-        {
-            "Cold Storage", "Grain Warehouse", "Multi-Chamber Cold Storage", "Seed Vault", "Silo Facility", "Dry Godown"
-        };
+        public static readonly IReadOnlyList<string> StorageTypes = KrishiLink.DAL.ReferenceDataSeed.CurrentCategories.StorageTypes;
 
         public static IReadOnlyList<string> SpecializationsFor(string role) => role switch
         {
@@ -69,16 +60,9 @@ namespace KrishiLink.Models.ViewModels
         };
 
         // Pre-2018 spellings still in common use
-        private static readonly Dictionary<string, string> DistrictAliases = new(StringComparer.OrdinalIgnoreCase)
-        {
-            ["Bogra"] = "Bogura",
-            ["Comilla"] = "Cumilla",
-            ["Jessore"] = "Jashore",
-            ["Chittagong"] = "Chattogram",
-            ["Barisal"] = "Barishal",
-            ["Nawabganj"] = "Chapainawabganj",
-            ["Maulvibazar"] = "Moulvibazar"
-        };
+        private static readonly Dictionary<string, string> DistrictAliases = KrishiLink.DAL.ReferenceDataSeed.CurrentGeography.Districts
+            .SelectMany(d => d.Aliases.Select(alias => (alias, d.Name)))
+            .ToDictionary(x => x.alias, x => x.Name, StringComparer.OrdinalIgnoreCase);
 
         /// <summary>Best-effort district guess from a free-text location like "Shibganj, Bogra".</summary>
         public static string? GuessDistrict(string? location)

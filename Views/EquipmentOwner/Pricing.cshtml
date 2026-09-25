@@ -16,7 +16,7 @@
 <div class="card krishi-card border-0 shadow-sm p-4 mb-4" style="border-radius: var(--krishi-radius-lg);">
     <div class="row align-items-center g-3">
         <div class="col-auto">
-            <img src="@Model.ThumbnailUrl" class="rounded-3 object-fit-cover shadow-sm" style="width: 84px; height: 84px;" alt="@Model.ListingName" />
+            <img src="@Model.ThumbnailUrl" class="rounded-3 object-fit-cover shadow-sm" style="width: 84px; height: 84px;" alt="@Model.ListingName" width="84" height="84" />
         </div>
         <div class="col">
             <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
@@ -40,6 +40,12 @@
             </a>
         </div>
     </div>
+    @if (Model.PriceBenchmark is { } benchmark)
+    {
+        <div class="mt-3">
+            <partial name="_PriceBenchmark" model="benchmark" />
+        </div>
+    }
 </div>
 
 <div class="row g-4">
@@ -137,7 +143,7 @@
                                     </td>
                                     <td class="text-end">
                                         <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-2.5"
-                                                onclick="confirmDeleteRule(@rule.Id, '@rule.Name.Replace("'", "\\'")')">
+                                                data-onclick="confirmDeleteRule(@rule.Id, '@rule.Name.Replace("'", "\\'")')">
                                             <i class="bi bi-trash3"></i>
                                         </button>
                                     </td>
@@ -167,7 +173,7 @@
                 <!-- Rule Kind -->
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-dark">@L["Rule Kind"] <span class="text-danger">*</span></label>
-                    <select name="Kind" id="ruleKindSelect" class="form-select" onchange="onKindChanged(this.value)" required>
+                    <select name="Kind" id="ruleKindSelect" class="form-select" data-onchange="onKindChanged(this.value)" required>
                         <option value="Season">@L["Seasonal Window (e.g. Harvest / Planting)"]</option>
                         <option value="Weekend">@L["Weekend Surge (Friday & Saturday)"]</option>
                     </select>

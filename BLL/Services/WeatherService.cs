@@ -339,6 +339,15 @@ namespace KrishiLink.BLL.Services
             _ => "আজ"
         };
 
+        /// <summary>
+        /// Seasonal rain-chance baseline for a month (%): the monsoon (May-Sep) versus the dry season. The same climatology the
+        /// forecast falls back to, shared with the sowing simulator so both agree on when the rains come.
+        /// </summary>
+        public static double SeasonalRainChance(int month) => month is >= 5 and <= 9 ? 60.0 : 15.0;
+
+        /// <summary>Months the seasonal baseline treats as monsoon.</summary>
+        public static bool IsMonsoonMonth(int month) => SeasonalRainChance(month) >= 50.0;
+
         private static RegionalWeatherForecast GenerateSeasonalFallback(string district, string division)
         {
             int month = DateTime.Now.Month;
@@ -355,7 +364,7 @@ namespace KrishiLink.BLL.Services
                 12 or 1 => 80.0,
                 _ => 65.0
             };
-            double rainProb = month is >= 5 and <= 9 ? 60.0 : 15.0;
+            double rainProb = SeasonalRainChance(month);
             string cond = month is >= 6 and <= 8 ? "Monsoon Showers" : (month is 12 or 1 ? "Mild Foggy Morning" : "Clear & Sunny");
             string banglaCond = month is >= 6 and <= 8 ? "মৌসুমি বর্ষা" : (month is 12 or 1 ? "শীতকালীন কুয়াশা" : "পরিষ্কার রোদ");
             string icon = month is >= 6 and <= 8 ? "bi-cloud-rain-fill" : (month is 12 or 1 ? "bi-cloud-fog2-fill" : "bi-sun-fill");

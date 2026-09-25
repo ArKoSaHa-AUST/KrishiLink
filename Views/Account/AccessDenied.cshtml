@@ -1,12 +1,36 @@
+@using System.Security.Claims
 @{
     ViewData["Title"] = L["Access Denied"];
+    var emailUnconfirmed = ViewData["EmailUnconfirmed"] is true;
 }
 
-<div class="text-center py-5">
-    <i class="bi bi-shield-lock-fill text-danger" style="font-size: 3.5rem;"></i>
-    <h2 class="fw-bold text-dark mt-3">@L["Access Denied"]</h2>
-    <p class="text-secondary mb-4">@L["Your account does not have permission to view this page."]</p>
-    <a asp-controller="Home" asp-action="Index" class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-semibold">
-        <i class="bi bi-house-door me-1"></i>@L["Back to Home"]
-    </a>
-</div>
+@if (emailUnconfirmed)
+{
+    <div class="text-center py-5" style="max-width: 560px; margin: 0 auto;">
+        <i class="bi bi-envelope-exclamation-fill text-warning" style="font-size: 3.5rem;"></i>
+        <h2 class="fw-bold text-dark mt-3">@L["Confirm your e-mail first"]</h2>
+        <p class="text-secondary mb-4">@L["Booking, listing, payments, payouts and ID verification unlock once you confirm your e-mail address. Enter the code we e-mailed you, or request a new one."]</p>
+        <div class="d-flex justify-content-center gap-2 flex-wrap">
+            <a asp-controller="Account" asp-action="VerifyEmail" class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-semibold">
+                <i class="bi bi-patch-check me-1"></i>@L["Enter code"]
+            </a>
+            <form asp-controller="Account" asp-action="ResendConfirmation" method="post" class="d-inline">
+                <input type="hidden" name="Email" value="@User.FindFirstValue(ClaimTypes.Email)" />
+                <button type="submit" class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-semibold">
+                    <i class="bi bi-arrow-repeat me-1"></i>@L["Resend code"]
+                </button>
+            </form>
+        </div>
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <i class="bi bi-shield-lock-fill text-danger" style="font-size: 3.5rem;"></i>
+        <h2 class="fw-bold text-dark mt-3">@L["Access Denied"]</h2>
+        <p class="text-secondary mb-4">@L["Your account does not have permission to view this page."]</p>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-semibold">
+            <i class="bi bi-house-door me-1"></i>@L["Back to Home"]
+        </a>
+    </div>
+}

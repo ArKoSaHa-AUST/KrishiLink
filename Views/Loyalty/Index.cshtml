@@ -74,7 +74,7 @@
                     <!-- Tier Status Pill Strip -->
                     <div class="d-flex align-items-center gap-3 flex-wrap">
                         <div class="bg-white bg-opacity-15 px-3 py-2 rounded-3 border border-white border-opacity-20 d-flex align-items-center gap-2">
-                            <span class="fs-4">@Model.CurrentTier.TierIcon</span>
+                            <i class="bi @Model.CurrentTier.TierIcon fs-4" aria-hidden="true"></i>
                             <div>
                                 <span class="d-block text-white-50" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">@L["Current Tier"]</span>
                                 <span class="fw-bold text-white fs-6">@L[Model.CurrentTier.TierName]</span>
@@ -103,7 +103,7 @@
                                 </div>
                             </div>
                             <span class="badge @Model.CurrentTier.BadgeColorClass text-white px-3 py-2 rounded-pill fw-bold fs-6">
-                                @Model.CurrentTier.TierIcon @L[Model.CurrentTier.TierName]
+                                <i class="bi @Model.CurrentTier.TierIcon" aria-hidden="true"></i> @L[Model.CurrentTier.TierName]
                             </span>
                         </div>
 
@@ -261,7 +261,7 @@
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center gap-2 bg-white p-2 rounded-2 border">
                                         <code class="fw-bold text-success fs-6 user-select-all" id="code-@voucher.PromoCode">@voucher.PromoCode</code>
-                                        <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2.5 py-1 copy-btn" onclick="copyCode('@voucher.PromoCode', this)">
+                                        <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2.5 py-1 copy-btn" data-onclick="copyCode('@voucher.PromoCode', this)">
                                             <i class="bi bi-clipboard me-1"></i><span>@L["Copy"]</span>
                                         </button>
                                     </div>
@@ -294,60 +294,60 @@
                     <div class="d-flex flex-column gap-2.5">
                         
                         <!-- Bronze -->
-                        <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between @(Model.CurrentTier.TierName == "Bronze Farmer" ? "bg-success-subtle border-success" : "bg-light")">
+                        <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between @(Model.CurrentTier.TierName == "Bronze Harvester" ? "bg-success-subtle border-success" : "bg-light")">
                             <div class="d-flex align-items-center gap-2.5">
-                                <span class="fs-4">🥉</span>
+                                <i class="bi bi-seedling fs-4" style="color: #92400e;" aria-hidden="true"></i>
                                 <div>
-                                    <span class="fw-bold text-dark d-block small">@L["Bronze Farmer"]</span>
+                                    <span class="fw-bold text-dark d-block small">@L["Bronze Harvester"]</span>
                                     <span class="text-muted" style="font-size: 0.72rem;">0 – 199 @L["points"] (1.0x @L["multiplier"])</span>
                                 </div>
                             </div>
-                            @if (Model.CurrentTier.TierName == "Bronze Farmer")
+                            @if (Model.CurrentTier.TierName == "Bronze Harvester")
                             {
                                 <span class="badge bg-success text-white rounded-pill px-2 py-1 small">@L["Active Tier"]</span>
                             }
                         </div>
 
                         <!-- Silver -->
-                        <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between @(Model.CurrentTier.TierName == "Silver Farmer" ? "bg-success-subtle border-success" : "bg-light")">
+                        <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between @(Model.CurrentTier.TierName == "Silver Cultivator" ? "bg-success-subtle border-success" : "bg-light")">
                             <div class="d-flex align-items-center gap-2.5">
-                                <span class="fs-4">🥈</span>
+                                <i class="bi bi-patch-check-fill fs-4" style="color: #64748b;" aria-hidden="true"></i>
                                 <div>
-                                    <span class="fw-bold text-dark d-block small">@L["Silver Farmer"]</span>
+                                    <span class="fw-bold text-dark d-block small">@L["Silver Cultivator"]</span>
                                     <span class="text-muted" style="font-size: 0.72rem;">200 – 499 @L["points"] (1.2x @L["multiplier"])</span>
                                 </div>
                             </div>
-                            @if (Model.CurrentTier.TierName == "Silver Farmer")
+                            @if (Model.CurrentTier.TierName == "Silver Cultivator")
                             {
                                 <span class="badge bg-success text-white rounded-pill px-2 py-1 small">@L["Active Tier"]</span>
                             }
                         </div>
 
                         <!-- Gold -->
-                        <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between @(Model.CurrentTier.TierName == "Gold Farmer" ? "bg-success-subtle border-success" : "bg-light")">
+                        <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between @(Model.CurrentTier.TierName == "Gold Planter" ? "bg-success-subtle border-success" : "bg-light")">
                             <div class="d-flex align-items-center gap-2.5">
-                                <span class="fs-4">🥇</span>
+                                <i class="bi bi-trophy-fill fs-4" style="color: #f59e0b;" aria-hidden="true"></i>
                                 <div>
-                                    <span class="fw-bold text-dark d-block small">@L["Gold Farmer"]</span>
+                                    <span class="fw-bold text-dark d-block small">@L["Gold Planter"]</span>
                                     <span class="text-muted" style="font-size: 0.72rem;">500 – 999 @L["points"] (1.3x @L["multiplier"])</span>
                                 </div>
                             </div>
-                            @if (Model.CurrentTier.TierName == "Gold Farmer")
+                            @if (Model.CurrentTier.TierName == "Gold Planter")
                             {
                                 <span class="badge bg-success text-white rounded-pill px-2 py-1 small">@L["Active Tier"]</span>
                             }
                         </div>
 
                         <!-- Platinum -->
-                        <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between @(Model.CurrentTier.TierName == "Platinum VIP" ? "bg-success-subtle border-success" : "bg-light")">
+                        <div class="p-2.5 rounded-3 border d-flex align-items-center justify-content-between @(Model.CurrentTier.TierName == "Platinum Agronomist" ? "bg-success-subtle border-success" : "bg-light")">
                             <div class="d-flex align-items-center gap-2.5">
-                                <span class="fs-4">💎</span>
+                                <i class="bi bi-gem fs-4" style="color: #2563eb;" aria-hidden="true"></i>
                                 <div>
-                                    <span class="fw-bold text-dark d-block small">@L["Platinum VIP"]</span>
+                                    <span class="fw-bold text-dark d-block small">@L["Platinum Agronomist"]</span>
                                     <span class="text-muted" style="font-size: 0.72rem;">1,000+ @L["points"] (1.5x @L["multiplier"])</span>
                                 </div>
                             </div>
-                            @if (Model.CurrentTier.TierName == "Platinum VIP")
+                            @if (Model.CurrentTier.TierName == "Platinum Agronomist")
                             {
                                 <span class="badge bg-success text-white rounded-pill px-2 py-1 small">@L["Active Tier"]</span>
                             }

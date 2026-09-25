@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "description": "Marketplace vocabulary (QLT-04): the crops a farmer can name as their main crop, and the equipment categories and storage types owners list under. The listing forms, filters and onboarding all read these lists. Validated at startup.",
+  "crops": [
+    "Rice (Boro)",
+    "Rice (Aman)",
+    "Rice (Aus)",
+    "Wheat",
+    "Maize",
+    "Potato",
+    "Jute",
+    "Vegetables",
+    "Pulses",
+    "Oilseeds",
+    "Fruits",
+    "Other"
+  ],
+  "equipmentCategories": [
+    "Tractor",
+    "Power Tiller",
+    "Combine Harvester",
+    "Seed Drill / Seeder",
+    "Power Sprayer",
+    "Irrigation Pump",
+    "Thresher",
+    "Other"
+  ],
+  "storageTypes": [
+    "Cold Storage",
+    "Grain Warehouse",
+    "Multi-Chamber Cold Storage",
+    "Seed Vault",
+    "Silo Facility",
+    "Dry Godown"
+  ]
+}

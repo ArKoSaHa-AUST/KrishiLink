@@ -75,7 +75,7 @@ namespace KrishiLink.BLL.Services
 
         public Task SendAsync(string to, string subject, string htmlBody, EmailAttachment? attachment = null, CancellationToken ct = default)
         {
-            _logger.LogInformation("Email not configured — would send to {To}: \"{Subject}\"{Attachment}", to, subject,
+            _logger.LogInformation("Email not configured — would send to {To}: \"{Subject}\"{Attachment}", PersonalDataLog.Email(to), subject,
                 attachment is null ? string.Empty : $" with {attachment.FileName} ({attachment.Content.Length:N0} bytes)");
             return Task.CompletedTask;
         }

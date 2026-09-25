@@ -64,6 +64,12 @@ namespace KrishiLink.Models.ViewModels
 
         public List<HarvestPlanItemDetailViewModel> Items { get; set; } = new();
 
+        /// <summary>The calendar entries the plan's crop resolves to (one, several for a crop group, or none).</summary>
+        public IReadOnlyList<CropCalendarEntry> CropEntries { get; set; } = Array.Empty<CropCalendarEntry>();
+
+        /// <summary>Items booked outside the crop's stage window (ECO-02); advisory only.</summary>
+        public IReadOnlyList<CropTimingWarning> TimingWarnings { get; set; } = Array.Empty<CropTimingWarning>();
+
         /// <summary>Other draft plans for the farmer, allowing moving items between plans.</summary>
         public List<HarvestPlanOptionViewModel> OtherDraftPlans { get; set; } = new();
     }
@@ -191,5 +197,31 @@ namespace KrishiLink.Models.ViewModels
         public DateTime? EarliestStartDate { get; set; }
         public string TargetDateRange { get; set; } = string.Empty;
         public decimal EstimatedGross { get; set; }
+    }
+}
+
+namespace KrishiLink.Models.ViewModels
+{
+    /// <summary>The season cost sheet page (ECO-01).</summary>
+    public class SeasonSheetViewModel
+    {
+        public required SeasonSheet Sheet { get; init; }
+        public LandUnit LandUnit { get; init; } = LandUnit.Decimal;
+        public IReadOnlyList<CropCalendarEntry> Crops { get; init; } = Array.Empty<CropCalendarEntry>();
+    }
+
+    /// <summary>Posted by the season inputs form; land arrives in the farmer's unit and price per kg or per maund.</summary>
+    public class SeasonInputsForm
+    {
+        public int PlanId { get; set; }
+        public int? CropEntryId { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Range(0.01, 100_000)]
+        public double? LandSize { get; set; }
+        public LandUnit LandUnit { get; set; } = LandUnit.Decimal;
+
+        [System.ComponentModel.DataAnnotations.Range(typeof(decimal), "0.01", "400000")]
+        public decimal? Price { get; set; }
+        public bool PricePerMaund { get; set; }
     }
 }

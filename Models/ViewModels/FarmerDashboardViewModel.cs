@@ -11,8 +11,14 @@ namespace KrishiLink.Models.ViewModels
         /// <summary>Active equipment rentals and godown bookings.</summary>
         public List<BookingSummaryItem> ActiveBookings { get; set; } = new();
 
-        /// <summary>Last crop advisory recommendation (null if the farmer has never used the service).</summary>
-        public CropRecommendation? SavedRecommendation { get; set; }
+        /// <summary>The farmer's saved Smart Advisor results, newest first (at most three).</summary>
+        public List<SavedAdvisorySummary> SavedAdvisories { get; set; } = new();
+
+        /// <summary>The newest saved advisory, or null if the farmer has never saved one.</summary>
+        public SavedAdvisorySummary? SavedRecommendation => SavedAdvisories.FirstOrDefault();
+
+        /// <summary>The farmer's preferred land unit (REA-03).</summary>
+        public KrishiLink.Models.Entities.LandUnit LandUnit { get; set; } = KrishiLink.Models.Entities.LandUnit.Decimal;
 
         /// <summary>Active real-time agrometeorological disease/weather warning for the farmer's district.</summary>
         public WeatherNoteItem? WeatherAlert { get; set; }
@@ -64,14 +70,23 @@ namespace KrishiLink.Models.ViewModels
     }
 
     /// <summary>
-    /// A saved crop advisory recommendation shown on the dashboard widget.
+    /// A saved Smart Advisor result on the dashboard, with the inputs it was based on.
     /// </summary>
-    public class CropRecommendation
+    public class SavedAdvisorySummary
     {
+        /// <summary>The saved advisory row, for "plan this season".</summary>
+        public int Id { get; set; }
+        public int CropId { get; set; }
         public string CropName { get; set; } = string.Empty;
+        public string CropNameBn { get; set; } = string.Empty;
         public string Season { get; set; } = string.Empty;
-        public string Summary { get; set; } = string.Empty;
-        public string? GuideUrl { get; set; }
+        public string District { get; set; } = string.Empty;
+        public string SoilType { get; set; } = string.Empty;
+        public double? LandSizeDecimal { get; set; }
+        public bool HasIrrigation { get; set; }
+        public int MatchScore { get; set; }
+        public DateTime SavedAt { get; set; }
+        public string GuideUrl { get; set; } = string.Empty;
     }
 
     /// <summary>

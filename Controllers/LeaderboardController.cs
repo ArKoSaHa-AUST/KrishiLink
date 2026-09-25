@@ -1,7 +1,10 @@
 using System.Threading.Tasks;
 using KrishiLink.BLL.Services;
 using KrishiLink.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Localization;
 
 namespace KrishiLink.Controllers
 {
@@ -9,15 +12,19 @@ namespace KrishiLink.Controllers
     {
         private readonly ILeaderboardService _leaderboardService;
         private readonly IBadgeService _badgeService;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
         public LeaderboardController(
             ILeaderboardService leaderboardService,
-            IBadgeService badgeService)
+            IBadgeService badgeService,
+            IStringLocalizer<SharedResource> localizer)
         {
             _leaderboardService = leaderboardService;
             _badgeService = badgeService;
+            _localizer = localizer;
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> Index(
             [FromQuery] string category = "All",
@@ -31,7 +38,9 @@ namespace KrishiLink.Controllers
             return View(model);
         }
 
+        [AllowAnonymous]
         [HttpGet]
+        [EnableRateLimiting(RateLimitPolicies.ReadJson)]
         public async Task<IActionResult> OwnerBadges(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId))
@@ -43,10 +52,13 @@ namespace KrishiLink.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
         public IActionResult Refresh(string? returnUrl = null)
         {
-            _leaderboardService.InvalidateCache();
-            TempData["SuccessMessage"] = "Leaderboard rankings refreshed successfully!";
+            if (_leaderboardService.InvalidateCache())
+                TempData["SuccessMessage"] = _localizer["Leaderboard rankings refreshed successfully!"].Value;
+            else
+                TempData["ErrorMessage"] = _localizer["Rankings were refreshed moments ago. Please try again in a little while."].Value;
 
             if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
                 return Redirect(returnUrl);

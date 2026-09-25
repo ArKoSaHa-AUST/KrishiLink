@@ -58,6 +58,17 @@ namespace KrishiLink.Models.ViewModels
         public string IconClass { get; set; } = "bi-flower2";
         public string BadgeColor { get; set; } = "success";
 
+        // Bangla counterparts and attribution (ADV-05); the English text is the fallback, never an empty block.
+        public string Key { get; set; } = string.Empty;
+        public string? SoilTypesBn { get; set; }
+        public string? WaterRequirementBn { get; set; }
+        public string? KeyTipsBn { get; set; }
+        public string Source { get; set; } = string.Empty;
+
+        public string SoilFor(bool bangla) => bangla && !string.IsNullOrWhiteSpace(SoilTypesBn) ? SoilTypesBn : SoilTypes;
+        public string WaterFor(bool bangla) => bangla && !string.IsNullOrWhiteSpace(WaterRequirementBn) ? WaterRequirementBn : WaterRequirement;
+        public string TipsFor(bool bangla) => bangla && !string.IsNullOrWhiteSpace(KeyTipsBn) ? KeyTipsBn : KeyTips;
+
         public bool IsSowingInMonth(int month) => SowingMonths.Contains(month);
         public bool IsGrowingInMonth(int month) => GrowingMonths.Contains(month);
         public bool IsHarvestingInMonth(int month) => HarvestingMonths.Contains(month);

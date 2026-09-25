@@ -19,5 +19,8 @@ namespace KrishiLink.DAL.Repositories
         void RemoveRange(IEnumerable<T> entities);
         Task<int> SaveChangesAsync();
         Task<WorkflowTransaction> BeginWorkflowAsync(CancellationToken ct = default);
+
+        /// <summary>Begins a workflow that contends only for <paramref name="locks"/> when sharded locking is enabled.</summary>
+        Task<WorkflowTransaction> BeginWorkflowAsync(IEnumerable<WorkflowLock> locks, CancellationToken ct = default);
     }
 }

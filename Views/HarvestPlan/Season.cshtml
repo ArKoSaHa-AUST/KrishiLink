@@ -1,0 +1,337 @@
+@model KrishiLink.Models.ViewModels.SeasonSheetViewModel
+@using KrishiLink.BLL.Helpers
+@using KrishiLink.Models.Entities
+@{
+    var sheet = Model.Sheet;
+    var plan = sheet.Plan;
+    ViewData["Title"] = $"{plan.Name} - {L["Season costs & returns"]}";
+    var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+    var successMsg = TempData["SuccessMessage"] as string;
+    var errorMsg = TempData["ErrorMessage"] as string;
+    string Money(decimal v) => $"৳{v:N0}";
+    string CropLabel(CropCalendarEntry c) => isBangla && !string.IsNullOrWhiteSpace(c.BanglaName) ? $"{c.BanglaName} ({c.Name})" : c.Name;
+    string CategoryLabel(string category) => category == SeasonCostCategories.LandLease ? L["Land lease"].Value : L[category].Value;
+    var landInUnit = sheet.LandDecimals is { } d ? Math.Round(UnitFormat.FromDecimals(d, Model.LandUnit), 2) : (double?)null;
+    var pricePerMaund = sheet.Price is { } p ? decimal.Round(p * (decimal)UnitFormat.KgPerMaund, 0) : (decimal?)null;
+
+    // The range bar: expected harvest against the harvest that covers the costs, on one shared scale.
+    double? scale = sheet.YieldMaxKg is { } yMax ? Math.Max(yMax, sheet.BreakEvenKg ?? 0) * 1.12 : null;
+    string Pct(double kg) => (scale is { } s && s > 0 ? Math.Clamp(kg / s * 100, 0, 100) : 0).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-muted">@L["Harvest Plans"]</a></li>
+            <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@plan.Id" class="text-decoration-none text-muted">@plan.Name</a></li>
+            <li class="breadcrumb-item active text-dark fw-semibold" aria-current="page">@L["Season costs & returns"]</li>
+        </ol>
+    </nav>
+
+    <header class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-end gap-3 mb-4">
+        <div>
+            <h1 class="h3 fw-bold mb-1">@L["Season costs & returns"]</h1>
+            <p class="text-muted mb-0">
+                @plan.Name
+                @if (sheet.Crop is { } crop)
+                {
+                    <span aria-hidden="true">·</span> <span>@CropLabel(crop)</span>
+                }
+                @if (sheet.LandDecimals is { } land)
+                {
+                    <span aria-hidden="true">·</span> <span>@UnitFormat.Land(land, Model.LandUnit, L)</span>
+                }
+            </p>
+        </div>
+        <a asp-action="SeasonPdf" asp-route-id="@plan.Id" class="btn btn-outline-success rounded-pill px-3 fw-semibold btn-sm">
+            <i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>@L["Download season summary (PDF)"]
+        </a>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(successMsg))
+    {
+        <div class="alert alert-success border-0 shadow-sm rounded-3 mb-4" role="status">@successMsg</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(errorMsg))
+    {
+        <div class="alert alert-danger border-0 shadow-sm rounded-3 mb-4" role="alert">@errorMsg</div>
+    }
+
+    <div class="row g-4">
+        <!-- The sheet -->
+        <div class="col-12 col-lg-7">
+            <section class="card border-0 shadow-sm rounded-4 mb-4" aria-labelledby="platformCostsTitle">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-baseline gap-2 mb-3">
+                        <h2 class="h6 fw-bold mb-0" id="platformCostsTitle">@L["Rentals and storage on KrishiLink"]</h2>
+                        <span class="fw-bold krishi-figures">@Money(sheet.PlatformTotal)</span>
+                    </div>
+                    @if (sheet.PlatformCosts.Count == 0)
+                    {
+                        <p class="text-muted small mb-2">@L["No rentals or storage in this plan yet."]</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a asp-controller="Equipment" asp-action="Index" class="btn btn-sm btn-krishi-outline rounded-pill px-3">@L["Browse Equipment"]</a>
+                            <a asp-controller="Godown" asp-action="Index" class="btn btn-sm btn-krishi-outline rounded-pill px-3">@L["Browse Storage"]</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0 krishi-sheet">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">@L["Item"]</th>
+                                        <th scope="col">@L["Dates"]</th>
+                                        <th scope="col" class="text-end">@L["Amount"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var c in sheet.PlatformCosts)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="fw-semibold">@c.Title</div>
+                                                <div class="small text-muted">@L[c.Category]@(c.BookingStatus is { } status ? $" · {L[status].Value}" : string.Empty)</div>
+                                            </td>
+                                            <td class="small text-nowrap">@ListingFormat.DateRange(c.Start, c.End)</td>
+                                            <td class="text-end krishi-figures text-nowrap">
+                                                @Money(c.Amount)
+                                                @if (c.IsEstimate)
+                                                {
+                                                    <span class="d-block small text-muted">@L["estimate"]</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        @if (sheet.HasEstimates)
+                        {
+                            <p class="small text-muted mt-2 mb-0">@L["Estimates use today's price; the agreed price replaces them once the owner accepts."]</p>
+                        }
+                    }
+                </div>
+            </section>
+
+            <section class="card border-0 shadow-sm rounded-4" aria-labelledby="ownCostsTitle">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-baseline gap-2 mb-1">
+                        <h2 class="h6 fw-bold mb-0" id="ownCostsTitle">@L["Other costs you paid"]</h2>
+                        <span class="fw-bold krishi-figures">@Money(sheet.OwnTotal)</span>
+                    </div>
+                    <p class="small text-muted mb-3">@L["Seed, fertilizer, labour and anything else you paid for outside KrishiLink."]</p>
+
+                    @if (sheet.OwnCosts.Count > 0)
+                    {
+                        <div class="table-responsive mb-3">
+                            <table class="table table-sm align-middle mb-0 krishi-sheet">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">@L["Type"]</th>
+                                        <th scope="col">@L["Date"]</th>
+                                        <th scope="col" class="text-end">@L["Amount"]</th>
+                                        <th scope="col"><span class="visually-hidden">@L["Actions"]</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var c in sheet.OwnCosts)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="fw-semibold">@CategoryLabel(c.Category)</div>
+                                                @if (!string.IsNullOrWhiteSpace(c.Note))
+                                                {
+                                                    <div class="small text-muted">@c.Note</div>
+                                                }
+                                            </td>
+                                            <td class="small text-nowrap">@c.IncurredOn.ToString("dd MMM yyyy")</td>
+                                            <td class="text-end krishi-figures">@Money(c.Amount)</td>
+                                            <td class="text-end">
+                                                <form asp-action="DeleteSeasonCost" method="post" class="d-inline">
+                                                    <input type="hidden" name="planId" value="@plan.Id" />
+                                                    <input type="hidden" name="costId" value="@c.Id" />
+                                                    <button type="submit" class="btn btn-sm btn-link text-danger p-1" aria-label="@L["Remove {0}", CategoryLabel(c.Category)]">
+                                                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+
+                    <form asp-action="AddSeasonCost" method="post" class="row g-2 align-items-end">
+                        <input type="hidden" name="planId" value="@plan.Id" />
+                        <div class="col-6 col-md-3">
+                            <label for="costCategory" class="form-label small fw-semibold mb-1">@L["Type"]</label>
+                            <select id="costCategory" name="category" class="form-select form-select-sm">
+                                @foreach (var category in SeasonCostCategories.All)
+                                {
+                                    <option value="@category">@CategoryLabel(category)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="costAmount" class="form-label small fw-semibold mb-1">@L["Amount (৳)"]</label>
+                            <input id="costAmount" name="amount" type="number" inputmode="decimal" min="1" step="1" required class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="costDate" class="form-label small fw-semibold mb-1">@L["Date"]</label>
+                            <input id="costDate" name="incurredOn" type="date" value="@BangladeshClock.Today.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label for="costNote" class="form-label small fw-semibold mb-1">@L["Note (optional)"]</label>
+                            <input id="costNote" name="note" type="text" maxlength="200" class="form-control form-control-sm" />
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-sm btn-krishi-primary rounded-pill px-3 fw-semibold">
+                                <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>@L["Add cost"]
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </div>
+
+        <!-- The statement -->
+        <div class="col-12 col-lg-5">
+            <section class="card border-0 shadow-sm rounded-4 mb-4 krishi-statement" aria-labelledby="statementTitle">
+                <div class="card-body p-4">
+                    <h2 class="h6 fw-bold mb-3" id="statementTitle">@L["Season at a glance"]</h2>
+                    <dl class="krishi-statement-list mb-0">
+                        <div><dt>@L["Total season cost"]</dt><dd class="fw-bold">@Money(sheet.TotalCost)</dd></div>
+                        @if (sheet.LandDecimals is { } landDecimals && landDecimals > 0)
+                        {
+                            <div>
+                                <dt>@L["Cost per {0}", UnitFormat.UnitName(Model.LandUnit, L)]</dt>
+                                <dd>@Money(decimal.Round(sheet.TotalCost / (decimal)UnitFormat.FromDecimals(landDecimals, Model.LandUnit), 0))</dd>
+                            </div>
+                            @if (Model.LandUnit != LandUnit.Acre && sheet.CostPerAcre is { } perAcre)
+                            {
+                                <div><dt>@L["Cost per acre"]</dt><dd>@Money(perAcre)</dd></div>
+                            }
+                        }
+                        @if (sheet.YieldMinKg is { } yMin && sheet.YieldMaxKg is { } yMax2)
+                        {
+                            <div><dt>@L["Expected harvest"]</dt><dd>@UnitFormat.Weight(yMin, L) – @UnitFormat.Weight(yMax2, L)</dd></div>
+                        }
+                        @if (sheet.GrossMin is { } gMin && sheet.GrossMax is { } gMax && sheet.NetMin is { } nMin && sheet.NetMax is { } nMax)
+                        {
+                            <div><dt>@L["Expected gross"]</dt><dd>@Money(gMin) – @Money(gMax)</dd></div>
+                            <div class="krishi-statement-total">
+                                <dt>@L["Expected net"]</dt>
+                                <dd class="fw-bold @(nMax < 0 ? "text-danger" : "text-success-emphasis")">@Money(nMin) – @Money(nMax)</dd>
+                            </div>
+                        }
+                        @if (sheet.BreakEvenKg is { } breakEven)
+                        {
+                            <div><dt>@L["Break-even harvest"]</dt><dd>@UnitFormat.Weight(breakEven, L)</dd></div>
+                        }
+                    </dl>
+
+                    @if (scale is not null && sheet.YieldMinKg is { } barMin && sheet.YieldMaxKg is { } barMax)
+                    {
+                        <figure class="mt-4 mb-0">
+                            <div class="krishi-range" role="img"
+                                 aria-label="@L["Expected harvest {0} to {1}; costs are covered at {2}.", UnitFormat.Weight(barMin, L), UnitFormat.Weight(barMax, L), sheet.BreakEvenKg is { } be ? UnitFormat.Weight(be, L) : "—"]">
+                                <span class="krishi-range-band" style="left: @Pct(barMin)%; width: calc(@Pct(barMax)% - @Pct(barMin)%);"></span>
+                                @if (sheet.BreakEvenKg is { } bePoint)
+                                {
+                                    <span class="krishi-range-mark" style="left: @Pct(bePoint)%;"></span>
+                                }
+                            </div>
+                            <figcaption class="d-flex flex-wrap gap-3 small text-muted mt-2">
+                                <span><span class="krishi-range-key krishi-range-key-band" aria-hidden="true"></span>@L["Expected harvest"]</span>
+                                @if (sheet.BreakEvenKg is not null)
+                                {
+                                    <span><span class="krishi-range-key krishi-range-key-mark" aria-hidden="true"></span>@L["Covers your costs"]</span>
+                                }
+                            </figcaption>
+                        </figure>
+                        @if (sheet.LossLikely)
+                        {
+                            <p class="small text-danger mt-3 mb-0"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>@L["At this price even a good harvest does not cover the costs."]</p>
+                        }
+                    }
+                    else
+                    {
+                        <p class="small text-muted mt-3 mb-0">
+                            @if (sheet.Crop is null)
+                            {
+                                @L["Choose the exact crop below to see the expected harvest."]
+                            }
+                            else if (sheet.Crop.TypicalYieldPerAcreMin is null)
+                            {
+                                @L["The crop calendar has no yield range for this crop, so only costs are shown."]
+                            }
+                            else if (sheet.LandDecimals is null)
+                            {
+                                @L["Add your land size below to see the expected harvest."]
+                            }
+                            else
+                            {
+                                @L["Add your expected selling price below to see the return."]
+                            }
+                        </p>
+                    }
+                </div>
+            </section>
+
+            <section class="card border-0 shadow-sm rounded-4" aria-labelledby="inputsTitle">
+                <div class="card-body p-4">
+                    <h2 class="h6 fw-bold mb-3" id="inputsTitle">@L["Your field and price"]</h2>
+                    <form asp-action="SeasonInputs" method="post" class="d-grid gap-3">
+                        <input type="hidden" name="PlanId" value="@plan.Id" />
+                        <div>
+                            <label for="seasonCrop" class="form-label small fw-semibold mb-1">@L["Crop"]</label>
+                            <select id="seasonCrop" name="CropEntryId" class="form-select form-select-sm">
+                                @if (sheet.Crop is null)
+                                {
+                                    <option value="">@L["Choose a crop"]</option>
+                                }
+                                @foreach (var c in Model.Crops)
+                                {
+                                    <option value="@c.Id" selected="@(sheet.Crop?.Id == c.Id)">@CropLabel(c)</option>
+                                }
+                            </select>
+                            @if (sheet.Crop is null && sheet.CropEntries.Count > 1)
+                            {
+                                <div class="form-text">@L["\"{0}\" covers several crops; pick the one you are growing.", plan.Crop ?? string.Empty]</div>
+                            }
+                        </div>
+                        <div>
+                            <label for="seasonLand" class="form-label small fw-semibold mb-1">@L["Land under this crop"]</label>
+                            <div class="input-group input-group-sm">
+                                <input id="seasonLand" name="LandSize" type="number" inputmode="decimal" min="0.01" step="0.01" value="@landInUnit?.ToString(System.Globalization.CultureInfo.InvariantCulture)" class="form-control" />
+                                <select name="LandUnit" class="form-select krishi-unit-select" aria-label="@L["Land unit"]">
+                                    @foreach (var unit in UnitFormat.LandUnits)
+                                    {
+                                        <option value="@unit" selected="@(unit == Model.LandUnit)">@UnitFormat.UnitName(unit, L)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-text">@L["1 bigha = 33 decimal; 1 acre = 100 decimal."]</div>
+                        </div>
+                        <div>
+                            <label for="seasonPrice" class="form-label small fw-semibold mb-1">@L["Your expected selling price (৳)"]</label>
+                            <div class="input-group input-group-sm">
+                                <input id="seasonPrice" name="Price" type="number" inputmode="decimal" min="0.01" step="0.01" value="@pricePerMaund?.ToString(System.Globalization.CultureInfo.InvariantCulture)" class="form-control" />
+                                <select name="PricePerMaund" class="form-select krishi-unit-select" aria-label="@L["Price unit"]">
+                                    <option value="true" selected>@L["per maund"]</option>
+                                    <option value="false">@L["per kg"]</option>
+                                </select>
+                            </div>
+                            <div class="form-text">@L["Your own estimate, not a market price. 1 maund = 40 kg."]</div>
+                        </div>
+                        <div>
+                            <button type="submit" class="btn btn-sm btn-krishi-primary rounded-pill px-3 fw-semibold">@L["Save"]</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

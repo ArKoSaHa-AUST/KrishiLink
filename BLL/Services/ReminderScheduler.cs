@@ -58,6 +58,42 @@ namespace KrishiLink.BLL.Services
 
                 try
                 {
+                    using var scope = _scopes.CreateScope();
+                    var swept = await scope.ServiceProvider.GetRequiredService<ISupabaseSessionStore>().SweepExpiredAsync(stoppingToken);
+                    if (swept > 0) _logger.LogInformation("Removed {Count} expired sign-in session(s).", swept);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _logger.LogError(ex, "Expired session sweep failed; will retry in next cycle.");
+                }
+
+                try
+                {
+                    // Assistant conversations: archived after 90 idle days, deleted after 180 (documented on the privacy page).
+                    using var scope = _scopes.CreateScope();
+                    var (archived, deleted) = await scope.ServiceProvider.GetRequiredService<Ai.IAgentService>().SweepRetentionAsync(stoppingToken);
+                    if (archived + deleted > 0)
+                        _logger.LogInformation("Assistant retention: archived {Archived}, deleted {Deleted} conversation(s).", archived, deleted);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _logger.LogError(ex, "Assistant retention sweep failed; will retry in next cycle.");
+                }
+
+                try
+                {
+                    // E-mail delivery records (QLT-03) are kept for support questions, then removed.
+                    using var scope = _scopes.CreateScope();
+                    var removed = await scope.ServiceProvider.GetRequiredService<IEmailDeliveryRecorder>().SweepAsync(stoppingToken);
+                    if (removed > 0) _logger.LogInformation("Removed {Count} e-mail delivery record(s) past retention.", removed);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _logger.LogError(ex, "E-mail delivery log sweep failed; will retry in next cycle.");
+                }
+
+                try
+                {
                     await Task.Delay(interval, stoppingToken);
                 }
                 catch (OperationCanceledException)

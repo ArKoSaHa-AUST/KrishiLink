@@ -1,10 +1,21 @@
 using System;
 using KrishiLink.Models.Entities;
+using Microsoft.Extensions.Options;
 
 namespace KrishiLink.BLL.Services
 {
     public static class AppLinks
     {
+        /// <summary>
+        /// Origin for absolute links baked into QR codes, PDFs and e-mails. Outside Development this is always the
+        /// configured App:PublicBaseUrl — never the client-supplied Host header. Development uses the request's own
+        /// origin so phones on the LAN can open the links they scan.
+        /// </summary>
+        public static string PublicOrigin(IOptions<AppOptions> options, IHostEnvironment environment, HttpRequest request) =>
+            environment.IsDevelopment()
+                ? $"{request.Scheme}://{request.Host}"
+                : options.Value.PublicBaseUrl.TrimEnd('/');
+
         public static string OwnerRequests(string? role, int? bookingId = null)
         {
             var baseUrl = string.Equals(role, AppRoles.GodownOwner, StringComparison.OrdinalIgnoreCase) ||
@@ -13,6 +24,41 @@ namespace KrishiLink.BLL.Services
                 : "/EquipmentOwner/Requests";
 
             return bookingId.HasValue ? $"{baseUrl}#request-{bookingId.Value}" : baseUrl;
+        }
+
+        /// <summary>The crop calendar opened on one crop.</summary>
+        public static string CalendarForCrop(string cropName) =>
+            $"/Advisory/Calendar?search={Uri.EscapeDataString(cropName)}";
+
+        /// <summary>
+        /// Equipment search pre-filtered by district, category and (optionally) a rental window. The parameter names are the
+        /// <c>EquipmentSearchCriteria</c> properties the list page binds, so the filter is really applied on arrival.
+        /// </summary>
+        public static string EquipmentSearch(string? district = null, string? category = null, DateTime? from = null, DateTime? to = null) =>
+            WithQuery("/Equipment",
+                ("District", district),
+                ("SelectedCategories", category),
+                ("StartDate", from?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)),
+                ("EndDate", to?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)));
+
+        /// <summary>Storage search pre-filtered by district, storage type and (optionally) a storage window.</summary>
+        public static string GodownSearch(string? district = null, string? storageType = null, DateTime? from = null, DateTime? to = null) =>
+            WithQuery("/Godown",
+                ("District", district),
+                ("SelectedStorageTypes", storageType),
+                ("AvailableStartDate", from?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)),
+                ("AvailableEndDate", to?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)));
+
+        /// <summary>Pest and disease alerts for a district and (optionally) a crop.</summary>
+        public static string PestAlerts(string? district = null, string? crop = null) =>
+            WithQuery("/Advisory/Alerts", ("district", district), ("crop", crop));
+
+        private static string WithQuery(string path, params (string Name, string? Value)[] parameters)
+        {
+            var query = string.Join("&", parameters
+                .Where(p => !string.IsNullOrWhiteSpace(p.Value))
+                .Select(p => $"{p.Name}={Uri.EscapeDataString(p.Value!)}"));
+            return query.Length == 0 ? path : $"{path}?{query}";
         }
 
         public static string FarmerBookings(string? type = null, int? bookingId = null)

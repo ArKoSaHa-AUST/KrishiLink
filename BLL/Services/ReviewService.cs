@@ -69,7 +69,15 @@ namespace KrishiLink.BLL.Services
 
             try
             {
-                await using var transaction = await _reviews.BeginWorkflowAsync();
+                // Listing: a review races the owner reopening that booking. Owner: the owner-wide rating is recomputed.
+                var target = isEquipment
+                    ? await _equipmentBookings.Query().Where(b => b.Id == model.BookingId)
+                        .Select(b => new { ListingId = b.EquipmentId, b.Equipment!.OwnerId }).FirstOrDefaultAsync()
+                    : await _godownBookings.Query().Where(b => b.Id == model.BookingId)
+                        .Select(b => new { ListingId = b.GodownId, b.Godown!.OwnerId }).FirstOrDefaultAsync();
+                await using var transaction = await _reviews.BeginWorkflowAsync(target is null
+                    ? Array.Empty<WorkflowLock>()
+                    : new[] { WorkflowLock.Listing(isEquipment ? "Equipment" : "Godown", target.ListingId), WorkflowLock.User(target.OwnerId) });
                 if (isEquipment)
                 {
                     var booking = await _equipmentBookings.QueryTracked()
@@ -162,7 +170,7 @@ namespace KrishiLink.BLL.Services
                             UserId = eq.OwnerId,
                             Type = NotificationTypes.ReviewReceived,
                             TitleKey = "New Review Received",
-                            MessageKey = "{0} left a {1}★ review for {2}.",
+                            MessageKey = "{0} left a {1}-star review for {2}.",
                             Args = new object[] { farmerName, model.Rating, eq.Name },
                             LinkUrl = AppLinks.EquipmentDetails(eq.Id),
                             DedupeKey = $"review:{review.Id}",
@@ -271,7 +279,7 @@ namespace KrishiLink.BLL.Services
                             UserId = gd.OwnerId,
                             Type = NotificationTypes.ReviewReceived,
                             TitleKey = "New Review Received",
-                            MessageKey = "{0} left a {1}★ review for {2}.",
+                            MessageKey = "{0} left a {1}-star review for {2}.",
                             Args = new object[] { farmerName, model.Rating, gd.Name },
                             LinkUrl = AppLinks.GodownDetails(gd.Id),
                             DedupeKey = $"review:{review.Id}",

@@ -48,6 +48,65 @@
     --krishi-shadow-sm: 0 2px 6px rgba(45, 106, 79, 0.05);
     --krishi-shadow-md: 0 4px 14px rgba(45, 106, 79, 0.08);
     --krishi-shadow-lg: 0 8px 24px rgba(45, 106, 79, 0.12);
+
+    /* ----------------------------------------------------------------------
+       Bootstrap theme-token alignment. Bootstrap's own "primary" (blue) and
+       "success" (a brighter, bluer green) never matched the krishi palette
+       above, so any view using a bare `btn-primary`, `text-success`,
+       `bg-success-subtle`, `text-muted`, `text-dark` or `border` utility
+       rendered Bootstrap's stock color side-by-side with krishi-green
+       elements on the same page. Re-pointing Bootstrap's own CSS variables
+       here fixes every one of those utilities everywhere they're used,
+       with no Razor/HTML changes required. Warning/danger/info and the
+       neutral "secondary" gray keep their default Bootstrap meaning.
+       ------------------------------------------------------------------- */
+    --bs-primary: var(--krishi-primary);
+    --bs-primary-rgb: 45, 106, 79;
+    --bs-primary-text-emphasis: var(--krishi-primary-hover);
+    --bs-primary-bg-subtle: var(--krishi-primary-light);
+    --bs-primary-border-subtle: var(--krishi-accent-light);
+
+    --bs-success: var(--krishi-primary);
+    --bs-success-rgb: 45, 106, 79;
+    --bs-success-text-emphasis: var(--krishi-primary-hover);
+    --bs-success-bg-subtle: var(--krishi-primary-light);
+    --bs-success-border-subtle: var(--krishi-accent-light);
+
+    --bs-dark: var(--krishi-text-primary);
+    --bs-dark-rgb: 27, 46, 33;
+    --bs-dark-text-emphasis: var(--krishi-text-primary);
+
+    --bs-secondary-color: var(--krishi-text-muted);
+    --bs-border-color: var(--krishi-border-color);
+    --bs-link-color: var(--krishi-primary);
+    --bs-link-hover-color: var(--krishi-primary-hover);
+}
+
+/* .btn-success / .btn-outline-success carry their own hard-coded color
+   variables rather than reading --bs-success, so they need a direct
+   override to stay in step with every other green button on the site. */
+.btn-success {
+    --bs-btn-bg: var(--krishi-primary);
+    --bs-btn-border-color: var(--krishi-primary);
+    --bs-btn-hover-bg: var(--krishi-primary-hover);
+    --bs-btn-hover-border-color: var(--krishi-primary-hover);
+    --bs-btn-active-bg: var(--krishi-primary-active);
+    --bs-btn-active-border-color: var(--krishi-primary-active);
+    --bs-btn-disabled-bg: var(--krishi-primary);
+    --bs-btn-disabled-border-color: var(--krishi-primary);
+    --bs-btn-focus-shadow-rgb: 45, 106, 79;
+}
+
+.btn-outline-success {
+    --bs-btn-color: var(--krishi-primary);
+    --bs-btn-border-color: var(--krishi-primary);
+    --bs-btn-hover-bg: var(--krishi-primary);
+    --bs-btn-hover-border-color: var(--krishi-primary);
+    --bs-btn-active-bg: var(--krishi-primary);
+    --bs-btn-active-border-color: var(--krishi-primary);
+    --bs-btn-disabled-color: var(--krishi-primary);
+    --bs-btn-disabled-border-color: var(--krishi-primary);
+    --bs-btn-focus-shadow-rgb: 45, 106, 79;
 }
 
 /* Base resets & typography */
@@ -74,6 +133,26 @@ body {
 /* Bangla mode: prefer Bangla-capable font for proper glyph rendering */
 body.lang-bn {
     font-family: 'Hind Siliguri', 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Heading rhythm: a consistent weight and a touch of tightened tracking reads as
+   more deliberate than Bootstrap's default; page-level utilities (fw-*, display-*)
+   still win because these are un-flagged base rules, not !important overrides. */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.display-1, .display-2, .display-3, .display-4, .display-5, .display-6 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+body.lang-bn h1, body.lang-bn h2, body.lang-bn h3, body.lang-bn h4, body.lang-bn h5, body.lang-bn h6,
+body.lang-bn .display-1, body.lang-bn .display-2, body.lang-bn .display-3,
+body.lang-bn .display-4, body.lang-bn .display-5, body.lang-bn .display-6 {
+    /* Bangla conjuncts need their natural spacing; tightened tracking clips glyphs. */
+    letter-spacing: normal;
 }
 
 /* Opt-in page background: slight light greenish gradient */
@@ -1005,6 +1084,35 @@ a:hover {
 .leading-tight { line-height: 1.25 !important; }
 .pointer-events-none { pointer-events: none !important; }
 
+/* Found by .github/scripts/check_css_classes.py: more names the views use that Bootstrap 5.3 lacks. */
+.opacity-90 { opacity: 0.9 !important; }
+.opacity-95 { opacity: 0.95 !important; }
+
+.bg-opacity-5 { --bs-bg-opacity: 0.05; }
+.bg-opacity-15 { --bs-bg-opacity: 0.15; }
+.bg-opacity-20 { --bs-bg-opacity: 0.2; }
+.bg-opacity-80 { --bs-bg-opacity: 0.8; }
+.border-opacity-20 { --bs-border-opacity: 0.2; }
+
+.fw-black { font-weight: 900 !important; }
+
+/* Lighter than .shadow-xs, and an inset well for the QR scanner viewport. */
+.shadow-2xs { box-shadow: 0 1px 1px rgba(27, 67, 50, 0.05) !important; }
+.shadow-inner { box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06) !important; }
+
+/* Seven equal columns: the availability calendars lay out one week per row. */
+.row-cols-7 > * { flex: 0 0 auto; width: 14.2857143%; }
+
+@media (min-width: 576px) {
+    .w-sm-auto { width: auto !important; }
+    .border-start-sm { border-left: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color) !important; }
+}
+
+@media (min-width: 768px) {
+    .w-md-auto { width: auto !important; }
+    .border-end-md { border-right: var(--bs-border-width) var(--bs-border-style) var(--bs-border-color) !important; }
+}
+
 
 /* ==========================================================================
    HERO WATERMARK + ADVISORY TAB BAR
@@ -1077,3 +1185,640 @@ a:hover {
     flex: 0 0 auto;
     white-space: nowrap;
 }
+
+/* ==========================================================================
+   AI assistant (Views/Shared/_AiAgent.cshtml, wwwroot/js/ai-agent.js)
+   A docked offcanvas in the site's own greens: user turns in forest green,
+   assistant turns on the neutral surface, proposals as a request slip.
+   ========================================================================== */
+.krishi-agent-fab {
+    position: fixed;
+    right: max(1.25rem, env(safe-area-inset-right));
+    bottom: max(1.25rem, env(safe-area-inset-bottom));
+    z-index: 1040;
+    width: 3.5rem;
+    height: 3.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 1.35rem;
+    color: #ffffff;
+    background-color: var(--krishi-primary);
+    border: 2px solid rgba(255, 255, 255, 0.85);
+    box-shadow: 0 8px 22px rgba(27, 67, 50, 0.28) !important;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, box-shadow 0.25s ease;
+}
+
+.krishi-agent-fab:hover,
+.krishi-agent-fab:focus-visible {
+    color: #ffffff;
+    background-color: var(--krishi-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(27, 67, 50, 0.34) !important;
+}
+
+.krishi-agent-fab:focus-visible,
+.krishi-agent-icon-btn:focus-visible,
+.krishi-agent-chip:focus-visible,
+.krishi-agent-send:focus-visible,
+.krishi-agent a:focus-visible {
+    outline: 3px solid var(--krishi-accent);
+    outline-offset: 2px;
+}
+
+.krishi-agent {
+    --bs-offcanvas-width: 420px;
+    background-color: var(--krishi-bg);
+    color: var(--krishi-text-primary);
+    border-left: 1px solid var(--krishi-border-color);
+}
+
+@media (max-width: 575.98px) {
+    .krishi-agent { --bs-offcanvas-width: 100vw; }
+}
+
+.krishi-agent ::selection { background-color: var(--krishi-primary-subtle); color: var(--krishi-primary-active); }
+
+.krishi-agent-header {
+    background-color: var(--krishi-surface);
+    border-bottom: 1px solid var(--krishi-border-color);
+    padding: 0.85rem 1rem;
+    gap: 0.5rem;
+}
+
+.krishi-agent-shrink { min-width: 0; }
+
+.krishi-agent-mark {
+    flex: 0 0 auto;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--krishi-radius-md);
+    background-color: var(--krishi-primary-light);
+    color: var(--krishi-primary);
+    font-size: 1.1rem;
+}
+
+.krishi-agent-subtitle {
+    font-size: 0.8rem;
+    color: var(--krishi-text-muted);
+    max-width: 15rem;
+}
+
+.krishi-agent-icon-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: var(--krishi-text-muted);
+    border-radius: var(--krishi-radius-md);
+}
+
+.krishi-agent-icon-btn:hover,
+.krishi-agent-icon-btn[aria-expanded="true"] {
+    color: var(--krishi-primary);
+    background-color: var(--krishi-primary-light);
+}
+
+.krishi-agent-history { max-width: 18rem; max-height: 20rem; overflow-y: auto; }
+.krishi-agent-history .dropdown-item.active,
+.krishi-agent-history .dropdown-item:active { background-color: var(--krishi-primary-light); color: var(--krishi-primary); }
+
+.krishi-agent-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.25rem 1rem;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--krishi-accent-light) transparent;
+}
+
+/* Empty state */
+.krishi-agent-empty { margin-top: auto; padding-bottom: 0.5rem; }
+
+.krishi-agent-greeting {
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1.3;
+    text-wrap: balance;
+    color: var(--krishi-primary-active);
+}
+
+.krishi-agent-lede { font-size: 0.875rem; color: var(--krishi-text-muted); max-width: 34ch; }
+
+.krishi-agent-chip {
+    min-height: 2.75rem;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-align: left;
+    color: var(--krishi-primary);
+    background-color: var(--krishi-surface);
+    border: 1px solid var(--krishi-accent-light);
+    border-radius: 1.25rem;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.krishi-agent-chip:hover { background-color: var(--krishi-primary-light); border-color: var(--krishi-accent); color: var(--krishi-primary-hover); }
+
+/* Messages */
+.krishi-agent-log { display: flex; flex-direction: column; gap: 1rem; }
+.krishi-agent-log:empty { display: none; }
+
+.krishi-agent-msg { display: flex; gap: 0.5rem; align-items: flex-end; animation: krishi-agent-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.krishi-agent-msg-user { justify-content: flex-end; }
+.krishi-agent-msg-assistant { align-items: flex-start; }
+
+@keyframes krishi-agent-in {
+    from { opacity: 0.001; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+}
+
+.krishi-agent-bubble {
+    padding: 0.65rem 0.9rem;
+    border-radius: 1rem;
+    font-size: 0.925rem;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+}
+
+.krishi-agent-msg-user .krishi-agent-bubble {
+    max-width: 85%;
+    white-space: pre-wrap;
+    color: #ffffff;
+    background-color: var(--krishi-primary);
+    border-bottom-right-radius: 0.3rem;
+}
+
+.krishi-agent-msg-user ::selection { background-color: var(--krishi-accent-light); color: var(--krishi-primary-active); }
+
+.krishi-agent-stack { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; flex: 1 1 auto; }
+
+.krishi-agent-msg-assistant .krishi-agent-bubble {
+    align-self: flex-start;
+    max-width: 100%;
+    background-color: var(--bs-secondary-bg);
+    border-top-left-radius: 0.3rem;
+}
+
+.krishi-agent-msg-assistant.is-warning .krishi-agent-bubble {
+    background-color: var(--krishi-status-pending-bg);
+    color: var(--krishi-status-pending-text);
+    border: 1px solid var(--krishi-status-pending-border);
+}
+
+.krishi-agent-msg-assistant.is-error .krishi-agent-bubble {
+    background-color: var(--krishi-status-rejected-bg);
+    color: var(--krishi-status-rejected-text);
+    border: 1px solid var(--krishi-status-rejected-border);
+}
+
+.krishi-agent-text p { margin-bottom: 0.45rem; }
+.krishi-agent-text p:last-child,
+.krishi-agent-text ul:last-child { margin-bottom: 0; }
+.krishi-agent-text ul { padding-left: 1.15rem; margin-bottom: 0.45rem; }
+.krishi-agent-text li { margin-bottom: 0.2rem; }
+.krishi-agent-text a,
+.krishi-agent-fallback,
+.krishi-agent-source { color: var(--krishi-primary); text-underline-offset: 0.18em; }
+
+.krishi-agent-cite {
+    display: inline-block;
+    padding: 0 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1.5;
+    vertical-align: 0.1em;
+    white-space: nowrap;
+    color: var(--krishi-primary);
+    background-color: var(--krishi-primary-light);
+    border-radius: 0.6rem;
+}
+
+.krishi-agent-fallback { display: inline-flex; align-items: center; gap: 0.25rem; margin-top: 0.4rem; font-weight: 600; font-size: 0.85rem; color: inherit; }
+
+.krishi-agent-avatar {
+    flex: 0 0 auto;
+    width: 1.9rem;
+    height: 1.9rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    color: var(--krishi-primary);
+    background-color: var(--krishi-primary-subtle);
+    border-radius: 50%;
+}
+
+.is-error > .krishi-agent-avatar { color: var(--krishi-status-rejected-text); background-color: var(--krishi-status-rejected-bg); }
+
+.krishi-agent-sources { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.6rem; font-size: 0.75rem; color: var(--krishi-text-muted); }
+.krishi-agent-sources-label { font-weight: 600; }
+.krishi-agent-muted { color: var(--krishi-text-muted); }
+
+/* Typing indicator: outside the live log; its text goes to the status region */
+.krishi-agent-typing { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--krishi-text-muted); }
+.krishi-agent-typing.d-none { display: none !important; }
+
+.krishi-agent-dots {
+    display: inline-flex;
+    gap: 0.25rem;
+    padding: 0.6rem 0.75rem;
+    background-color: var(--bs-secondary-bg);
+    border-radius: 1rem;
+    border-top-left-radius: 0.3rem;
+}
+
+.krishi-agent-dots span {
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background-color: var(--krishi-accent);
+    animation: krishi-agent-dot 1.2s ease-in-out infinite;
+}
+
+.krishi-agent-dots span:nth-child(2) { animation-delay: 0.15s; }
+.krishi-agent-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes krishi-agent-dot {
+    0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-3px); }
+}
+
+/* Listing results: one list, hairline-separated rows */
+.krishi-agent-listings {
+    background-color: var(--krishi-surface);
+    border: 1px solid var(--krishi-border-color);
+    border-radius: var(--krishi-radius-lg);
+    overflow: hidden;
+}
+
+.krishi-agent-listing {
+    display: grid;
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    gap: 0.4rem 0.75rem;
+    padding: 0.7rem 0.8rem;
+}
+
+.krishi-agent-listing + .krishi-agent-listing { border-top: 1px solid var(--krishi-border-color); }
+
+.krishi-agent-thumb {
+    grid-row: span 2;
+    width: 3.25rem;
+    height: 3.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: var(--krishi-primary);
+    background-color: var(--krishi-primary-light);
+    border-radius: var(--krishi-radius-md);
+}
+
+.krishi-agent-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.krishi-agent-listing-info { display: flex; flex-direction: column; min-width: 0; }
+
+.krishi-agent-listing-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--krishi-text-primary);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.krishi-agent-listing-name:hover { color: var(--krishi-primary); text-decoration: underline; text-underline-offset: 0.18em; }
+.krishi-agent-listing-meta { font-size: 0.78rem; color: var(--krishi-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.krishi-agent-listing-facts { font-size: 0.82rem; font-variant-numeric: tabular-nums; color: var(--krishi-primary-hover); }
+.krishi-agent-rating { color: var(--krishi-text-muted); margin-left: 0.35rem; }
+.krishi-agent-rating .bi { color: #b07800; }
+.krishi-agent-verified { color: var(--krishi-primary); margin-left: 0.25rem; }
+.krishi-agent-listing-actions { grid-column: 2; display: flex; gap: 0.4rem; }
+.krishi-agent-listing-actions .btn { min-height: 2.25rem; padding-inline: 0.85rem; font-size: 0.8rem; font-weight: 600; }
+
+/* Proposal: a request slip that posts to the existing booking action */
+.krishi-agent-proposal {
+    padding: 0.9rem 1rem 1rem;
+    background-color: var(--krishi-surface);
+    border: 1px solid var(--krishi-accent-light);
+    border-radius: var(--krishi-radius-lg);
+    box-shadow: var(--krishi-shadow-md);
+}
+
+.krishi-agent-proposal.is-closed { box-shadow: none; border-color: var(--krishi-border-color); }
+.krishi-agent-proposal-head { display: flex; align-items: center; gap: 0.5rem; color: var(--krishi-primary); margin-bottom: 0.35rem; }
+.krishi-agent-proposal-title { font-size: 0.8rem; font-weight: 700; color: var(--krishi-primary); }
+.krishi-agent-proposal-listing { display: block; font-weight: 700; font-size: 1rem; color: var(--krishi-text-primary); text-decoration: none; margin-bottom: 0.6rem; }
+.krishi-agent-proposal-listing:hover { color: var(--krishi-primary); text-decoration: underline; text-underline-offset: 0.18em; }
+
+.krishi-agent-terms {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 0.3rem 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.85rem;
+}
+
+.krishi-agent-terms dt { font-weight: 500; color: var(--krishi-text-muted); }
+.krishi-agent-terms dd { margin: 0; overflow-wrap: anywhere; }
+
+.krishi-agent-total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-top: 0.65rem;
+    margin-bottom: 0.25rem;
+    border-top: 1px dashed var(--krishi-accent-light);
+    font-size: 0.85rem;
+    color: var(--krishi-text-muted);
+}
+
+.krishi-agent-total strong { font-size: 1.35rem; font-variant-numeric: tabular-nums; color: var(--krishi-primary-active); }
+.krishi-agent-fineprint { margin-top: 0.55rem; font-size: 0.75rem; line-height: 1.45; color: var(--krishi-text-muted); }
+.krishi-agent-closed { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; color: var(--krishi-text-muted); }
+
+/* Composer */
+.krishi-agent-composer {
+    padding: 0.75rem 1rem max(0.75rem, env(safe-area-inset-bottom));
+    background-color: var(--krishi-surface);
+    border-top: 1px solid var(--krishi-border-color);
+}
+
+.krishi-agent-inputwrap { position: relative; }
+
+.krishi-agent-input {
+    resize: none;
+    min-height: 2.9rem;
+    max-height: 10rem;
+    padding: 0.7rem 3.4rem 0.7rem 0.95rem;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    border-color: var(--krishi-border-color);
+    border-radius: 1.25rem;
+    caret-color: var(--krishi-primary);
+}
+
+.krishi-agent-input:focus { border-color: var(--krishi-accent); box-shadow: 0 0 0 0.2rem rgba(82, 183, 136, 0.22); }
+.krishi-agent-input::placeholder { color: #66756a; }
+
+.krishi-agent-send {
+    position: absolute;
+    right: 0.35rem;
+    bottom: 0.35rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50% !important;
+    font-size: 1.05rem;
+}
+
+.krishi-agent-send:disabled { opacity: 0.55; }
+
+.krishi-agent-hint { display: flex; justify-content: space-between; gap: 0.5rem; margin-top: 0.4rem; font-size: 0.72rem; color: var(--krishi-text-muted); }
+.krishi-agent-counter { font-variant-numeric: tabular-nums; }
+
+@media (hover: none) {
+    .krishi-agent-hint > span:first-child { visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .krishi-agent-msg,
+    .krishi-agent-dots span { animation: none; }
+    .krishi-agent-fab { transition: none; }
+    .krishi-agent-fab:hover { transform: none; }
+}
+
+@media print {
+    .krishi-agent-fab,
+    .krishi-agent { display: none !important; }
+}
+
+/* ==========================================================================
+   Crop Advisory: whose-advice chip and Smart Advisor result cards
+   ========================================================================== */
+.krishi-advisory-context-chip {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.85rem;
+    color: var(--krishi-text-primary);
+    background-color: var(--krishi-primary-light);
+    border: 1px solid var(--krishi-accent-light);
+    border-radius: 1.25rem;
+}
+
+.krishi-advisory-context-chip .bi { color: var(--krishi-primary); }
+.krishi-advisory-context-source { color: var(--krishi-text-muted); }
+.krishi-advisory-context-link { color: var(--krishi-primary); font-weight: 600; text-underline-offset: 0.18em; }
+
+.krishi-advisor-card { border-radius: var(--krishi-radius-lg); }
+
+.krishi-advisor-score {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--krishi-primary);
+}
+
+.krishi-advisor-score span { font-size: 0.95rem; font-weight: 600; color: var(--krishi-text-muted); }
+.krishi-advisor-score.is-weak { color: var(--krishi-status-pending-text); }
+
+.krishi-advisor-factors li {
+    display: grid;
+    grid-template-columns: 1.25rem minmax(6.5rem, max-content) minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 0.25rem 0.6rem;
+    padding: 0.4rem 0;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--krishi-border-color);
+}
+
+.krishi-advisor-factors li.krishi-advisor-total {
+    grid-template-columns: minmax(0, 1fr) auto;
+    border-bottom: 0;
+    padding-top: 0.55rem;
+}
+
+.krishi-advisor-points {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--krishi-text-primary);
+}
+
+@media (max-width: 575.98px) {
+    .krishi-advisor-factors li { grid-template-columns: 1.25rem minmax(0, 1fr) auto; }
+    .krishi-advisor-factors li .text-secondary { grid-column: 2 / 4; }
+}
+
+.krishi-advisor-details dt { color: var(--krishi-text-muted); font-weight: 600; }
+.krishi-advisor-details dd { color: var(--krishi-text-primary); }
+
+.krishi-advisor-empty { border-radius: var(--krishi-radius-lg); background-color: var(--krishi-status-pending-bg); }
+
+/* "What you'll need": advice → a pre-filtered, date-scoped marketplace search */
+.krishi-crop-needs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem 0.9rem;
+    background-color: var(--krishi-primary-light);
+    border-radius: var(--krishi-radius-md);
+}
+
+.krishi-crop-needs-label { font-size: 0.8rem; font-weight: 700; color: var(--krishi-primary-hover); }
+
+.krishi-crop-need {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.25rem;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.82rem;
+    color: var(--krishi-primary-hover);
+    background-color: var(--krishi-surface);
+    border: 1px solid var(--krishi-accent-light);
+    border-radius: 1.1rem;
+    text-decoration: none;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.krishi-crop-need:hover { border-color: var(--krishi-accent); background-color: #fbfdfb; color: var(--krishi-primary-active); }
+.krishi-crop-need:focus-visible { outline: 3px solid var(--krishi-accent); outline-offset: 2px; }
+
+/* Crop Planner comparison: attributes down the side, crops across */
+.krishi-compare th[scope="row"] { width: 11rem; font-weight: 600; color: var(--krishi-text-muted); font-size: 0.85rem; }
+.krishi-compare thead th { font-weight: 700; color: var(--krishi-primary-hover); border-bottom-width: 2px; }
+.krishi-compare td { font-size: 0.9rem; }
+.krishi-compare-num { font-variant-numeric: tabular-nums; }
+
+/* 14-day pest history strip */
+.krishi-pest-history svg { flex: 0 0 auto; }
+
+/* ==========================================================================
+   Season costs & returns (ECO-01): a statement, not a dashboard
+   ========================================================================== */
+.krishi-figures,
+.krishi-sheet td,
+.krishi-statement-list dd {
+    font-variant-numeric: tabular-nums;
+}
+
+.krishi-sheet thead th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--krishi-text-muted);
+    border-bottom-color: var(--krishi-border-color);
+}
+
+.krishi-sheet td {
+    border-bottom-color: var(--krishi-border-color);
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+}
+
+.krishi-statement-list > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--krishi-border-color);
+}
+
+.krishi-statement-list > div:last-child { border-bottom: 0; }
+.krishi-statement-list dt { font-weight: 400; color: var(--krishi-text-muted); }
+.krishi-statement-list dd { margin: 0; text-align: end; }
+
+.krishi-statement-list > .krishi-statement-total {
+    border-top: 1px solid var(--krishi-text-primary);
+    border-bottom-color: transparent;
+}
+
+.krishi-statement-list > .krishi-statement-total dt { color: var(--krishi-text-primary); font-weight: 600; }
+
+/* Expected harvest range against the break-even point, on one scale. */
+.krishi-range {
+    position: relative;
+    height: 0.75rem;
+    border-radius: 999px;
+    background: var(--krishi-primary-light);
+}
+
+.krishi-range-band {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    min-width: 0.5rem;
+    border-radius: 999px;
+    background: var(--krishi-accent);
+}
+
+.krishi-range-mark {
+    position: absolute;
+    top: -0.3rem;
+    bottom: -0.3rem;
+    width: 3px;
+    margin-left: -1.5px;
+    border-radius: 2px;
+    background: var(--krishi-text-primary);
+}
+
+.krishi-range-key {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    margin-right: 0.35rem;
+    vertical-align: -0.1rem;
+    border-radius: 3px;
+}
+
+.krishi-range-key-band { background: var(--krishi-accent); }
+.krishi-range-key-mark { width: 3px; background: var(--krishi-text-primary); }
+
+.krishi-unit-select { flex: 0 0 auto; width: auto; max-width: 9rem; }
+
+/* Listing map view (DIS-02) */
+.krishi-hidden-in-map { display: none !important; }
+
+.krishi-listing-map {
+    height: min(70vh, 560px);
+    min-height: 320px;
+    border-radius: var(--krishi-radius-lg);
+    border: 1px solid var(--krishi-border-color);
+    box-shadow: var(--krishi-shadow-sm);
+    background: var(--krishi-primary-light);
+}
+
+.krishi-map-popup { min-width: 11rem; line-height: 1.4; }
+.krishi-map-popup a { color: var(--krishi-primary); text-underline-offset: 0.18em; }
+
+/* Offline (REA-01) */
+.krishi-offline-banner {
+    position: sticky;
+    top: 0;
+    z-index: 1090;
+    padding: 0.5rem 1rem;
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--krishi-status-pending-text);
+    background: var(--krishi-status-pending-bg);
+    border-bottom: 1px solid var(--krishi-status-pending-border);
+}
+
+.krishi-offline { max-width: 42rem; }

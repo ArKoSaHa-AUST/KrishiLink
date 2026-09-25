@@ -16,54 +16,54 @@ namespace KrishiLink.DAL.Repositories
             _bookingType = bookingType;
         }
 
-        public abstract IReadOnlyList<RevenueListing> GetListings(string ownerId);
+        public abstract Task<IReadOnlyList<RevenueListing>> GetListingsAsync(string ownerId);
 
-        public Task<WorkflowTransaction> BeginWorkflowAsync(CancellationToken ct = default) =>
-            WorkflowTransaction.BeginAsync(Db, ct);
+        public Task<WorkflowTransaction> BeginWorkflowAsync(IEnumerable<WorkflowLock> locks, CancellationToken ct = default) =>
+            WorkflowTransaction.BeginAsync(Db, locks, ct);
 
-        public abstract IReadOnlyList<RevenueBooking> GetBookings(string ownerId);
+        public abstract Task<IReadOnlyList<RevenueBooking>> GetBookingsAsync(string ownerId);
 
-        public IReadOnlyList<Transaction> GetPayouts(string ownerId) =>
-            Db.Transactions.AsNoTracking()
+        public async Task<IReadOnlyList<Transaction>> GetPayoutsAsync(string ownerId) =>
+            await Db.Transactions.AsNoTracking()
                 .Where(t => t.UserId == ownerId)
                 .OrderByDescending(t => t.TransactionDate)
-                .ToList();
+                .ToListAsync();
 
-        public int AddPayout(Transaction payout)
+        public async Task<int> AddPayoutAsync(Transaction payout)
         {
             Db.Transactions.Add(payout);
-            Db.SaveChanges();
+            await Db.SaveChangesAsync();
             return payout.Id;
         }
 
-        public abstract void MarkBookingsPaid(IEnumerable<int> bookingIds, int payoutId);
+        public abstract Task MarkBookingsPaidAsync(IEnumerable<int> bookingIds, int payoutId);
 
-        public IReadOnlyList<BookingExpense> GetExpenses(string ownerId) =>
-            Db.BookingExpenses.AsNoTracking()
+        public async Task<IReadOnlyList<BookingExpense>> GetExpensesAsync(string ownerId) =>
+            await Db.BookingExpenses.AsNoTracking()
                 .Where(e => e.OwnerId == ownerId && e.BookingType == _bookingType)
                 .OrderByDescending(e => e.RecordedOn)
-                .ToList();
+                .ToListAsync();
 
-        public BookingExpense? GetExpense(string ownerId, int expenseId) =>
-            Db.BookingExpenses.FirstOrDefault(e => e.Id == expenseId && e.OwnerId == ownerId && e.BookingType == _bookingType);
+        public Task<BookingExpense?> GetExpenseAsync(string ownerId, int expenseId) =>
+            Db.BookingExpenses.FirstOrDefaultAsync(e => e.Id == expenseId && e.OwnerId == ownerId && e.BookingType == _bookingType);
 
-        public void AddExpense(BookingExpense expense)
+        public async Task AddExpenseAsync(BookingExpense expense)
         {
             expense.BookingType = _bookingType;
             Db.BookingExpenses.Add(expense);
-            Db.SaveChanges();
+            await Db.SaveChangesAsync();
         }
 
-        public void UpdateExpense(BookingExpense expense)
+        public async Task UpdateExpenseAsync(BookingExpense expense)
         {
             Db.BookingExpenses.Update(expense);
-            Db.SaveChanges();
+            await Db.SaveChangesAsync();
         }
 
-        public void RemoveExpense(BookingExpense expense)
+        public async Task RemoveExpenseAsync(BookingExpense expense)
         {
             Db.BookingExpenses.Remove(expense);
-            Db.SaveChanges();
+            await Db.SaveChangesAsync();
         }
     }
 
@@ -72,14 +72,14 @@ namespace KrishiLink.DAL.Repositories
     {
         public GodownRevenueRepository(ApplicationDbContext db) : base(db, "Godown") { }
 
-        public override IReadOnlyList<RevenueListing> GetListings(string ownerId) =>
-            Db.Godowns.AsNoTracking()
+        public override async Task<IReadOnlyList<RevenueListing>> GetListingsAsync(string ownerId) =>
+            await Db.Godowns.AsNoTracking()
                 .Where(g => g.OwnerId == ownerId)
                 .Select(g => new RevenueListing(g.Id, g.Name, g.Location, g.CapacityInTons))
-                .ToList();
+                .ToListAsync();
 
-        public override IReadOnlyList<RevenueBooking> GetBookings(string ownerId) =>
-            Db.GodownBookings.AsNoTracking()
+        public override async Task<IReadOnlyList<RevenueBooking>> GetBookingsAsync(string ownerId) =>
+            (await Db.GodownBookings.AsNoTracking()
                 .Where(b => b.Godown!.OwnerId == ownerId)
                 .Select(b => new
                 {
@@ -105,7 +105,7 @@ namespace KrishiLink.DAL.Repositories
                     PaymentReference = b.Payment != null ? b.Payment.Reference : null,
                     PaymentMethod = b.Payment != null ? b.Payment.Method : null
                 })
-                .AsEnumerable()
+                .ToListAsync())
                 .Select(b =>
                 {
                     var rate = b.AgreedRate ?? b.PricePerTonPerMonth;
@@ -126,11 +126,11 @@ namespace KrishiLink.DAL.Repositories
                 })
                 .ToList();
 
-        public override void MarkBookingsPaid(IEnumerable<int> bookingIds, int payoutId)
+        public override async Task MarkBookingsPaidAsync(IEnumerable<int> bookingIds, int payoutId)
         {
             var ids = bookingIds.ToList();
-            foreach (var b in Db.GodownBookings.Where(b => ids.Contains(b.Id))) b.PayoutId = payoutId;
-            Db.SaveChanges();
+            foreach (var b in await Db.GodownBookings.Where(b => ids.Contains(b.Id)).ToListAsync()) b.PayoutId = payoutId;
+            await Db.SaveChangesAsync();
         }
     }
 
@@ -139,14 +139,14 @@ namespace KrishiLink.DAL.Repositories
     {
         public EquipmentRevenueRepository(ApplicationDbContext db) : base(db, "Equipment") { }
 
-        public override IReadOnlyList<RevenueListing> GetListings(string ownerId) =>
-            Db.Equipment.AsNoTracking()
+        public override async Task<IReadOnlyList<RevenueListing>> GetListingsAsync(string ownerId) =>
+            await Db.Equipment.AsNoTracking()
                 .Where(e => e.OwnerId == ownerId)
                 .Select(e => new RevenueListing(e.Id, e.Name, e.Location, e.Quantity))
-                .ToList();
+                .ToListAsync();
 
-        public override IReadOnlyList<RevenueBooking> GetBookings(string ownerId) =>
-            Db.EquipmentBookings.AsNoTracking()
+        public override async Task<IReadOnlyList<RevenueBooking>> GetBookingsAsync(string ownerId) =>
+            (await Db.EquipmentBookings.AsNoTracking()
                 .Where(b => b.Equipment!.OwnerId == ownerId)
                 .Select(b => new
                 {
@@ -173,7 +173,7 @@ namespace KrishiLink.DAL.Repositories
                     PaymentReference = b.Payment != null ? b.Payment.Reference : null,
                     PaymentMethod = b.Payment != null ? b.Payment.Method : null
                 })
-                .AsEnumerable()
+                .ToListAsync())
                 .Select(b =>
                 {
                     var rate = b.AgreedRate ?? b.DailyRate;
@@ -194,11 +194,11 @@ namespace KrishiLink.DAL.Repositories
                 })
                 .ToList();
 
-        public override void MarkBookingsPaid(IEnumerable<int> bookingIds, int payoutId)
+        public override async Task MarkBookingsPaidAsync(IEnumerable<int> bookingIds, int payoutId)
         {
             var ids = bookingIds.ToList();
-            foreach (var b in Db.EquipmentBookings.Where(b => ids.Contains(b.Id))) b.PayoutId = payoutId;
-            Db.SaveChanges();
+            foreach (var b in await Db.EquipmentBookings.Where(b => ids.Contains(b.Id)).ToListAsync()) b.PayoutId = payoutId;
+            await Db.SaveChangesAsync();
         }
     }
 }

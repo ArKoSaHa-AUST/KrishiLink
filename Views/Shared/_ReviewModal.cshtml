@@ -26,7 +26,7 @@
                     
                     <!-- Item Context Card -->
                     <div class="bg-light p-3 rounded-3 border d-flex align-items-center gap-3 mb-4" id="reviewItemContext">
-                        <img src="" id="reviewItemImage" class="rounded-3 object-fit-cover shadow-sm border" style="width: 54px; height: 48px;" alt="Listing thumbnail" />
+                        <img src="" id="reviewItemImage" class="rounded-3 object-fit-cover shadow-sm border" style="width: 54px; height: 48px;" alt="Listing thumbnail" width="54" height="48" />
                         <div class="overflow-hidden">
                             <h6 class="fw-bold text-dark mb-0 text-truncate" id="reviewItemName">Item Name</h6>
                             <div class="small text-muted d-flex align-items-center gap-2 mt-0.5">
@@ -53,8 +53,9 @@
                         </div>
 
                         <div class="mt-2">
-                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-1 fw-bold fs-6" id="starRatingLabel">
-                                ★ 5.0 — @L["Excellent Experience"]
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-1 fw-bold fs-6">
+                                <i class="bi bi-star-fill" aria-hidden="true"></i>
+                                <span id="starRatingLabel">5.0 — @L["Excellent Experience"]</span>
                             </span>
                         </div>
                     </div>
@@ -69,7 +70,7 @@
                         </div>
                         <textarea class="form-control rounded-3 py-2 px-3" id="reviewComment" name="Comment" rows="3" maxlength="1000"
                                   placeholder="@L["How was the machine performance, timing, communication, or facility condition?"]"
-                                  oninput="document.getElementById('commentCharCount').textContent = this.value.length + ' / 1000';"></textarea>
+                                  data-oninput="document.getElementById('commentCharCount').textContent = this.value.length + ' / 1000';"></textarea>
                     </div>
 
                     <div class="alert alert-danger border-0 small rounded-3 mt-3 mb-0 d-none" id="reviewErrorAlert"></div>
@@ -96,11 +97,11 @@
 <script>
     (function () {
         const starLabels = {
-            1: "★ 1.0 — @L["Poor Service"]",
-            2: "★ 2.0 — @L["Fair / Needs Improvement"]",
-            3: "★ 3.0 — @L["Good Quality"]",
-            4: "★ 4.0 — @L["Very Good & Reliable"]",
-            5: "★ 5.0 — @L["Excellent Experience"]"
+            1: "1.0 — @L["Poor Service"]",
+            2: "2.0 — @L["Fair / Needs Improvement"]",
+            3: "3.0 — @L["Good Quality"]",
+            4: "4.0 — @L["Very Good & Reliable"]",
+            5: "5.0 — @L["Excellent Experience"]"
         };
 
         let selectedRating = 5;
@@ -223,7 +224,7 @@
                                 actionContainer.innerHTML = `
                                     <div class="d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle small fw-bold">
                                         <i class="bi bi-star-fill text-warning"></i>
-                                        <span>★ ${data.rating}/5 @L["Reviewed"]</span>
+                                        <span>${data.rating}/5 @L["Reviewed"]</span>
                                     </div>
                                 `;
                             }

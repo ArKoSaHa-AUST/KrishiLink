@@ -10,6 +10,15 @@ namespace KrishiLink.Models.Entities
         public static readonly string[] All = { Farmer, EquipmentOwner, GodownOwner, Admin };
     }
 
+    public static class AppPolicies
+    {
+        /// <summary>Signed in with an address Supabase has confirmed; required wherever a wrong address causes real harm.</summary>
+        public const string VerifiedEmail = "VerifiedEmail";
+
+        /// <summary>"true" / "false", recomputed from Supabase's email_confirmed_at on every request.</summary>
+        public const string EmailVerifiedClaim = "email_verified";
+    }
+
     public static class BookingStatus
     {
         public const string Pending = "Pending";

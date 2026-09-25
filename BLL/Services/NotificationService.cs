@@ -114,7 +114,7 @@ namespace KrishiLink.BLL.Services
             {
                 var fullLink = BuildAbsoluteUrl(notification.LinkUrl);
                 var emailBody = BuildEmailHtml(resolvedTitle, resolvedMessage, fullLink);
-                var emailJob = new EmailJob(request.RecipientEmail!.Trim(), $"[KrishiLink] {resolvedTitle}", emailBody);
+                var emailJob = new EmailJob(request.RecipientEmail!.Trim(), $"[KrishiLink] {resolvedTitle}", emailBody, UserId: request.UserId);
                 await _emailQueue.EnqueueAsync(emailJob);
             }
 
@@ -355,8 +355,16 @@ namespace KrishiLink.BLL.Services
             return $"{baseUrl}{rel}";
         }
 
-        private string BuildEmailHtml(string title, string message, string fullLink)
+        /// <summary>
+        /// Titles and messages carry listing names, people's names and free-text reasons that other users typed, so every
+        /// value is HTML-encoded: a listing called "&lt;a href=…&gt;verify your payment&lt;/a&gt;" must arrive as text, never
+        /// as a working link sent from KrishiLink's own address.
+        /// </summary>
+        internal static string BuildEmailHtml(string title, string message, string fullLink)
         {
+            title = System.Net.WebUtility.HtmlEncode(title);
+            message = System.Net.WebUtility.HtmlEncode(message);
+            fullLink = System.Net.WebUtility.HtmlEncode(fullLink);
             return $@"
 <!DOCTYPE html>
 <html>
@@ -364,7 +372,7 @@ namespace KrishiLink.BLL.Services
 <body style='font-family: Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 24px;'>
     <div style='max-width: 580px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e5e7eb;'>
         <div style='background-color: #16a34a; padding: 20px 24px; color: #ffffff;'>
-            <h2 style='margin: 0; font-size: 20px; font-weight: 700;'>🌾 KrishiLink Notification</h2>
+            <h2 style='margin: 0; font-size: 20px; font-weight: 700;'>KrishiLink Notification</h2>
         </div>
         <div style='padding: 24px;'>
             <h3 style='color: #111827; margin-top: 0; font-size: 18px;'>{title}</h3>

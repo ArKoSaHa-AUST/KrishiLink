@@ -25,6 +25,15 @@ namespace KrishiLink.Models.ViewModels
         public string IconClass { get; set; } = "bi-lightbulb-fill";
         public bool IsCritical { get; set; } = false;
         public int Priority { get; set; } = 1;
+
+        /// <summary>Stage criticality × how soon the weather event arrives (ADV-08); higher shows first.</summary>
+        public int Urgency { get; set; }
+
+        /// <summary>Days until the forecast event this nudge is racing (rain), when it is weather-driven.</summary>
+        public int? DaysUntilWeatherEvent { get; set; }
+
+        /// <summary>Stable per nudge, district, crop and month: what a farmer marks done or snoozes.</summary>
+        public string StateKey { get; set; } = string.Empty;
     }
 
     /// <summary>
@@ -50,6 +59,7 @@ namespace KrishiLink.Models.ViewModels
 
         public string OverallRiskLevel { get; set; } = "Advisory"; // Urgent, High, Moderate, Optimal
         public string OverallBadgeClass { get; set; } = "warning";
+        public string BannerIconClass { get; set; } = "bi-cloud-sun-fill";
         public string BannerTitle { get; set; } = string.Empty;
         public string BanglaBannerTitle { get; set; } = string.Empty;
         public string BannerMessage { get; set; } = string.Empty;
@@ -59,6 +69,17 @@ namespace KrishiLink.Models.ViewModels
         public bool HasProfileDistrict { get; set; } = true;
 
         public List<WeatherSuggestionItem> Suggestions { get; set; } = new();
+
+        /// <summary>Nudges the signed-in farmer marked done or snoozed, left out of <see cref="Suggestions"/>.</summary>
+        public int HiddenCount { get; set; }
+
+        /// <summary>A copy whose suggestion list can be filtered without touching the cached original.</summary>
+        public WeatherSuggestionViewModel Copy()
+        {
+            var copy = (WeatherSuggestionViewModel)MemberwiseClone();
+            copy.Suggestions = Suggestions.ToList();
+            return copy;
+        }
     }
 
     /// <summary>

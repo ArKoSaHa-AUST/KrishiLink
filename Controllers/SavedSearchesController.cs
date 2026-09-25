@@ -7,6 +7,7 @@ using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace KrishiLink.Controllers
 {
@@ -15,11 +16,13 @@ namespace KrishiLink.Controllers
     {
         private readonly ISavedSearchService _savedSearches;
         private readonly IWebHostEnvironment _env;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
-        public SavedSearchesController(ISavedSearchService savedSearches, IWebHostEnvironment env)
+        public SavedSearchesController(ISavedSearchService savedSearches, IWebHostEnvironment env, IStringLocalizer<SharedResource> localizer)
         {
             _savedSearches = savedSearches;
             _env = env;
+            _localizer = localizer;
         }
 
         private string FarmerId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -39,7 +42,7 @@ namespace KrishiLink.Controllers
         {
             if (!ModelState.IsValid)
             {
-                TempData["ErrorMessage"] = "Please provide valid search criteria.";
+                TempData["ErrorMessage"] = _localizer["Please provide valid search criteria."].Value;
                 if (!string.IsNullOrWhiteSpace(input.ReturnUrl) && Url.IsLocalUrl(input.ReturnUrl))
                 {
                     return Redirect(input.ReturnUrl);
@@ -50,11 +53,11 @@ namespace KrishiLink.Controllers
             var (success, error, id) = await _savedSearches.CreateAsync(FarmerId, input);
             if (!success)
             {
-                TempData["ErrorMessage"] = error ?? "Failed to save search.";
+                TempData["ErrorMessage"] = _localizer[error ?? "Failed to save search."].Value;
             }
             else
             {
-                TempData["SuccessMessage"] = $"Search '{input.Name}' has been saved! You will receive alerts when new listings match.";
+                TempData["SuccessMessage"] = _localizer["Search '{0}' has been saved! You will receive alerts when new listings match.", input.Name].Value;
             }
 
             if (!string.IsNullOrWhiteSpace(input.ReturnUrl) && Url.IsLocalUrl(input.ReturnUrl))
@@ -73,7 +76,7 @@ namespace KrishiLink.Controllers
             var updated = await _savedSearches.ToggleAlertsAsync(FarmerId, id);
             if (updated)
             {
-                TempData["SuccessMessage"] = "Alert settings updated.";
+                TempData["SuccessMessage"] = _localizer["Alert settings updated."].Value;
             }
             return RedirectToAction(nameof(Index));
         }
@@ -86,7 +89,7 @@ namespace KrishiLink.Controllers
             var deleted = await _savedSearches.DeleteAsync(FarmerId, id);
             if (deleted)
             {
-                TempData["SuccessMessage"] = "Saved search deleted.";
+                TempData["SuccessMessage"] = _localizer["Saved search deleted."].Value;
             }
             return RedirectToAction(nameof(Index));
         }
@@ -99,7 +102,7 @@ namespace KrishiLink.Controllers
             if (!_env.IsDevelopment()) return NotFound();
 
             var alertsSent = await _savedSearches.RunAlertsAsync(ct, onlyUserId: FarmerId);
-            TempData["SuccessMessage"] = $"[Dev] Evaluated saved searches. {alertsSent} alert(s) sent.";
+            TempData["SuccessMessage"] = _localizer["[Dev] Evaluated saved searches. {0} alert(s) sent.", alertsSent].Value;
             return RedirectToAction(nameof(Index));
         }
     }

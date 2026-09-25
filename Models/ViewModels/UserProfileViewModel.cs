@@ -40,6 +40,10 @@ namespace KrishiLink.Models.ViewModels
 
         public DateTime MemberSince { get; set; } = DateTime.UtcNow;
 
+        /// <summary>How land sizes are shown (REA-03); saved by its own form, never by the profile AJAX form.</summary>
+        [Microsoft.AspNetCore.Mvc.ModelBinding.BindNever]
+        public KrishiLink.Models.Entities.LandUnit PreferredLandUnit { get; set; } = KrishiLink.Models.Entities.LandUnit.Decimal;
+
         public string Initials
         {
             get

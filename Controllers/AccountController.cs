@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using KrishiLink.BLL.Services;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
 using KrishiLink.DAL;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Localization;
 
 namespace KrishiLink.Controllers
 {
@@ -19,6 +21,7 @@ namespace KrishiLink.Controllers
         private readonly IOwnerVerificationService _verificationService;
         private readonly IWebHostEnvironment _env;
         private readonly ILogger<AccountController> _logger;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
@@ -28,7 +31,8 @@ namespace KrishiLink.Controllers
             ApplicationDbContext db,
             IOwnerVerificationService verificationService,
             IWebHostEnvironment env,
-            ILogger<AccountController> logger)
+            ILogger<AccountController> logger,
+            IStringLocalizer<SharedResource> localizer)
         {
             _userManager = userManager;
             _auth = auth;
@@ -38,8 +42,10 @@ namespace KrishiLink.Controllers
             _verificationService = verificationService;
             _env = env;
             _logger = logger;
+            _localizer = localizer;
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public IActionResult Register(string? role = null)
         {
@@ -62,9 +68,10 @@ namespace KrishiLink.Controllers
             return View(model);
         }
 
+        [AllowAnonymous]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [ServiceFilter(typeof(SupabaseAuthRateLimitFilter))]
+        [EnableRateLimiting(RateLimitPolicies.Auth)]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
             if (!ModelState.IsValid)
@@ -100,9 +107,8 @@ namespace KrishiLink.Controllers
             {
                 // Admin create rejects duplicate remote accounts and returns only a newly-created UUID.
                 // This makes compensation safe; public /signup may conceal duplicates with a fake user.
-                // Email verification is disabled: the Auth user is created already confirmed so the
-                // account is usable immediately, without waiting for a confirmation email.
-                remote = await _auth.CreateUserAsync(emailAddress, model.Password, confirmed: true);
+                // The address stays unconfirmed until the owner enters the code Supabase e-mails to it.
+                remote = await _auth.CreateUserAsync(emailAddress, model.Password, confirmed: false);
             }
             catch (SupabaseAuthException ex)
             {
@@ -115,7 +121,7 @@ namespace KrishiLink.Controllers
                 Id = remote.Id,
                 UserName = emailAddress,
                 Email = emailAddress,
-                EmailConfirmed = true,
+                EmailConfirmed = false,
                 PhoneNumber = phone,
                 FullName = model.FullName.Trim(),
                 UserRole = model.Role,
@@ -150,7 +156,8 @@ namespace KrishiLink.Controllers
                 }
                 if (committed == true)
                 {
-                    TempData["SuccessMessage"] = "Your account was created. Please sign in to continue.";
+                    await RequestConfirmationEmailAsync(remote.Id, emailAddress);
+                    TempData["SuccessMessage"] = _localizer["Your account was created. Please sign in to continue."].Value;
                     return RedirectToAction(nameof(Login));
                 }
                 if (committed == false)
@@ -165,8 +172,10 @@ namespace KrishiLink.Controllers
                 return View(model);
             }
 
-            // No verification step stands between registration and the app: sign the new account in
-            // straight away and continue to onboarding.
+            await RequestConfirmationEmailAsync(user.Id, emailAddress);
+
+            // The account can sign in and browse straight away; booking, listing, paying, payouts and NID
+            // submission stay locked (VerifiedEmail policy) until the e-mailed code is entered.
             SupabaseAuthTokens? tokens = null;
             var signedIn = false;
             try
@@ -174,14 +183,20 @@ namespace KrishiLink.Controllers
                 tokens = await _auth.SignInAsync(emailAddress, model.Password);
                 await _sessions.SignInAsync(HttpContext, user, tokens, persistent: false);
                 signedIn = true;
-                TempData["SuccessMessage"] = $"Welcome to KrishiLink, {user.FullName}! Your account has been created.";
+                TempData["SuccessMessage"] = _localizer["Welcome to KrishiLink, {0}! We e-mailed a code to {1}. Confirm your e-mail to book, list and pay.", user.FullName, emailAddress].Value;
                 return RedirectToAction(nameof(Onboarding));
+            }
+            catch (SupabaseAuthException ex) when (ex.ErrorCode == SupabaseAuthException.EmailNotConfirmed)
+            {
+                // Supabase itself requires confirmation before issuing a session ("Confirm email" is on).
+                TempData["SuccessMessage"] = _localizer["Your account was created. Enter the code we e-mailed to {0} to confirm your address, then sign in.", emailAddress].Value;
+                return RedirectToAction(nameof(VerifyEmail));
             }
             catch (SupabaseAuthException)
             {
                 // The profile is saved either way; the user can simply sign in.
                 _logger.LogWarning("Automatic sign-in after registration failed for {UserId}.", user.Id);
-                TempData["SuccessMessage"] = "Your account was created. Please sign in to continue.";
+                TempData["SuccessMessage"] = _localizer["Your account was created. Please sign in to continue."].Value;
                 return RedirectToAction(nameof(Login));
             }
             finally
@@ -190,6 +205,7 @@ namespace KrishiLink.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> Login(string? returnUrl = null)
         {
@@ -207,9 +223,10 @@ namespace KrishiLink.Controllers
             return View(model);
         }
 
+        [AllowAnonymous]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [ServiceFilter(typeof(SupabaseAuthRateLimitFilter))]
+        [EnableRateLimiting(RateLimitPolicies.Auth)]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (!ModelState.IsValid)
@@ -250,6 +267,12 @@ namespace KrishiLink.Controllers
                     ? RedirectToAction(nameof(Onboarding))
                     : RedirectBasedOnRole(user.UserRole);
             }
+            catch (SupabaseAuthException ex) when (ex.ErrorCode == SupabaseAuthException.EmailNotConfirmed)
+            {
+                // Only reachable after Supabase accepted the password, so this reveals nothing to a guesser.
+                TempData["ErrorMessage"] = _localizer["Your e-mail address is not confirmed yet. Enter the code we e-mailed you, or request a new one."].Value;
+                return RedirectToAction(nameof(VerifyEmail));
+            }
             catch (SupabaseAuthException)
             {
                 ModelState.AddModelError(string.Empty, "Unable to sign in. Check your credentials, verify your email, or try again shortly.");
@@ -267,13 +290,23 @@ namespace KrishiLink.Controllers
         {
             if (!await _sessions.SignOutAsync(HttpContext))
             {
-                TempData["ErrorMessage"] = "You are signed out of KrishiLink. The authentication provider was unavailable, so its session could not be revoked.";
+                TempData["ErrorMessage"] = _localizer["You are signed out of KrishiLink. The authentication provider was unavailable, so its session could not be revoked."].Value;
                 return RedirectToAction(nameof(Login));
             }
             return RedirectToAction("Index", "Home");
         }
 
-        private static string NormalizePhone(string value)
+        /// <summary>Best effort: the account exists either way, and the code can be re-sent from Verify email.</summary>
+        private async Task RequestConfirmationEmailAsync(string userId, string email)
+        {
+            try { await _auth.SendConfirmationAsync(email); }
+            catch (SupabaseAuthException ex)
+            {
+                _logger.LogWarning("Confirmation e-mail could not be requested for {UserId} ({Status}).", userId, ex.Status);
+            }
+        }
+
+        internal static string NormalizePhone(string value)
         {
             var phone = value.Trim().TrimStart('+');
             if (phone.StartsWith("880", StringComparison.Ordinal)) phone = phone[2..];
@@ -302,9 +335,27 @@ namespace KrishiLink.Controllers
                 IsVerified = currentUser.IsVerified,
                 VerificationStatus = currentUser.VerificationStatus ?? "Unverified",
                 NidNumber = currentUser.NidNumber,
-                MemberSince = currentUser.CreatedAt
+                MemberSince = currentUser.CreatedAt,
+                PreferredLandUnit = currentUser.PreferredLandUnit ?? LandUnit.Decimal
             };
             return View(model);
+        }
+
+        /// <summary>POST: /Account/UpdateLandUnit — how land sizes are shown to this user (REA-03).</summary>
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
+        public async Task<IActionResult> UpdateLandUnit(LandUnit unit)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null) return Challenge();
+            if (!Enum.IsDefined(unit)) return BadRequest();
+
+            user.PreferredLandUnit = unit == LandUnit.Decimal ? null : unit;
+            await _userManager.UpdateAsync(user);
+            TempData["SuccessMessage"] = _localizer["Measurement units saved."].Value;
+            return RedirectToAction(nameof(Profile));
         }
 
         /// <summary>
@@ -357,9 +408,9 @@ namespace KrishiLink.Controllers
             user.OnboardingCompletedAt ??= DateTime.UtcNow;
             await _userManager.UpdateAsync(user);
 
-            TempData["SuccessMessage"] = firstTime
-                ? $"Welcome to KrishiLink, {user.FullName}! Your profile is set up."
-                : "Profile details updated.";
+            TempData["SuccessMessage"] = _localizer[firstTime
+                ? "Welcome to KrishiLink, {0}! Your profile is set up."
+                : "Profile details updated.", user.FullName].Value;
             return firstTime ? RedirectBasedOnRole(user.UserRole) : RedirectToAction(nameof(Profile));
         }
 
@@ -376,7 +427,7 @@ namespace KrishiLink.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
-        [ServiceFilter(typeof(SupabaseAuthRateLimitFilter))]
+        [EnableRateLimiting(RateLimitPolicies.Auth)]
         public async Task<IActionResult> UpdateProfile(UserProfileViewModel model)
         {
             var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest";
@@ -419,25 +470,25 @@ namespace KrishiLink.Controllers
                 var message = "Profile updated successfully.";
                 if (emailChanged)
                 {
-                    var session = _sessions.Current(User);
+                    var session = await _sessions.CurrentAsync(User);
                     if (session == null) return Challenge();
                     try
                     {
                         await _auth.ChangeEmailAsync(session.Tokens.AccessToken, model.Email!.Trim());
-                        message += " Confirm the codes sent to your old and new email addresses using Verify email. Your sign-in email stays unchanged until confirmation.";
+                        message = "Profile updated successfully. Confirm the codes sent to your old and new email addresses using Verify email. Your sign-in email stays unchanged until confirmation.";
                     }
                     catch (SupabaseAuthException ex)
                     {
-                        if (isAjax) return Json(new { success = false, message = "Other profile changes were saved. Email change failed: " + ex.Message });
-                        TempData["ErrorMessage"] = "Other profile changes were saved. Email change failed: " + ex.Message;
+                        if (isAjax) return Json(new { success = false, message = _localizer["Other profile changes were saved. Email change failed: {0}", _localizer[ex.Message].Value].Value });
+                        TempData["ErrorMessage"] = _localizer["Other profile changes were saved. Email change failed: {0}", _localizer[ex.Message].Value].Value;
                         return RedirectToAction(nameof(Profile));
                     }
                 }
                 if (isAjax)
                 {
-                    return Json(new { success = true, message, email = currentUser.Email });
+                    return Json(new { success = true, message = _localizer[message].Value, email = currentUser.Email });
                 }
-                TempData["SuccessMessage"] = message;
+                TempData["SuccessMessage"] = _localizer[message].Value;
                 return RedirectToAction(nameof(Profile));
             }
 
@@ -453,7 +504,7 @@ namespace KrishiLink.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
-        [ServiceFilter(typeof(SupabaseAuthRateLimitFilter))]
+        [EnableRateLimiting(RateLimitPolicies.Auth)]
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
         {
             if (!ModelState.IsValid)
@@ -491,6 +542,7 @@ namespace KrishiLink.Controllers
 
         [HttpGet]
         [Authorize(Roles = $"{AppRoles.EquipmentOwner},{AppRoles.GodownOwner}")]
+        [Authorize(Policy = AppPolicies.VerifiedEmail)]
         public async Task<IActionResult> Verification()
         {
             var currentUser = await _userManager.GetUserAsync(User);
@@ -504,6 +556,7 @@ namespace KrishiLink.Controllers
 
         [HttpPost]
         [Authorize(Roles = $"{AppRoles.EquipmentOwner},{AppRoles.GodownOwner}")]
+        [Authorize(Policy = AppPolicies.VerifiedEmail)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Verification(OwnerVerificationViewModel model)
         {
@@ -513,12 +566,12 @@ namespace KrishiLink.Controllers
             var (success, error) = await _verificationService.SubmitVerificationAsync(currentUser.Id, model);
             if (!success)
             {
-                TempData["ErrorMessage"] = error;
+                TempData["ErrorMessage"] = _localizer[error ?? string.Empty].Value;
                 var currentModel = await _verificationService.GetVerificationStatusAsync(currentUser.Id) ?? model;
                 return View(currentModel);
             }
 
-            TempData["SuccessMessage"] = "Your National ID verification documents have been submitted successfully and are now pending review.";
+            TempData["SuccessMessage"] = _localizer["Your National ID verification documents have been submitted successfully and are now pending review."].Value;
             return RedirectToAction(nameof(Verification));
         }
 
@@ -585,25 +638,28 @@ namespace KrishiLink.Controllers
             if (decision == "approve")
             {
                 await _verificationService.ApproveVerificationAsync(currentUser.Id, adminId: currentUser.Id, notes: model.Notes ?? "Demo instant verification approval.");
-                TempData["SuccessMessage"] = "Verification successfully APPROVED! The 'Verified Owner' trust badge is now active on all your listings.";
+                TempData["SuccessMessage"] = _localizer["Verification successfully APPROVED! The 'Verified Owner' trust badge is now active on all your listings."].Value;
             }
             else if (decision == "reject")
             {
                 await _verificationService.RejectVerificationAsync(currentUser.Id, reason: model.Reason ?? "Document photo is unclear or blurred.", adminId: currentUser.Id);
-                TempData["ErrorMessage"] = "Verification status set to REJECTED. Reason recorded.";
+                TempData["ErrorMessage"] = _localizer["Verification status set to REJECTED. Reason recorded."].Value;
             }
             else if (decision == "reset")
             {
                 await _verificationService.ResetVerificationAsync(currentUser.Id);
-                TempData["SuccessMessage"] = "Verification status RESET to Unverified.";
+                TempData["SuccessMessage"] = _localizer["Verification status RESET to Unverified."].Value;
             }
 
             return RedirectToAction(nameof(Verification));
         }
 
+        [AllowAnonymous]
         [HttpGet]
-        public IActionResult AccessDenied()
+        public IActionResult AccessDenied(string? reason = null)
         {
+            ViewData["EmailUnconfirmed"] = reason == VerifiedEmailResultHandler.Reason
+                && User.HasClaim(AppPolicies.EmailVerifiedClaim, "false");
             return View();
         }
 

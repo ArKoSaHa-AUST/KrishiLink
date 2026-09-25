@@ -59,7 +59,7 @@
         <!-- Image Gallery Component -->
         <div class="card krishi-card overflow-hidden mb-4 border-0 shadow-sm">
             <div class="position-relative bg-light text-center">
-                <img id="mainGalleryImage" src="@primaryImage" class="img-fluid object-fit-cover w-100" style="height: 380px; transition: opacity 0.25s ease;" alt="@Model.Name" />
+                <img id="mainGalleryImage" src="@primaryImage" class="img-fluid object-fit-cover w-100" style="height: 380px; transition: opacity 0.25s ease;" alt="@Model.Name" width="800" height="380" fetchpriority="high" />
                 <div class="position-absolute top-0 end-0 m-3">
                     <partial name="_StatusBadge" model="@Model.Status" />
                 </div>
@@ -73,8 +73,8 @@
                         {
                             var imgUrl = Model.ImageUrls[i];
                             <button type="button" class="btn p-0 border rounded overflow-hidden gallery-thumb-btn @(i == 0 ? "border-success border-2" : "border-light-subtle")"
-                                    onclick="switchMainImage('@imgUrl', this)" aria-label="@L["View equipment photo {0}", i+1]">
-                                <img src="@imgUrl" class="object-fit-cover" style="width: 76px; height: 60px;" alt="@L["Thumbnail {0}", i+1]" />
+                                    data-onclick="switchMainImage('@imgUrl', this)" aria-label="@L["View equipment photo {0}", i+1]">
+                                <img src="@KrishiLink.BLL.Services.ImageVariants.ThumbnailUrl(imgUrl)" class="object-fit-cover" style="width: 76px; height: 60px;" alt="@L["Thumbnail {0}", i+1]" width="76" height="60" loading="lazy" decoding="async" />
                             </button>
                         }
                     </div>
@@ -138,7 +138,7 @@
                         style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
                         data-type="Equipment" 
                         data-id="@Model.Id" 
-                        onclick="KrishiFavorites.toggle(this);" 
+                        data-onclick="KrishiFavorites.toggle(this);" 
                         title="@(Model.IsFavorite ? L["Remove from favorites"] : L["Add to favorites"])">
                     <i class="bi @(Model.IsFavorite ? "bi-heart-fill text-danger" : "bi-heart") fs-5"></i>
                 </button>
@@ -168,6 +168,11 @@
                     </span>
                 </div>
             </div>
+
+            @if (Model.PriceBenchmark is { } benchmark)
+            {
+                <partial name="_PriceBenchmark" model="benchmark" />
+            }
 
             @if (Model.RateRules != null && Model.RateRules.Any(r => r.IsActive))
             {
@@ -286,7 +291,7 @@
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
                         {
-                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold shadow-xs" onclick="copyCoordinates('@Model.Latitude.Value.ToString("F6")', '@Model.Longitude.Value.ToString("F6")')">
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-semibold shadow-xs" data-onclick="copyCoordinates('@Model.Latitude.Value.ToString("F6")', '@Model.Longitude.Value.ToString("F6")')">
                                 <i class="bi bi-clipboard me-1"></i> @L["Copy GPS"]
                             </button>
                             <a href="@Model.GoogleMapsUrl" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-sm rounded-pill px-3 fw-semibold shadow-xs">
@@ -545,7 +550,7 @@
                     <span class="fs-5 fw-bold text-success">@(!string.IsNullOrEmpty(Model.FromRateText) ? Model.FromRateText : Model.DailyRate)</span>
                 </div>
 
-                <form id="rentalRequestForm" asp-controller="Equipment" asp-action="SubmitRequest" method="post" onsubmit="handleFormSubmit(event)">
+                <form id="rentalRequestForm" asp-controller="Equipment" asp-action="SubmitRequest" method="post" data-onsubmit="handleFormSubmit(event)">
                     <input type="hidden" asp-for="Id" />
                     @if (Model.Quantity > 1)
                     {
@@ -561,7 +566,7 @@
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-boxes"></i></span>
                                 <input type="number" class="form-control form-control-lg rounded-end-3" id="unitsInput" name="Units"
-                                       value="1" min="1" max="@Model.Quantity" required onchange="onUnitsChanged()" oninput="onUnitsChanged()" />
+                                       value="1" min="1" max="@Model.Quantity" required data-onchange="onUnitsChanged()" data-oninput="onUnitsChanged()" />
                             </div>
                             <div class="form-text text-muted small mt-1">
                                 @L["Up to {0} units available concurrently.", Model.Quantity]
@@ -579,7 +584,7 @@
                             @L["Start Date"] <span class="text-danger">*</span>
                         </label>
                         <input type="date" class="form-control form-control-lg rounded-3" id="startDateInput" name="StartDate" required
-                               min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="onStartDateChanged()" />
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")" data-onchange="onStartDateChanged()" />
                     </div>
 
                     <!-- End Date -->
@@ -588,7 +593,7 @@
                             @L["End Date"] <span class="text-danger">*</span>
                         </label>
                         <input type="date" class="form-control form-control-lg rounded-3" id="endDateInput" name="EndDate" required
-                               min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="validateDates()" />
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")" data-onchange="validateDates()" />
                         <div id="dateValidationError" class="form-text text-danger d-none mt-1">
                             @L["End Date must be after Start Date and not overlap booked dates."]
                         </div>
@@ -656,7 +661,7 @@
                         {
                             <div class="mb-2">
                                 <label class="small text-muted mb-1 d-block" style="font-size: 0.78rem;">@L["1-Click Redeem KrishiPoints:"]</label>
-                                <select class="form-select form-select-sm rounded-3" id="pointsTierSelect" onchange="applyPointsTier(this.value)">
+                                <select class="form-select form-select-sm rounded-3" id="pointsTierSelect" data-onchange="applyPointsTier(this.value)">
                                     <option value="0">@L["-- Do not use points --"]</option>
                                     @foreach (var tier in Model.AvailableConversionTiers.Where(t => t.PointsRequired <= Model.FarmerLoyaltyPoints))
                                     {
@@ -673,8 +678,8 @@
                             <label class="small text-muted mb-1 d-block" style="font-size: 0.78rem;">@L["Or enter Promo Voucher code:"]</label>
                             <div class="input-group input-group-sm">
                                 <input type="text" class="form-control rounded-start-3 text-uppercase" id="promoCodeInput" placeholder="@L["e.g. KL-PTS120-ABCD"]" />
-                                <button type="button" class="btn btn-outline-success px-3 fw-semibold" id="applyPromoBtn" onclick="applyPromoCode()">@L["Apply"]</button>
-                                <button type="button" class="btn btn-outline-secondary d-none" id="clearPromoBtn" onclick="clearPromoCode()"><i class="bi bi-x"></i></button>
+                                <button type="button" class="btn btn-outline-success px-3 fw-semibold" id="applyPromoBtn" data-onclick="applyPromoCode()">@L["Apply"]</button>
+                                <button type="button" class="btn btn-outline-secondary d-none" id="clearPromoBtn" data-onclick="clearPromoCode()"><i class="bi bi-x"></i></button>
                             </div>
                             <div id="promoFeedbackMsg" class="form-text small mt-1 d-none"></div>
                         </div>
@@ -697,7 +702,7 @@
                         <button type="submit" id="submitRequestBtn" class="btn btn-krishi-primary py-3 rounded-pill fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm fs-6">
                             <span id="btnText">@L["Send Rental Request"]</span>
                         </button>
-                        <button type="button" class="btn btn-outline-success py-2.5 rounded-pill fw-semibold d-flex align-items-center justify-content-center gap-2" onclick="openAddToHarvestPlanModal()">
+                        <button type="button" class="btn btn-outline-success py-2.5 rounded-pill fw-semibold d-flex align-items-center justify-content-center gap-2" data-onclick="openAddToHarvestPlanModal()">
                             <i class="bi bi-calendar-plus"></i> @L["Add to Harvest Plan"]
                         </button>
                     </div>
@@ -718,7 +723,7 @@
             <span class="text-muted small d-block">@L["Daily Rate"]</span>
             <span class="fw-bold text-success fs-5">@(!string.IsNullOrEmpty(Model.FromRateText) ? Model.FromRateText : Model.DailyRate)</span>
         </div>
-        <button type="button" id="mobileRequestBtn" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-bold" onclick="scrollToRequestForm()">
+        <button type="button" id="mobileRequestBtn" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-bold" data-onclick="scrollToRequestForm()">
             @L["Request Equipment"]
         </button>
     </div>
@@ -1338,7 +1343,7 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">@L["Select Harvest Plan"]</label>
-                            <select name="PlanId" id="hpPlanSelect" class="form-select rounded-3" onchange="toggleNewPlanInput(this.value)">
+                            <select name="PlanId" id="hpPlanSelect" class="form-select rounded-3" data-onchange="toggleNewPlanInput(this.value)">
                                 <option value="0">+ @L["Create New Harvest Plan..."]</option>
                             </select>
                         </div>

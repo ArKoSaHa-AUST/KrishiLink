@@ -1,0 +1,64 @@
+@model List<KrishiLink.Models.ViewModels.UnprovenEmailAccount>
+@{
+    ViewData["Title"] = L["E-mail Confirmation Clean-up"].Value;
+}
+
+<div class="container py-4">
+    <h2 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+        <i class="bi bi-envelope-exclamation text-warning"></i> @L["E-mail Confirmation Clean-up"]
+    </h2>
+    <p class="text-muted small mb-4">@L["Development only. Lists accounts marked as confirmed although Supabase never sent them a confirmation e-mail. Clean-up removes that confirmation and re-sends a code; it can never confirm an address."]</p>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success rounded-3" role="status">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger rounded-3" role="alert">@TempData["ErrorMessage"]</div>
+    }
+
+    @if (Model.Count == 0)
+    {
+        <div class="alert alert-light border rounded-3">@L["No unproven confirmations found."]</div>
+    }
+    else
+    {
+        <div class="table-responsive mb-3">
+            <table class="table table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>@L["Name"]</th>
+                        <th>@L["Email"]</th>
+                        <th>@L["Role"]</th>
+                        <th>@L["Confirmed in Supabase"]</th>
+                        <th>@L["Confirmation e-mail sent"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var account in Model)
+                    {
+                        <tr>
+                            <td>@account.FullName</td>
+                            <td>@account.Email</td>
+                            <td>@L[account.Role]</td>
+                            <td>@(account.RemoteConfirmedAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</td>
+                            <td>@(account.ConfirmationSentAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <form asp-controller="EmailRemediation" asp-action="Remediate" method="post">
+            <button type="submit" class="btn btn-warning rounded-pill px-4 fw-semibold">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>@L["Remove unproven confirmations and re-send codes"]
+            </button>
+        </form>
+    }
+
+    <details class="mt-4">
+        <summary class="small text-muted">@L["SQL for the Supabase SQL editor"]</summary>
+        <pre class="small bg-light border rounded-3 p-3 mt-2">@KrishiLink.Controllers.Admin.EmailRemediationController.ResetRemoteSql</pre>
+    </details>
+</div>

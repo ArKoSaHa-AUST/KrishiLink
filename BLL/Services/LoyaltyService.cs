@@ -631,7 +631,7 @@ namespace KrishiLink.BLL.Services
             await _notifications.CreateAsync(
                 farmerId,
                 NotificationTypes.Loyalty,
-                "🎉 KrishiPoints Earned!",
+                "KrishiPoints Earned!",
                 $"You earned {earnedPoints} KrishiPoints from your completed {bookingType} booking ({codeDisplay}). Redeem them for discounts on your next rental!",
                 "/Loyalty"
             );
@@ -694,7 +694,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<LoyaltyVoucherViewModel> GenerateVoucherAsync(string farmerId, int pointsTier)
         {
-            await using var transaction = await _transactions.BeginWorkflowAsync();
+            await using var transaction = await _transactions.BeginWorkflowAsync(new[] { WorkflowLock.User(farmerId) });
             var tiers = GetConversionTiers();
             var tier = tiers.FirstOrDefault(t => t.PointsRequired == pointsTier)
                        ?? throw new InvalidOperationException("Invalid points tier specified.");

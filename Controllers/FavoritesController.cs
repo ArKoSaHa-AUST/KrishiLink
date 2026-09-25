@@ -4,6 +4,7 @@ using KrishiLink.BLL.Services;
 using KrishiLink.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace KrishiLink.Controllers
 {
@@ -11,10 +12,12 @@ namespace KrishiLink.Controllers
     public class FavoritesController : Controller
     {
         private readonly IFavoriteService _favorites;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
-        public FavoritesController(IFavoriteService favorites)
+        public FavoritesController(IFavoriteService favorites, IStringLocalizer<SharedResource> localizer)
         {
             _favorites = favorites;
+            _localizer = localizer;
         }
 
         private string FarmerId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -47,8 +50,8 @@ namespace KrishiLink.Controllers
         public async Task<IActionResult> Remove(string type, int id)
         {
             var error = await _favorites.RemoveAsync(FarmerId, type, id);
-            if (error is null) TempData["SuccessMessage"] = "Item removed from your favorites.";
-            else TempData["ErrorMessage"] = error;
+            if (error is null) TempData["SuccessMessage"] = _localizer["Item removed from your favorites."].Value;
+            else TempData["ErrorMessage"] = _localizer[error].Value;
 
             return RedirectToAction(nameof(Index));
         }

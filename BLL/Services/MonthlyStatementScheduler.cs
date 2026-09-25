@@ -71,16 +71,30 @@ namespace KrishiLink.BLL.Services
                     : scope.ServiceProvider.GetRequiredService<IEquipmentRevenueService>();
 
                 // Nothing happened last month → nothing to report, but record the month so we don't re-check forever
-                var hadActivity = revenue.GetReport(owner.Id, new RevenueFilter { From = lastMonth, To = lastMonth.AddMonths(1).AddDays(-1) }).Funnel.Requested > 0;
+                var hadActivity = (await revenue.GetReportAsync(owner.Id, new RevenueFilter { From = lastMonth, To = lastMonth.AddMonths(1).AddDays(-1) })).Funnel.Requested > 0;
                 if (hadActivity)
                 {
-                    var (content, fileName) = revenue.GenerateMonthlyStatement(owner.Id, lastMonth,
+                    var (content, fileName) = await revenue.GenerateMonthlyStatementAsync(owner.Id, lastMonth,
                         new StatementOwner(owner.FullName, owner.BusinessOrFarmName, owner.Location));
-                    await sender.SendAsync(owner.Email!,
+                    var job = new EmailJob(owner.Email!,
                         $"Your KrishiLink statement for {lastMonth:MMMM yyyy}",
-                        $"<p>Dear {owner.FullName},</p><p>Your revenue statement for <strong>{lastMonth:MMMM yyyy}</strong> is attached. " +
+                        $"<p>Dear {System.Net.WebUtility.HtmlEncode(owner.FullName)},</p><p>Your revenue statement for <strong>{lastMonth:MMMM yyyy}</strong> is attached. " +
                         "You can also download it any time from the Revenue page.</p><p>— KrishiLink</p>",
-                        new EmailAttachment(fileName, content, "application/pdf"), ct);
+                        new EmailAttachment(fileName, content, "application/pdf"), owner.Id);
+                    var queuedAt = DateTime.UtcNow;
+                    var recorder = scope.ServiceProvider.GetService<IEmailDeliveryRecorder>();
+                    try
+                    {
+                        await sender.SendAsync(job.To, job.Subject, job.HtmlBody, job.Attachment, ct);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        // Recorded (QLT-03) and rethrown: the month stays unsent, so the next run tries again.
+                        if (recorder is not null) await recorder.RecordAsync(job, EmailDeliveryStatus.Failed, ex, queuedAt, CancellationToken.None);
+                        throw;
+                    }
+                    if (recorder is not null)
+                        await recorder.RecordAsync(job, sender is LoggingEmailSender ? EmailDeliveryStatus.NotConfigured : EmailDeliveryStatus.Sent, null, queuedAt, ct);
                     _logger.LogInformation("Sent {Month:yyyy-MM} statement to owner {OwnerId}.", lastMonth, owner.Id);
                 }
 

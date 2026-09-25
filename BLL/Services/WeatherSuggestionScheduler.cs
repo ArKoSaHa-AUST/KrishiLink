@@ -43,6 +43,17 @@ namespace KrishiLink.BLL.Services
                     _logger.LogError(ex, "Weather suggestion scheduler run encountered an error; will retry next cycle.");
                 }
 
+                try
+                {
+                    // Pest alert history for every farmed district, plus critical alerts pushed to the farmers they affect (ADV-06).
+                    using var scope = _scopes.CreateScope();
+                    await scope.ServiceProvider.GetRequiredService<IPestAlertHistoryService>().SweepAndNotifyAsync(stoppingToken);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    _logger.LogError(ex, "Pest alert sweep failed; will retry next cycle.");
+                }
+
                 await Task.Delay(CheckInterval, stoppingToken);
             }
         }

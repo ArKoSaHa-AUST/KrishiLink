@@ -25,12 +25,12 @@
         @if (string.IsNullOrWhiteSpace(Model.ExistingNidFrontUrl))
         {
             <input asp-for="NidFrontImage" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp"
-                   onchange="previewImage(this, 'nidFrontPreview', 'nidFrontPreviewContainer')" required />
+                   data-onchange="previewImage(this, 'nidFrontPreview', 'nidFrontPreviewContainer')" required />
         }
         else
         {
             <input asp-for="NidFrontImage" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp"
-                   onchange="previewImage(this, 'nidFrontPreview', 'nidFrontPreviewContainer')" />
+                   data-onchange="previewImage(this, 'nidFrontPreview', 'nidFrontPreviewContainer')" />
         }
         <span asp-validation-for="NidFrontImage" class="text-danger small"></span>
         <div class="form-text small">@L["Upload a clear, bright color photo of the front side of your NID card (max 5 MB)."]</div>
@@ -38,7 +38,7 @@
         <!-- Preview Thumbnail -->
         <div id="nidFrontPreviewContainer" class="mt-2 @(string.IsNullOrWhiteSpace(Model.ExistingNidFrontUrl) ? "d-none" : "")">
             <div class="p-2 border rounded-3 bg-light d-inline-block text-center" style="max-width: 200px;">
-                <img id="nidFrontPreview" src="@(string.IsNullOrWhiteSpace(Model.ExistingNidFrontUrl) ? "#" : Url.Action("VerificationDocument", "Account", new { kind = "front" }))" class="img-fluid rounded" style="max-height: 120px; object-fit: cover;" alt="Front Preview" />
+                <img id="nidFrontPreview" src="@(string.IsNullOrWhiteSpace(Model.ExistingNidFrontUrl) ? "#" : Url.Action("VerificationDocument", "Account", new { kind = "front" }))" class="img-fluid rounded" style="max-height: 120px; object-fit: cover;" alt="Front Preview" width="180" height="120" />
                 <span class="small text-muted d-block mt-1">@L["Front Preview"]</span>
             </div>
         </div>
@@ -50,14 +50,14 @@
             @L["NID Card Back Photo"] <span class="text-muted small fw-normal">(@L["Recommended"])</span>
         </label>
         <input asp-for="NidBackImage" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp"
-               onchange="previewImage(this, 'nidBackPreview', 'nidBackPreviewContainer')" />
+               data-onchange="previewImage(this, 'nidBackPreview', 'nidBackPreviewContainer')" />
         <span asp-validation-for="NidBackImage" class="text-danger small"></span>
         <div class="form-text small">@L["Upload the back side of your NID showing your permanent address and barcode."]</div>
 
         <!-- Preview Thumbnail -->
         <div id="nidBackPreviewContainer" class="mt-2 @(string.IsNullOrWhiteSpace(Model.ExistingNidBackUrl) ? "d-none" : "")">
             <div class="p-2 border rounded-3 bg-light d-inline-block text-center" style="max-width: 200px;">
-                <img id="nidBackPreview" src="@(string.IsNullOrWhiteSpace(Model.ExistingNidBackUrl) ? "#" : Url.Action("VerificationDocument", "Account", new { kind = "back" }))" class="img-fluid rounded" style="max-height: 120px; object-fit: cover;" alt="Back Preview" />
+                <img id="nidBackPreview" src="@(string.IsNullOrWhiteSpace(Model.ExistingNidBackUrl) ? "#" : Url.Action("VerificationDocument", "Account", new { kind = "back" }))" class="img-fluid rounded" style="max-height: 120px; object-fit: cover;" alt="Back Preview" width="180" height="120" />
                 <span class="small text-muted d-block mt-1">@L["Back Preview"]</span>
             </div>
         </div>
@@ -69,14 +69,14 @@
             @L["Trade License / Business Registration"] <span class="text-muted small fw-normal">(@L["Optional for businesses"])</span>
         </label>
         <input asp-for="TradeLicenseImage" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp"
-               onchange="previewImage(this, 'tradeLicensePreview', 'tradeLicensePreviewContainer')" />
+               data-onchange="previewImage(this, 'tradeLicensePreview', 'tradeLicensePreviewContainer')" />
         <span asp-validation-for="TradeLicenseImage" class="text-danger small"></span>
         <div class="form-text small">@L["If operating as an agro-machinery rental firm or commercial godown facility."]</div>
 
         <!-- Preview Thumbnail -->
         <div id="tradeLicensePreviewContainer" class="mt-2 @(string.IsNullOrWhiteSpace(Model.ExistingTradeLicenseUrl) ? "d-none" : "")">
             <div class="p-2 border rounded-3 bg-light d-inline-block text-center" style="max-width: 200px;">
-                <img id="tradeLicensePreview" src="@(string.IsNullOrWhiteSpace(Model.ExistingTradeLicenseUrl) ? "#" : Url.Action("VerificationDocument", "Account", new { kind = "trade" }))" class="img-fluid rounded" style="max-height: 120px; object-fit: cover;" alt="Trade License Preview" />
+                <img id="tradeLicensePreview" src="@(string.IsNullOrWhiteSpace(Model.ExistingTradeLicenseUrl) ? "#" : Url.Action("VerificationDocument", "Account", new { kind = "trade" }))" class="img-fluid rounded" style="max-height: 120px; object-fit: cover;" alt="Trade License Preview" width="180" height="120" />
                 <span class="small text-muted d-block mt-1">@L["Trade License Preview"]</span>
             </div>
         </div>

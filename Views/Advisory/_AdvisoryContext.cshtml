@@ -1,0 +1,33 @@
+@model AdvisoryContextViewModel
+@*
+    "Showing advice for Sylhet · Rice (Boro) — change": makes the personalization visible and overridable (ADV-02).
+*@
+@{
+    var sourceText = Model.Source switch
+    {
+        AdvisoryContextSource.Profile => L["from your profile"].Value,
+        AdvisoryContextSource.Selection => L["your selection"].Value,
+        _ => L["default region"].Value
+    };
+}
+<div class="krishi-advisory-context d-flex flex-wrap align-items-center gap-2 mt-3" role="note">
+    <span class="krishi-advisory-context-chip">
+        <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+        <span>
+            @L["Showing advice for"] <strong>@Model.District</strong>@if (Model.HasCrop)
+            {
+                <text> · <strong>@L[Model.Crop]</strong></text>
+            }
+        </span>
+        <span class="krishi-advisory-context-source">(@sourceText)</span>
+        <a href="@Model.ChangeAnchor" class="krishi-advisory-context-link">@L["change"]</a>
+    </span>
+    @if (Model.Source == AdvisoryContextSource.Selection && Model.IsSignedIn)
+    {
+        <a asp-route-reset="true" class="small krishi-advisory-context-link">@L["Use my profile instead"]</a>
+    }
+    else if (Model.Source == AdvisoryContextSource.Default && !Model.IsSignedIn)
+    {
+        <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" class="small krishi-advisory-context-link">@L["Sign in to see advice for your own district"]</a>
+    }
+</div>

@@ -95,12 +95,12 @@
                             @L["Storage Type / Category"] <span class="text-danger">*</span>
                         </label>
                         <select asp-for="Category" class="form-select py-2.5 rounded-3" id="godownCategorySelect" required>
-                            <option value="Cold Storage">@L["❄️ Cold Storage (Vegetables & Fruits)"]</option>
-                            <option value="Grain Warehouse">@L["🌾 Grain Warehouse (Paddy & Wheat)"]</option>
-                            <option value="Multi-Chamber Cold Storage">@L["🧊 Multi-Chamber Storage (Multi-Temp)"]</option>
-                            <option value="Seed Vault">@L["🌱 Certified Seed Vault"]</option>
-                            <option value="Silo Facility">@L["🏢 Modern Silo Facility"]</option>
-                            <option value="Dry Godown">@L["📦 Dry Goods & Jute Warehouse"]</option>
+                            <option value="Cold Storage">@L["Cold Storage (Vegetables & Fruits)"]</option>
+                            <option value="Grain Warehouse">@L["Grain Warehouse (Paddy & Wheat)"]</option>
+                            <option value="Multi-Chamber Cold Storage">@L["Multi-Chamber Storage (Multi-Temp)"]</option>
+                            <option value="Seed Vault">@L["Certified Seed Vault"]</option>
+                            <option value="Silo Facility">@L["Modern Silo Facility"]</option>
+                            <option value="Dry Godown">@L["Dry Goods & Jute Warehouse"]</option>
                         </select>
                         <span asp-validation-for="Category" class="text-danger small"></span>
                     </div>
@@ -252,6 +252,12 @@
                         </div>
                         <span asp-validation-for="PriceAmount" class="text-danger small"></span>
                         <div class="form-text small text-muted" id="calculatedEquivalentRate">@L["Standard rate charged per ton per month."]</div>
+                        @if (Model.PriceBenchmark is { } benchmark)
+                        {
+                            <div class="mt-3">
+                                <partial name="_PriceBenchmark" model="benchmark" />
+                            </div>
+                        }
                     </div>
 
                     <!-- Pricing Period Toggle -->
@@ -289,14 +295,14 @@
                             @{
                                 var standardFacilities = new[]
                                 {
-                                    new { Name = "Climate Control (2-8°C)", Icon = "bi-snow", Label = "❄️ Climate Control (2-8°C)" },
-                                    new { Name = "24/7 Security & CCTV", Icon = "bi-camera-video", Label = "🛡️ 24/7 Security & CCTV" },
-                                    new { Name = "Power Backup Generator", Icon = "bi-lightning-charge", Label = "⚡ Power Backup Generator" },
-                                    new { Name = "Pest & Rodent Control", Icon = "bi-bug", Label = "🐜 Pest & Rodent Fumigation" },
-                                    new { Name = "Moisture Testing Lab", Icon = "bi-droplet", Label = "🧪 Moisture Testing Lab" },
-                                    new { Name = "Loading & Unloading Ramp", Icon = "bi-truck", Label = "🚚 Loading / Unloading Ramp" },
-                                    new { Name = "Pallet Racking System", Icon = "bi-grid-3x3", Label = "📦 Pallet Racking System" },
-                                    new { Name = "Fire Safety & Insurance", Icon = "bi-fire", Label = "🧯 Fire Safety & Insurance" }
+                                    new { Name = "Climate Control (2-8°C)", Icon = "bi-snow", Label = "Climate Control (2-8°C)" },
+                                    new { Name = "24/7 Security & CCTV", Icon = "bi-camera-video", Label = "24/7 Security & CCTV" },
+                                    new { Name = "Power Backup Generator", Icon = "bi-lightning-charge", Label = "Power Backup Generator" },
+                                    new { Name = "Pest & Rodent Control", Icon = "bi-bug", Label = "Pest & Rodent Fumigation" },
+                                    new { Name = "Moisture Testing Lab", Icon = "bi-droplet", Label = "Moisture Testing Lab" },
+                                    new { Name = "Loading & Unloading Ramp", Icon = "bi-truck", Label = "Loading / Unloading Ramp" },
+                                    new { Name = "Pallet Racking System", Icon = "bi-grid-3x3", Label = "Pallet Racking System" },
+                                    new { Name = "Fire Safety & Insurance", Icon = "bi-fire", Label = "Fire Safety & Insurance" }
                                 };
                             }
                             @foreach (var fac in standardFacilities)
@@ -305,7 +311,8 @@
                                 <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                                     <div class="form-check amenity-pill-check p-2 border rounded-3 h-100 bg-light d-flex align-items-center gap-2">
                                         <input class="form-check-input ms-1" type="checkbox" name="SelectedFacilities" value="@fac.Name" id="fac_@fac.Name.Replace(" ", "_")" @(isChecked ? "checked" : "") />
-                                        <label class="form-check-label small fw-medium text-dark user-select-none mb-0" for="fac_@fac.Name.Replace(" ", "_")">
+                                        <label class="form-check-label small fw-medium text-dark user-select-none mb-0 d-flex align-items-center gap-1.5" for="fac_@fac.Name.Replace(" ", "_")">
+                                            <i class="bi @fac.Icon text-success" aria-hidden="true"></i>
                                             @L[fac.Label]
                                         </label>
                                     </div>
@@ -323,12 +330,12 @@
                                 </span>
                                 <h5 class="fw-bold text-dark mb-0">@L["5. Facility Photos"] <span class="text-danger">*</span></h5>
                             </div>
-                            <span class="text-muted small">@L["At least 1 photo required (Max 5 MB each: PNG, JPG, WebP)"]</span>
+                            <span class="text-muted small">@L["At least 1 photo, max 5 MB each. WebP photos load fastest for farmers on mobile data; JPG and PNG work too."]</span>
                         </div>
 
                         <!-- Dropzone Component -->
-                        <div class="krishi-upload-dropzone mb-3" id="dropzoneArea" onclick="document.getElementById('godownImageFileInput').click()">
-                            <input type="file" id="godownImageFileInput" name="imageFiles" multiple accept="image/png, image/jpeg, image/webp" class="d-none" onchange="handleFileSelect(this.files)" />
+                        <div class="krishi-upload-dropzone mb-3" id="dropzoneArea" data-onclick="document.getElementById('godownImageFileInput').click()">
+                            <input type="file" id="godownImageFileInput" name="imageFiles" multiple accept="image/png, image/jpeg, image/webp" class="d-none" data-onchange="handleFileSelect(this.files)" />
                             <div class="mb-2">
                                 <i class="bi bi-cloud-arrow-up text-success" style="font-size: 2.5rem;"></i>
                             </div>
@@ -349,16 +356,16 @@
                             {
                                 var imgUrl = Model.ExistingImageUrls[i];
                                 var isPrimary = (string.IsNullOrEmpty(Model.PrimaryImageKey) && i == 0) || string.Equals(Model.PrimaryImageKey, imgUrl, StringComparison.OrdinalIgnoreCase);
-                                <div class="krishi-image-preview-card existing-image-card @(isPrimary ? "is-primary" : "")" id="existingCard_@i" data-key="@imgUrl" onclick="setPrimaryImage('@imgUrl', this)">
-                                    <img src="@imgUrl" alt="@L["Godown photo"]" class="w-100 h-100 object-fit-cover rounded-3" />
+                                <div class="krishi-image-preview-card existing-image-card @(isPrimary ? "is-primary" : "")" id="existingCard_@i" data-key="@imgUrl" data-onclick="setPrimaryImage('@imgUrl', this)">
+                                    <img src="@imgUrl" alt="@L["Godown photo"]" class="w-100 h-100 object-fit-cover rounded-3" width="160" height="120" loading="lazy" decoding="async" />
                                     <input type="hidden" name="ExistingImageUrls" value="@imgUrl" />
                                     <span class="krishi-primary-badge @(isPrimary ? "" : "d-none")">
                                         <i class="bi bi-star-fill"></i> @L["Primary"]
                                     </span>
-                                    <button type="button" class="krishi-set-primary-btn @(isPrimary ? "d-none" : "")" onclick="event.stopPropagation(); setPrimaryImage('@imgUrl', this.parentElement)">
+                                    <button type="button" class="krishi-set-primary-btn @(isPrimary ? "d-none" : "")" data-onclick="event.stopPropagation(); setPrimaryImage('@imgUrl', this.parentElement)">
                                         <i class="bi bi-star me-1"></i>@L["Set as Primary"]
                                     </button>
-                                    <button type="button" class="krishi-preview-remove-btn" onclick="event.stopPropagation(); removeExistingImage(@i, '@imgUrl')" title="@L["Remove photo"]">
+                                    <button type="button" class="krishi-preview-remove-btn" data-onclick="event.stopPropagation(); removeExistingImage(@i, '@imgUrl')" title="@L["Remove photo"]">
                                         <i class="bi bi-x"></i>
                                     </button>
                                 </div>

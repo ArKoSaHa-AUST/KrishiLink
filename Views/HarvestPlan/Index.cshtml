@@ -208,7 +208,7 @@
 
                                 @if (plan.CanDelete)
                                 {
-                                    <form asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('@L["Are you sure you want to delete this harvest plan?"]');">
+                                    <form asp-action="Delete" method="post" class="d-inline" data-onsubmit="return confirm('@L["Are you sure you want to delete this harvest plan?"]');">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="planId" value="@plan.Id" />
                                         <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2.5" title="@L["Delete Plan"]">

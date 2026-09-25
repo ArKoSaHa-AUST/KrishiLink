@@ -4,7 +4,9 @@ using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Options;
 
 namespace KrishiLink.Controllers
 {
@@ -16,7 +18,7 @@ namespace KrishiLink.Controllers
         private readonly ISavedSearchService _savedSearches;
         private readonly IStorageIntakeService _intakeService;
         private readonly ILogger<GodownOwnerController> _logger;
-        private readonly IStringLocalizer<SharedResource> _localizer;
+        private readonly IPriceBenchmarkService _benchmarks;
 
         public GodownOwnerController(
             IGodownService godowns,
@@ -24,17 +26,18 @@ namespace KrishiLink.Controllers
             ISavedSearchService savedSearches,
             IStorageIntakeService intakeService,
             ILogger<GodownOwnerController> logger,
+            IPriceBenchmarkService benchmarks,
             IGodownRevenueService revenueService,
             UserManager<ApplicationUser> userManager,
             IStringLocalizer<SharedResource> localizer)
-            : base(revenueService, userManager)
+            : base(revenueService, userManager, localizer)
         {
             _godowns = godowns;
             _files = files;
             _savedSearches = savedSearches;
             _intakeService = intakeService;
             _logger = logger;
-            _localizer = localizer;
+            _benchmarks = benchmarks;
         }
 
         /// <summary>GET: /GodownOwner — dashboard with godowns, capacity utilisation and pending requests.</summary>
@@ -42,7 +45,7 @@ namespace KrishiLink.Controllers
         {
             var model = await _godowns.GetOwnerDashboardAsync(OwnerId);
             model.OwnerName = await OwnerDisplayNameAsync();
-            model.ThisMonthRevenue = ThisMonthRevenue;
+            model.ThisMonthRevenue = await ThisMonthRevenueAsync();
 
             var user = await _userManager.GetUserAsync(User);
             if (user != null)
@@ -64,6 +67,8 @@ namespace KrishiLink.Controllers
         /// <summary>POST: /GodownOwner/RespondRequest — accept / reject / complete / undo a storage request.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
+        [SlowPath("booking")]
         public async Task<IActionResult> RespondRequest(int id, string decision, string? reason = null)
         {
             var result = await _godowns.RespondAsync(OwnerId, id, decision ?? string.Empty, reason);
@@ -83,12 +88,14 @@ namespace KrishiLink.Controllers
 
         /// <summary>GET: /GodownOwner/PendingCount — polled by the dashboard for new-request notifications.</summary>
         [HttpGet]
+        [EnableRateLimiting(RateLimitPolicies.ReadJson)]
         public async Task<IActionResult> PendingCount()
         {
             return Json(new { count = await _godowns.CountPendingAsync(OwnerId) });
         }
 
         [HttpGet]
+        [Authorize(Policy = AppPolicies.VerifiedEmail)]
         public IActionResult Create()
         {
             return View(new GodownListingViewModel());
@@ -98,11 +105,25 @@ namespace KrishiLink.Controllers
         public async Task<IActionResult> Edit(int id)
         {
             var model = await _godowns.GetListingAsync(OwnerId, id);
-            return model is null ? NotFound() : View("Create", model);
+            if (model is null) return NotFound();
+            if (!string.IsNullOrWhiteSpace(model.District) && model.PricePeriod == "Month")
+            {
+                model.PriceBenchmark = new PriceBenchmarkViewModel
+                {
+                    Benchmark = await _benchmarks.ForGodownAsync(model.Category, model.District, cancellationToken: HttpContext.RequestAborted),
+                    Price = model.PriceAmount,
+                    PerTonMonth = true,
+                    Category = model.Category,
+                    District = model.District,
+                    ForOwner = true
+                };
+            }
+            return View("Create", model);
         }
 
         /// <summary>POST: /GodownOwner/Save — create or update a storage listing (with robust server-side image validation).</summary>
         [HttpPost]
+        [Authorize(Policy = AppPolicies.VerifiedEmail)]
         [ValidateAntiForgeryToken]
         [RequestFormLimits(MultipartBodyLengthLimit = 32 * 1024 * 1024)]
         [RequestSizeLimit(32 * 1024 * 1024)]
@@ -148,7 +169,7 @@ namespace KrishiLink.Controllers
                 }
             }
 
-            TempData["SuccessMessage"] = $"Storage facility '{model.Name}' successfully {(isEdit ? "updated" : "listed")}!";
+            TempData["SuccessMessage"] = _localizer[isEdit ? "Storage facility '{0}' successfully updated!" : "Storage facility '{0}' successfully listed!", model.Name].Value;
             return RedirectToAction(nameof(Index));
         }
 
@@ -308,9 +329,10 @@ namespace KrishiLink.Controllers
 
         /// <summary>GET: /GodownOwner/WarehouseReceipt/5 — download official Warehouse Receipt PDF.</summary>
         [HttpGet]
-        public async Task<IActionResult> WarehouseReceipt(int id)
+        public async Task<IActionResult> WarehouseReceipt(int id,
+            [FromServices] IOptions<AppOptions> appOptions, [FromServices] IWebHostEnvironment env)
         {
-            var result = await _intakeService.GetReceiptPdfAsync(id, OwnerId, isOwner: true, $"{Request.Scheme}://{Request.Host}");
+            var result = await _intakeService.GetReceiptPdfAsync(id, OwnerId, isOwner: true, AppLinks.PublicOrigin(appOptions, env, Request));
             if (result is null)
                 return NotFound();
 

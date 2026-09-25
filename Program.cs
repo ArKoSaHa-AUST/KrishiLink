@@ -1,15 +1,22 @@
 using KrishiLink.BLL.Services;
+using KrishiLink.BLL.Services.Ai;
+using KrishiLink.Controllers;
 using KrishiLink.DAL;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
+using Microsoft.AspNetCore.HostFiltering;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
 EnvironmentConfiguration.AddLocalEnvironmentFiles(builder.Configuration, builder.Environment.ContentRootPath, args);
@@ -28,6 +35,9 @@ if (builder.Environment.IsDevelopment() && !string.IsNullOrWhiteSpace(listenUrls
 
 var connectionString = DatabaseConfiguration.GetConnectionString(builder.Configuration);
 
+// Off = one platform-wide workflow lock (the proven default). On = per-listing / per-user locks; revert with this setting.
+WorkflowTransaction.ShardedLocks = builder.Configuration.GetValue<bool>("Database:ShardedWorkflowLocks");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString,
         postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", DatabaseConfiguration.Schema)));
@@ -43,14 +53,22 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.User.RequireUniqueEmail = true;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
-.AddDefaultTokenProviders();
+.AddDefaultTokenProviders()
+.AddClaimsPrincipalFactory<KrishiLinkClaimsPrincipalFactory>();
+
+builder.Services.AddAuthorization(MvcSecurity.ConfigurePolicies);
+builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler, VerifiedEmailResultHandler>();
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
-builder.Services.AddSupabaseAuthentication(builder.Configuration);
+// Database sessions survive restarts and are shared across instances; memory is for local development only.
+var sessionStore = builder.Configuration["Authentication:SessionStore"] ?? (builder.Environment.IsDevelopment() ? "Memory" : "Database");
+if (sessionStore is not ("Memory" or "Database"))
+    throw new InvalidOperationException("Authentication:SessionStore must be \"Memory\" or \"Database\".");
+builder.Services.AddSupabaseAuthentication(builder.Configuration, databaseSessions: sessionStore == "Database");
 
 // The sign-in cookie is Secure-only, which is right in production. A development LAN is served over
 // plain HTTP so phones can reach it by IP, and a Secure cookie would never be sent back on those
@@ -64,6 +82,25 @@ if (builder.Environment.IsDevelopment())
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "RequestVerificationToken";
+    // SecurityHeaders sends the stricter X-Frame-Options: DENY on every response.
+    options.SuppressXFrameOptionsHeader = true;
+});
+
+// Client IPs (rate limiting) and the https scheme come from X-Forwarded-* only when the request arrives through a
+// proxy listed here. Nothing is trusted by default: an empty list makes the middleware a no-op instead of letting any
+// client spoof its address. Configure ForwardedHeaders:KnownProxies / KnownNetworks for the real deployment.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+    foreach (var proxy in builder.Configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? Array.Empty<string>())
+        options.KnownProxies.Add(IPAddress.Parse(proxy));
+    foreach (var network in builder.Configuration.GetSection("ForwardedHeaders:KnownNetworks").Get<string[]>() ?? Array.Empty<string>())
+    {
+        var parts = network.Split('/', 2);
+        options.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(IPAddress.Parse(parts[0]), int.Parse(parts[1], CultureInfo.InvariantCulture)));
+    }
 });
 
 // Localization: shared .resx resources (English is the default/fallback, Bangla via SharedResource.bn.resx)
@@ -108,12 +145,17 @@ builder.Services.AddScoped<IStorageIntakeService, StorageIntakeService>();
 builder.Services.AddScoped<IReceiptDocumentService, ReceiptDocumentService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IHarvestPlanService, HarvestPlanService>();
+builder.Services.AddScoped<ISeasonEconomicsService, SeasonEconomicsService>();
+builder.Services.AddScoped<IPriceBenchmarkService, PriceBenchmarkService>();
 builder.Services.AddScoped<IFarmerProfileService, FarmerProfileService>();
 builder.Services.AddScoped<IGodownRevenueService, GodownRevenueService>();
 builder.Services.AddScoped<IEquipmentRevenueService, EquipmentRevenueService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ICropCalendarService, CropCalendarService>();
+builder.Services.AddScoped<ICropAdvisorService, CropAdvisorService>();
+builder.Services.AddScoped<ISuggestionStateService, SuggestionStateService>();
+builder.Services.AddScoped<IPestAlertHistoryService, PestAlertHistoryService>();
 builder.Services.AddScoped<IWeatherService, WeatherService>();
 builder.Services.AddScoped<IPestAlertService, PestAlertService>();
 builder.Services.AddScoped<IOwnerVerificationService, OwnerVerificationService>();
@@ -124,14 +166,77 @@ builder.Services.AddScoped<IBadgeService, BadgeService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<ILoyaltyService, LoyaltyService>();
 
-builder.Services.Configure<AppOptions>(builder.Configuration.GetSection(AppOptions.SectionName));
+// Read-only views of the booking services. The AI assistant depends on these alone, so it has no write path.
+builder.Services.AddScoped<IEquipmentQueries>(sp => sp.GetRequiredService<IEquipmentService>());
+builder.Services.AddScoped<IGodownQueries>(sp => sp.GetRequiredService<IGodownService>());
+builder.Services.AddScoped<IBookingQueries>(sp => sp.GetRequiredService<IBookingService>());
+builder.Services.AddScoped<IWeatherSuggestionQueries>(sp => sp.GetRequiredService<IWeatherSuggestionService>());
+
+// AI assistant: Groq first, Google Gemini as fallback (both OpenAI-compatible). Keys come from GROQ_API_KEY[_2|_3] and
+// GEMINI_API_KEY[_2] in .env / .env.local or the host environment; they never reach the browser.
+builder.Services.Configure<GroqOptions>(builder.Configuration.GetSection(GroqOptions.SectionName));
+builder.Services.Configure<GeminiOptions>(builder.Configuration.GetSection(GeminiOptions.SectionName));
+builder.Services.AddHttpClient(FailoverChatClient.GroqName, (sp, http) =>
+{
+    var groq = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<GroqOptions>>().Value;
+    http.BaseAddress = new Uri(groq.BaseUrl.TrimEnd('/') + "/");
+    http.Timeout = TimeSpan.FromSeconds(Math.Max(5, groq.TimeoutSeconds));
+});
+builder.Services.AddHttpClient(FailoverChatClient.GeminiName, (sp, http) =>
+{
+    var gemini = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<GeminiOptions>>().Value;
+    http.BaseAddress = new Uri(gemini.BaseUrl.TrimEnd('/') + "/");
+    http.Timeout = TimeSpan.FromSeconds(Math.Max(5, gemini.TimeoutSeconds));
+});
+builder.Services.AddSingleton<ChatProviderStates>();
+builder.Services.AddScoped<IChatModelClient, FailoverChatClient>();
+builder.Services.AddScoped<AgentTools>();
+builder.Services.AddScoped<IAgentService, AgentService>();
+
+// QR codes, PDFs and e-mails embed absolute links built from this, so it must be the real public https origin.
+builder.Services.AddOptions<AppOptions>()
+    .Bind(builder.Configuration.GetSection(AppOptions.SectionName))
+    .Validate(o => Uri.TryCreate(o.PublicBaseUrl, UriKind.Absolute, out var url)
+            && (builder.Environment.IsDevelopment()
+                || (url.Scheme == Uri.UriSchemeHttps && !(builder.Environment.IsProduction() && url.IsLoopback))),
+        "App:PublicBaseUrl must be the site's absolute https:// address (and not localhost in Production).")
+    .ValidateOnStart();
+
+// Host names are allow-listed outside Development so a forged Host header is rejected before any link is built.
+// Development accepts any host because phones on the LAN reach the site by IP address.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.PostConfigure<HostFilteringOptions>(o => o.AllowedHosts = new List<string> { "*" });
+}
+else if (builder.Configuration["AllowedHosts"] is not { Length: > 0 } allowedHosts
+         || allowedHosts.Split(';', StringSplitOptions.TrimEntries).Contains("*"))
+{
+    throw new InvalidOperationException("Set AllowedHosts to the site's real host names (semicolon-separated). '*' is only allowed in Development.");
+}
 builder.Services.AddHttpClient();
+// The key ring decrypts every stored NID number and the sign-in cookie: it must live on durable, backed-up storage
+// shared by all instances (DataProtection:KeyPath), and be encrypted at rest with a certificate outside Development.
 var keyPath = builder.Configuration["DataProtection:KeyPath"] ?? "App_Data/keys";
-builder.Services.AddDataProtection()
+var keyDirectory = new DirectoryInfo(Path.GetFullPath(keyPath, builder.Environment.ContentRootPath));
+var dataProtection = builder.Services.AddDataProtection()
     .SetApplicationName("KrishiLink")
-    .PersistKeysToFileSystem(new DirectoryInfo(Path.GetFullPath(keyPath, builder.Environment.ContentRootPath)));
+    .PersistKeysToFileSystem(keyDirectory);
+var keyCertificatePath = builder.Configuration["DataProtection:CertificatePath"];
+if (!string.IsNullOrWhiteSpace(keyCertificatePath))
+{
+    dataProtection.ProtectKeysWithCertificate(new X509Certificate2(
+        Path.GetFullPath(keyCertificatePath, builder.Environment.ContentRootPath),
+        builder.Configuration["DataProtection:CertificatePassword"]));
+}
 
 builder.Services.AddScoped<IPayoutSettlementService, PayoutSettlementService>();
+
+builder.Services.AddKrishiLinkRateLimiting();
+builder.Services.Configure<DiagnosticsOptions>(builder.Configuration.GetSection(DiagnosticsOptions.SectionName));
+
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "ready" })
+    .AddCheck<SupabaseAuthHealthCheck>("supabase-auth", tags: new[] { "ready" });
 
 // Money flow: simulated gateway behind IPaymentGateway; swap providers by adding a class and a case here
 var paymentProvider = builder.Configuration[$"{PaymentsOptions.SectionName}:Provider"] ?? SimulatedPaymentGateway.ProviderName;
@@ -150,6 +255,7 @@ if (builder.Configuration.GetSection(EmailOptions.SectionName).Get<EmailOptions>
 else
     builder.Services.AddScoped<IEmailSender, LoggingEmailSender>();
 
+builder.Services.AddScoped<IEmailDeliveryRecorder, EmailDeliveryRecorder>();
 builder.Services.AddSingleton<EmailDispatchService>();
 builder.Services.AddSingleton<IEmailQueue>(sp => sp.GetRequiredService<EmailDispatchService>());
 builder.Services.AddHostedService(sp => sp.GetRequiredService<EmailDispatchService>());
@@ -164,26 +270,48 @@ builder.Services.AddHostedService<ReminderScheduler>();
 builder.Services.AddHostedService<SavedSearchAlertScheduler>();
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+var mvc = builder.Services.AddControllersWithViews(options =>
+{
+    MvcSecurity.Configure(options);
+    options.Filters.Add<ConcurrencyConflictFilter>();
+    options.Filters.Add<JsonExceptionFilter>();
+});
+builder.Services.AddProblemDetails();
+// .cshtml edits show on refresh while developing; other environments serve the precompiled views.
+if (builder.Environment.IsDevelopment()) mvc.AddRazorRuntimeCompilation();
 
 var app = builder.Build();
 
-// Schema changes use a session/direct connection, never transaction pooling.
-if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+// Every instance runs this on boot, so a session-level advisory lock makes them take turns: the first does the work,
+// the rest wait and then find nothing left to do. Requires a session/direct connection (never transaction pooling).
+await using (var startupLock = await DbInitializer.AcquireStartupLockAsync(connectionString))
 {
-    var migrationOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
-        .UseNpgsql(DatabaseConfiguration.GetConnectionString(builder.Configuration, forMigrations: true),
-            postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", DatabaseConfiguration.Schema))
-        .Options;
-    await using var migrationDb = new ApplicationDbContext(migrationOptions);
-    await migrationDb.Database.MigrateAsync();
-}
+    if (builder.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+    {
+        // Production applies the CI-generated idempotent script as a reviewed deployment step instead.
+        if (!app.Environment.IsDevelopment())
+            app.Logger.LogWarning("Database:ApplyMigrationsOnStartup is enabled outside Development; apply the reviewed migration script instead.");
 
-using (var scope = app.Services.CreateScope())
-{
+        var migrationOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql(DatabaseConfiguration.GetConnectionString(builder.Configuration, forMigrations: true),
+                postgres => postgres.MigrationsHistoryTable("__EFMigrationsHistory", DatabaseConfiguration.Schema))
+            .Options;
+        await using var migrationDb = new ApplicationDbContext(migrationOptions);
+        await migrationDb.Database.MigrateAsync();
+    }
+
+    using var scope = app.Services.CreateScope();
     await scope.ServiceProvider.GetRequiredService<SupabaseStorageClient>().InitializeBucketsAsync();
     await DbInitializer.InitializeAsync(scope.ServiceProvider);
 }
+
+CheckDataProtectionKeyRing(app, keyDirectory, encrypted: !string.IsNullOrWhiteSpace(keyCertificatePath));
+
+// First, so every later component (HTTPS redirection, rate limiting, logging) sees the real client and scheme.
+app.UseForwardedHeaders();
+
+// Correlation id + request timing (QLT-02): every later log line carries the id the response hands back.
+app.UseRequestDiagnostics();
 
 app.UseRequestLocalization();
 
@@ -194,11 +322,19 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// Empty 4xx/5xx responses: fetch/XHR callers get problem+json they can parse, browsers get the friendly error page.
+app.UseWhen(context => ConcurrencyConflictFilter.WantsJson(context.Request), json => json.UseStatusCodePages());
+app.UseWhen(context => !ConcurrencyConflictFilter.WantsJson(context.Request), html => html.UseStatusCodePagesWithReExecute("/Home/Error", "?code={0}"));
+
 // Redirecting to HTTPS in development would break LAN access from devices that do not trust the dev certificate.
+// Health probes are exempt: orchestrators probe over plain HTTP and count a 3xx redirect as success.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseHttpsRedirection();
+    app.UseWhen(context => !IsHealthProbe(context.Request.Path), branch => branch.UseHttpsRedirection());
 }
+
+// Before static files so every response, including assets and error pages, carries the headers.
+app.UseSecurityHeaders(enforceCsp: builder.Configuration.GetValue<bool>("Security:EnforceContentSecurityPolicy"));
 
 app.UseStaticFiles();
 
@@ -206,10 +342,17 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+// After authentication so signed-in users are limited per account rather than per shared IP.
+app.UseRateLimiter();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+app.MapCspReports();
+
+// Liveness answers from the process alone; readiness also needs the database and Supabase Auth.
+app.MapHealthChecks("/healthz", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
+app.MapHealthChecks("/readyz", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") }).AllowAnonymous();
 
 // Print the addresses other devices can use, so QR codes scanned on a phone resolve to a reachable host.
 app.Lifetime.ApplicationStarted.Register(() =>
@@ -235,3 +378,36 @@ app.Lifetime.ApplicationStarted.Register(() =>
 });
 
 app.Run();
+
+static bool IsHealthProbe(PathString path) => path.StartsWithSegments("/healthz") || path.StartsWithSegments("/readyz");
+
+static void CheckDataProtectionKeyRing(WebApplication app, DirectoryInfo keyDirectory, bool encrypted)
+{
+    keyDirectory.Create();
+    if (!OperatingSystem.IsWindows())
+    {
+        try
+        {
+            File.SetUnixFileMode(keyDirectory.FullName, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+        {
+            app.Logger.LogWarning("Could not restrict the Data Protection key directory {Path} to the app user.", keyDirectory.FullName);
+        }
+    }
+
+    if (app.Environment.IsDevelopment()) return;
+    if (!keyDirectory.EnumerateFiles("key-*.xml").Any())
+    {
+        app.Logger.LogCritical(
+            "The Data Protection key ring at {Path} is EMPTY. A new ring will be created: every NID number encrypted with a " +
+            "previous ring is now unreadable and all users are signed out. If this is not the very first start, mount the " +
+            "persistent key volume (DataProtection:KeyPath) and restore it from backup.", keyDirectory.FullName);
+    }
+    if (!encrypted)
+    {
+        app.Logger.LogWarning(
+            "Data Protection keys at {Path} are stored unencrypted. Set DataProtection:CertificatePath (and CertificatePassword) " +
+            "so a copy of the key directory or a backup cannot decrypt stored NID numbers.", keyDirectory.FullName);
+    }
+}
