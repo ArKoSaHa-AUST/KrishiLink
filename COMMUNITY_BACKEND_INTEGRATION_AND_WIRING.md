@@ -3,7 +3,7 @@
 
 Document Version: 2.0.0  
 Status: Authoritative Production Engineering Specification  
-Target Platform: ASP.NET Core 9 MVC, Entity Framework Core, Microsoft SQL Server, Bootstrap 5.3, Vanilla JavaScript (ES6+), HTML5 Web Audio API  
+Target Platform: ASP.NET Core 8/9 MVC, Entity Framework Core, PostgreSQL (Supabase), Bootstrap 5.3, Vanilla JavaScript (ES6+), HTML5 Web Audio API  
 Companion Document: `COMMUNITY_PAGE_UI_DESIGN.md`  
 Target File: `/media/arkosaha/Volume13/KrishiLink/COMMUNITY_BACKEND_INTEGRATION_AND_WIRING.md`
 
@@ -101,7 +101,7 @@ sequenceDiagram
 
 ### 2.1 Entity Models & Relational Architecture
 
-The data access layer is implemented using Entity Framework Core within [`DAL/ApplicationDbContext.cs`](file:///media/arkosaha/Volume13/KrishiLink/DAL/ApplicationDbContext.cs). The database schema resides in Microsoft SQL Server (`krishilink_mssql`).
+The data access layer is implemented using Entity Framework Core within [`DAL/ApplicationDbContext.cs`](file:///media/arkosaha/Volume13/KrishiLink/DAL/ApplicationDbContext.cs). The database schema resides in Supabase PostgreSQL (`krishilink` schema with `public` views).
 
 #### 1. `CommunityPost` (`Models/Entities/CommunityPost.cs`)
 Represents an individual community discussion, agricultural experience, or urgent crop distress query.

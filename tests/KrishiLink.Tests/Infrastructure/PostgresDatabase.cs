@@ -17,9 +17,9 @@ public sealed class PostgresDatabase : IAsyncLifetime
     /// <summary>When "true", a missing server fails the run instead of skipping the database suites (set in CI).</summary>
     public const string RequiredVariable = "KRISHILINK_TEST_POSTGRES_REQUIRED";
 
-    public static string? ServerConnection => Environment.GetEnvironmentVariable(ConnectionVariable);
+    public static string? ServerConnection => Environment.GetEnvironmentVariable(ConnectionVariable) ?? "Host=127.0.0.1;Port=5432;Username=postgres;Password=postgres;Database=postgres";
     public static bool IsConfigured => !string.IsNullOrWhiteSpace(ServerConnection);
-    public static bool IsRequired => string.Equals(Environment.GetEnvironmentVariable(RequiredVariable), "true", StringComparison.OrdinalIgnoreCase);
+    public static bool IsRequired => true;
 
     private string? _databaseName;
 
