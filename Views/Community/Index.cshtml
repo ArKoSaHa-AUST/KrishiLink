@@ -15,7 +15,8 @@
             <!-- 1. LEFT SIDEBAR: PROFILE, NAV, GEO FILTER  -->
             <!-- ========================================== -->
             <aside class="col-lg-3 d-none d-lg-block community-sidebar-left">
-                <div class="sticky-top" style="top: 88px; z-index: 10;                    <!-- User Profile Card -->
+                <div class="sticky-top" style="top: 88px; z-index: 10;">
+                    <!-- User Profile Card -->
                     @if (Model.IsAuthenticated && Model.CurrentUser != null)
                     {
                         <div class="card community-sidebar-card p-4 mb-4">

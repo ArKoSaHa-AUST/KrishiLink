@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", function () {
     initBookmarkButtons();
     initCopyLinkButtons();
     initCommentsModal();
+    initReportPostButtons();
 });
 
 /**
@@ -105,6 +106,35 @@ function initComposerMediaPreview() {
             reader.readAsDataURL(file);
         });
     });
+
+    const videoInput = document.getElementById("composerVideoFileInput");
+    if (videoInput) {
+        videoInput.addEventListener("change", function () {
+            const existingVideoThumb = tray.querySelector(".preview-video-thumb");
+            if (existingVideoThumb) existingVideoThumb.remove();
+
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                const thumb = document.createElement("div");
+                thumb.className = "preview-thumb-container preview-video-thumb d-flex flex-column align-items-center justify-content-center p-2 bg-dark text-white rounded-3 position-relative";
+                thumb.style.width = "120px";
+                thumb.style.height = "90px";
+                thumb.innerHTML = `
+                    <i class="bi bi-camera-reels-fill fs-3 text-warning mb-1"></i>
+                    <span class="small text-truncate w-100 text-center" style="font-size: 0.75rem;" title="${file.name}">${file.name}</span>
+                    <button type="button" class="remove-thumb-btn position-absolute top-0 end-0 m-1" title="Remove">
+                        <i class="bi bi-x"></i>
+                    </button>
+                `;
+                tray.appendChild(thumb);
+
+                thumb.querySelector(".remove-thumb-btn").addEventListener("click", function () {
+                    thumb.remove();
+                    videoInput.value = "";
+                });
+            }
+        });
+    }
 }
 
 /**
@@ -152,13 +182,24 @@ function initVoiceRecorder() {
                 if (!audioInput) {
                     audioInput = document.createElement("input");
                     audioInput.type = "file";
-                    audioInput.name = "AudioRecordingFile";
+                    audioInput.name = "AudioFile";
                     audioInput.id = "hiddenAudioFileInput";
                     audioInput.style.display = "none";
                     const form = document.getElementById("mainPostCreateForm");
                     if (form) form.appendChild(audioInput);
                 }
                 audioInput.files = dataTransfer.files;
+
+                let durationInput = document.getElementById("hiddenAudioDurationInput");
+                if (!durationInput) {
+                    durationInput = document.createElement("input");
+                    durationInput.type = "hidden";
+                    durationInput.name = "AudioDurationSeconds";
+                    durationInput.id = "hiddenAudioDurationInput";
+                    const form = document.getElementById("mainPostCreateForm");
+                    if (form) form.appendChild(durationInput);
+                }
+                durationInput.value = voiceSeconds;
 
                 previewTray.style.setProperty("display", "flex", "important");
                 if (timerDisplay) {
@@ -206,6 +247,8 @@ function initVoiceRecorder() {
             audioChunks = [];
             const audioInput = document.getElementById("hiddenAudioFileInput");
             if (audioInput) audioInput.value = "";
+            const durationInput = document.getElementById("hiddenAudioDurationInput");
+            if (durationInput) durationInput.value = "0";
             previewTray.style.setProperty("display", "none", "important");
         });
     }
@@ -712,6 +755,53 @@ function initCopyLinkButtons() {
             navigator.clipboard.writeText(fullUrl).then(() => {
                 alert("পোস্টের লিংক ক্লিপবোর্ডে কপি করা হয়েছে!");
             });
+        });
+    });
+}
+
+/**
+ * 11. Report Content / Post Violation
+ */
+function initReportPostButtons() {
+    document.querySelectorAll(".report-post-btn").forEach(btn => {
+        if (btn.dataset.reportBound) return;
+        btn.dataset.reportBound = "true";
+
+        btn.addEventListener("click", async function () {
+            const postId = this.getAttribute("data-post-id");
+            if (!postId) return;
+
+            const reason = prompt("এই পোস্টটির বিরুদ্ধে রিপোর্ট করার কারণ লিখুন (যেমন: ভুল বা বিভ্রান্তিকর তথ্য, অনুপযুক্ত বিষয়বস্তু):");
+            if (!reason || !reason.trim()) return;
+
+            const tokenInput = document.querySelector("input[name='__RequestVerificationToken']");
+            const token = tokenInput ? tokenInput.value : "";
+
+            const formData = new FormData();
+            formData.append("postId", postId);
+            formData.append("reason", reason.trim());
+
+            try {
+                const res = await fetch("/Community/ReportPost", {
+                    method: "POST",
+                    headers: {
+                        "RequestVerificationToken": token,
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    body: formData
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    alert(data.message || "রিপোর্টটি সফলভাবে জমা নেওয়া হয়েছে।");
+                } else if (res.status === 401) {
+                    window.location.href = "/Account/Login";
+                } else {
+                    alert("রিপোর্ট জমা নেওয়া যায়নি। অনুগ্রহ করে পরে আবার চেষ্টা করুন।");
+                }
+            } catch (err) {
+                console.error("Report post error:", err);
+            }
         });
     });
 }
