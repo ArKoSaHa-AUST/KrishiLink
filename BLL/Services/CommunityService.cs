@@ -166,7 +166,7 @@ namespace KrishiLink.BLL.Services
             if (user != null)
             {
                 var reactions = await _db.CommunityReactions
-                    .Where(r => r.UserId == user.Id && r.PostId != null && postIds.Contains(r.PostId.Value))
+                    .Where(r => r.UserId == user.Id && r.PostId != null && r.CommentId == null && postIds.Contains(r.PostId.Value))
                     .ToListAsync();
 
                 foreach (var r in reactions)
@@ -274,8 +274,8 @@ namespace KrishiLink.BLL.Services
                 .OrderBy(c => c.CreatedAt)
                 .ToListAsync();
 
-            var isLiked = user != null && await _db.CommunityReactions.AnyAsync(r => r.UserId == user.Id && r.PostId == postId);
-            var reaction = user != null ? (await _db.CommunityReactions.FirstOrDefaultAsync(r => r.UserId == user.Id && r.PostId == postId))?.ReactionType : null;
+            var isLiked = user != null && await _db.CommunityReactions.AnyAsync(r => r.UserId == user.Id && r.PostId == postId && r.CommentId == null);
+            var reaction = user != null ? (await _db.CommunityReactions.FirstOrDefaultAsync(r => r.UserId == user.Id && r.PostId == postId && r.CommentId == null))?.ReactionType : null;
             var isBookmarked = user != null && await _db.CommunityBookmarks.AnyAsync(b => b.UserId == user.Id && b.PostId == postId);
 
             return MapToPostViewModel(p, comments, user, isLiked, reaction, isBookmarked);
@@ -445,31 +445,46 @@ namespace KrishiLink.BLL.Services
         {
             reactionType = string.IsNullOrWhiteSpace(reactionType) ? CommunityReactionTypes.Helpful : reactionType;
 
-            var existing = await _db.CommunityReactions
-                .FirstOrDefaultAsync(r => r.UserId == userId && r.PostId == postId && r.CommentId == commentId);
+            CommunityReaction? existing = null;
+            if (postId.HasValue)
+            {
+                existing = await _db.CommunityReactions
+                    .FirstOrDefaultAsync(r => r.UserId == userId && r.PostId == postId.Value && r.CommentId == null);
+            }
+            else if (commentId.HasValue)
+            {
+                existing = await _db.CommunityReactions
+                    .FirstOrDefaultAsync(r => r.UserId == userId && r.CommentId == commentId.Value);
+            }
 
             if (existing != null)
             {
                 if (existing.ReactionType == reactionType)
                 {
                     _db.CommunityReactions.Remove(existing);
+                    await _db.SaveChangesAsync();
 
+                    var newCount = 0;
                     if (postId.HasValue)
                     {
                         var post = await _db.CommunityPosts.FindAsync(postId.Value);
-                        if (post != null) post.LikeCount = Math.Max(0, post.LikeCount - 1);
+                        if (post != null)
+                        {
+                            newCount = await _db.CommunityReactions.CountAsync(r => r.PostId == postId.Value && r.CommentId == null);
+                            post.LikeCount = newCount;
+                            await _db.SaveChangesAsync();
+                        }
                     }
                     else if (commentId.HasValue)
                     {
                         var comment = await _db.CommunityComments.FindAsync(commentId.Value);
-                        if (comment != null) comment.UpvoteCount = Math.Max(0, comment.UpvoteCount - 1);
+                        if (comment != null)
+                        {
+                            newCount = await _db.CommunityReactions.CountAsync(r => r.CommentId == commentId.Value);
+                            comment.UpvoteCount = newCount;
+                            await _db.SaveChangesAsync();
+                        }
                     }
-
-                    await _db.SaveChangesAsync();
-
-                    var newCount = postId.HasValue
-                        ? (await _db.CommunityPosts.FindAsync(postId.Value))?.LikeCount ?? 0
-                        : (await _db.CommunityComments.FindAsync(commentId!.Value))?.UpvoteCount ?? 0;
 
                     return (true, "Removed", newCount, reactionType);
                 }
@@ -478,9 +493,17 @@ namespace KrishiLink.BLL.Services
                     existing.ReactionType = reactionType;
                     await _db.SaveChangesAsync();
 
-                    var currentCount = postId.HasValue
-                        ? (await _db.CommunityPosts.FindAsync(postId.Value))?.LikeCount ?? 0
-                        : (await _db.CommunityComments.FindAsync(commentId!.Value))?.UpvoteCount ?? 0;
+                    var currentCount = 0;
+                    if (postId.HasValue)
+                    {
+                        var post = await _db.CommunityPosts.FindAsync(postId.Value);
+                        currentCount = post?.LikeCount ?? 0;
+                    }
+                    else if (commentId.HasValue)
+                    {
+                        var comment = await _db.CommunityComments.FindAsync(commentId.Value);
+                        currentCount = comment?.UpvoteCount ?? 0;
+                    }
 
                     return (true, "Updated", currentCount, reactionType);
                 }
@@ -496,23 +519,29 @@ namespace KrishiLink.BLL.Services
             };
 
             _db.CommunityReactions.Add(reaction);
+            await _db.SaveChangesAsync();
 
+            var totalCount = 0;
             if (postId.HasValue)
             {
                 var post = await _db.CommunityPosts.FindAsync(postId.Value);
-                if (post != null) post.LikeCount++;
+                if (post != null)
+                {
+                    totalCount = await _db.CommunityReactions.CountAsync(r => r.PostId == postId.Value && r.CommentId == null);
+                    post.LikeCount = totalCount;
+                    await _db.SaveChangesAsync();
+                }
             }
             else if (commentId.HasValue)
             {
                 var comment = await _db.CommunityComments.FindAsync(commentId.Value);
-                if (comment != null) comment.UpvoteCount++;
+                if (comment != null)
+                {
+                    totalCount = await _db.CommunityReactions.CountAsync(r => r.CommentId == commentId.Value);
+                    comment.UpvoteCount = totalCount;
+                    await _db.SaveChangesAsync();
+                }
             }
-
-            await _db.SaveChangesAsync();
-
-            var totalCount = postId.HasValue
-                ? (await _db.CommunityPosts.FindAsync(postId.Value))?.LikeCount ?? 0
-                : (await _db.CommunityComments.FindAsync(commentId!.Value))?.UpvoteCount ?? 0;
 
             return (true, "Added", totalCount, reactionType);
         }

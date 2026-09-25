@@ -141,11 +141,26 @@ namespace KrishiLink.Controllers
 
         // POST: /Community/ToggleReaction
         [HttpPost]
-        [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleReaction(int? postId, int? commentId, string reactionType = CommunityReactionTypes.Helpful)
+        public async Task<IActionResult> ToggleReaction([FromForm] int? postId, [FromForm] int? commentId, [FromForm] string reactionType = CommunityReactionTypes.Helpful)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Json(new
+                {
+                    success = false,
+                    requireLogin = true,
+                    message = "লাইক দিতে অনুগ্রহ করে লগইন করুন।",
+                    redirectUrl = Url.Action("Login", "Account") ?? "/Account/Login"
+                });
+            }
+
+            if (!postId.HasValue && !commentId.HasValue)
+            {
+                return Json(new { success = false, message = "Invalid post or comment ID." });
+            }
+
             var result = await _communityService.ToggleReactionAsync(userId, postId, commentId, reactionType);
 
             return Json(new
