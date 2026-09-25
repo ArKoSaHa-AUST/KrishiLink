@@ -43,24 +43,24 @@ namespace KrishiLink.DAL.Repositories
     /// </summary>
     public interface IOwnerRevenueRepository
     {
-        Task<WorkflowTransaction> BeginWorkflowAsync(CancellationToken ct = default);
-        IReadOnlyList<RevenueListing> GetListings(string ownerId);
-        IReadOnlyList<RevenueBooking> GetBookings(string ownerId);
+        Task<WorkflowTransaction> BeginWorkflowAsync(IEnumerable<WorkflowLock> locks, CancellationToken ct = default);
+        Task<IReadOnlyList<RevenueListing>> GetListingsAsync(string ownerId);
+        Task<IReadOnlyList<RevenueBooking>> GetBookingsAsync(string ownerId);
 
         /// <summary>Platform payouts made to the owner.</summary>
-        IReadOnlyList<Transaction> GetPayouts(string ownerId);
+        Task<IReadOnlyList<Transaction>> GetPayoutsAsync(string ownerId);
 
         /// <summary>Persists the payout and returns its id.</summary>
-        int AddPayout(Transaction payout);
+        Task<int> AddPayoutAsync(Transaction payout);
 
         /// <summary>Links the given bookings to a payout so each can be shown as Paid.</summary>
-        void MarkBookingsPaid(IEnumerable<int> bookingIds, int payoutId);
+        Task MarkBookingsPaidAsync(IEnumerable<int> bookingIds, int payoutId);
 
-        IReadOnlyList<BookingExpense> GetExpenses(string ownerId);
-        BookingExpense? GetExpense(string ownerId, int expenseId);
-        void AddExpense(BookingExpense expense);
-        void UpdateExpense(BookingExpense expense);
-        void RemoveExpense(BookingExpense expense);
+        Task<IReadOnlyList<BookingExpense>> GetExpensesAsync(string ownerId);
+        Task<BookingExpense?> GetExpenseAsync(string ownerId, int expenseId);
+        Task AddExpenseAsync(BookingExpense expense);
+        Task UpdateExpenseAsync(BookingExpense expense);
+        Task RemoveExpenseAsync(BookingExpense expense);
     }
 
     public interface IGodownRevenueRepository : IOwnerRevenueRepository { }

@@ -25,6 +25,10 @@
             <i class="bi bi-calendar-week-fill"></i>
             <span>@L["Crop Calendar"]</span>
         </a>
+        <a asp-controller="Advisory" asp-action="Planner" class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-muted d-flex align-items-center gap-1.5">
+            <i class="bi bi-calendar2-check"></i>
+            <span>@L["Planner"]</span>
+        </a>
         <a asp-controller="Advisory" asp-action="Alerts" class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-muted d-flex align-items-center gap-1.5">
             <i class="bi bi-shield-shaded"></i>
             <span>@L["Pest Alerts"]</span>
@@ -34,6 +38,11 @@
             <span>@L["Weather Suggestions"]</span>
         </a>
     </div>
+    @if (ViewData["AdvisoryContext"] is AdvisoryContextViewModel advisoryContext)
+    {
+        advisoryContext.ChangeAnchor = "#calendarFilterForm";
+        <partial name="_AdvisoryContext" model="advisoryContext" />
+    }
 </div>
 
 <!-- CURRENT MONTH HERO & LIVE STATUS BAR -->
@@ -62,7 +71,7 @@
                     <div class="col-4">
                         <a href="@Url.Action("Calendar", "Advisory", new { stage = "Sowing", category = Model.SelectedCategory, season = Model.SelectedSeason, division = Model.SelectedDivision })"
                            class="card h-100 border-0 bg-white bg-opacity-10 text-decoration-none rounded-3 p-2.5 text-white hover-card-translucent transition">
-                            <div class="text-success-subtle mb-1 fs-5">🌱</div>
+                            <div class="text-success-subtle mb-1 fs-5"><i class="bi bi-flower1" aria-hidden="true"></i></div>
                             <div class="fw-bold fs-4 mb-0 text-white">@Model.SowingNowCount</div>
                             <div class="text-white-50" style="font-size: 0.75rem;">@L["Sowing Now"]</div>
                         </a>
@@ -70,7 +79,7 @@
                     <div class="col-4">
                         <a href="@Url.Action("Calendar", "Advisory", new { stage = "Harvesting", category = Model.SelectedCategory, season = Model.SelectedSeason, division = Model.SelectedDivision })"
                            class="card h-100 border-0 bg-white bg-opacity-10 text-decoration-none rounded-3 p-2.5 text-white hover-card-translucent transition">
-                            <div class="text-warning-subtle mb-1 fs-5">🌾</div>
+                            <div class="text-warning-subtle mb-1 fs-5"><i class="bi bi-basket2-fill" aria-hidden="true"></i></div>
                             <div class="fw-bold fs-4 mb-0 text-white">@Model.HarvestingNowCount</div>
                             <div class="text-white-50" style="font-size: 0.75rem;">@L["Harvesting"]</div>
                         </a>
@@ -78,7 +87,7 @@
                     <div class="col-4">
                         <a href="@Url.Action("Calendar", "Advisory", new { stage = "Growing", category = Model.SelectedCategory, season = Model.SelectedSeason, division = Model.SelectedDivision })"
                            class="card h-100 border-0 bg-white bg-opacity-10 text-decoration-none rounded-3 p-2.5 text-white hover-card-translucent transition">
-                            <div class="text-info-subtle mb-1 fs-5">🌿</div>
+                            <div class="text-info-subtle mb-1 fs-5"><i class="bi bi-tree-fill" aria-hidden="true"></i></div>
                             <div class="fw-bold fs-4 mb-0 text-white">@Model.GrowingNowCount</div>
                             <div class="text-white-50" style="font-size: 0.75rem;">@L["In-Field"]</div>
                         </a>
@@ -105,7 +114,7 @@
 
             <!-- Category Filter -->
             <div class="col-6 col-md-4 col-lg-2">
-                <select name="category" class="form-select bg-light" onchange="this.form.submit()">
+                <select name="category" class="form-select bg-light" data-onchange="this.form.submit()">
                     @foreach (var cat in Model.Categories)
                     {
                         <option value="@cat.Value" selected="@(Model.SelectedCategory == cat.Value)">
@@ -117,7 +126,7 @@
 
             <!-- Season Filter -->
             <div class="col-6 col-md-4 col-lg-2">
-                <select name="season" class="form-select bg-light" onchange="this.form.submit()">
+                <select name="season" class="form-select bg-light" data-onchange="this.form.submit()">
                     @foreach (var sea in Model.Seasons)
                     {
                         <option value="@sea.Value" selected="@(Model.SelectedSeason == sea.Value)">
@@ -129,7 +138,7 @@
 
             <!-- Regional Division Filter -->
             <div class="col-6 col-md-4 col-lg-2">
-                <select name="division" class="form-select bg-light" onchange="this.form.submit()">
+                <select name="division" class="form-select bg-light" data-onchange="this.form.submit()">
                     @foreach (var div in Model.Divisions)
                     {
                         <option value="@div.Value" selected="@(Model.SelectedDivision == div.Value)">
@@ -141,11 +150,11 @@
 
             <!-- Active Stage Filter -->
             <div class="col-6 col-md-4 col-lg-2">
-                <select name="stage" class="form-select bg-light" onchange="this.form.submit()">
+                <select name="stage" class="form-select bg-light" data-onchange="this.form.submit()">
                     <option value="All" selected="@(Model.SelectedStage == "All")">@L["All Growth Stages"]</option>
-                    <option value="Sowing" selected="@(Model.SelectedStage == "Sowing")">🌱 @L["Sowing Stage"]</option>
-                    <option value="Growing" selected="@(Model.SelectedStage == "Growing")">🌿 @L["Growing Stage"]</option>
-                    <option value="Harvesting" selected="@(Model.SelectedStage == "Harvesting")">🌾 @L["Harvesting Stage"]</option>
+                    <option value="Sowing" selected="@(Model.SelectedStage == "Sowing")">@L["Sowing Stage"]</option>
+                    <option value="Growing" selected="@(Model.SelectedStage == "Growing")">@L["Growing Stage"]</option>
+                    <option value="Harvesting" selected="@(Model.SelectedStage == "Harvesting")">@L["Harvesting Stage"]</option>
                 </select>
             </div>
 
@@ -169,11 +178,11 @@
             </a>
             <a href="@Url.Action("Calendar", "Advisory", new { stage = "Sowing", category = Model.SelectedCategory, season = Model.SelectedSeason, division = Model.SelectedDivision })"
                class="badge rounded-pill text-decoration-none px-3 py-1.5 @(Model.SelectedStage == "Sowing" ? "bg-success text-white" : "bg-light text-dark border")">
-                🌱 @L["Sowing Now"]
+                <i class="bi bi-flower1 me-1" aria-hidden="true"></i>@L["Sowing Now"]
             </a>
             <a href="@Url.Action("Calendar", "Advisory", new { stage = "Harvesting", category = Model.SelectedCategory, season = Model.SelectedSeason, division = Model.SelectedDivision })"
                class="badge rounded-pill text-decoration-none px-3 py-1.5 @(Model.SelectedStage == "Harvesting" ? "bg-success text-white" : "bg-light text-dark border")">
-                🌾 @L["Harvesting Now"]
+                <i class="bi bi-basket2-fill me-1" aria-hidden="true"></i>@L["Harvesting Now"]
             </a>
             <a href="@Url.Action("Calendar", "Advisory", new { season = "Rabi" })"
                class="badge rounded-pill text-decoration-none px-3 py-1.5 @(Model.SelectedSeason == "Rabi" ? "bg-warning text-dark fw-bold" : "bg-light text-dark border")">
@@ -190,10 +199,10 @@
 
             <!-- View Switcher -->
             <div class="ms-auto btn-group btn-group-sm" role="group" aria-label="View toggle">
-                <button type="button" class="btn btn-outline-success active" id="tableViewBtn" onclick="switchView('table')">
+                <button type="button" class="btn btn-outline-success active" id="tableViewBtn" data-onclick="switchView('table')">
                     <i class="bi bi-table me-1"></i>@L["Timeline Matrix"]
                 </button>
-                <button type="button" class="btn btn-outline-success" id="cardViewBtn" onclick="switchView('card')">
+                <button type="button" class="btn btn-outline-success" id="cardViewBtn" data-onclick="switchView('card')">
                     <i class="bi bi-grid-fill me-1"></i>@L["Crop Cards"]
                 </button>
             </div>
@@ -207,15 +216,15 @@
         <span class="fw-bold text-dark">@L["Timeline Legend:"]</span>
         <span class="d-inline-flex align-items-center gap-1.5">
             <span class="badge bg-success rounded-circle p-1" style="width: 14px; height: 14px; display: inline-block;"></span>
-            <span class="text-secondary fw-semibold">@L["🌱 Sowing / Transplanting"]</span>
+            <span class="text-secondary fw-semibold">@L["Sowing / Transplanting"]</span>
         </span>
         <span class="d-inline-flex align-items-center gap-1.5">
             <span class="badge bg-info bg-opacity-75 rounded-circle p-1" style="width: 14px; height: 14px; display: inline-block;"></span>
-            <span class="text-secondary fw-semibold">@L["🌿 Growing / Vegetative"]</span>
+            <span class="text-secondary fw-semibold">@L["Growing / Vegetative"]</span>
         </span>
         <span class="d-inline-flex align-items-center gap-1.5">
             <span class="badge bg-warning rounded-circle p-1" style="width: 14px; height: 14px; display: inline-block;"></span>
-            <span class="text-secondary fw-semibold">@L["🌾 Harvesting / Reaping"]</span>
+            <span class="text-secondary fw-semibold">@L["Harvesting / Reaping"]</span>
         </span>
     </div>
     <div class="text-muted small">
@@ -297,21 +306,21 @@ else
                                     {
                                         <div class="crop-phase-pill bg-success text-white fw-bold shadow-sm"
                                              data-bs-toggle="tooltip" data-bs-title='@L["Sowing & Seedbed: {0}", crop.Name]'>
-                                            🌱
+                                            <i class="bi bi-flower1" aria-hidden="true"></i>
                                         </div>
                                     }
                                     else if (phase == "harvesting")
                                     {
                                         <div class="crop-phase-pill bg-warning text-dark fw-bold shadow-sm"
                                              data-bs-toggle="tooltip" data-bs-title='@L["Harvesting & Reaping: {0}", crop.Name]'>
-                                            🌾
+                                            <i class="bi bi-basket2-fill" aria-hidden="true"></i>
                                         </div>
                                     }
                                     else if (phase == "growing")
                                     {
                                         <div class="crop-phase-pill bg-info bg-opacity-75 text-white fw-semibold"
                                              data-bs-toggle="tooltip" data-bs-title='@L["Growing & Tillering: {0}", crop.Name]'>
-                                            🌿
+                                            <i class="bi bi-tree-fill" aria-hidden="true"></i>
                                         </div>
                                     }
                                     else
@@ -324,7 +333,7 @@ else
                             <!-- Details Modal Trigger -->
                             <td class="text-center px-2">
                                 <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-1 fw-semibold"
-                                        onclick="showCropModal(@crop.Id)">
+                                        data-onclick="showCropModal(@crop.Id)">
                                     <i class="bi bi-info-circle me-1"></i>@L["Guide"]
                                 </button>
                             </td>
@@ -387,18 +396,34 @@ else
                             <ul class="list-unstyled small text-secondary mb-3 d-flex flex-column gap-1.5">
                                 <li><strong>@L["Duration:"]</strong> @crop.DurationDays</li>
                                 <li><strong>@L["Optimal Temp:"]</strong> @crop.OptimalTemperature</li>
-                                <li><strong>@L["Soil:"]</strong> @crop.SoilTypes</li>
+                                <li><strong>@L["Soil:"]</strong> @crop.SoilFor(isBangla)</li>
+                                <li><strong>@L["Water"]:</strong> @crop.WaterFor(isBangla)</li>
                                 <li><strong>@L["Varieties:"]</strong> <span class="text-dark">@crop.PopularVarieties</span></li>
                             </ul>
 
                             <p class="small text-muted mb-0 bg-light p-2.5 rounded-3 border">
-                                <i class="bi bi-lightbulb-fill text-warning me-1"></i>@crop.KeyTips
+                                <i class="bi bi-lightbulb-fill text-warning me-1"></i>@crop.TipsFor(isBangla)
                             </p>
+                            @if (!string.IsNullOrWhiteSpace(crop.Source))
+                            {
+                                <p class="small text-muted mt-2 mb-0">@L["Source: {0} crop calendar", crop.Source]</p>
+                            }
                         </div>
 
-                        <div class="card-footer bg-white border-top p-3 text-end">
+                        <div class="card-footer bg-white border-top p-3 d-flex flex-wrap justify-content-end gap-2">
+                            @if (User.IsInRole(KrishiLink.Models.Entities.AppRoles.Farmer))
+                            {
+                                var sowFrom = CropNeeds.NextStart(crop.SowingMonths.FirstOrDefault(KrishiLink.BLL.Helpers.BangladeshClock.Today.Month), KrishiLink.BLL.Helpers.BangladeshClock.Today);
+                                <form asp-controller="HarvestPlan" asp-action="Create" method="post" class="d-inline">
+                                    <input type="hidden" name="name" value="@((isBangla ? crop.BanglaName : crop.Name) + " — " + sowFrom.ToString("MMM yyyy"))" />
+                                    <input type="hidden" name="crop" value="@crop.Name" />
+                                    <button type="submit" class="btn btn-sm btn-krishi-primary rounded-pill px-3 py-1.5 fw-semibold">
+                                        <i class="bi bi-cart-plus me-1" aria-hidden="true"></i>@L["Add to Harvest Plan"]
+                                    </button>
+                                </form>
+                            }
                             <button type="button" class="btn btn-sm btn-krishi-outline rounded-pill px-3 py-1.5 fw-semibold"
-                                    onclick="showCropModal(@crop.Id)">
+                                    data-onclick="showCropModal(@crop.Id)">
                                 <i class="bi bi-journal-text me-1"></i>@L["Full Cultivation Guide"]
                             </button>
                         </div>
@@ -548,13 +573,13 @@ else
                             <div class="row g-3 mb-4">
                                 <div class="col-12 col-md-6">
                                     <div class="p-3 bg-success bg-opacity-10 rounded-3 border border-success-subtle h-100">
-                                        <div class="fw-bold text-success mb-1 small text-uppercase">🌱 @L["Sowing & Transplanting Window"]</div>
+                                        <div class="fw-bold text-success mb-1 small text-uppercase"><i class="bi bi-flower1 me-1" aria-hidden="true"></i>@L["Sowing & Transplanting Window"]</div>
                                         <p class="mb-0 text-dark fw-semibold">${sowingList}</p>
                                     </div>
                                 </div>
                                 <div class="col-12 col-md-6">
                                     <div class="p-3 bg-warning bg-opacity-10 rounded-3 border border-warning-subtle h-100">
-                                        <div class="fw-bold text-warning-emphasis mb-1 small text-uppercase">🌾 @L["Harvesting & Reaping Window"]</div>
+                                        <div class="fw-bold text-warning-emphasis mb-1 small text-uppercase"><i class="bi bi-basket2-fill me-1" aria-hidden="true"></i>@L["Harvesting & Reaping Window"]</div>
                                         <p class="mb-0 text-dark fw-semibold">${harvestingList}</p>
                                     </div>
                                 </div>
@@ -576,13 +601,13 @@ else
                                 <div class="col-12 col-md-6">
                                     <div class="p-3 bg-light rounded-3 border h-100">
                                         <span class="text-muted small fw-bold d-block mb-1 text-uppercase">@L["Suitable Soil Types"]</span>
-                                        <p class="mb-0 text-dark small leading-relaxed">${crop.soilTypes}</p>
+                                        <p class="mb-0 text-dark small leading-relaxed">${isBangla && crop.soilTypesBn ? crop.soilTypesBn : crop.soilTypes}</p>
                                     </div>
                                 </div>
                                 <div class="col-12 col-md-6">
                                     <div class="p-3 bg-light rounded-3 border h-100">
                                         <span class="text-muted small fw-bold d-block mb-1 text-uppercase">@L["Water & Irrigation Needs"]</span>
-                                        <p class="mb-0 text-dark small leading-relaxed">${crop.waterRequirement}</p>
+                                        <p class="mb-0 text-dark small leading-relaxed">${isBangla && crop.waterRequirementBn ? crop.waterRequirementBn : crop.waterRequirement}</p>
                                     </div>
                                 </div>
                                 <div class="col-12">
@@ -594,17 +619,17 @@ else
                                 <div class="col-12">
                                     <div class="p-3 bg-light rounded-3 border">
                                         <span class="text-muted small fw-bold d-block mb-1 text-uppercase">@L["Key Agronomic Tips & Precautions"]</span>
-                                        <p class="mb-0 text-dark small leading-relaxed">${crop.keyTips}</p>
+                                        <p class="mb-0 text-dark small leading-relaxed">${isBangla && crop.keyTipsBn ? crop.keyTipsBn : crop.keyTips}</p>
                                     </div>
                                 </div>
                             </div>
                         `;
                     } else {
-                        contentEl.innerHTML = `<div class="alert alert-danger mb-0">Failed to load crop details.</div>`;
+                        contentEl.innerHTML = `<div class="alert alert-danger mb-0">@L["Could not load this crop's details. Please try again."]</div>`;
                     }
                 })
                 .catch(err => {
-                    contentEl.innerHTML = `<div class="alert alert-danger mb-0">Error connecting to server.</div>`;
+                    contentEl.innerHTML = `<div class="alert alert-danger mb-0">@L["Could not reach KrishiLink. Check your connection and try again."]</div>`;
                 });
         }
     </script>

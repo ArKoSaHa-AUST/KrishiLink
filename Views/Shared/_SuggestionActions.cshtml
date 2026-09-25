@@ -1,0 +1,26 @@
+@model WeatherSuggestionItem
+@*
+    Done / snooze for one weather nudge (ADV-08). Signed-in users only; ViewData["FromDashboard"] returns there afterwards.
+*@
+@if (User.Identity?.IsAuthenticated == true && !string.IsNullOrEmpty(Model.StateKey))
+{
+    var fromDashboard = ViewData["FromDashboard"] is true;
+    <div class="d-flex flex-wrap gap-2 mt-2 krishi-suggestion-actions">
+        <form asp-controller="Advisory" asp-action="SuggestionState" method="post" class="d-inline">
+            <input type="hidden" name="key" value="@Model.StateKey" />
+            <input type="hidden" name="state" value="@KrishiLink.Models.Entities.SuggestionStateKind.Done" />
+            <input type="hidden" name="fromDashboard" value="@(fromDashboard ? "true" : "false")" />
+            <button type="submit" class="btn btn-sm btn-link px-1 text-success fw-semibold">
+                <i class="bi bi-check2-circle me-1" aria-hidden="true"></i>@L["Done"]
+            </button>
+        </form>
+        <form asp-controller="Advisory" asp-action="SuggestionState" method="post" class="d-inline">
+            <input type="hidden" name="key" value="@Model.StateKey" />
+            <input type="hidden" name="state" value="@KrishiLink.Models.Entities.SuggestionStateKind.Snoozed" />
+            <input type="hidden" name="fromDashboard" value="@(fromDashboard ? "true" : "false")" />
+            <button type="submit" class="btn btn-sm btn-link px-1 text-secondary fw-semibold">
+                <i class="bi bi-alarm me-1" aria-hidden="true"></i>@L["Snooze 3 days"]
+            </button>
+        </form>
+    </div>
+}

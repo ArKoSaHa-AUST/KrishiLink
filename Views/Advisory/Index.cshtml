@@ -1,6 +1,39 @@
-﻿@model KrishiLink.Models.ViewModels.CropAdvisoryViewModel
+@model KrishiLink.Models.ViewModels.CropAdvisoryViewModel
+@using System.Globalization
+@using KrishiLink.BLL.Helpers
 @{
     ViewData["Title"] = L["Crop Advisory & Recommendations"].Value;
+    var bn = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+    var result = Model.Result;
+    string Inv(double value) => value.ToString("0.#", CultureInfo.InvariantCulture);
+
+    var soilLabels = new Dictionary<string, string>
+    {
+        ["Clay Loam"] = L["Clay Loam (Atel-Doash)"],
+        ["Loam"] = L["Loam (Doash)"],
+        ["Sandy Loam"] = L["Sandy Loam (Bele-Doash)"],
+        ["Silt Loam"] = L["Silt Loam (Poli-Doash)"],
+        ["Alluvial / Silt"] = L["Alluvial Silt (Poli)"],
+        ["Clay"] = L["Heavy Clay (Atel)"],
+        ["Sandy"] = L["Sandy (Bele)"],
+        ["Not sure"] = L["Not sure"]
+    };
+
+    string? YieldText(CropMatch m)
+    {
+        if (m.YieldMinTonnes is not { } lo || m.YieldMaxTonnes is not { } hi) return null;
+        var range = UnitFormat.WeightRange(lo * 1000, hi * 1000, L);
+        return m.YieldIsPerAcre
+            ? L["≈ {0} per acre", range].Value
+            : L["≈ {0} on your {1}", range, UnitFormat.Land(result!.Input.LandSizeDecimal!.Value, Model.LandUnit, L)].Value;
+    }
+
+    (string Icon, string Tone, string Label) StateStyle(FactorState state) => state switch
+    {
+        FactorState.Met => ("bi-check-circle-fill", "text-success", L["met"].Value),
+        FactorState.Partial => ("bi-circle-half", "text-warning-emphasis", L["partly met"].Value),
+        _ => ("bi-x-circle-fill", "text-danger", L["not met"].Value)
+    };
 }
 
 <!-- Page Header & Tab Navigation -->
@@ -10,7 +43,7 @@
             <i class="bi bi-cpu text-success me-2"></i>@L["Smart Crop Advisory"]
         </h2>
         <p class="mb-0 text-muted">
-            @L["Get personalized, rule-based crop recommendations and cultivation guides customized for your soil, region, and season."]
+            @L["Crops scored against your season, soil, water and district using the DAE crop calendar, with every point explained."]
         </p>
     </div>
 
@@ -25,6 +58,10 @@
                 <i class="bi bi-calendar-week"></i>
                 <span>@L["Crop Calendar"]</span>
             </a>
+            <a asp-controller="Advisory" asp-action="Planner" class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-muted d-flex align-items-center gap-1.5">
+                <i class="bi bi-calendar2-check"></i>
+                <span>@L["Planner"]</span>
+            </a>
             <a asp-controller="Advisory" asp-action="Alerts" class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-muted d-flex align-items-center gap-1.5">
                 <i class="bi bi-shield-shaded"></i>
                 <span>@L["Pest Alerts"]</span>
@@ -36,11 +73,12 @@
         </div>
         @if (Model.HasSubmitted)
         {
-            <button type="button" class="btn btn-krishi-outline rounded-pill px-3 py-2 btn-sm fw-semibold flex-shrink-0" onclick="scrollToForm()">
+            <button type="button" class="btn btn-krishi-outline rounded-pill px-3 py-2 btn-sm fw-semibold flex-shrink-0" data-onclick="scrollToForm()">
                 @L["Edit Farm Details"]
             </button>
         }
     </div>
+    <partial name="_AdvisoryContext" model="@(new AdvisoryContextViewModel { District = Model.Context.District, Crop = Model.Context.Crop, Source = Model.Context.Source, IsSignedIn = Model.Context.IsSignedIn, ChangeAnchor = "#advisoryFormCard" })" />
 </div>
 
 <!-- STEP 1: FARM DETAILS FORM -->
@@ -51,22 +89,27 @@
         <h5 class="fw-bold mb-0 text-dark">@L["Enter Your Farm Details"]</h5>
     </div>
 
-    <form asp-controller="Advisory" asp-action="Index" method="post" id="cropForm" onsubmit="showAnalyzingState(event)">
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-warning small" role="alert">@L["Please check the highlighted details and try again."]</div>
+    }
+
+    <form asp-controller="Advisory" asp-action="Index" method="post" id="cropForm" data-onsubmit="showAnalyzingState(event)">
         <div class="row g-3 g-md-4">
-            
-            <!-- Location -->
-            <div class="col-12 col-md-6 col-lg-4">
-                <label asp-for="Location" class="form-label small fw-bold text-dark">
-                    @L["Region / Location"] <span class="text-danger">*</span>
-                </label>
-                <select asp-for="Location" class="form-select form-select-lg rounded-3 fs-6">
-                    <option value="Bogra, Rajshahi Division">@L["Bogra, Rajshahi Division"]</option>
-                    <option value="Dinajpur, Rangpur Division">@L["Dinajpur, Rangpur Division"]</option>
-                    <option value="Mymensingh, Mymensingh Division">@L["Mymensingh, Mymensingh Division"]</option>
-                    <option value="Jessore, Khulna Division">@L["Jessore, Khulna Division"]</option>
-                    <option value="Comilla, Chittagong Division">@L["Comilla, Chittagong Division"]</option>
-                    <option value="Sylhet Sadar, Sylhet Division">@L["Sylhet Sadar, Sylhet Division"]</option>
-                </select>
+
+            <!-- Location: the shared division → district picker -->
+            <div class="col-12 col-lg-8">
+                <div class="row g-3">
+                    <partial name="_GeoSelector" model="@(new GeoSelectorViewModel {
+                        SelectedDistrict = Model.District,
+                        SelectedDivision = Model.Division,
+                        DivisionLabel = L["Division"].Value,
+                        DistrictLabel = L["District"].Value,
+                        Size = "lg",
+                        IdPrefix = "advisor",
+                        ColumnClass = "col-12 col-md-6"
+                    })" />
+                </div>
             </div>
 
             <!-- Season -->
@@ -75,9 +118,10 @@
                     @L["Cropping Season"] <span class="text-danger">*</span>
                 </label>
                 <select asp-for="Season" class="form-select form-select-lg rounded-3 fs-6">
-                    <option value="Rabi (Winter)">@L["Rabi (Winter - Nov to Mar)"]</option>
-                    <option value="Kharif-1 (Early Summer)">@L["Kharif-1 (Early Summer - Apr to Jun)"]</option>
-                    <option value="Kharif-2 (Monsoon)">@L["Kharif-2 (Monsoon - Jul to Oct)"]</option>
+                    @foreach (var season in CropAdvisorScorer.SeasonValues)
+                    {
+                        <option value="@season" selected="@(Model.Season.StartsWith(season, StringComparison.OrdinalIgnoreCase))">@CropAdvisorScorer.SeasonLabel(season, L)</option>
+                    }
                 </select>
             </div>
 
@@ -87,62 +131,68 @@
                     @L["Soil Type"] <span class="text-danger">*</span>
                 </label>
                 <select asp-for="SoilType" class="form-select form-select-lg rounded-3 fs-6">
-                    <option value="Clay Loam">@L["Clay Loam (Atel-Doash)"]</option>
-                    <option value="Alluvial / Silt">@L["Alluvial / Silt (Poli)"]</option>
-                    <option value="Sandy Loam">@L["Sandy Loam (Bele-Doash)"]</option>
-                    <option value="Clay">@L["Heavy Clay (Atel)"]</option>
-                    <option value="Don't know / Not sure">@L["Don't know / Not sure"]</option>
+                    @foreach (var option in SoilClassifier.FormOptions)
+                    {
+                        <option value="@option.Value" selected="@(option.Value == Model.SoilType)">@soilLabels[option.Value]</option>
+                    }
                 </select>
             </div>
 
-            <!-- Soil pH (Optional Slider) -->
+            <!-- Soil pH -->
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <label asp-for="SoilPh" class="form-label small fw-bold text-dark mb-0">
-                        @L["Soil pH Level"] <span class="text-muted">@L["(Optional)"]</span>
-                    </label>
-                    <span id="phValueBadge" class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">pH 6.5</span>
+                    <label for="soilPhSlider" class="form-label small fw-bold text-dark mb-0">@L["Soil pH Level"]</label>
+                    <span id="phValueBadge" class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" data-neutral="@L["Neutral"]" data-acidic="@L["Acidic"]" data-alkaline="@L["Alkaline"]">pH @Inv(Model.SoilPh ?? 6.5)</span>
                 </div>
-                <input type="range" class="form-range py-2" id="soilPhSlider" asp-for="SoilPh" min="4.5" max="8.5" step="0.1" oninput="updatePhDisplay(this.value)" />
+                <input type="range" class="form-range py-2" id="soilPhSlider" name="SoilPh" value="@Inv(Model.SoilPh ?? 6.5)" min="4.5" max="8.5" step="0.1"
+                       data-oninput="updatePhDisplay(this.value)" disabled="@Model.PhUnknown" />
                 <div class="d-flex justify-content-between small text-muted">
                     <span>@L["4.5 (Acidic)"]</span>
                     <span>@L["6.5 (Neutral)"]</span>
                     <span>@L["8.5 (Alkaline)"]</span>
                 </div>
+                <div class="form-check mt-1">
+                    <input class="form-check-input" type="checkbox" id="phUnknown" name="PhUnknown" value="true" checked="@Model.PhUnknown" />
+                    <label class="form-check-label small" for="phUnknown">@L["Not tested / I don't know"]</label>
+                </div>
+                @if (ViewData.ModelState[nameof(Model.SoilPh)]?.Errors.Count > 0)
+                {
+                    <div class="invalid-feedback d-block">@L["Soil pH must be between 3.5 and 9.5."]</div>
+                }
             </div>
 
             <!-- Land Size -->
             <div class="col-12 col-md-6 col-lg-4">
-                <label asp-for="LandSizeDecimal" class="form-label small fw-bold text-dark">
-                    @L["Land Size"] <span class="text-muted">@L["(Decimal / Shatangsho)"]</span>
-                </label>
+                <label asp-for="LandSize" class="form-label small fw-bold text-dark">@L["Land Size"]</label>
                 <div class="input-group input-group-lg rounded-3 overflow-hidden">
-                    <input asp-for="LandSizeDecimal" type="number" class="form-control fs-6" placeholder='@L["e.g. 50"]' min="1" step="1" />
-                    <span class="input-group-text bg-light text-muted small">@L["Decimals"]</span>
+                    <input asp-for="LandSize" type="number" inputmode="decimal" class="form-control fs-6" placeholder='@L["e.g. 50"]' min="0.01" max="100000" step="0.01" />
+                    <select asp-for="LandUnit" class="form-select fs-6 krishi-unit-select" aria-label="@L["Land unit"]">
+                        @foreach (var unit in UnitFormat.LandUnits)
+                        {
+                            <option value="@unit">@UnitFormat.UnitName(unit, L)</option>
+                        }
+                    </select>
                 </div>
+                <div class="form-text">@L["1 bigha = 33 decimal; 1 acre = 100 decimal."]</div>
+                @if (ViewData.ModelState[nameof(Model.LandSize)]?.Errors.Count > 0)
+                {
+                    <div class="invalid-feedback d-block">@L["Enter a land size greater than zero."]</div>
+                }
             </div>
 
-            <!-- Irrigation Availability (Toggle) -->
+            <!-- Irrigation -->
             <div class="col-12 col-md-6 col-lg-4">
-                <label class="form-label small fw-bold text-dark mb-2">
-                    @L["Assured Irrigation Available?"]
-                </label>
-                <div class="btn-group w-100" role="group" aria-label='@L["Irrigation toggle"]'>
+                <span class="form-label small fw-bold text-dark mb-2 d-block" id="irrigationLabel">@L["Assured Irrigation Available?"]</span>
+                <div class="btn-group w-100" role="group" aria-labelledby="irrigationLabel">
                     <input type="radio" class="btn-check" name="HasIrrigation" id="irrigationYes" value="true" @(Model.HasIrrigation ? "checked" : "") />
-                    <label class="btn btn-outline-success py-2.5 fw-semibold" for="irrigationYes">
-                        @L["Yes (Pump / Canal)"]
-                    </label>
+                    <label class="btn btn-outline-success py-2.5 fw-semibold" for="irrigationYes">@L["Yes (Pump / Canal)"]</label>
 
                     <input type="radio" class="btn-check" name="HasIrrigation" id="irrigationNo" value="false" @(!Model.HasIrrigation ? "checked" : "") />
-                    <label class="btn btn-outline-secondary py-2.5 fw-semibold" for="irrigationNo">
-                        @L["No (Rainfed)"]
-                    </label>
+                    <label class="btn btn-outline-secondary py-2.5 fw-semibold" for="irrigationNo">@L["No (Rainfed)"]</label>
                 </div>
             </div>
-
         </div>
 
-        <!-- Submit Button & Loading State -->
         <div class="mt-4 pt-3 border-top text-end">
             <button type="submit" id="getRecommendationBtn" class="btn btn-krishi-primary px-5 py-3 rounded-pill fw-bold fs-6 d-inline-flex align-items-center gap-2 shadow-sm">
                 @L["Get Recommendation"]
@@ -150,161 +200,209 @@
         </div>
     </form>
 
-    <!-- Simulating Loading Overlay -->
     <div id="analyzingOverlay" class="d-none position-relative text-center py-5">
         <div class="spinner-border text-success mb-3" role="status" style="width: 3rem; height: 3rem;">
             <span class="visually-hidden">@L["Loading..."]</span>
         </div>
-        <h5 class="fw-bold text-dark mb-1">@L["Analyzing your farm details..."]</h5>
-        <p class="text-muted small">@L["Matching soil pH, season, and regional climate data for maximum yield..."]</p>
+        <h5 class="fw-bold text-dark mb-1">@L["Scoring crops for your farm..."]</h5>
     </div>
 </div>
 
-<!-- STEP 2: RESULTS & RECOMMENDED CROPS -->
-@if (Model.HasSubmitted)
+@* One result card: the score, its full derivation, and seeded cultivation details — nothing invented. *@
+@{
+    async Task RenderCard(CropMatch match, bool weak)
+    {
+        var crop = match.Crop;
+        var name = bn && !string.IsNullOrWhiteSpace(crop.BanglaName) ? crop.BanglaName : crop.Name;
+        var yield = YieldText(match);
+        var detailsId = $"cropDetails-{crop.Id}";
+        <article class="card krishi-card border-0 shadow-sm overflow-hidden krishi-advisor-card" aria-labelledby="cropName-@crop.Id">
+            <div class="card-body p-4">
+                <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+                    <div>
+                        <h3 class="h4 fw-bold text-dark mb-1" id="cropName-@crop.Id">@name</h3>
+                        <div class="small text-muted">
+                            <span class="fst-italic">@crop.ScientificName</span> · @CropAdvisorScorer.SeasonLabel(crop.Season, L)
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="krishi-advisor-score @(weak ? "is-weak" : "")">@match.Score<span>/100</span></div>
+                        <div class="small text-muted">@(weak ? L["weak match"] : L["match score"])</div>
+                    </div>
+                </div>
+
+                @foreach (var warning in match.Warnings)
+                {
+                    <div class="alert alert-warning d-flex align-items-start gap-2 py-2 px-3 small mb-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true"></i>
+                        <span>@warning.Reason</span>
+                    </div>
+                }
+
+                <h4 class="h6 fw-bold text-dark mb-2">@L["Why this score"]</h4>
+                <ul class="list-unstyled krishi-advisor-factors mb-3">
+                    @foreach (var factor in match.Factors)
+                    {
+                        var style = StateStyle(factor.State);
+                        <li>
+                            <i class="bi @style.Icon @style.Tone" aria-hidden="true"></i>
+                            <span class="visually-hidden">@style.Label:</span>
+                            <span class="fw-semibold">@factor.Name</span>
+                            <span class="text-secondary">@factor.Reason</span>
+                            <span class="krishi-advisor-points">@factor.Points/@factor.MaxPoints</span>
+                        </li>
+                    }
+                    <li class="krishi-advisor-total">
+                        <span class="fw-bold">@L["Total"]</span>
+                        <span class="krishi-advisor-points fw-bold">@match.Score/100</span>
+                    </li>
+                </ul>
+
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    @if (yield is not null)
+                    {
+                        <span class="badge bg-light text-dark border px-2.5 py-1.5 small">
+                            @L["Indicative yield:"] <strong>@yield</strong>
+                        </span>
+                    }
+                    <span class="small text-muted">@L["Source: {0} crop calendar", crop.Source]</span>
+                </div>
+
+                <partial name="_CropNeeds" model="@(new CropNeedsStrip(CropNeeds.For(crop, BangladeshClock.Today), result!.Input.District))" />
+
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-krishi-primary rounded-pill px-4 py-2 fw-semibold" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#@detailsId" aria-expanded="false" aria-controls="@detailsId">
+                        @L["Cultivation details"]
+                    </button>
+                    <a href="@AppLinks.CalendarForCrop(crop.Name)" class="btn btn-krishi-outline rounded-pill px-4 py-2 fw-semibold">@L["Open in crop calendar"]</a>
+                    @if (Model.CanSave)
+                    {
+                        <form asp-controller="Advisory" asp-action="Save" method="post" class="d-inline">
+                            <input type="hidden" name="cropId" value="@crop.Id" />
+                            <input type="hidden" name="District" value="@result!.Input.District" />
+                            <input type="hidden" name="Season" value="@result.Input.Season" />
+                            <input type="hidden" name="SoilType" value="@result.Input.SoilType" />
+                            <input type="hidden" name="HasIrrigation" value="@(result.Input.HasIrrigation ? "true" : "false")" />
+                            @if (result.Input.SoilPh is { } ph)
+                            {
+                                <input type="hidden" name="SoilPh" value="@Inv(ph)" />
+                            }
+                            else
+                            {
+                                <input type="hidden" name="PhUnknown" value="true" />
+                            }
+                            @if (result.Input.LandSizeDecimal is { } land)
+                            {
+                                <input type="hidden" name="LandSize" value="@Inv(land)" />
+                                <input type="hidden" name="LandUnit" value="@KrishiLink.Models.Entities.LandUnit.Decimal" />
+                            }
+                            <button type="submit" class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-semibold">
+                                <i class="bi bi-bookmark-plus me-1" aria-hidden="true"></i>@L["Save to dashboard"]
+                            </button>
+                        </form>
+                    }
+                    else if (User.Identity?.IsAuthenticated != true)
+                    {
+                        <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Index", "Advisory")" class="btn btn-link px-2">@L["Sign in to save"]</a>
+                    }
+                </div>
+            </div>
+
+            <div class="collapse" id="@detailsId">
+                <div class="card-body p-4 bg-light border-top">
+                    <dl class="row small mb-0 krishi-advisor-details">
+                        <dt class="col-sm-4">@L["Sowing"]</dt>
+                        <dd class="col-sm-8">@CropAdvisorScorer.Months(crop.SowingMonths)</dd>
+                        <dt class="col-sm-4">@L["Growing"]</dt>
+                        <dd class="col-sm-8">@CropAdvisorScorer.Months(crop.GrowingMonths)</dd>
+                        <dt class="col-sm-4">@L["Harvest"]</dt>
+                        <dd class="col-sm-8">@CropAdvisorScorer.Months(crop.HarvestingMonths)</dd>
+                        <dt class="col-sm-4">@L["Harvest Duration"]</dt>
+                        <dd class="col-sm-8">@crop.DurationDays</dd>
+                        <dt class="col-sm-4">@L["Optimal temperature"]</dt>
+                        <dd class="col-sm-8">@crop.OptimalTemperature</dd>
+                        <dt class="col-sm-4">@L["Soil"]</dt>
+                        <dd class="col-sm-8">@(bn && !string.IsNullOrWhiteSpace(crop.SoilTypesBn) ? crop.SoilTypesBn : crop.SoilTypes)</dd>
+                        <dt class="col-sm-4">@L["Water"]</dt>
+                        <dd class="col-sm-8">@(bn && !string.IsNullOrWhiteSpace(crop.WaterRequirementBn) ? crop.WaterRequirementBn : crop.WaterRequirement)</dd>
+                        <dt class="col-sm-4">@L["Popular varieties"]</dt>
+                        <dd class="col-sm-8">@crop.PopularVarieties</dd>
+                        <dt class="col-sm-4">@L["Key tips"]</dt>
+                        <dd class="col-sm-8">@(bn && !string.IsNullOrWhiteSpace(crop.KeyTipsBn) ? crop.KeyTipsBn : crop.KeyTips)</dd>
+                    </dl>
+                    <p class="small text-muted mt-3 mb-0">
+                        @L["Yields are indicative ranges from the {0}-attributed calendar entry; your field may differ. Fertilizer doses are not shown: ask your local Upazila Agriculture Office for a soil-test-based dose.", crop.Source]
+                    </p>
+                </div>
+            </div>
+        </article>
+    }
+}
+
+<!-- STEP 2: RESULTS -->
+@if (Model.HasSubmitted && result is not null)
 {
-    <div id="resultsSection" class="mb-5">
+    <section id="resultsSection" class="mb-5" aria-labelledby="resultsHeading">
         <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
             <div class="d-flex align-items-center justify-content-center rounded-circle text-white fw-bold"
                  style="width: 32px; height: 32px; background-color: var(--krishi-accent); font-size: 0.9rem;">2</div>
-            <h5 class="fw-bold mb-0 text-dark">@L["Top Recommended Crops for Your Farm"]</h5>
-            <span class="badge rounded-pill bg-success-subtle text-success ms-auto px-3 py-1.5 fw-semibold">
-                @L["Rule-Based Advisory Active"]
-            </span>
+            <h5 class="fw-bold mb-0 text-dark" id="resultsHeading">@L["Crops for your farm"]</h5>
         </div>
 
-        <!-- Weather-based Warning Strip -->
+        <p class="text-muted small mb-3">
+            @L["{0} · {1} · {2} soil · {3}", result.Input.District, CropAdvisorScorer.SeasonLabel(result.Input.Season, L), soilLabels[result.Input.SoilType], result.Input.HasIrrigation ? L["irrigated"] : L["rainfed"]]
+            @if (result.Input.LandSizeDecimal is { } landSize)
+            {
+                <text> · @UnitFormat.Land(landSize, Model.LandUnit, L)</text>
+            }
+        </p>
+
         @if (Model.WeatherAlert != null)
         {
-            <div class="card border-0 shadow-sm mb-4 rounded-3 overflow-hidden" style="background-color: #fffbeb; border-left: 5px solid #f59e0b !important;">
-                <div class="card-body p-3 p-md-4 d-flex align-items-start gap-3">
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="badge bg-warning text-dark font-monospace small px-2 py-0.5">@Model.WeatherAlert.BadgeText</span>
-                            <h6 class="fw-bold mb-0 text-dark">@Model.WeatherAlert.Title</h6>
-                        </div>
-                        <p class="mb-0 small text-secondary leading-relaxed">@Model.WeatherAlert.Message</p>
+            <div class="card border-0 shadow-sm mb-4 rounded-3 overflow-hidden" style="background-color: #fffbeb;">
+                <div class="card-body p-3 p-md-4">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge bg-warning text-dark small px-2 py-0.5">@Model.WeatherAlert.BadgeText</span>
+                        <h6 class="fw-bold mb-0 text-dark">@Model.WeatherAlert.Title</h6>
                     </div>
+                    <p class="mb-0 small text-secondary">@Model.WeatherAlert.Message</p>
                 </div>
             </div>
         }
 
-        <!-- Save Recommendation Action Bar -->
-        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <p class="text-muted small mb-0">@L["Found {0} top matching crops suitable for {1} in {2}.", Model.RecommendedCrops.Count, L[Model.Season].Value, L[Model.Location].Value]</p>
-            <button type="button" id="saveRecommendationBtn" class="btn btn-krishi-outline rounded-pill px-4 py-2 fw-semibold d-inline-flex align-items-center gap-2" onclick="saveRecommendation(this)">
-                <span id="saveBtnText">@L["Save this Recommendation"]</span>
-            </button>
-        </div>
-
-        <!-- Recommended Crop Cards Grid -->
-        <div class="row g-4">
-            @foreach (var crop in Model.RecommendedCrops)
+        @if (result.HasStrongMatch)
+        {
+            <p class="small text-muted mb-3">@L["{0} crops suit these details. Scores add up six factors: season 30, sowing time 20, soil 20, irrigation 15, region 10, pH 5.", result.Matches.Count]</p>
+            <div class="d-flex flex-column gap-4">
+                @foreach (var match in result.Matches)
+                {
+                    await RenderCard(match, weak: false);
+                }
+            </div>
+        }
+        else
+        {
+            <div class="card border-0 shadow-sm mb-4 krishi-advisor-empty">
+                <div class="card-body p-4">
+                    <h3 class="h5 fw-bold text-dark mb-2">@L["No strongly suited crop for this combination"]</h3>
+                    <p class="text-secondary mb-3">
+                        @L["Nothing in the crop calendar scores {0} or more for these details. The closest options are below, marked as weak matches; the full calendar lists every crop.", CropAdvisorScorer.StrongMatchFloor]
+                    </p>
+                    <a asp-controller="Advisory" asp-action="Calendar" class="btn btn-krishi-outline rounded-pill px-4">@L["Open the full crop calendar"]</a>
+                </div>
+            </div>
+            @if (result.ClosestOptions.Count > 0)
             {
-                <div class="col-12">
-                    <div class="card krishi-card border-0 shadow-sm overflow-hidden" style="border-radius: var(--krishi-radius-lg);">
-                        <!-- Card Header Summary -->
-                        <div class="card-body p-4 bg-white border-bottom">
-                            <div class="row align-items-center g-3">
-                                <div class="col">
-                                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-                                        <h4 class="fw-bold text-dark mb-0">@crop.CropName</h4>
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small fw-semibold">
-                                            @L["{0}% Match", crop.MatchPercentage]
-                                        </span>
-                                        <span class="text-muted small fst-italic">(@crop.ScientificName)</span>
-                                    </div>
-                                    <p class="text-secondary small mb-1">
-                                        @crop.MatchReason
-                                    </p>
-                                    <span class="badge bg-light text-dark border px-2.5 py-1 small">
-                                        @L["Expected Yield:"] <strong>@crop.YieldEstimate</strong>
-                                    </span>
-                                </div>
-                                <div class="col-12 col-md-auto text-md-end">
-                                    <button class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-semibold text-nowrap d-flex align-items-center gap-2"
-                                            type="button" data-bs-toggle="collapse" data-bs-target="#guideCollapse-@crop.Id" aria-expanded="false" aria-controls="guideCollapse-@crop.Id">
-                                        <span>@L["View Cultivation Guide"]</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Cultivation Guide Accordion Panel -->
-                        <div class="collapse" id="guideCollapse-@crop.Id">
-                            <div class="card-body p-4 bg-light">
-                                <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
-                                    @L["Complete Cultivation Guide & Advisory"]
-                                </h6>
-
-                                <div class="row g-3">
-                                    <!-- Growing Season -->
-                                    <div class="col-12 col-md-6">
-                                        <div class="p-3 bg-white rounded-3 border h-100">
-                                            <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
-                                                @L["Growing Season & Window"]
-                                            </span>
-                                            <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.GrowingSeason</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Water & Soil Requirements -->
-                                    <div class="col-12 col-md-6">
-                                        <div class="p-3 bg-white rounded-3 border h-100">
-                                            <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
-                                                @L["Water & Soil Requirements"]
-                                            </span>
-                                            <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.WaterAndSoilRequirements</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Duration -->
-                                    <div class="col-12 col-md-6">
-                                        <div class="p-3 bg-white rounded-3 border h-100">
-                                            <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
-                                                @L["Harvest Duration"]
-                                            </span>
-                                            <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.GrowingDuration</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Fertilizer Needs -->
-                                    <div class="col-12 col-md-6">
-                                        <div class="p-3 bg-white rounded-3 border h-100">
-                                            <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
-                                                @L["Recommended Fertilizer Application"]
-                                            </span>
-                                            <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.FertilizerNeeds</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Pest & Disease Management -->
-                                    <div class="col-12 col-md-6">
-                                        <div class="p-3 bg-white rounded-3 border h-100">
-                                            <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
-                                                @L["Common Pests & Disease Care"]
-                                            </span>
-                                            <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.CommonPestsAndDiseases</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Key Precautions -->
-                                    <div class="col-12 col-md-6">
-                                        <div class="p-3 bg-white rounded-3 border h-100">
-                                            <span class="text-muted small fw-bold d-block mb-1 text-uppercase">
-                                                @L["Key Precautions"]
-                                            </span>
-                                            <p class="mb-0 text-dark small leading-relaxed">@crop.CultivationGuide.Precautions</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="d-flex flex-column gap-4">
+                    @foreach (var match in result.ClosestOptions)
+                    {
+                        await RenderCard(match, weak: true);
+                    }
                 </div>
             }
-        </div>
-    </div>
+        }
+    </section>
 }
 
 @section Scripts {
@@ -312,40 +410,20 @@
         function updatePhDisplay(val) {
             const badge = document.getElementById('phValueBadge');
             if (!badge) return;
-            let label = "@L["Neutral"]";
-            if (val < 6.0) label = "@L["Acidic"]";
-            else if (val > 7.5) label = "@L["Alkaline"]";
+            // Localized labels come from data attributes: the browser decodes those, unlike text inside <script>.
+            let label = badge.dataset.neutral;
+            if (val < 6.0) label = badge.dataset.acidic;
+            else if (val > 7.5) label = badge.dataset.alkaline;
             badge.textContent = `pH ${val} (${label})`;
         }
 
         function showAnalyzingState(e) {
             const form = document.getElementById('cropForm');
             const overlay = document.getElementById('analyzingOverlay');
-            if (overlay && form) {
+            if (overlay && form && form.checkValidity()) {
                 form.classList.add('d-none');
                 overlay.classList.remove('d-none');
             }
-        }
-
-        function saveRecommendation(btn) {
-            const text = document.getElementById('saveBtnText');
-            if (btn) {
-                btn.disabled = true;
-                btn.classList.remove('btn-krishi-outline');
-                btn.classList.add('btn-success');
-            }
-            if (text) text.textContent = "@L["Recommendation Saved to Dashboard"]";
-
-            window.KrishiModal.confirm({
-                title: "@L["Recommendation Saved!"]",
-                body: `@L["This crop recommendation has been saved to your"] <strong>@L["Farmer Dashboard"]</strong> @L["for quick access during planting season."]`,
-                confirmText: "@L["Go to Dashboard"]",
-                cancelText: "@L["Stay on Page"]",
-                confirmClass: 'btn-krishi-primary',
-                onConfirm: function () {
-                    window.location.href = '@Url.Action("Dashboard", "Farmer")';
-                }
-            });
         }
 
         function scrollToForm() {
@@ -354,9 +432,21 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            const unknown = document.getElementById('phUnknown');
+            const slider = document.getElementById('soilPhSlider');
+            const badge = document.getElementById('phValueBadge');
+            if (unknown && slider) {
+                const sync = function () {
+                    slider.disabled = unknown.checked;
+                    if (badge) badge.classList.toggle('opacity-50', unknown.checked);
+                };
+                unknown.addEventListener('change', sync);
+                sync();
+            }
+
             const resultsSection = document.getElementById('resultsSection');
-            if (resultsSection && @Model.HasSubmitted.ToString().ToLower()) {
-                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (resultsSection) {
+                resultsSection.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
             }
         });
     </script>

@@ -1,0 +1,73 @@
+@model AgentProposalCardViewModel
+@*
+    A proposal from the assistant, rendered as an ordinary form that posts to the existing booking action
+    (/Equipment/SubmitRequest or /Godown/SubmitBooking). That action re-validates everything; this is only a pre-filled form.
+*@
+@{
+    var p = Model.Proposal;
+    var isEquipment = p.Type == AgentProposal.EquipmentType;
+    var titleId = $"agentProposal-{p.Id:N}";
+    // Bangladesh is UTC+6 all year, so the expiry is shown in the farmer's own clock.
+    var expiresLocal = p.ExpiresAtUtc.AddHours(6);
+}
+<section class="krishi-agent-proposal @(Model.CanSubmit ? "" : "is-closed")" aria-labelledby="@titleId">
+    <div class="krishi-agent-proposal-head">
+        <i class="bi @(isEquipment ? "bi-truck" : "bi-box-seam")" aria-hidden="true"></i>
+        <h3 class="krishi-agent-proposal-title mb-0" id="@titleId">
+            @(isEquipment ? L["Rental request, ready for you to confirm"] : L["Storage request, ready for you to confirm"])
+        </h3>
+    </div>
+
+    <a class="krishi-agent-proposal-listing" href="@p.DetailUrl">#@p.ListingId @p.ListingName</a>
+
+    <dl class="krishi-agent-terms">
+        <dt>@L["Dates"]</dt>
+        <dd>@p.StartDate.ToString("dd MMM yyyy") – @p.EndDate.ToString("dd MMM yyyy") <span class="krishi-agent-muted">· @L["{0} day(s)", p.Days]</span></dd>
+        <dt>@(isEquipment ? L["Units"] : L["Quantity"])</dt>
+        <dd>@(isEquipment ? p.Quantity.ToString("0") : L["{0} tons", p.Quantity.ToString("0.##")].Value)</dd>
+        @if (!string.IsNullOrWhiteSpace(p.CropType))
+        {
+            <dt>@L["Crop"]</dt>
+            <dd>@p.CropType</dd>
+        }
+        @if (!string.IsNullOrWhiteSpace(p.Note))
+        {
+            <dt>@L["Note to owner"]</dt>
+            <dd>@p.Note</dd>
+        }
+    </dl>
+
+    <div class="krishi-agent-total">
+        <span>@L["Estimated total"]</span>
+        <strong>@KrishiLink.BLL.Services.ListingFormat.Taka(p.QuotedGross)</strong>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(p.PricingNote))
+    {
+        <p class="krishi-agent-muted small mb-2">@p.PricingNote</p>
+    }
+
+    @if (Model.CanSubmit)
+    {
+        <form method="post" action="@p.FormAction" class="mb-0">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="@AgentProposal.FieldName" value="@p.Id" />
+            @foreach (var field in p.Fields)
+            {
+                <input type="hidden" name="@field.Key" value="@field.Value" />
+            }
+            <button type="submit" class="btn btn-krishi-primary w-100 rounded-pill fw-semibold">
+                <i class="bi bi-check2-circle me-1" aria-hidden="true"></i>@L["Confirm and send request"]
+            </button>
+        </form>
+        <p class="krishi-agent-fineprint mb-0">
+            @L["Nothing is booked until you confirm. The owner then accepts or declines, and you pay only after they accept. This draft is valid until {0}.", expiresLocal.ToString("h:mm tt")]
+        </p>
+    }
+    else
+    {
+        <p class="krishi-agent-closed mb-0">
+            <i class="bi @(Model.IsUsed ? "bi-check2-all" : "bi-hourglass-bottom")" aria-hidden="true"></i>
+            @(Model.IsUsed ? L["This request has already been sent."] : L["This draft has expired. Ask me again for a fresh one."])
+        </p>
+    }
+</section>

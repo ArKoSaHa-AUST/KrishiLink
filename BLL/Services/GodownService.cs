@@ -1,4 +1,5 @@
 using KrishiLink.BLL.Helpers;
+using KrishiLink.DAL;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
@@ -7,11 +8,17 @@ using Microsoft.Extensions.Options;
 
 namespace KrishiLink.BLL.Services
 {
-    public interface IGodownService
+    /// <summary>The public, read-only half of <see cref="IGodownService"/> (see <see cref="IEquipmentQueries"/>).</summary>
+    public interface IGodownQueries
     {
-        // Farmer / public
         Task<GodownBrowseViewModel> BrowseAsync(GodownSearchCriteria criteria);
         Task<GodownDetailViewModel?> GetDetailsAsync(int id, string? currentUserId = null);
+        Task<string?> CheckAvailabilityAsync(int godownId, double tons, DateTime start, DateTime end, int? excludeBookingId = null);
+    }
+
+    public interface IGodownService : IGodownQueries
+    {
+        // Farmer / public
 
         /// <summary>Creates a pending storage request. Returns a user-facing error message, or null on success.</summary>
         Task<string?> RequestStorageAsync(string farmerId, GodownDetailViewModel request, string? promoCode = null, int? pointsToRedeem = null);
@@ -33,7 +40,6 @@ namespace KrishiLink.BLL.Services
         Task<bool> SaveAvailabilityAsync(string ownerId, int godownId, DateTime month, IEnumerable<DateTime> blockedDates);
         Task<BulkAvailabilityResult> BlockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek, string? reason);
         Task<BulkAvailabilityResult> UnblockRangeAsync(string ownerId, int listingId, DateTime from, DateTime to, IReadOnlyCollection<DayOfWeek>? daysOfWeek);
-        Task<string?> CheckAvailabilityAsync(int godownId, double tons, DateTime start, DateTime end, int? excludeBookingId = null);
     }
 
     public class GodownService : IGodownService
@@ -100,14 +106,6 @@ namespace KrishiLink.BLL.Services
             var today = DateTime.Today;
             var query = _godowns.Query().Where(g => g.IsActive);
 
-            if (!string.IsNullOrWhiteSpace(c.SearchTerm))
-            {
-                var term = PostgresSearch.Contains(c.SearchTerm.Trim());
-                query = query.Where(g => EF.Functions.ILike(g.Name, term, "\\") || EF.Functions.ILike(g.StorageType, term, "\\")
-                    || EF.Functions.ILike(g.Location, term, "\\") || (g.District != null && EF.Functions.ILike(g.District, term, "\\"))
-                    || EF.Functions.ILike(g.Description, term, "\\") || EF.Functions.ILike(g.Facilities, term, "\\")
-                    || EF.Functions.ILike(g.Owner!.FullName, term, "\\"));
-            }
             if (c.SelectedStorageTypes is { Count: > 0 })
             {
                 var storageTypes = c.SelectedStorageTypes.Select(x => x.ToLowerInvariant()).ToArray();
@@ -116,14 +114,19 @@ namespace KrishiLink.BLL.Services
 
             var rawDistrict = !string.IsNullOrWhiteSpace(c.District) ? c.District : c.Location;
 
+            // "Within N km" replaces the district/division match: its circle deliberately crosses district borders (DIS-02).
+            var circle = GeoDistance.Circle(c.NearLat, c.NearLng, rawDistrict, c.RadiusKm);
+            if (circle is { } near)
+                query = GeoDistance.Within(query, near, g => g.Latitude, g => g.Longitude);
+
             // A division on its own means "anywhere in this division"; a district always wins.
-            if (string.IsNullOrWhiteSpace(rawDistrict) && BangladeshGeo.IsDivision(c.Division))
+            if (circle is null && string.IsNullOrWhiteSpace(rawDistrict) && BangladeshGeo.IsDivision(c.Division))
             {
                 var inDivision = BangladeshGeo.GetDistrictsForDivision(c.Division);
                 query = query.Where(g => g.District != null && inDivision.Contains(g.District));
             }
 
-            if (!string.IsNullOrWhiteSpace(rawDistrict))
+            if (circle is null && !string.IsNullOrWhiteSpace(rawDistrict))
             {
                 var targetDistrict = OnboardingOptions.GuessDistrict(rawDistrict.Trim()) ?? rawDistrict.Trim();
                 var alt = GetDistrictAlias(targetDistrict);
@@ -170,6 +173,27 @@ namespace KrishiLink.BLL.Services
                     .Sum(b => (double?)b.StorageTons) ?? 0)) > 0);
             }
 
+            // Text search runs last so the typo fallback can rerun against exactly the same filters (DIS-01).
+            var filtered = query;
+            string? tsQuery = null;
+            if (!string.IsNullOrWhiteSpace(c.SearchTerm))
+            {
+                var raw = c.SearchTerm.Trim();
+                var term = PostgresSearch.Contains(raw);
+                tsQuery = ListingSearch.ToTsQuery(raw, SearchSynonyms.Cached(AppContext.BaseDirectory));
+                // Full text (with Bangla/English synonyms) OR the literal substring match this page always had.
+                query = tsQuery is null
+                    ? query.Where(g => EF.Functions.ILike(g.Name, term, "\\") || EF.Functions.ILike(g.StorageType, term, "\\")
+                        || EF.Functions.ILike(g.Location, term, "\\") || (g.District != null && EF.Functions.ILike(g.District, term, "\\"))
+                        || EF.Functions.ILike(g.Description, term, "\\") || EF.Functions.ILike(g.Facilities, term, "\\")
+                        || EF.Functions.ILike(g.Owner!.FullName, term, "\\"))
+                    : query.Where(g => g.SearchVector.Matches(EF.Functions.ToTsQuery("simple", tsQuery))
+                        || EF.Functions.ILike(g.Name, term, "\\") || EF.Functions.ILike(g.StorageType, term, "\\")
+                        || EF.Functions.ILike(g.Location, term, "\\") || (g.District != null && EF.Functions.ILike(g.District, term, "\\"))
+                        || EF.Functions.ILike(g.Description, term, "\\") || EF.Functions.ILike(g.Facilities, term, "\\")
+                        || EF.Functions.ILike(g.Owner!.FullName, term, "\\"));
+            }
+
             var sort = (c.SortBy ?? "newest").ToLowerInvariant();
             query = sort switch
             {
@@ -178,14 +202,34 @@ namespace KrishiLink.BLL.Services
                 "capacity_desc" => query.OrderByDescending(g => g.CapacityInTons - (g.Bookings
                     .Where(b => BookingStatus.Confirmed.Contains(b.Status) && b.StartDate <= windowEnd && windowStart <= b.EndDate)
                     .Sum(b => (double?)b.StorageTons) ?? 0)),
+                "distance" when circle is { } origin => query.OrderBy(GeoDistance.KmFrom<Godown>(origin, g => g.Latitude, g => g.Longitude)).ThenByDescending(g => g.CreatedAt),
                 "location" or "distance" => query.OrderBy(g => g.District).ThenBy(g => g.Location).ThenByDescending(g => g.CreatedAt),
                 "rating_desc" => query.OrderByDescending(g => g.AverageRating).ThenByDescending(g => g.ReviewCount),
+                // While searching, the default order is relevance (ts_rank_cd), then newest.
+                _ when tsQuery is not null => query.OrderByDescending(g => g.SearchVector.RankCoverDensity(EF.Functions.ToTsQuery("simple", tsQuery))).ThenByDescending(g => g.CreatedAt),
                 _ => query.OrderByDescending(g => g.CreatedAt)
             };
 
             var totalCount = await query.CountAsync();
+
+            // Nothing matched: fall back to trigram word similarity so a one-letter typo still finds the listing.
+            var isFuzzy = false;
+            if (totalCount == 0 && !string.IsNullOrWhiteSpace(c.SearchTerm))
+            {
+                var fuzzy = string.Join(' ', ListingSearch.Words(c.SearchTerm));
+                if (fuzzy.Length >= 3)
+                {
+                    query = filtered
+                        .Where(g => EF.Functions.TrigramsWordSimilarity(fuzzy, g.Name) > ListingSearch.FuzzyThreshold
+                            || EF.Functions.TrigramsWordSimilarity(fuzzy, g.StorageType) > ListingSearch.FuzzyThreshold)
+                        .OrderByDescending(g => Math.Max(EF.Functions.TrigramsWordSimilarity(fuzzy, g.Name), EF.Functions.TrigramsWordSimilarity(fuzzy, g.StorageType)))
+                        .ThenByDescending(g => g.CreatedAt);
+                    totalCount = await query.CountAsync();
+                    isFuzzy = totalCount > 0;
+                }
+            }
             var page = c.Page > 0 ? c.Page : 1;
-            var pageSize = c.PageSize > 0 ? c.PageSize : 24;
+            var pageSize = c.PageSize > 0 ? Math.Min(c.PageSize, ListingSearch.MaxPageSize) : 24;
 
             var rows = await query
                 .Skip((page - 1) * pageSize)
@@ -228,7 +272,7 @@ namespace KrishiLink.BLL.Services
                 TotalCapacityTons = g.CapacityInTons,
                 AvailableCapacityTons = Math.Max(0, g.CapacityInTons - g.Occupied),
                 PricePerTonPerMonth = g.PricePerTonPerMonth,
-                ImageUrl = ListingFormat.Split(g.ImageUrls).FirstOrDefault() ?? string.Empty,
+                ImageUrl = ListingFormat.FirstThumbnail(g.ImageUrls),
                 OwnerName = g.OwnerName,
                 OwnerIsVerified = g.OwnerIsVerified,
                 OwnerVerificationStatus = g.OwnerVerificationStatus ?? "Unverified",
@@ -237,6 +281,7 @@ namespace KrishiLink.BLL.Services
                 OwnerRating = g.OwnerRating,
                 OwnerReviewCount = g.OwnerReviewCount,
                 Facilities = ListingFormat.Split(g.Facilities),
+                DistanceKm = circle is { } from && g.Latitude is { } lat && g.Longitude is { } lng ? Math.Round(GeoDistance.Km(from.Lat, from.Lng, lat, lng), 1) : 0,
                 CreatedAt = g.CreatedAt
             }).ToList();
 
@@ -253,6 +298,11 @@ namespace KrishiLink.BLL.Services
             var model = new GodownBrowseViewModel
             {
                 SearchTerm = c.SearchTerm,
+                IsFuzzyMatch = isFuzzy,
+                RadiusKm = circle?.RadiusKm,
+                NearLat = c.NearLat is not null && circle is not null ? circle.Value.Lat : null,
+                NearLng = c.NearLng is not null && circle is not null ? circle.Value.Lng : null,
+                IsNearSearch = circle is not null,
                 SelectedStorageTypes = c.SelectedStorageTypes ?? new List<string>(),
                 Division = c.Division,
                 District = rawDistrict,
@@ -399,7 +449,8 @@ namespace KrishiLink.BLL.Services
 
         public async Task<(string? Error, int? BookingId)> RequestStorageWithResultAsync(string farmerId, GodownDetailViewModel r, string? promoCode = null, int? pointsToRedeem = null, int? harvestPlanId = null, string? planName = null)
         {
-            await using var transaction = await _bookings.BeginWorkflowAsync();
+            // Capacity is per listing; the farmer's lock covers points and voucher redemption.
+            await using var transaction = await _bookings.BeginWorkflowAsync(new[] { WorkflowLock.Godown(r.Id), WorkflowLock.User(farmerId) });
             if (r.StartDate is null || r.EndDate is null) return ("Please choose a start and end date.", null);
             var s = r.StartDate.Value.Date;
             var t = r.EndDate.Value.Date;
@@ -628,7 +679,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<DecisionResult> RespondAsync(string ownerId, int bookingId, string decision, string? reason)
         {
-            await using var transaction = await _bookings.BeginWorkflowAsync();
+            await using var transaction = await _bookings.BeginWorkflowAsync(await DecisionLocksAsync(ownerId, bookingId));
             var booking = await _bookings.QueryTracked().Include(b => b.Godown).Include(b => b.Payment)
                 .FirstOrDefaultAsync(b => b.Id == bookingId && b.Godown!.OwnerId == ownerId);
             if (booking is null) return DecisionResult.Fail("This booking request could not be found.");
@@ -763,6 +814,27 @@ namespace KrishiLink.BLL.Services
             }
 
             return DecisionResult.Ok(autoRejected);
+        }
+
+        /// <summary>
+        /// Listing: capacity and auto-rejection. Owner: completing/undoing changes what a payout may settle.
+        /// Farmers: completion awards the booking's farmer points, and auto-rejection refunds points to the losers.
+        /// </summary>
+        private async Task<List<WorkflowLock>> DecisionLocksAsync(string ownerId, int bookingId)
+        {
+            var locks = new List<WorkflowLock> { WorkflowLock.User(ownerId) };
+            var target = await _bookings.Query().Where(b => b.Id == bookingId)
+                .Select(b => new { b.GodownId, b.FarmerId, b.StartDate, b.EndDate }).FirstOrDefaultAsync();
+            if (target is null) return locks;
+
+            locks.Add(WorkflowLock.Godown(target.GodownId));
+            locks.Add(WorkflowLock.User(target.FarmerId));
+            var refundable = await _bookings.Query()
+                .Where(b => b.GodownId == target.GodownId && b.Id != bookingId && b.Status == BookingStatus.Pending
+                    && b.StartDate <= target.EndDate && target.StartDate <= b.EndDate && (b.PointsUsed > 0 || b.DiscountAmount > 0))
+                .Select(b => b.FarmerId).Distinct().ToListAsync();
+            locks.AddRange(refundable.Select(WorkflowLock.User));
+            return locks;
         }
 
         public async Task<GodownListingViewModel?> GetListingAsync(string ownerId, int id)
@@ -952,7 +1024,7 @@ namespace KrishiLink.BLL.Services
                 Category = g.StorageType,
                 RateText = $"{ListingFormat.Taka(g.PricePerTonPerMonth)} / Ton / Month",
                 Location = g.Location,
-                ThumbnailUrl = ListingFormat.Split(g.ImageUrls).FirstOrDefault() ?? string.Empty,
+                ThumbnailUrl = ListingFormat.FirstThumbnail(g.ImageUrls),
                 Month = first,
                 MonthName = first.ToString("MMMM yyyy"),
                 FarmerBookedDates = (await StoredDaysAsync(godownId, first, last)).ToList(),
@@ -964,7 +1036,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<bool> SaveAvailabilityAsync(string ownerId, int godownId, DateTime month, IEnumerable<DateTime> blockedDates)
         {
-            await using var transaction = await _blockedDates.BeginWorkflowAsync();
+            await using var transaction = await _blockedDates.BeginWorkflowAsync(new[] { WorkflowLock.Godown(godownId) });
             if (!await _godowns.Query().AnyAsync(x => x.Id == godownId && x.OwnerId == ownerId)) return false;
 
             var first = new DateTime(month.Year, month.Month, 1);

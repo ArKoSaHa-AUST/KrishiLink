@@ -1,0 +1,258 @@
+@model KrishiLink.Models.ViewModels.CropPlannerViewModel
+@using System.Globalization
+@using KrishiLink.Models.Entities
+@{
+    ViewData["Title"] = L["Crop Planner"].Value;
+    var bn = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+    string Name(CropCalendarEntry c) => bn && !string.IsNullOrWhiteSpace(c.BanglaName) ? c.BanglaName : c.Name;
+    string Tips(CropCalendarEntry c) => bn && !string.IsNullOrWhiteSpace(c.KeyTipsBn) ? c.KeyTipsBn : c.KeyTips;
+    string Day(DateTime d) => d.ToString("d MMM yyyy");
+    string Water(CropWaterNeed need) => need switch
+    {
+        CropWaterNeed.Low => L["Low"].Value,
+        CropWaterNeed.High => L["High"].Value,
+        _ => L["Medium"].Value
+    };
+    var context = Model.Context;
+    context.ChangeAnchor = "#comparison";
+}
+
+<div class="mb-4 pb-2 border-bottom" style="border-color: var(--krishi-border-color) !important;">
+    <h2 class="fw-bold mb-1" style="color: var(--krishi-primary);">
+        <i class="bi bi-calendar2-check text-success me-2"></i>@L["Crop Planner"]
+    </h2>
+    <p class="mb-0 text-muted">@L["What to do this week, what a sowing date means for harvest and rain, and crops side by side."]</p>
+
+    <div class="nav nav-pills krishi-tab-bar bg-light p-1.5 border shadow-sm mt-3" role="tablist">
+        <a asp-controller="Advisory" asp-action="Index" class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-muted d-flex align-items-center gap-1.5">
+            <i class="bi bi-cpu"></i><span>@L["Smart Advisor"]</span>
+        </a>
+        <a asp-controller="Advisory" asp-action="Calendar" class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-muted d-flex align-items-center gap-1.5">
+            <i class="bi bi-calendar-week"></i><span>@L["Crop Calendar"]</span>
+        </a>
+        <a asp-controller="Advisory" asp-action="Planner" class="nav-link active bg-success text-white rounded-pill px-3.5 py-1.5 fw-bold d-flex align-items-center gap-1.5 shadow-sm">
+            <i class="bi bi-calendar2-check-fill"></i><span>@L["Planner"]</span>
+        </a>
+        <a asp-controller="Advisory" asp-action="Alerts" class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-muted d-flex align-items-center gap-1.5">
+            <i class="bi bi-shield-shaded"></i><span>@L["Pest Alerts"]</span>
+        </a>
+        <a asp-controller="Advisory" asp-action="Suggestions" class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-muted d-flex align-items-center gap-1.5">
+            <i class="bi bi-lightning-charge"></i><span>@L["Weather Suggestions"]</span>
+        </a>
+    </div>
+    <partial name="_AdvisoryContext" model="context" />
+</div>
+
+<!-- 1. THIS WEEK ON YOUR FARM -->
+<section class="card krishi-card border-0 shadow-sm p-4 mb-4" aria-labelledby="thisWeekHeading" style="border-radius: var(--krishi-radius-lg);">
+    <h3 class="h5 fw-bold text-dark mb-3" id="thisWeekHeading">@L["This week on your farm"]</h3>
+    @if (Model.ThisWeek is { } week)
+    {
+        var stageText = week.Stage switch
+        {
+            CropStage.Sowing => L["Sowing time"].Value,
+            CropStage.Growing => L["Growing"].Value,
+            CropStage.Harvesting => L["Harvest time"].Value,
+            _ => L["Off season"].Value
+        };
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <span class="fs-5 fw-bold">@Name(week.Crop)</span>
+            <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-1">@stageText</span>
+            <span class="small text-muted">@(Model.ThisWeekFromSavedAdvice ? L["from your saved crop advice"] : L["from your profile crop"]) · @Day(week.Today)</span>
+        </div>
+        <p class="mb-3 text-secondary">
+            @switch (week.Stage)
+            {
+                case CropStage.Sowing:
+                    @L["It is sowing time for this crop. Popular varieties: {0}.", week.Crop.PopularVarieties]
+                    break;
+                case CropStage.Growing:
+                    @L["The crop is in its growing stage. Watch for pests and follow the key tips below."]
+                    break;
+                case CropStage.Harvesting:
+                    @L["It is harvest time. Book machinery and storage before the dates fill up."]
+                    break;
+                default:
+                    @if (week.NextSowing is { } next)
+                    {
+                        @L["Off season for this crop. Next sowing starts {0}.", Day(next)]
+                    }
+                    break;
+            }
+        </p>
+        @if (week.Stage is CropStage.Sowing or CropStage.Growing)
+        {
+            <p class="small bg-light border rounded-3 p-3 mb-3"><i class="bi bi-lightbulb-fill text-warning me-1" aria-hidden="true"></i>@Tips(week.Crop)</p>
+        }
+        <partial name="_CropNeeds" model="@(new CropNeedsStrip(week.Needs, context.District))" />
+        <div class="d-flex flex-wrap gap-2">
+            <a href="@AppLinks.PestAlerts(context.District, PestAlertCrops.ForProfileCrop(week.Crop.ProfileCropName))" class="btn btn-sm btn-krishi-outline rounded-pill px-3">@L["Check pest risk in {0}", context.District]</a>
+            <a href="@AppLinks.CalendarForCrop(week.Crop.Name)" class="btn btn-sm btn-outline-secondary rounded-pill px-3">@L["Open in crop calendar"]</a>
+        </div>
+    }
+    else if (User.Identity?.IsAuthenticated == true)
+    {
+        <p class="text-secondary mb-3">@L["Save a crop from the Smart Advisor, or set your primary crop in your profile, to see what to do this week."]</p>
+        <a asp-controller="Advisory" asp-action="Index" class="btn btn-krishi-primary rounded-pill px-4">@L["Get Crop Advice"]</a>
+    }
+    else
+    {
+        <p class="text-secondary mb-3">@L["Sign in and save a crop from the Smart Advisor to see what to do this week."]</p>
+        <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Planner", "Advisory")" class="btn btn-krishi-primary rounded-pill px-4">@L["Sign In"]</a>
+    }
+</section>
+
+<!-- 2. SOWING-DATE SIMULATOR -->
+<section class="card krishi-card border-0 shadow-sm p-4 mb-4" id="simulator" aria-labelledby="simHeading" style="border-radius: var(--krishi-radius-lg);">
+    <h3 class="h5 fw-bold text-dark mb-1" id="simHeading">@L["Sowing-date simulator"]</h3>
+    <p class="small text-muted mb-3">@L["Pick a crop and a sowing date to see the harvest window, whether it runs into the monsoon, and when you will need machinery and storage."]</p>
+    <form asp-controller="Advisory" asp-action="Planner" asp-fragment="simulator" method="get" class="row g-3 align-items-end">
+        <div class="col-12 col-md-5">
+            <label class="form-label small fw-bold" for="simCrop">@L["Crop"]</label>
+            <select class="form-select" id="simCrop" name="cropId" required>
+                @foreach (var crop in Model.Crops)
+                {
+                    <option value="@crop.Id" selected="@(crop.Id == Model.SimCropId)">@Name(crop)</option>
+                }
+            </select>
+        </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label small fw-bold" for="sowDate">@L["Sowing date"]</label>
+            <input class="form-control" type="date" id="sowDate" name="sow" value="@Model.SowDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" required />
+        </div>
+        @foreach (var id in Model.CompareIds)
+        {
+            <input type="hidden" name="compare" value="@id" />
+        }
+        <div class="col-12 col-md-3">
+            <button type="submit" class="btn btn-krishi-primary rounded-pill w-100 fw-semibold">@L["Simulate"]</button>
+        </div>
+    </form>
+
+    @if (Model.Simulation is { } sim)
+    {
+        <div class="mt-4 pt-3 border-top">
+            <dl class="row mb-3">
+                <dt class="col-sm-4 text-muted">@L["Expected harvest"]</dt>
+                <dd class="col-sm-8 fw-semibold">@Day(sim.HarvestFrom) – @Day(sim.HarvestTo) <span class="text-muted fw-normal">(@sim.Crop.DurationDays)</span></dd>
+                <dt class="col-sm-4 text-muted">@L["DAE sowing window"]</dt>
+                <dd class="col-sm-8">
+                    @CropAdvisorScorer.Months(sim.Crop.SowingMonths) ·
+                    @if (sim.InsideWindow)
+                    {
+                        <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i>@L["on time"]</span>
+                    }
+                    else if (sim.WeeksOutsideWindow > 0)
+                    {
+                        <span class="text-danger fw-semibold"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>@L["about {0} week(s) late", sim.WeeksOutsideWindow]</span>
+                    }
+                    else
+                    {
+                        <span class="text-warning-emphasis fw-semibold"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>@L["about {0} week(s) early", -sim.WeeksOutsideWindow]</span>
+                    }
+                </dd>
+            </dl>
+            @if (sim.HarvestInMonsoon)
+            {
+                <div class="alert alert-warning small d-flex gap-2" role="alert">
+                    <i class="bi bi-cloud-rain-heavy-fill" aria-hidden="true"></i>
+                    <span>@L["The harvest window runs into monsoon months ({0}), when rain is likely. Plan drying and covered storage, or consider sowing earlier.", CropAdvisorScorer.Months(sim.MonsoonHarvestMonths)]</span>
+                </div>
+            }
+            <partial name="_CropNeeds" model="@(new CropNeedsStrip(sim.Needs, context.District))" />
+            <a asp-controller="Advisory" asp-action="PlannerIcs" asp-route-cropId="@sim.Crop.Id" asp-route-sow="@sim.SowDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)"
+               class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-calendar-plus me-1" aria-hidden="true"></i>@L["Add these dates to my phone calendar"]
+            </a>
+        </div>
+    }
+</section>
+
+<!-- 3. CROP COMPARISON -->
+<section class="card krishi-card border-0 shadow-sm p-4 mb-5" id="comparison" aria-labelledby="compareHeading" style="border-radius: var(--krishi-radius-lg);">
+    <h3 class="h5 fw-bold text-dark mb-1" id="compareHeading">@L["Compare crops"]</h3>
+    <p class="small text-muted mb-3">@L["Choose two or three crops. Pest warnings are for {0} today.", context.District]</p>
+    <form asp-controller="Advisory" asp-action="Planner" asp-fragment="comparison" method="get" class="row g-3 align-items-end">
+        @for (var slot = 0; slot < 3; slot++)
+        {
+            var current = slot < Model.CompareIds.Count ? Model.CompareIds[slot] : (int?)null;
+            <div class="col-12 col-md-3">
+                <label class="form-label small fw-bold" for="compare@(slot)">@L["Crop {0}", slot + 1]</label>
+                <select class="form-select" id="compare@(slot)" name="compare">
+                    <option value="">@(slot < 2 ? L["Choose a crop"] : L["(Optional)"])</option>
+                    @foreach (var crop in Model.Crops)
+                    {
+                        <option value="@crop.Id" selected="@(crop.Id == current)">@Name(crop)</option>
+                    }
+                </select>
+            </div>
+        }
+        <div class="col-12 col-md-3">
+            <button type="submit" class="btn btn-krishi-primary rounded-pill w-100 fw-semibold">@L["Compare"]</button>
+        </div>
+    </form>
+
+    @if (Model.Comparison.Count >= 2)
+    {
+        <div class="table-responsive mt-4">
+            <table class="table align-middle mb-0 krishi-compare">
+                <thead>
+                    <tr>
+                        <th scope="col"><span class="visually-hidden">@L["Attribute"]</span></th>
+                        @foreach (var row in Model.Comparison)
+                        {
+                            <th scope="col">@Name(row.Crop)</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><th scope="row">@L["Season"]</th>@foreach (var r in Model.Comparison) { <td>@CropAdvisorScorer.SeasonLabel(r.Crop.Season, L)</td> }</tr>
+                    <tr><th scope="row">@L["Sowing"]</th>@foreach (var r in Model.Comparison) { <td>@CropAdvisorScorer.Months(r.Crop.SowingMonths)</td> }</tr>
+                    <tr><th scope="row">@L["Harvest"]</th>@foreach (var r in Model.Comparison) { <td>@CropAdvisorScorer.Months(r.Crop.HarvestingMonths)</td> }</tr>
+                    <tr><th scope="row">@L["Duration"]</th>@foreach (var r in Model.Comparison) { <td>@(r.Duration is { } d ? L["{0}–{1} days", d.Min, d.Max].Value : r.Crop.DurationDays)</td> }</tr>
+                    <tr><th scope="row">@L["Water need"]</th>@foreach (var r in Model.Comparison) { <td>@Water(r.Crop.WaterNeed)</td> }</tr>
+                    <tr>
+                        <th scope="row">@L["Indicative yield"]</th>
+                        @foreach (var r in Model.Comparison)
+                        {
+                            <td class="krishi-compare-num">@(r.Crop.TypicalYieldPerAcreMin is { } lo && r.Crop.TypicalYieldPerAcreMax is { } hi ? L["{0}–{1} t/acre", lo.ToString("0.#"), hi.ToString("0.#")].Value : "—")</td>
+                        }
+                    </tr>
+                    <tr>
+                        <th scope="row">@L["Soil pH"]</th>
+                        @foreach (var r in Model.Comparison)
+                        {
+                            <td class="krishi-compare-num">@(r.Crop.MinPh is { } lo && r.Crop.MaxPh is { } hi ? $"{lo:0.0}–{hi:0.0}" : "—")</td>
+                        }
+                    </tr>
+                    <tr>
+                        <th scope="row">@L["Pest warnings today"]</th>
+                        @foreach (var r in Model.Comparison)
+                        {
+                            <td>
+                                @if (r.RulesCovering == 0)
+                                {
+                                    <span class="text-muted">@L["no rules for this crop"]</span>
+                                }
+                                else if (r.ActiveWarnings > 0)
+                                {
+                                    <a class="text-danger fw-semibold" href="@AppLinks.PestAlerts(context.District, PestAlertCrops.ForProfileCrop(r.Crop.ProfileCropName))">@L["{0} active", r.ActiveWarnings]</a>
+                                }
+                                else
+                                {
+                                    <span class="text-success">@L["none active"]</span>
+                                }
+                            </td>
+                        }
+                    </tr>
+                    <tr><th scope="row">@L["Source"]</th>@foreach (var r in Model.Comparison) { <td class="text-muted">@r.Crop.Source</td> }</tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="small text-muted mt-2 mb-0">@L["Yields are indicative ranges from the crop calendar; expected earnings depend on the price you get, so they are not estimated here."]</p>
+    }
+    else if (Model.CompareIds.Count > 0)
+    {
+        <p class="small text-warning-emphasis mt-3 mb-0">@L["Choose at least two different crops to compare."]</p>
+    }
+</section>

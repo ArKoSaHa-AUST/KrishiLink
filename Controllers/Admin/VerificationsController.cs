@@ -4,6 +4,7 @@ using KrishiLink.Models.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 
 namespace KrishiLink.Controllers.Admin
@@ -15,15 +16,18 @@ namespace KrishiLink.Controllers.Admin
         private readonly IOwnerVerificationService _verificationService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<VerificationsController> _logger;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
         public VerificationsController(
             IOwnerVerificationService verificationService,
             UserManager<ApplicationUser> userManager,
-            ILogger<VerificationsController> logger)
+            ILogger<VerificationsController> logger,
+            IStringLocalizer<SharedResource> localizer)
         {
             _verificationService = verificationService;
             _userManager = userManager;
             _logger = logger;
+            _localizer = localizer;
         }
 
         [HttpGet("")]
@@ -45,11 +49,11 @@ namespace KrishiLink.Controllers.Admin
             var success = await _verificationService.ApproveVerificationAsync(id, adminId: currentUser.Id, notes: notes);
             if (success)
             {
-                TempData["SuccessMessage"] = "Owner verification approved successfully.";
+                TempData["SuccessMessage"] = _localizer["Owner verification approved successfully."].Value;
             }
             else
             {
-                TempData["ErrorMessage"] = "Failed to approve verification.";
+                TempData["ErrorMessage"] = _localizer["Failed to approve verification."].Value;
             }
             return RedirectToAction(nameof(Index));
         }
@@ -63,20 +67,21 @@ namespace KrishiLink.Controllers.Admin
 
             if (string.IsNullOrWhiteSpace(reason))
             {
-                TempData["ErrorMessage"] = "Please provide a reason for rejection.";
+                TempData["ErrorMessage"] = _localizer["Please provide a reason for rejection."].Value;
                 return RedirectToAction(nameof(Index));
             }
 
-            _logger.LogInformation("Admin {AdminId} rejecting verification request for user {UserId} with reason {Reason}", currentUser.Id, id, reason);
+            // The reason is free text about someone's identity documents; it is stored on the request, not logged.
+            _logger.LogInformation("Admin {AdminId} rejecting verification request for user {UserId}", currentUser.Id, id);
 
             var success = await _verificationService.RejectVerificationAsync(id, reason: reason, adminId: currentUser.Id);
             if (success)
             {
-                TempData["SuccessMessage"] = "Owner verification request rejected.";
+                TempData["SuccessMessage"] = _localizer["Owner verification request rejected."].Value;
             }
             else
             {
-                TempData["ErrorMessage"] = "Failed to reject verification.";
+                TempData["ErrorMessage"] = _localizer["Failed to reject verification."].Value;
             }
             return RedirectToAction(nameof(Index));
         }

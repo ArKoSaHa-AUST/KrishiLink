@@ -32,6 +32,11 @@ namespace KrishiLink.Models.Entities
         public List<string> BanglaActionableRemedies { get; set; } = new();
         public string PreventiveSpray { get; set; } = string.Empty;
         public string OrganicControl { get; set; } = string.Empty;
+        public string? PreventiveSprayBn { get; set; }
+        public string? OrganicControlBn { get; set; }
+
+        /// <summary>Who the rule is attributed to (DAE, BARI, BRRI, BWMRI); rendered with the alert.</summary>
+        public string Source { get; set; } = string.Empty;
         public string IconClass { get; set; } = "bi-exclamation-triangle-fill";
         public string BadgeClass { get; set; } = "danger";
     }
@@ -127,6 +132,11 @@ namespace KrishiLink.Models.Entities
         public List<string> BanglaActionableRemedies { get; set; } = new();
         public string PreventiveSpray { get; set; } = string.Empty;
         public string OrganicControl { get; set; } = string.Empty;
+        public string? PreventiveSprayBn { get; set; }
+        public string? OrganicControlBn { get; set; }
+
+        /// <summary>Who the rule is attributed to (DAE, BARI, BRRI, BWMRI); rendered with the alert.</summary>
+        public string Source { get; set; } = string.Empty;
         public string IconClass { get; set; } = "bi-exclamation-triangle-fill";
         public string BadgeClass { get; set; } = "danger";
         public double RiskPercentage { get; set; } = 85.0;

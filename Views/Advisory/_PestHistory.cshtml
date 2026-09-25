@@ -1,0 +1,72 @@
+@model PestHistoryStrip
+@*
+    ADV-06: how often this rule fired in the district over the last 14 days (inline SVG, no chart library), and a one-click
+    "was this accurate?" stored against today's history row for tuning the thresholds.
+*@
+@{
+    var days = Model.History.Days;
+    var fired = Model.History.ByRule.TryGetValue(Model.RuleId, out var list)
+        ? list.ToDictionary(d => d.Day, d => d.Severity)
+        : new Dictionary<DateTime, string>();
+    const int cell = 11, gap = 3;
+    var width = days.Count * (cell + gap) - gap;
+    string Fill(string severity) => severity switch
+    {
+        "Critical" => "var(--krishi-status-rejected-text)",
+        "High" => "#c2410c",
+        _ => "#b7791f"
+    };
+    var historyId = Model.History.TodayIds.TryGetValue(Model.RuleId, out var id) ? id : (int?)null;
+}
+<div class="krishi-pest-history d-flex flex-wrap align-items-center gap-3 mt-3 pt-3 border-top">
+    <div class="d-flex align-items-center gap-2">
+        <svg width="@width" height="@cell" viewBox="0 0 @width @cell" role="img"
+             aria-label="@L["Fired on {0} of the last {1} days", fired.Count, days.Count]">
+            @for (var i = 0; i < days.Count; i++)
+            {
+                var day = days[i];
+                var hit = fired.TryGetValue(day, out var severity);
+                <rect x="@(i * (cell + gap))" y="0" width="@cell" height="@cell" rx="2"
+                      fill="@(hit ? Fill(severity!) : "var(--krishi-border-color)")">
+                    <title>@day.ToString("d MMM"): @(hit ? L["fired ({0})", severity!] : L["not fired"])</title>
+                </rect>
+            }
+        </svg>
+        <span class="small text-muted">@L["Fired on {0} of the last {1} days", fired.Count, days.Count]</span>
+    </div>
+
+    @if (historyId is { } hid)
+    {
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            @if (Model.History.RatedIds.Contains(hid))
+            {
+                <span class="small text-success"><i class="bi bi-check2 me-1" aria-hidden="true"></i>@L["Thanks for rating this warning."]</span>
+            }
+            else
+            {
+                <div class="d-flex align-items-center gap-1 small">
+                    <span class="text-muted me-1">@L["Was this warning accurate?"]</span>
+                    <form asp-controller="Advisory" asp-action="AlertFeedback" method="post" class="d-inline">
+                        <input type="hidden" name="historyId" value="@hid" />
+                        <input type="hidden" name="accurate" value="true" />
+                        <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-2" aria-label="@L["Yes, accurate"]" title="@L["Yes, accurate"]">
+                            <i class="bi bi-hand-thumbs-up" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                    <form asp-controller="Advisory" asp-action="AlertFeedback" method="post" class="d-inline">
+                        <input type="hidden" name="historyId" value="@hid" />
+                        <input type="hidden" name="accurate" value="false" />
+                        <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-2" aria-label="@L["No, not accurate"]" title="@L["No, not accurate"]">
+                            <i class="bi bi-hand-thumbs-down" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                </div>
+            }
+        }
+        else
+        {
+            <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" class="small">@L["Sign in to rate this warning"]</a>
+        }
+    }
+</div>

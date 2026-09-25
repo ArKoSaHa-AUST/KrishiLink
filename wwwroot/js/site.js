@@ -130,6 +130,19 @@ window.showConfirmModal = function (title, body, onConfirm, confirmText, confirm
  * @param {Function} [options.onAction] Called when the action button is clicked
  * @param {Function} [options.onClosed] Called when the toast closes WITHOUT the action being clicked
  */
+/** A localized message the layout put on <body data-msg-…> (QLT-05); the English fallback is only for pages without it. */
+function notificationsFailedNotice() {
+    const failed = document.createElement('div');
+    failed.className = 'p-3 text-center text-muted small';
+    failed.setAttribute('role', 'status');
+    failed.textContent = KrishiText('msgNotificationsFailed', 'Could not load notifications.');
+    return failed;
+}
+
+window.KrishiText = function (key, fallback) {
+    return (document.body && document.body.dataset[key]) || fallback;
+};
+
 window.KrishiToast = {
     show: function (message, options) {
         options = options || {};
@@ -148,13 +161,23 @@ window.KrishiToast = {
         toastEl.setAttribute('role', 'alert');
         toastEl.setAttribute('aria-live', 'assertive');
         toastEl.setAttribute('aria-atomic', 'true');
-        const actionHtml = options.actionText
-            ? `<button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 ms-auto flex-shrink-0 toast-action-btn">${options.actionText}</button>`
-            : '';
-        toastEl.innerHTML = `<div class="toast-body d-flex align-items-center gap-2 fw-semibold">
-                <i class="bi ${options.iconClass || 'bi-check-circle-fill text-success'} fs-5"></i>
-                <span>${message}</span>${actionHtml}
-            </div>`;
+        // Messages can carry server text and file names: build with textContent, never innerHTML.
+        const body = document.createElement('div');
+        body.className = 'toast-body d-flex align-items-center gap-2 fw-semibold';
+        const icon = document.createElement('i');
+        icon.className = `bi ${options.iconClass || 'bi-check-circle-fill text-success'} fs-5`;
+        icon.setAttribute('aria-hidden', 'true');
+        const text = document.createElement('span');
+        text.textContent = message;
+        body.append(icon, text);
+        if (options.actionText) {
+            const action = document.createElement('button');
+            action.type = 'button';
+            action.className = 'btn btn-sm btn-outline-secondary rounded-pill px-3 ms-auto flex-shrink-0 toast-action-btn';
+            action.textContent = options.actionText;
+            body.appendChild(action);
+        }
+        toastEl.appendChild(body);
         container.appendChild(toastEl);
 
         const bsToast = new bootstrap.Toast(toastEl, { delay: options.delay || 4000 });
@@ -273,7 +296,7 @@ window.KrishiRequests = {
             if (typeof opts.onRevert === 'function') opts.onRevert();
         };
 
-        KrishiToast.show(accepted ? (opts.acceptedMsg || 'Request accepted ✓') : (opts.rejectedMsg || 'Request rejected'), {
+        KrishiToast.show(accepted ? (opts.acceptedMsg || 'Request accepted') : (opts.rejectedMsg || 'Request rejected'), {
             iconClass: accepted ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger',
             actionText: 'Undo',
             delay: opts.undoDelay || 5000,
@@ -488,7 +511,7 @@ window.KrishiRequestsPage = {
                     ? ` ${autoRejected.length} ${autoRejected.length === 1 ? 'overlapping request was' : 'overlapping requests were'} declined automatically.`
                     : '';
                 // Undo is only offered when nothing else changed; a cascade cannot be reverted safely
-                KrishiToast.show((msg || 'Saved ✓') + cascadeNote, {
+                KrishiToast.show((msg || 'Saved') + cascadeNote, {
                     iconClass: decision === 'reject' ? 'bi-x-circle-fill text-danger' : 'bi-check-circle-fill text-success',
                     actionText: autoRejected.length ? undefined : 'Undo',
                     delay: cfg.undoDelay || 5000,
@@ -510,7 +533,11 @@ window.KrishiRequestsPage = {
                         } else {
                             row.classList.remove('row-leaving');
                         }
-                        KrishiRequests.post(cfg.respondUrl, { id, decision: 'undo' }).catch(() => {});
+                        KrishiRequests.post(cfg.respondUrl, { id, decision: 'undo' }).catch(() => {
+                            // The row already moved back on screen; say plainly that the server may not agree.
+                            KrishiToast.show(KrishiText('msgUndoFailed', 'The undo did not reach the server. Reload the page to see the current status.'),
+                                { iconClass: 'bi-exclamation-triangle-fill text-danger', delay: 8000 });
+                        });
                     }
                 });
             } catch (err) {
@@ -768,7 +795,7 @@ window.KrishiNotifications = {
         .then(res => res.ok ? res.json() : null)
         .then(data => {
             if (!data) {
-                listContainer.innerHTML = '<div class="p-3 text-center text-muted small">Could not load notifications.</div>';
+                listContainer.replaceChildren(notificationsFailedNotice());
                 return;
             }
 
@@ -788,7 +815,7 @@ window.KrishiNotifications = {
                 const unreadClass = !item.isRead ? 'unread' : '';
                 const openUrl = `/Notifications/Open/${item.id}`;
                 const unreadAction = !item.isRead 
-                    ? `<button type="button" class="btn btn-link p-0 text-muted ms-1 flex-shrink-0" title="Mark as read" onclick="event.preventDefault(); event.stopPropagation(); KrishiNotifications.markAsRead(${item.id});">
+                    ? `<button type="button" class="btn btn-link p-0 text-muted ms-1 flex-shrink-0" title="Mark as read" data-onclick="event.preventDefault(); event.stopPropagation(); KrishiNotifications.markAsRead(${item.id});">
                          <span class="notification-unread-dot d-inline-block"></span>
                        </button>`
                     : '';
@@ -820,7 +847,7 @@ window.KrishiNotifications = {
             listContainer.innerHTML = html;
         })
         .catch(() => {
-            listContainer.innerHTML = '<div class="p-3 text-center text-muted small">Could not load notifications.</div>';
+            listContainer.replaceChildren(notificationsFailedNotice());
         });
     },
 
@@ -846,7 +873,8 @@ window.KrishiNotifications = {
                 this.loadRecentNotifications();
             }
         })
-        .catch(() => { /* silent */ });
+        .catch(() => KrishiToast.show(KrishiText('msgActionFailed', 'That did not go through. Check your connection and try again.'),
+            { iconClass: 'bi-exclamation-triangle-fill text-danger' }));
     },
 
     markAllAsRead: function () {
@@ -868,7 +896,8 @@ window.KrishiNotifications = {
                 this.loadRecentNotifications();
             }
         })
-        .catch(() => { /* silent */ });
+        .catch(() => KrishiToast.show(KrishiText('msgActionFailed', 'That did not go through. Check your connection and try again.'),
+            { iconClass: 'bi-exclamation-triangle-fill text-danger' }));
     },
 
     escapeHtml: function (str) {
@@ -930,6 +959,7 @@ window.KrishiReviews = {
             }
         } catch (e) {
             console.error('[KrishiReviews] Failed to load reviews:', e);
+            KrishiToast.show(KrishiText('msgReviewsFailed', 'Could not load more reviews. Please try again.'), { iconClass: 'bi-exclamation-triangle-fill text-danger' });
         } finally {
             btn.disabled = false;
             if (spinner) spinner.classList.add('d-none');
@@ -983,7 +1013,7 @@ window.KrishiFavorites = {
             const data = await res.json();
             if (!data.success) {
                 if (window.KrishiToast) {
-                    KrishiToast.show(data.message || 'Could not update favorites.', 'danger');
+                    KrishiToast.show(data.message || KrishiText('msgActionFailed', 'That did not go through. Check your connection and try again.'), { iconClass: 'bi-exclamation-triangle-fill text-danger' });
                 } else {
                     alert(data.message || 'Could not update favorites.');
                 }
@@ -1014,20 +1044,25 @@ window.KrishiFavorites = {
                 const favPrefix = type === 'Equipment' ? 'fav-item-eq-' : 'fav-item-gd-';
                 const cardEl = document.getElementById(favPrefix + id);
                 if (cardEl) {
+                    const pane = cardEl.closest('.tab-pane');
                     cardEl.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
                     cardEl.style.opacity = '0';
                     cardEl.style.transform = 'scale(0.95)';
-                    setTimeout(() => cardEl.remove(), 300);
+                    setTimeout(() => {
+                        cardEl.remove();
+                        // The last one gone: show the pane's empty state with its "explore" action (QLT-05).
+                        if (pane && !pane.querySelector('[id^="fav-item-"]')) pane.querySelector('[data-favorites-empty]')?.classList.remove('d-none');
+                    }, 300);
                 }
             }
 
             if (window.KrishiToast) {
-                KrishiToast.show(data.isFavorite ? 'Added to favorites' : 'Removed from favorites', data.isFavorite ? 'success' : 'info');
+                KrishiToast.show(data.isFavorite ? KrishiText('msgFavoriteAdded', 'Added to favorites') : KrishiText('msgFavoriteRemoved', 'Removed from favorites'), { iconClass: data.isFavorite ? 'bi-heart-fill text-danger' : 'bi-heart text-secondary' });
             }
         } catch (err) {
             console.error('[KrishiFavorites] Toggle failed:', err);
             if (window.KrishiToast) {
-                KrishiToast.show('Failed to update favorites. Please try again.', 'danger');
+                KrishiToast.show(KrishiText('msgActionFailed', 'That did not go through. Check your connection and try again.'), { iconClass: 'bi-exclamation-triangle-fill text-danger' });
             }
         } finally {
             btn.disabled = false;
@@ -1036,3 +1071,58 @@ window.KrishiFavorites = {
 };
 
 
+
+// ---------------------------------------------------------------------------
+// Installable app & offline support (REA-01)
+// ---------------------------------------------------------------------------
+(function () {
+    'use strict';
+    const body = document.body;
+    if (!body) return;
+
+    // The forecast the Pest Alerts page just showed, kept on this phone for the offline page.
+    const snapshot = document.getElementById('krishiForecastSnapshot');
+    if (snapshot) {
+        const d = snapshot.dataset;
+        try {
+            window.localStorage.setItem('krishilink.forecast', JSON.stringify({
+                district: d.district, condition: d.condition, conditionBn: d.conditionBn,
+                max: parseFloat(d.max), min: parseFloat(d.min), humidity: parseFloat(d.humidity), rain: parseFloat(d.rain),
+                savedAt: d.retrieved || new Date().toISOString()
+            }));
+        } catch (e) { /* storage full or disabled: the offline page simply has no forecast */ }
+    }
+
+    function formatSaved(iso) {
+        const date = new Date(iso);
+        if (isNaN(date)) return '';
+        return date.toLocaleString(document.documentElement.lang === 'bn' ? 'bn-BD' : 'en-GB',
+            { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Dhaka' });
+    }
+
+    function showBanner(text) {
+        let bar = document.getElementById('krishiOfflineBanner');
+        if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'krishiOfflineBanner';
+            bar.className = 'krishi-offline-banner';
+            bar.setAttribute('role', 'status');
+            body.insertBefore(bar, body.firstChild);
+        }
+        bar.textContent = text;
+    }
+
+    // A page the service worker served from its cache says so, with the date it was saved.
+    const savedAt = document.documentElement.dataset.savedAt;
+    if (savedAt && body.dataset.offlineSaved) showBanner(body.dataset.offlineSaved.replace('{0}', formatSaved(savedAt)));
+    window.addEventListener('offline', function () { if (body.dataset.offlineNow) showBanner(body.dataset.offlineNow); });
+    window.addEventListener('online', function () { if (!savedAt) document.getElementById('krishiOfflineBanner')?.remove(); });
+
+    // Registered only over HTTPS and never in Development (the LAN setup is plain HTTP).
+    if (body.dataset.serviceWorker === 'on' && 'serviceWorker' in navigator && window.location.protocol === 'https:') {
+        navigator.serviceWorker.register('/sw.js').catch(function () { /* the site works without it */ });
+        navigator.serviceWorker.ready.then(function (registration) {
+            registration.active?.postMessage({ type: 'lang', lang: document.documentElement.lang });
+        });
+    }
+})();

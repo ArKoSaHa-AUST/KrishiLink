@@ -1,16 +1,15 @@
-name: CD Deploy Pipeline
+name: Build Production Artifact
 
 on:
   push:
     branches: [ main ]
 
 jobs:
-  deploy-production:
-    name: Deploy to Production Environment
+  build-production-artifact:
+    # This workflow only packages a release. No hosting target is wired up, so it deploys nothing;
+    # the name says exactly that so a green check is never mistaken for a deployment.
+    name: Build Production Artifact
     runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: https://krishilink.example.com
 
     steps:
     - name: Checkout Code
@@ -21,20 +20,26 @@ jobs:
       with:
         dotnet-version: '9.0.x'
 
-    - name: Publish Production Release Bundle
+    - name: Publish Release Bundle
       run: dotnet publish KrishiLink.csproj --configuration Release --output ./publish
+
+    - name: Generate Idempotent Migration Script
+      env:
+        ConnectionStrings__MigrationConnection: Host=localhost;Port=5432;Database=krishilink_release;Username=postgres;Password=placeholder
+      run: |
+        dotnet tool restore
+        dotnet ef migrations script --idempotent --configuration Release --output ./publish/migrations.sql
 
     - name: Upload Release Bundle
       uses: actions/upload-artifact@v4
       with:
-        name: krishilink-production
+        name: krishilink-release
         path: ./publish
 
-    - name: Deployment Configuration Reminder
+    - name: Deployment Checklist
       run: |
-        echo "Verified GitHub Environment 'production' approval gate."
-        echo "Production release bundle prepared in ./publish."
-        echo "No hosting target is configured: this workflow does not deploy."
-        echo "Configure Supabase Auth/Storage keys and PostgreSQL connections as host secrets."
-        echo "Apply the reviewed PostgreSQL migrations through a session/direct connection."
-        echo "Persist the Data Protection key directory on private durable storage."
+        echo "Artifact built. Deploying it is a separate, manual step:"
+        echo "- Apply publish/migrations.sql over a session/direct connection (not the transaction pooler)."
+        echo "- Set AllowedHosts, App__PublicBaseUrl, ForwardedHeaders__KnownProxies/KnownNetworks."
+        echo "- Mount DataProtection:KeyPath on persistent, backed-up storage and set DataProtection:CertificatePath."
+        echo "- Configure Supabase Auth/Storage keys and PostgreSQL connections as host secrets."

@@ -1,0 +1,131 @@
+@using KrishiLink.Models.Entities
+@*
+    Docked AI assistant: floating button + Bootstrap offcanvas. Signed-in users only. Behaviour lives in wwwroot/js/ai-agent.js
+    (no inline handlers — CSP). Every string the script shows is localized here and handed over in data-strings.
+*@
+@if (User.Identity?.IsAuthenticated == true)
+{
+    var isFarmer = User.IsInRole(AppRoles.Farmer);
+    var strings = new Dictionary<string, string>
+    {
+        ["you"] = L["You"].Value,
+        ["assistant"] = L["Krishi Shohayok"].Value,
+        ["thinking"] = L["Reading your question…"].Value,
+        ["checking"] = L["Checking KrishiLink data…"].Value,
+        ["writing"] = L["Writing the answer…"].Value,
+        ["unavailable"] = L["The assistant is unavailable right now — you can still search and book normally."].Value,
+        ["rateLimited"] = L["You're sending messages quickly. Please wait a minute and try again."].Value,
+        ["openPage"] = L["Open the page instead"].Value,
+        ["sources"] = L["Based on"].Value,
+        ["view"] = L["View"].Value,
+        ["rent"] = L["Rent this"].Value,
+        ["store"] = L["Store here"].Value,
+        ["rentPrompt"] = L["I'd like to rent #{0} {1}. "].Value,
+        ["storePrompt"] = L["I'd like to store my crop at #{0} {1}. "].Value,
+        ["verified"] = L["Verified Owner"].Value,
+        ["newConversation"] = L["New conversation"].Value,
+        ["noConversations"] = L["No earlier conversations yet."].Value,
+        ["proposalLoading"] = L["Preparing your request form…"].Value,
+        ["proposalFailed"] = L["The request form could not be loaded. Ask again for a fresh one."].Value,
+        ["charsLeft"] = L["{0} characters left"].Value
+    };
+    var citationLabels = new Dictionary<string, string>
+    {
+        ["search_equipment"] = L["Equipment listings"].Value,
+        ["search_godowns"] = L["Storage listings"].Value,
+        ["get_listing_details"] = L["Listing details"].Value,
+        ["check_availability"] = L["Availability check"].Value,
+        ["get_price_quote"] = L["Price quote"].Value,
+        ["get_crop_calendar"] = L["DAE crop calendar"].Value,
+        ["recommend_crops"] = L["Smart Advisor"].Value,
+        ["get_weather_forecast"] = L["Open-Meteo forecast"].Value,
+        ["get_pest_alerts"] = L["Pest & Disease Alerts"].Value,
+        ["get_weather_suggestions"] = L["Weather Suggestions"].Value,
+        ["get_my_bookings"] = L["Your bookings"].Value,
+        ["get_my_profile_context"] = L["Your profile"].Value,
+        ["propose_equipment_rental"] = L["Rental request draft"].Value,
+        ["propose_godown_storage"] = L["Storage request draft"].Value
+    };
+    var chips = isFarmer
+        ? new[] { L["Find a harvester near me"].Value, L["What should I plant this month?"].Value, L["Rent a tiller for next week"].Value, L["Any pest risk for my crop this week?"].Value }
+        : new[] { L["What should farmers in my district plant this month?"].Value, L["Show storage listings in my district"].Value, L["What is the weather this week?"].Value };
+
+    <button type="button" class="btn krishi-agent-fab rounded-circle shadow d-print-none"
+            data-bs-toggle="offcanvas" data-bs-target="#krishiAgent" aria-controls="krishiAgent"
+            aria-label="@L["Open the KrishiLink assistant"]" title="@L["Krishi Shohayok"]">
+        <i class="bi bi-stars" aria-hidden="true"></i>
+    </button>
+
+    <div class="offcanvas offcanvas-end krishi-agent d-print-none" tabindex="-1" id="krishiAgent" aria-labelledby="krishiAgentTitle"
+         data-send-url="@Url.Action("Send", "AiAgent")"
+         data-history-url="@Url.Action("History", "AiAgent")"
+         data-conversations-url="@Url.Action("Conversations", "AiAgent")"
+         data-new-url="@Url.Action("New", "AiAgent")"
+         data-proposal-url="@Url.Action("Proposal", "AiAgent")"
+         data-can-book="@(isFarmer ? "true" : "false")"
+         data-max-length="2000"
+         data-strings="@System.Text.Json.JsonSerializer.Serialize(strings)"
+         data-citations="@System.Text.Json.JsonSerializer.Serialize(citationLabels)">
+
+        <div class="offcanvas-header krishi-agent-header">
+            <div class="d-flex align-items-center gap-2 krishi-agent-shrink">
+                <span class="krishi-agent-mark" aria-hidden="true"><i class="bi bi-stars"></i></span>
+                <div class="krishi-agent-shrink">
+                    <h2 class="h6 fw-bold mb-0" id="krishiAgentTitle">@L["Krishi Shohayok"]</h2>
+                    <p class="krishi-agent-subtitle mb-0 text-truncate" id="krishiAgentSubtitle">@L["Equipment, storage and crop advice — from KrishiLink's own data"]</p>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                <div class="dropdown">
+                    <button type="button" class="btn krishi-agent-icon-btn" id="krishiAgentHistoryBtn" data-bs-toggle="dropdown"
+                            aria-expanded="false" aria-label="@L["Earlier conversations"]" title="@L["Earlier conversations"]">
+                        <i class="bi bi-clock-history" aria-hidden="true"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm krishi-agent-history" id="krishiAgentHistory" aria-labelledby="krishiAgentHistoryBtn"></ul>
+                </div>
+                <button type="button" class="btn krishi-agent-icon-btn" id="krishiAgentNew" aria-label="@L["New conversation"]" title="@L["New conversation"]">
+                    <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="btn-close ms-1" data-bs-dismiss="offcanvas" aria-label="@L["Close"]"></button>
+            </div>
+        </div>
+
+        <div class="offcanvas-body krishi-agent-body" id="krishiAgentScroll">
+            <div class="krishi-agent-empty" id="krishiAgentEmpty">
+                <p class="krishi-agent-greeting mb-1">@L["Hello! How can I help with your farm today?"]</p>
+                <p class="krishi-agent-lede mb-3">@L["I search real listings, check prices and dates, and read the DAE crop calendar and live weather. I never book anything without your click."]</p>
+                <div class="d-flex flex-wrap gap-2" role="group" aria-label="@L["Suggestions"]">
+                    @foreach (var chip in chips)
+                    {
+                        <button type="button" class="btn krishi-agent-chip" data-agent-prompt="@chip">@chip</button>
+                    }
+                </div>
+            </div>
+
+            <div class="krishi-agent-log" id="krishiAgentLog" role="log" aria-live="polite" aria-relevant="additions" aria-label="@L["Conversation"]"></div>
+
+            <div class="krishi-agent-typing d-none" id="krishiAgentTyping" aria-hidden="true">
+                <span class="krishi-agent-avatar"><i class="bi bi-stars"></i></span>
+                <span class="krishi-agent-dots"><span></span><span></span><span></span></span>
+                <span class="krishi-agent-typing-label" id="krishiAgentTypingLabel"></span>
+            </div>
+        </div>
+
+        <div class="visually-hidden" id="krishiAgentStatus" role="status" aria-live="polite" aria-atomic="true"></div>
+
+        <form class="krishi-agent-composer" id="krishiAgentForm" novalidate>
+            <label class="visually-hidden" for="krishiAgentInput">@L["Message to the assistant"]</label>
+            <div class="krishi-agent-inputwrap">
+                <textarea class="form-control krishi-agent-input" id="krishiAgentInput" rows="1" maxlength="2000" autocomplete="off"
+                          aria-describedby="krishiAgentHint" placeholder="@L["Ask about equipment, storage or crops…"]"></textarea>
+                <button type="submit" class="btn btn-krishi-primary krishi-agent-send" id="krishiAgentSend" aria-label="@L["Send"]">
+                    <i class="bi bi-arrow-up" aria-hidden="true"></i>
+                </button>
+            </div>
+            <p class="krishi-agent-hint mb-0" id="krishiAgentHint">
+                <span>@L["Enter to send · Shift+Enter for a new line"]</span>
+                <span id="krishiAgentCounter" class="krishi-agent-counter"></span>
+            </p>
+        </form>
+    </div>
+}

@@ -6,6 +6,12 @@ namespace KrishiLink.DAL
 {
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
+        /// <summary>Shadow concurrency token, mapped by Npgsql to the xmin system column.</summary>
+        public const string RowVersionProperty = "xmin";
+
+        /// <summary>Advisory locks held by the active outermost <see cref="Repositories.WorkflowTransaction"/>, if any.</summary>
+        internal Repositories.HeldWorkflowLocks? HeldWorkflowLocks { get; set; }
+
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
@@ -20,7 +26,10 @@ namespace KrishiLink.DAL
         public DbSet<GodownBlockedDate> GodownBlockedDates { get; set; } = null!;
         public DbSet<BookingExpense> BookingExpenses { get; set; } = null!;
         public DbSet<Crop> Crops { get; set; } = null!;
-        public DbSet<CropRecommendation> CropRecommendations { get; set; } = null!;
+        public DbSet<SavedCropAdvisory> SavedCropAdvisories { get; set; } = null!;
+        public DbSet<SuggestionState> SuggestionStates { get; set; } = null!;
+        public DbSet<PestAlertHistory> PestAlertHistories { get; set; } = null!;
+        public DbSet<PestAlertFeedback> PestAlertFeedback { get; set; } = null!;
         public DbSet<WeatherData> WeatherData { get; set; } = null!;
         public DbSet<Transaction> Transactions { get; set; } = null!;
         public DbSet<Review> Reviews { get; set; } = null!;
@@ -33,19 +42,27 @@ namespace KrishiLink.DAL
         public DbSet<LedgerEntry> LedgerEntries { get; set; } = null!;
         public DbSet<HarvestPlan> HarvestPlans { get; set; } = null!;
         public DbSet<HarvestPlanItem> HarvestPlanItems { get; set; } = null!;
+        public DbSet<SeasonCost> SeasonCosts { get; set; } = null!;
+        public DbSet<EmailDeliveryLog> EmailDeliveryLogs { get; set; } = null!;
         public DbSet<Favorite> Favorites { get; set; } = null!;
         public DbSet<SavedSearch> SavedSearches { get; set; } = null!;
         public DbSet<StorageIntakeLot> StorageIntakeLots { get; set; } = null!;
+        public DbSet<SupabaseSessionRecord> SupabaseSessions { get; set; } = null!;
+        public DbSet<AgentConversation> AgentConversations { get; set; } = null!;
+        public DbSet<AgentMessage> AgentMessages { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
             builder.HasDefaultSchema(DatabaseConfiguration.Schema);
+            // Trigram indexes make ILIKE and typo-tolerant search index-backed (DIS-01).
+            builder.HasPostgresExtension("pg_trgm");
 
             builder.Entity<ApplicationUser>(u =>
             {
                 u.Property(x => x.District).HasMaxLength(60);
                 u.Property(x => x.Specialization).HasMaxLength(60);
+                u.Property(x => x.PreferredLandUnit).HasConversion<string>().HasMaxLength(10);
                 u.Property(x => x.VerificationStatus).HasMaxLength(30).HasDefaultValue("Unverified");
                 u.Property(x => x.NidNumber).HasMaxLength(30);
                 u.Property(x => x.NidFrontImagePath).HasMaxLength(255);
@@ -63,6 +80,10 @@ namespace KrishiLink.DAL
             builder.Entity<Equipment>(e =>
             {
                 e.Property(x => x.Name).HasMaxLength(100);
+                e.HasGeneratedTsVectorColumn(x => x.SearchVector, "simple", x => new { x.Name, x.Category, x.Description, x.District })
+                    .HasIndex(x => x.SearchVector).HasMethod("GIN");
+                e.HasIndex(x => x.Name).HasMethod("gin").HasOperators("gin_trgm_ops").HasDatabaseName("IX_Equipment_Name_trgm");
+                e.HasIndex(x => x.Description).HasMethod("gin").HasOperators("gin_trgm_ops").HasDatabaseName("IX_Equipment_Description_trgm");
                 e.Property(x => x.Category).HasMaxLength(50);
                 e.Property(x => x.Location).HasMaxLength(150);
                 e.Property(x => x.District).HasMaxLength(60);
@@ -120,6 +141,10 @@ namespace KrishiLink.DAL
             builder.Entity<Godown>(g =>
             {
                 g.Property(x => x.Name).HasMaxLength(120);
+                g.HasGeneratedTsVectorColumn(x => x.SearchVector, "simple", x => new { x.Name, x.StorageType, x.Description, x.District, x.Facilities })
+                    .HasIndex(x => x.SearchVector).HasMethod("GIN");
+                g.HasIndex(x => x.Name).HasMethod("gin").HasOperators("gin_trgm_ops").HasDatabaseName("IX_Godowns_Name_trgm");
+                g.HasIndex(x => x.Description).HasMethod("gin").HasOperators("gin_trgm_ops").HasDatabaseName("IX_Godowns_Description_trgm");
                 g.Property(x => x.StorageType).HasMaxLength(50);
                 g.Property(x => x.Location).HasMaxLength(150);
                 g.Property(x => x.District).HasMaxLength(60);
@@ -348,9 +373,56 @@ namespace KrishiLink.DAL
                     )
                     .Metadata.SetValueComparer(intListComparer);
 
+                c.Property(x => x.Key).HasMaxLength(60).HasDefaultValue(string.Empty);
+                c.Property(x => x.SoilTypesBn).HasMaxLength(200);
+                c.Property(x => x.WaterRequirementBn).HasMaxLength(300);
+                c.Property(x => x.KeyTipsBn).HasMaxLength(1000);
+                // No database default: Low is the CLR default, so EF would omit it on insert and the default would silently win.
+                c.Property(x => x.WaterNeed).HasConversion<string>().HasMaxLength(10);
+                c.Property(x => x.Source).HasMaxLength(40).HasDefaultValue(string.Empty);
+
                 c.HasIndex(x => x.Category);
                 c.HasIndex(x => x.Season);
                 c.HasIndex(x => x.ProfileCropName);
+                c.HasIndex(x => x.Key).IsUnique().HasFilter("\"Key\" <> ''");
+            });
+
+            builder.Entity<SavedCropAdvisory>(s =>
+            {
+                s.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+                s.Property(x => x.Season).HasMaxLength(20).IsRequired();
+                s.Property(x => x.SoilType).HasMaxLength(40).IsRequired();
+                s.Property(x => x.District).HasMaxLength(60).IsRequired();
+                s.Property(x => x.FactorsJson).IsRequired();
+                s.HasIndex(x => new { x.UserId, x.CreatedAt });
+                s.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+                s.HasOne(x => x.Crop).WithMany().HasForeignKey(x => x.CropCalendarEntryId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<PestAlertHistory>(h =>
+            {
+                h.Property(x => x.District).HasMaxLength(60).IsRequired();
+                h.Property(x => x.Severity).HasMaxLength(20).IsRequired();
+                h.Property(x => x.WeatherSnapshotJson).IsRequired();
+                h.HasIndex(x => new { x.District, x.RuleId, x.TriggeredOn }).IsUnique();
+                h.HasIndex(x => x.TriggeredOn);
+            });
+
+            builder.Entity<PestAlertFeedback>(fb =>
+            {
+                fb.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+                fb.HasIndex(x => new { x.PestAlertHistoryId, x.UserId }).IsUnique();
+                fb.HasOne(x => x.History).WithMany(h => h.Feedback).HasForeignKey(x => x.PestAlertHistoryId).OnDelete(DeleteBehavior.Cascade);
+                fb.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<SuggestionState>(s =>
+            {
+                s.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+                s.Property(x => x.SuggestionKey).HasMaxLength(160).IsRequired();
+                s.Property(x => x.State).HasConversion<string>().HasMaxLength(10);
+                s.HasIndex(x => new { x.UserId, x.SuggestionKey }).IsUnique();
+                s.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
             });
 
             builder.Entity<HarvestPlan>(p =>
@@ -359,6 +431,13 @@ namespace KrishiLink.DAL
                 p.Property(x => x.Crop).HasMaxLength(60);
                 p.Property(x => x.Note).HasMaxLength(500);
                 p.Property(x => x.Status).HasMaxLength(20).HasDefaultValue(HarvestPlanStatus.Draft);
+                p.Property(x => x.ExpectedPricePerKg).HasPrecision(18, 2);
+                p.HasOne(x => x.CropEntry).WithMany().HasForeignKey(x => x.CropCalendarEntryId).OnDelete(DeleteBehavior.SetNull);
+
+                p.HasMany(x => x.Costs)
+                    .WithOne(x => x.Plan)
+                    .HasForeignKey(x => x.HarvestPlanId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 p.HasOne(x => x.Farmer)
                     .WithMany()
@@ -371,6 +450,27 @@ namespace KrishiLink.DAL
                     .OnDelete(DeleteBehavior.Cascade);
 
                 p.HasIndex(x => new { x.FarmerId, x.Status });
+            });
+
+            builder.Entity<EmailDeliveryLog>(l =>
+            {
+                l.Property(x => x.RecipientHash).HasMaxLength(24).IsRequired();
+                l.Property(x => x.UserId).HasMaxLength(450);
+                l.Property(x => x.Subject).HasMaxLength(200).IsRequired();
+                l.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+                l.Property(x => x.Error).HasMaxLength(300);
+                // Support looks a user up by address fingerprint or account, newest first; the sweep deletes by age.
+                l.HasIndex(x => new { x.RecipientHash, x.AttemptedAt });
+                l.HasIndex(x => new { x.UserId, x.AttemptedAt });
+                l.HasIndex(x => x.AttemptedAt);
+            });
+
+            builder.Entity<SeasonCost>(c =>
+            {
+                c.Property(x => x.Category).HasMaxLength(20).IsRequired();
+                c.Property(x => x.Note).HasMaxLength(200).IsRequired();
+                c.Property(x => x.Amount).HasPrecision(18, 2);
+                c.HasIndex(x => x.HarvestPlanId);
             });
 
             builder.Entity<HarvestPlanItem>(i =>
@@ -433,10 +533,47 @@ namespace KrishiLink.DAL
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
+            builder.Entity<SupabaseSessionRecord>(s =>
+            {
+                s.ToTable("SupabaseSessions");
+                s.HasKey(x => x.Id);
+                s.Property(x => x.Id).HasMaxLength(64);
+                s.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+                s.Property(x => x.SecurityStamp).HasMaxLength(256).IsRequired();
+                s.Property(x => x.ProtectedTokens).IsRequired();
+                s.HasIndex(x => x.UserId);
+                s.HasIndex(x => x.ExpiresAt);
+                s.HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<AgentConversation>(c =>
+            {
+                c.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+                c.Property(x => x.Title).HasMaxLength(120).IsRequired();
+                c.HasIndex(x => new { x.UserId, x.UpdatedAt }).IsDescending(false, true);
+                c.HasIndex(x => x.UpdatedAt);
+                c.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<AgentMessage>(m =>
+            {
+                m.Property(x => x.Role).HasConversion<string>().HasMaxLength(16);
+                m.Property(x => x.Content).IsRequired();
+                m.Property(x => x.ToolName).HasMaxLength(64);
+                m.HasIndex(x => new { x.ConversationId, x.CreatedAt });
+                m.HasIndex(x => x.ProposalId).IsUnique().HasFilter("\"ProposalId\" IS NOT NULL");
+                m.HasOne(x => x.Conversation).WithMany(c => c.Messages).HasForeignKey(x => x.ConversationId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Optimistic concurrency on PostgreSQL's xmin system column: a write based on a stale read fails with
+            // DbUpdateConcurrencyException instead of silently overwriting. No column is added to the tables.
+            foreach (var concurrent in new[] { typeof(EquipmentBooking), typeof(GodownBooking), typeof(Equipment), typeof(Godown), typeof(Payment), typeof(Transaction), typeof(HarvestPlan) })
+                builder.Entity(concurrent).Property<uint>(RowVersionProperty).IsRowVersion();
+
             // Calendar dates are not instants: they must not shift with a server's timezone.
             var calendarDates = new HashSet<string>
             {
-                "Date", "StartDate", "EndDate", "ServiceDate", "ForecastDate", "LastStatementSentMonth", "IntakeDate"
+                "Date", "StartDate", "EndDate", "ServiceDate", "ForecastDate", "LastStatementSentMonth", "IntakeDate", "TriggeredOn", "IncurredOn"
             };
             var utcConverter = new UtcDateTimeConverter();
             var calendarConverter = new CalendarDateTimeConverter();

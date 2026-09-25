@@ -58,7 +58,7 @@
 <div class="row justify-content-center">
     <div class="col-12 col-xl-10">
         
-        <form asp-controller="EquipmentOwner" asp-action="Save" method="post" id="equipmentListingForm" enctype="multipart/form-data" onsubmit="return validateListingForm(event)">
+        <form asp-controller="EquipmentOwner" asp-action="Save" method="post" id="equipmentListingForm" enctype="multipart/form-data" data-onsubmit="return validateListingForm(event)">
             <input type="hidden" asp-for="Id" id="equipmentId" />
             <input type="hidden" asp-for="PrimaryImageKey" id="primaryImageKeyInput" />
             <input type="hidden" asp-for="Latitude" id="equipmentLatitude" />
@@ -95,14 +95,14 @@
                         </label>
                         <select asp-for="Category" class="form-select py-2.5" id="equipmentCategorySelect" required>
                             <option value="">@L["-- Select Category --"]</option>
-                            <option value="Tractor">@L["🚜 Tractor"]</option>
-                            <option value="Power Tiller">@L["⚙️ Power Tiller"]</option>
-                            <option value="Combine Harvester">@L["🌾 Combine Harvester"]</option>
-                            <option value="Seed Drill / Seeder">@L["🌱 Seed Drill / Seeder"]</option>
-                            <option value="Power Sprayer">@L["💧 Power Sprayer"]</option>
-                            <option value="Irrigation Pump">@L["⚡ Irrigation Pump"]</option>
-                            <option value="Thresher">@L["🌾 Crop Thresher"]</option>
-                            <option value="Other">@L["📦 Other Agricultural Tool"]</option>
+                            <option value="Tractor">@L["Tractor"]</option>
+                            <option value="Power Tiller">@L["Power Tiller"]</option>
+                            <option value="Combine Harvester">@L["Combine Harvester"]</option>
+                            <option value="Seed Drill / Seeder">@L["Seed Drill / Seeder"]</option>
+                            <option value="Power Sprayer">@L["Power Sprayer"]</option>
+                            <option value="Irrigation Pump">@L["Irrigation Pump"]</option>
+                            <option value="Thresher">@L["Crop Thresher"]</option>
+                            <option value="Other">@L["Other Agricultural Tool"]</option>
                         </select>
                         <span asp-validation-for="Category" class="text-danger small"></span>
                     </div>
@@ -262,12 +262,12 @@
                                 </span>
                                 <h5 class="fw-bold text-dark mb-0">@L["3. Machinery Photos"] <span class="text-danger">*</span></h5>
                             </div>
-                            <span class="text-muted small">@L["At least 1 photo required (Max 5 MB each: PNG, JPG, WebP)"]</span>
+                            <span class="text-muted small">@L["At least 1 photo, max 5 MB each. WebP photos load fastest for farmers on mobile data; JPG and PNG work too."]</span>
                         </div>
 
                         <!-- Dropzone Component -->
-                        <div class="krishi-upload-dropzone mb-3" id="dropzoneArea" onclick="document.getElementById('equipmentImageFileInput').click()">
-                            <input type="file" id="equipmentImageFileInput" name="imageFiles" multiple accept="image/png, image/jpeg, image/webp" class="d-none" onchange="handleFileSelect(this.files)" />
+                        <div class="krishi-upload-dropzone mb-3" id="dropzoneArea" data-onclick="document.getElementById('equipmentImageFileInput').click()">
+                            <input type="file" id="equipmentImageFileInput" name="imageFiles" multiple accept="image/png, image/jpeg, image/webp" class="d-none" data-onchange="handleFileSelect(this.files)" />
                             <div class="mb-2">
                                 <i class="bi bi-cloud-arrow-up text-success" style="font-size: 2.5rem;"></i>
                             </div>
@@ -289,16 +289,16 @@
                             {
                                 var imgUrl = Model.ExistingImageUrls[i];
                                 var isPrimary = (string.IsNullOrEmpty(Model.PrimaryImageKey) && i == 0) || string.Equals(Model.PrimaryImageKey, imgUrl, StringComparison.OrdinalIgnoreCase);
-                                <div class="krishi-image-preview-card existing-image-card @(isPrimary ? "is-primary" : "")" id="existingCard_@i" data-key="@imgUrl" onclick="setPrimaryImage('@imgUrl', this)">
-                                    <img src="@imgUrl" alt="@L["Equipment photo"]" class="w-100 h-100 object-fit-cover" />
+                                <div class="krishi-image-preview-card existing-image-card @(isPrimary ? "is-primary" : "")" id="existingCard_@i" data-key="@imgUrl" data-onclick="setPrimaryImage('@imgUrl', this)">
+                                    <img src="@imgUrl" alt="@L["Equipment photo"]" class="w-100 h-100 object-fit-cover" width="160" height="120" loading="lazy" decoding="async" />
                                     <input type="hidden" name="ExistingImageUrls" value="@imgUrl" />
                                     <span class="krishi-primary-badge @(isPrimary ? "" : "d-none")">
                                         <i class="bi bi-star-fill"></i> @L["Primary"]
                                     </span>
-                                    <button type="button" class="krishi-set-primary-btn @(isPrimary ? "d-none" : "")" onclick="event.stopPropagation(); setPrimaryImage('@imgUrl', this.parentElement)">
+                                    <button type="button" class="krishi-set-primary-btn @(isPrimary ? "d-none" : "")" data-onclick="event.stopPropagation(); setPrimaryImage('@imgUrl', this.parentElement)">
                                         <i class="bi bi-star me-1"></i>@L["Set as Primary"]
                                     </button>
-                                    <button type="button" class="krishi-preview-remove-btn" onclick="event.stopPropagation(); removeExistingImage(@i, '@imgUrl')" title="@L["Remove photo"]">
+                                    <button type="button" class="krishi-preview-remove-btn" data-onclick="event.stopPropagation(); removeExistingImage(@i, '@imgUrl')" title="@L["Remove photo"]">
                                         <i class="bi bi-x"></i>
                                     </button>
                                 </div>

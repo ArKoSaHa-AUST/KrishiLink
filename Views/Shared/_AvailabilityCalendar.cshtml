@@ -77,13 +77,13 @@
                     }
                     else if (partialDates.Contains(currentDate))
                     {
-                        <div class="col p-2 rounded cal-partial fw-bold calendar-day-available" onclick="selectCalendarDate('@currentDate.ToString("yyyy-MM-dd")')" title="@L["Partially booked - units still available"]">
+                        <div class="col p-2 rounded cal-partial fw-bold calendar-day-available" data-onclick="selectCalendarDate('@currentDate.ToString("yyyy-MM-dd")')" title="@L["Partially booked - units still available"]">
                             @day
                         </div>
                     }
                     else
                     {
-                        <div class="col p-2 rounded bg-white border border-success-subtle text-success fw-bold calendar-day-available" onclick="selectCalendarDate('@currentDate.ToString("yyyy-MM-dd")')" title="@L["Available for booking"]">
+                        <div class="col p-2 rounded bg-white border border-success-subtle text-success fw-bold calendar-day-available" data-onclick="selectCalendarDate('@currentDate.ToString("yyyy-MM-dd")')" title="@L["Available for booking"]">
                             @day
                         </div>
                     }

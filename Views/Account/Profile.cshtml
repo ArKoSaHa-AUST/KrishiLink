@@ -263,6 +263,36 @@
                 </div>
             </div>
 
+            <!-- Measurement units (REA-03) -->
+            <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden mb-4">
+                <div class="px-4 py-3 border-bottom d-flex align-items-center gap-2 bg-light-subtle">
+                    <div class="p-2 rounded-circle text-success" style="background-color: var(--krishi-primary-subtle);">
+                        <i class="bi bi-rulers fs-5" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">@L["Measurement units"]</h5>
+                        <span class="small text-muted">@L["How land sizes are shown to you across KrishiLink"]</span>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-controller="Account" asp-action="UpdateLandUnit" method="post" class="d-flex flex-wrap align-items-end gap-3">
+                        <div>
+                            <label for="preferredLandUnit" class="form-label small fw-semibold mb-1">@L["Land unit"]</label>
+                            <select id="preferredLandUnit" name="unit" class="form-select">
+                                @foreach (var unit in KrishiLink.BLL.Helpers.UnitFormat.LandUnits)
+                                {
+                                    <option value="@unit" selected="@(unit == Model.PreferredLandUnit)">@KrishiLink.BLL.Helpers.UnitFormat.UnitName(unit, L)</option>
+                                }
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-outline-success rounded-pill px-4 fw-semibold">@L["Save"]</button>
+                    </form>
+                    <p class="small text-muted mt-3 mb-0">
+                        @L["KrishiLink uses the standard bigha of 33 decimal (20 katha). If your area counts a bigha differently, choose decimal or acre instead. Weights are shown in maund (40 kg) with the metric value alongside."]
+                    </p>
+                </div>
+            </div>
+
             <!-- Password Management Section Card -->
             <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden profile-password-card">
                 <div class="px-4 py-3 border-bottom d-flex align-items-center justify-content-between bg-light-subtle">

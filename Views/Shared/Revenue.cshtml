@@ -175,7 +175,7 @@
         <div class="col-12 col-lg-3 d-flex flex-wrap gap-2 justify-content-lg-end">
             <button type="submit" class="btn btn-krishi-primary btn-sm rounded-pill px-3 fw-semibold"><i class="bi bi-funnel me-1"></i>@L["Apply"]</button>
             <a asp-action="Revenue" class="btn btn-outline-secondary btn-sm rounded-pill px-3">@L["Reset"]</a>
-            <button type="button" class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold" onclick="window.print()" title="@L["Print or save this report as PDF"]">
+            <button type="button" class="btn btn-krishi-outline btn-sm rounded-pill px-3 fw-semibold" data-onclick="window.print()" title="@L["Print or save this report as PDF"]">
                 <i class="bi bi-filetype-pdf me-1"></i>PDF
             </button>
         </div>
@@ -414,7 +414,7 @@
                                                 data-booking-id="" data-booking-label="@L["General operating expense"]" title="@L["Edit"]">
                                             <i class="bi bi-pencil"></i>
                                         </button>
-                                        <form asp-action="DeleteExpense" method="post" class="d-inline" onsubmit="return confirm('@L["Remove this expense?"]');">
+                                        <form asp-action="DeleteExpense" method="post" class="d-inline" data-onsubmit="return confirm('@L["Remove this expense?"]');">
                                             @Html.AntiForgeryToken()
                                             <input type="hidden" name="expenseId" value="@ge.Id" />
                                             <input type="hidden" name="returnUrl" value="@currentUrl" />
@@ -683,7 +683,7 @@
                                                     data-booking-id="@t.BookingId" data-booking-label="#@t.BookingId · @t.ListingName" data-expense-id="@e.Id" data-amount="@e.Amount" data-note="@e.Note"
                                                     data-category="@e.Category" data-expense-date="@e.ExpenseDate.ToString("yyyy-MM-dd")"
                                                     data-bs-toggle="modal" data-bs-target="#expenseModal"><i class="bi bi-pencil-square"></i></button>
-                                            <form asp-action="DeleteExpense" method="post" class="d-inline d-print-none" onsubmit="return confirm('@L["Remove this expense?"]');">
+                                            <form asp-action="DeleteExpense" method="post" class="d-inline d-print-none" data-onsubmit="return confirm('@L["Remove this expense?"]');">
                                                 <input type="hidden" name="expenseId" value="@e.Id" />
                                                 <input type="hidden" name="returnUrl" value="@currentUrl" />
                                                 <button type="submit" class="btn btn-link btn-sm p-0 text-secondary" title="@L["Remove expense"]"><i class="bi bi-trash3"></i></button>

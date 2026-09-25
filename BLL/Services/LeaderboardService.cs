@@ -17,7 +17,9 @@ namespace KrishiLink.BLL.Services
     {
         Task<LeaderboardPageViewModel> GetLeaderboardAsync(string category = "All", string sortBy = "trust", string? district = null, string? division = null, bool forceRefresh = false);
         Task<(int? Rank, double TrustScore, int TotalRanked)> GetOwnerRankAsync(string ownerId);
-        void InvalidateCache();
+
+        /// <summary>Drops the cached rankings; returns false (and does nothing) while the refresh cooldown is running.</summary>
+        bool InvalidateCache();
     }
 
     public class LeaderboardService : ILeaderboardService
@@ -26,6 +28,10 @@ namespace KrishiLink.BLL.Services
         private static readonly ConcurrentBag<string> KnownCacheKeys = new();
         private static readonly TimeSpan CacheSlidingExpiration = TimeSpan.FromMinutes(15);
         private static readonly TimeSpan CacheAbsoluteExpiration = TimeSpan.FromMinutes(30);
+
+        // Forced recomputation is expensive, so every requester shares one cooldown and it cannot be looped.
+        internal static readonly TimeSpan RefreshCooldown = TimeSpan.FromSeconds(30);
+        private static long _lastRefreshTicks;
 
         private readonly ApplicationDbContext _db;
         private readonly IMemoryCache _cache;
@@ -75,6 +81,7 @@ namespace KrishiLink.BLL.Services
 
             var cacheKey = $"{CacheKeyPrefix}{safeCategory.ToLowerInvariant()}_{safeSortBy}_{safeDistrict.ToLowerInvariant()}_{safeDivision.ToLowerInvariant()}";
 
+            if (forceRefresh && !TryStartRefresh()) forceRefresh = false;
             if (!forceRefresh && _cache.TryGetValue(cacheKey, out LeaderboardPageViewModel? cachedModel) && cachedModel != null)
             {
                 _logger.LogInformation("Leaderboard served from MemoryCache (Category: {Category}, Sort: {Sort}, District: {District})", safeCategory, safeSortBy, safeDistrict);
@@ -278,13 +285,23 @@ namespace KrishiLink.BLL.Services
             return (null, 0.0, leaderboard.TotalOwnersCount);
         }
 
-        public void InvalidateCache()
+        public bool InvalidateCache()
         {
+            if (!TryStartRefresh()) return false;
             _logger.LogInformation("Invalidating Leaderboard MemoryCache");
             while (KnownCacheKeys.TryTake(out var key))
             {
                 _cache.Remove(key);
             }
+            return true;
+        }
+
+        private static bool TryStartRefresh()
+        {
+            var now = DateTime.UtcNow.Ticks;
+            var last = Interlocked.Read(ref _lastRefreshTicks);
+            return now - last >= RefreshCooldown.Ticks
+                && Interlocked.CompareExchange(ref _lastRefreshTicks, now, last) == last;
         }
     }
 }

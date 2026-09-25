@@ -1,4 +1,5 @@
 using KrishiLink.BLL.Helpers;
+using KrishiLink.DAL;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
@@ -7,15 +8,23 @@ using Microsoft.Extensions.Options;
 
 namespace KrishiLink.BLL.Services
 {
-    public interface IEquipmentService
+    /// <summary>
+    /// The public, read-only half of <see cref="IEquipmentService"/>. The AI assistant depends on this interface only,
+    /// so no code path reachable from its tool dispatcher can create, modify or cancel anything.
+    /// </summary>
+    public interface IEquipmentQueries
     {
-        // Farmer / public
         Task<EquipmentBrowseViewModel> BrowseAsync(EquipmentSearchCriteria criteria);
         Task<EquipmentDetailViewModel?> GetDetailsAsync(int id, string? currentUserId = null);
         Task<EquipmentQuote?> QuoteAsync(int equipmentId, DateTime? start, DateTime? end, int units = 1);
         Task<(decimal Gross, string? PricingNote)> QuoteGrossAsync(int equipmentId, DateTime start, DateTime end, int units = 1);
         Task<string?> CheckAvailabilityAsync(int equipmentId, DateTime start, DateTime end, int units = 1, int? excludeBookingId = null);
         Task<int> FreeUnitsAsync(int equipmentId, DateTime start, DateTime end, int? excludeBookingId = null);
+    }
+
+    public interface IEquipmentService : IEquipmentQueries
+    {
+        // Farmer / public
         Task<string?> ValidateQuantityAsync(string ownerId, int equipmentId, int newQuantity);
 
         /// <summary>Creates a pending rental request with optional loyalty promo or points. Returns a user-facing error message, or null on success.</summary>
@@ -116,13 +125,6 @@ namespace KrishiLink.BLL.Services
         {
             var query = _equipment.Query().Include(e => e.Owner).AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(c.SearchTerm))
-            {
-                var term = PostgresSearch.Contains(c.SearchTerm.Trim());
-                query = query.Where(e => EF.Functions.ILike(e.Name, term, "\\") || EF.Functions.ILike(e.Category, term, "\\")
-                    || EF.Functions.ILike(e.Location, term, "\\") || (e.District != null && EF.Functions.ILike(e.District, term, "\\"))
-                    || EF.Functions.ILike(e.Description, term, "\\") || EF.Functions.ILike(e.Owner!.FullName, term, "\\"));
-            }
             if (c.SelectedCategories is { Count: > 0 })
             {
                 var categories = c.SelectedCategories.Select(x => x.ToLowerInvariant()).ToArray();
@@ -131,14 +133,19 @@ namespace KrishiLink.BLL.Services
 
             var rawDistrict = !string.IsNullOrWhiteSpace(c.District) ? c.District : c.Location;
 
+            // "Within N km" replaces the district/division match: its circle deliberately crosses district borders (DIS-02).
+            var circle = GeoDistance.Circle(c.NearLat, c.NearLng, rawDistrict, c.RadiusKm);
+            if (circle is { } near)
+                query = GeoDistance.Within(query, near, e => e.Latitude, e => e.Longitude);
+
             // A division on its own means "anywhere in this division"; a district always wins.
-            if (string.IsNullOrWhiteSpace(rawDistrict) && BangladeshGeo.IsDivision(c.Division))
+            if (circle is null && string.IsNullOrWhiteSpace(rawDistrict) && BangladeshGeo.IsDivision(c.Division))
             {
                 var inDivision = BangladeshGeo.GetDistrictsForDivision(c.Division);
                 query = query.Where(e => e.District != null && inDivision.Contains(e.District));
             }
 
-            if (!string.IsNullOrWhiteSpace(rawDistrict))
+            if (circle is null && !string.IsNullOrWhiteSpace(rawDistrict))
             {
                 var targetDistrict = OnboardingOptions.GuessDistrict(rawDistrict.Trim()) ?? rawDistrict.Trim();
                 var alt = GetDistrictAlias(targetDistrict);
@@ -178,19 +185,58 @@ namespace KrishiLink.BLL.Services
                         .Sum(b => (int?)b.Units).GetValueOrDefault() + reqUnits <= e.Quantity);
             }
 
+            // Text search runs last so the typo fallback can rerun against exactly the same filters (DIS-01).
+            var filtered = query;
+            string? tsQuery = null;
+            if (!string.IsNullOrWhiteSpace(c.SearchTerm))
+            {
+                var raw = c.SearchTerm.Trim();
+                var term = PostgresSearch.Contains(raw);
+                tsQuery = ListingSearch.ToTsQuery(raw, SearchSynonyms.Cached(AppContext.BaseDirectory));
+                // Full text (with Bangla/English synonyms) OR the literal substring match this page always had.
+                query = tsQuery is null
+                    ? query.Where(e => EF.Functions.ILike(e.Name, term, "\\") || EF.Functions.ILike(e.Category, term, "\\")
+                        || EF.Functions.ILike(e.Location, term, "\\") || (e.District != null && EF.Functions.ILike(e.District, term, "\\"))
+                        || EF.Functions.ILike(e.Description, term, "\\") || EF.Functions.ILike(e.Owner!.FullName, term, "\\"))
+                    : query.Where(e => e.SearchVector.Matches(EF.Functions.ToTsQuery("simple", tsQuery))
+                        || EF.Functions.ILike(e.Name, term, "\\") || EF.Functions.ILike(e.Category, term, "\\")
+                        || EF.Functions.ILike(e.Location, term, "\\") || (e.District != null && EF.Functions.ILike(e.District, term, "\\"))
+                        || EF.Functions.ILike(e.Description, term, "\\") || EF.Functions.ILike(e.Owner!.FullName, term, "\\"));
+            }
+
             var sort = (c.SortBy ?? "newest").ToLowerInvariant();
             query = sort switch
             {
                 "price_asc" => query.OrderBy(e => e.DailyRate),
                 "price_desc" => query.OrderByDescending(e => e.DailyRate),
+                "distance" when circle is { } origin => query.OrderBy(GeoDistance.KmFrom<Equipment>(origin, e => e.Latitude, e => e.Longitude)).ThenByDescending(e => e.CreatedAt),
                 "location" or "distance" => query.OrderBy(e => e.District).ThenBy(e => e.Location).ThenByDescending(e => e.CreatedAt),
                 "rating_desc" => query.OrderByDescending(e => e.AverageRating).ThenByDescending(e => e.ReviewCount),
+                // While searching, the default order is relevance (ts_rank_cd), then newest.
+                _ when tsQuery is not null => query.OrderByDescending(e => e.SearchVector.RankCoverDensity(EF.Functions.ToTsQuery("simple", tsQuery))).ThenByDescending(e => e.CreatedAt),
                 _ => query.OrderByDescending(e => e.CreatedAt)
             };
 
             var totalCount = await query.CountAsync();
+
+            // Nothing matched: fall back to trigram word similarity so "harvestor" still finds "Combine Harvester".
+            var isFuzzy = false;
+            if (totalCount == 0 && !string.IsNullOrWhiteSpace(c.SearchTerm))
+            {
+                var fuzzy = string.Join(' ', ListingSearch.Words(c.SearchTerm));
+                if (fuzzy.Length >= 3)
+                {
+                    query = filtered
+                        .Where(e => EF.Functions.TrigramsWordSimilarity(fuzzy, e.Name) > ListingSearch.FuzzyThreshold
+                            || EF.Functions.TrigramsWordSimilarity(fuzzy, e.Category) > ListingSearch.FuzzyThreshold)
+                        .OrderByDescending(e => Math.Max(EF.Functions.TrigramsWordSimilarity(fuzzy, e.Name), EF.Functions.TrigramsWordSimilarity(fuzzy, e.Category)))
+                        .ThenByDescending(e => e.CreatedAt);
+                    totalCount = await query.CountAsync();
+                    isFuzzy = totalCount > 0;
+                }
+            }
             var page = c.Page > 0 ? c.Page : 1;
-            var pageSize = c.PageSize > 0 ? c.PageSize : 24;
+            var pageSize = c.PageSize > 0 ? Math.Min(c.PageSize, ListingSearch.MaxPageSize) : 24;
 
             var rawItems = await query
                 .Skip((page - 1) * pageSize)
@@ -202,6 +248,7 @@ namespace KrishiLink.BLL.Services
                     e.Category,
                     e.DailyRate,
                     e.HourlyRate,
+                    e.MinRentalDays,
                     e.Location,
                     e.District,
                     e.Latitude,
@@ -242,6 +289,7 @@ namespace KrishiLink.BLL.Services
                     Category = e.Category,
                     DailyRate = e.DailyRate,
                     HourlyRate = e.HourlyRate,
+                    MinRentalDays = e.MinRentalDays,
                     Location = e.Location,
                     District = e.District,
                     Latitude = e.Latitude,
@@ -249,7 +297,7 @@ namespace KrishiLink.BLL.Services
                     IsAvailable = e.IsAvailable,
                     Quantity = e.Quantity,
                     HasRateRules = e.HasRateRules,
-                    ImageUrl = ListingFormat.Split(e.ImageUrl).FirstOrDefault() ?? string.Empty,
+                    ImageUrl = ListingFormat.FirstThumbnail(e.ImageUrl),
                     OwnerName = e.OwnerName,
                     OwnerIsVerified = e.OwnerIsVerified,
                     OwnerVerificationStatus = e.OwnerVerificationStatus ?? "Unverified",
@@ -259,6 +307,7 @@ namespace KrishiLink.BLL.Services
                     ReviewCount = e.ReviewCount,
                     LastServicedDaysAgo = daysAgo,
                     LastServicedText = lastServicedText,
+                    DistanceKm = circle is { } from && e.Latitude is { } lat && e.Longitude is { } lng ? Math.Round(GeoDistance.Km(from.Lat, from.Lng, lat, lng), 1) : 0,
                     CreatedAt = e.CreatedAt
                 };
             }).ToList();
@@ -276,6 +325,11 @@ namespace KrishiLink.BLL.Services
             var model = new EquipmentBrowseViewModel
             {
                 SearchTerm = c.SearchTerm,
+                IsFuzzyMatch = isFuzzy,
+                RadiusKm = circle?.RadiusKm,
+                NearLat = c.NearLat is not null && circle is not null ? circle.Value.Lat : null,
+                NearLng = c.NearLng is not null && circle is not null ? circle.Value.Lng : null,
+                IsNearSearch = circle is not null,
                 SelectedCategories = c.SelectedCategories ?? new List<string>(),
                 Division = c.Division,
                 District = rawDistrict,
@@ -507,7 +561,8 @@ namespace KrishiLink.BLL.Services
             int? harvestPlanId = null,
             string? planName = null)
         {
-            await using var transaction = await _bookings.BeginWorkflowAsync();
+            // Capacity is per listing; the farmer's lock covers points and voucher redemption.
+            await using var transaction = await _bookings.BeginWorkflowAsync(new[] { WorkflowLock.Equipment(equipmentId), WorkflowLock.User(farmerId) });
             if (start is null || end is null) return ("Please choose a start and end date.", null);
             var s = start.Value.Date;
             var t = end.Value.Date;
@@ -658,7 +713,7 @@ namespace KrishiLink.BLL.Services
                     Name = l.Name,
                     Category = l.Category,
                     DailyRate = $"{ListingFormat.Taka(l.DailyRate)} / Day",
-                    ImageUrl = ListingFormat.Split(l.ImageUrls).FirstOrDefault() ?? string.Empty,
+                    ImageUrl = ListingFormat.FirstThumbnail(l.ImageUrls),
                     Status = l.RentedToday ? "Rented" : l.IsAvailable ? "Available" : "Unavailable",
                     Quantity = l.Quantity,
                     LastServicedDaysAgo = daysAgo,
@@ -745,7 +800,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<DecisionResult> RespondAsync(string ownerId, int bookingId, string decision, string? reason)
         {
-            await using var transaction = await _bookings.BeginWorkflowAsync();
+            await using var transaction = await _bookings.BeginWorkflowAsync(await DecisionLocksAsync(ownerId, bookingId));
             var booking = await _bookings.QueryTracked().Include(b => b.Equipment).Include(b => b.Payment)
                 .FirstOrDefaultAsync(b => b.Id == bookingId && b.Equipment!.OwnerId == ownerId);
             if (booking is null) return DecisionResult.Fail("This request could not be found.");
@@ -926,6 +981,27 @@ namespace KrishiLink.BLL.Services
             }
 
             return DecisionResult.Ok(autoRejected);
+        }
+
+        /// <summary>
+        /// Listing: capacity and auto-rejection. Owner: completing/undoing changes what a payout may settle.
+        /// Farmers: completion awards the booking's farmer points, and auto-rejection refunds points to the losers.
+        /// </summary>
+        private async Task<List<WorkflowLock>> DecisionLocksAsync(string ownerId, int bookingId)
+        {
+            var locks = new List<WorkflowLock> { WorkflowLock.User(ownerId) };
+            var target = await _bookings.Query().Where(b => b.Id == bookingId)
+                .Select(b => new { b.EquipmentId, b.FarmerId, b.StartDate, b.EndDate }).FirstOrDefaultAsync();
+            if (target is null) return locks;
+
+            locks.Add(WorkflowLock.Equipment(target.EquipmentId));
+            locks.Add(WorkflowLock.User(target.FarmerId));
+            var refundable = await _bookings.Query()
+                .Where(b => b.EquipmentId == target.EquipmentId && b.Id != bookingId && b.Status == BookingStatus.Pending
+                    && b.StartDate <= target.EndDate && target.StartDate <= b.EndDate && (b.PointsUsed > 0 || b.DiscountAmount > 0))
+                .Select(b => b.FarmerId).Distinct().ToListAsync();
+            locks.AddRange(refundable.Select(WorkflowLock.User));
+            return locks;
         }
 
         public async Task<EquipmentListingViewModel?> GetListingAsync(string ownerId, int id)
@@ -1131,7 +1207,7 @@ namespace KrishiLink.BLL.Services
                 Category = e.Category,
                 RateText = $"{ListingFormat.Taka(e.DailyRate)} / Day",
                 Location = e.Location,
-                ThumbnailUrl = ListingFormat.Split(e.ImageUrls).FirstOrDefault() ?? string.Empty,
+                ThumbnailUrl = ListingFormat.FirstThumbnail(e.ImageUrls),
                 Month = first,
                 MonthName = first.ToString("MMMM yyyy"),
                 Quantity = e.Quantity,
@@ -1145,7 +1221,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<bool> SaveAvailabilityAsync(string ownerId, int equipmentId, DateTime month, IEnumerable<DateTime> blockedDates)
         {
-            await using var transaction = await _blockedDates.BeginWorkflowAsync();
+            await using var transaction = await _blockedDates.BeginWorkflowAsync(new[] { WorkflowLock.Equipment(equipmentId) });
             if (!await _equipment.Query().AnyAsync(x => x.Id == equipmentId && x.OwnerId == ownerId)) return false;
 
             var first = new DateTime(month.Year, month.Month, 1);
@@ -1333,7 +1409,7 @@ namespace KrishiLink.BLL.Services
                 EquipmentName = e.Name,
                 Category = e.Category,
                 Location = e.Location,
-                PrimaryImageUrl = ListingFormat.Split(e.ImageUrls).FirstOrDefault() ?? string.Empty,
+                PrimaryImageUrl = ListingFormat.FirstThumbnail(e.ImageUrls),
                 DailyRate = $"{ListingFormat.Taka(e.DailyRate)} / Day",
                 IsAvailable = e.IsAvailable,
                 TotalMaintenanceCost = totalCost,
@@ -1586,7 +1662,8 @@ namespace KrishiLink.BLL.Services
                 ListingName = e.Name,
                 Category = e.Category,
                 Location = e.Location,
-                ThumbnailUrl = ListingFormat.Split(e.ImageUrls).FirstOrDefault() ?? string.Empty,
+                District = e.District,
+                ThumbnailUrl = ListingFormat.FirstThumbnail(e.ImageUrls),
                 BaseDailyRate = e.DailyRate,
                 RateText = $"{ListingFormat.Taka(e.DailyRate)} / Day",
                 MinRentalDays = e.MinRentalDays,

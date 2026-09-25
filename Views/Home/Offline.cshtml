@@ -1,0 +1,56 @@
+@{
+    // Standalone on purpose: the shared layout shows the signed-in user, and this page is cached for anyone (REA-01).
+    Layout = null;
+    var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+    var months = Enumerable.Range(1, 12).Select(m => System.Globalization.CultureInfo.CurrentUICulture.DateTimeFormat.GetMonthName(m)).ToArray();
+}
+<!DOCTYPE html>
+<html lang="@(isBangla ? "bn" : "en")">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2d6a4f" />
+    <title>@L["You are offline"] - KrishiLink</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="@(isBangla ? "lang-bn" : "")">
+    <main class="container py-4 krishi-offline"
+          data-months="@string.Join("|", months)"
+          data-bangla="@(isBangla ? "1" : "0")"
+          data-msg-saved="@L["Showing data saved on {0}.", "{0}"]"
+          data-msg-sown="@L["Sow now"]"
+          data-msg-harvest="@L["Harvest now"]"
+          data-msg-none="@L["Nothing in the calendar is sown or harvested this month."]"
+          data-msg-no-calendar="@L["The crop calendar has not been saved on this phone yet. Open KrishiLink once while online."]"
+          data-msg-no-forecast="@L["No forecast saved yet. Open Pest Alerts once while online to keep a copy."]"
+          data-msg-forecast="@L["{0}: {1}°C (low {2}°C), humidity {3}%, rain chance {4}%", "{0}", "{1}", "{2}", "{3}", "{4}"]">
+        <header class="d-flex align-items-center gap-3 mb-4">
+            <img src="~/images/icons/icon-192.png" alt="KrishiLink" width="48" height="48" />
+            <div>
+                <h1 class="h4 fw-bold mb-0">@L["You are offline"]</h1>
+                <p class="text-muted mb-0">@L["Bookings, payments and your account need a connection. The crop calendar and your last forecast still work."]</p>
+            </div>
+        </header>
+
+        <button type="button" id="offlineRetry" class="btn btn-krishi-primary rounded-pill px-4 mb-4">@L["Try again"]</button>
+
+        <section class="card border-0 shadow-sm rounded-4 mb-4" aria-labelledby="offlineMonthTitle">
+            <div class="card-body p-4">
+                <h2 class="h6 fw-bold mb-1" id="offlineMonthTitle">@L["This month in the field"]</h2>
+                <p class="small text-muted mb-3" id="offlineCalendarStamp"></p>
+                <div id="offlineCalendar" aria-live="polite"></div>
+            </div>
+        </section>
+
+        <section class="card border-0 shadow-sm rounded-4" aria-labelledby="offlineForecastTitle">
+            <div class="card-body p-4">
+                <h2 class="h6 fw-bold mb-1" id="offlineForecastTitle">@L["Last weather you viewed"]</h2>
+                <p class="small text-muted mb-3" id="offlineForecastStamp"></p>
+                <div id="offlineForecast" aria-live="polite"></div>
+            </div>
+        </section>
+    </main>
+    <script src="~/js/offline.js" asp-append-version="true"></script>
+</body>
+</html>

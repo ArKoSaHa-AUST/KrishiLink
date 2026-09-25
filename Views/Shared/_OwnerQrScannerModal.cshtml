@@ -7,7 +7,7 @@
                     <i class="bi bi-qr-code-scan fs-5"></i>
                     <h6 class="modal-title fw-bold mb-0" id="ownerQrScannerModalLabel">@L["Scan Farmer Booking Pass"]</h6>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="stopQrScannerCamera()"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" data-onclick="stopQrScannerCamera()"></button>
             </div>
             <div class="modal-body p-4 text-center">
                 
@@ -25,7 +25,7 @@
                     <div id="qrCameraPrompt" class="position-absolute top-50 start-50 translate-middle text-white p-3 text-center w-100">
                         <i class="bi bi-camera-video fs-1 text-success mb-2 d-block"></i>
                         <span class="small fw-semibold d-block mb-2">@L["Camera ready for live scanning"]</span>
-                        <button type="button" class="btn btn-success btn-sm rounded-pill px-3 py-1.5 fw-semibold" onclick="startQrScannerCamera()">
+                        <button type="button" class="btn btn-success btn-sm rounded-pill px-3 py-1.5 fw-semibold" data-onclick="startQrScannerCamera()">
                             <i class="bi bi-play-circle me-1"></i> @L["Start Camera Scanner"]
                         </button>
                     </div>
@@ -43,8 +43,8 @@
                     </label>
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-white text-muted"><i class="bi bi-hash"></i></span>
-                        <input type="text" id="manualBookingCodeInput" class="form-control font-monospace" placeholder="KL-EQ-2026-001" onkeydown="if(event.key==='Enter'){event.preventDefault();submitManualQrCode();}" />
-                        <button type="button" class="btn btn-success px-3 fw-semibold" onclick="submitManualQrCode()">
+                        <input type="text" id="manualBookingCodeInput" class="form-control font-monospace" placeholder="KL-EQ-2026-001" data-onkeydown="onManualCodeKeydown(event)" />
+                        <button type="button" class="btn btn-success px-3 fw-semibold" data-onclick="submitManualQrCode()">
                             @L["Verify"]
                         </button>
                     </div>
@@ -53,7 +53,7 @@
             </div>
             <div class="modal-footer bg-light border-0 py-2.5 px-4 justify-content-between">
                 <span class="text-muted small" style="font-size: 0.75rem;">@L["Powered by KrishiLink Verified Handover"]</span>
-                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal" onclick="stopQrScannerCamera()">
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal" data-onclick="stopQrScannerCamera()">
                     @L["Close"]
                 </button>
             </div>
@@ -146,6 +146,12 @@
         }
         if (!/^[A-Za-z0-9-]{1,40}$/.test(raw)) return null;
         return `/Verify/${encodeURIComponent(raw)}`;
+    }
+
+    function onManualCodeKeydown(event) {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        submitManualQrCode();
     }
 
     function submitManualQrCode() {

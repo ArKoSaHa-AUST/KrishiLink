@@ -33,9 +33,10 @@ appsettings.Local.json
 # User-uploaded listing images
 wwwroot/uploads/
 
-# Private storage (identity documents, private files)
-App_Data/
-[Aa]pp_[Dd]ata/
+# Private storage (identity documents, private files, Data Protection keys) — except the reviewed seed data
+App_Data/*
+[Aa]pp_[Dd]ata/*
+!App_Data/seed/
 
 # Database & temp files
 *.mdf
@@ -49,11 +50,13 @@ App_Data/
 Thumbs.db
 ehthumbs.db
 
-# Ignore markdown files except README.md
+# Ignore markdown files except README.md and the prompt/ master prompts
 *.md
 !README.md
 !readme.md
 !README*.md
+!prompt/
+!prompt/*.md
 
 bin/
 obj/

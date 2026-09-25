@@ -18,7 +18,7 @@
     <div class="krishi-card-img-wrapper position-relative bg-light text-center">
         @if (!string.IsNullOrEmpty(imageUrl))
         {
-            <img src="@imageUrl" class="card-img-top object-fit-cover" style="height: 190px;" alt="@name" loading="lazy" />
+            <img src="@imageUrl" class="card-img-top object-fit-cover" style="height: 190px;" alt="@name" loading="lazy" width="400" height="190" decoding="async" />
         }
         else
         {
@@ -36,7 +36,7 @@
                         style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 2;"
                         data-type="@favType"
                         data-id="@Model.Id.Value"
-                        onclick="event.stopPropagation(); KrishiFavorites.toggle(this);"
+                        data-onclick="event.stopPropagation(); KrishiFavorites.toggle(this);"
                         title="@(Model.IsFavorite ? L["Remove from favorites"] : L["Add to favorites"])">
                     <i class="bi @(Model.IsFavorite ? "bi-heart-fill text-danger" : "bi-heart")"></i>
                 </button>

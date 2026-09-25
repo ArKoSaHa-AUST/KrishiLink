@@ -6,6 +6,9 @@ namespace KrishiLink.Models.ViewModels
     /// </summary>
     public class EquipmentDetailViewModel
     {
+        /// <summary>What renters paid for similar listings in this district (DIS-03).</summary>
+        public PriceBenchmarkViewModel? PriceBenchmark { get; set; }
+
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;

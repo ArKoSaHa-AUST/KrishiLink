@@ -4,6 +4,7 @@ using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Localization;
 
 namespace KrishiLink.Controllers
@@ -15,23 +16,24 @@ namespace KrishiLink.Controllers
         private readonly IFileStorageService _files;
         private readonly ISavedSearchService _savedSearches;
         private readonly ILogger<EquipmentOwnerController> _logger;
-        private readonly IStringLocalizer<SharedResource> _localizer;
+        private readonly IPriceBenchmarkService _benchmarks;
 
         public EquipmentOwnerController(
             IEquipmentService equipment,
             IFileStorageService files,
             ISavedSearchService savedSearches,
             ILogger<EquipmentOwnerController> logger,
+            IPriceBenchmarkService benchmarks,
             IEquipmentRevenueService revenueService,
             UserManager<ApplicationUser> userManager,
             IStringLocalizer<SharedResource> localizer)
-            : base(revenueService, userManager)
+            : base(revenueService, userManager, localizer)
         {
             _equipment = equipment;
             _files = files;
             _savedSearches = savedSearches;
             _logger = logger;
-            _localizer = localizer;
+            _benchmarks = benchmarks;
         }
 
         /// <summary>GET: /EquipmentOwner — dashboard with listings, pending requests and revenue KPI.</summary>
@@ -39,7 +41,7 @@ namespace KrishiLink.Controllers
         {
             var model = await _equipment.GetOwnerDashboardAsync(OwnerId);
             model.OwnerName = await OwnerDisplayNameAsync();
-            model.ThisMonthRevenue = ThisMonthRevenue;
+            model.ThisMonthRevenue = await ThisMonthRevenueAsync();
 
             var user = await _userManager.GetUserAsync(User);
             if (user != null)
@@ -61,6 +63,8 @@ namespace KrishiLink.Controllers
         /// <summary>POST: /EquipmentOwner/RespondRequest — accept / reject / complete / undo a rental request.</summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
+        [SlowPath("booking")]
         public async Task<IActionResult> RespondRequest(int id, string decision, string? reason = null)
         {
             var result = await _equipment.RespondAsync(OwnerId, id, decision ?? string.Empty, reason);
@@ -80,12 +84,14 @@ namespace KrishiLink.Controllers
 
         /// <summary>GET: /EquipmentOwner/PendingCount — polled by the dashboard for new-request notifications.</summary>
         [HttpGet]
+        [EnableRateLimiting(RateLimitPolicies.ReadJson)]
         public async Task<IActionResult> PendingCount()
         {
             return Json(new { count = await _equipment.CountPendingAsync(OwnerId) });
         }
 
         [HttpGet]
+        [Authorize(Policy = AppPolicies.VerifiedEmail)]
         public IActionResult Create()
         {
             return View(new EquipmentListingViewModel());
@@ -100,6 +106,7 @@ namespace KrishiLink.Controllers
 
         /// <summary>POST: /EquipmentOwner/Save — create or update a listing (with robust server-side image validation).</summary>
         [HttpPost]
+        [Authorize(Policy = AppPolicies.VerifiedEmail)]
         [ValidateAntiForgeryToken]
         [RequestFormLimits(MultipartBodyLengthLimit = 32 * 1024 * 1024)]
         [RequestSizeLimit(32 * 1024 * 1024)]
@@ -154,7 +161,7 @@ namespace KrishiLink.Controllers
                 }
             }
 
-            TempData["SuccessMessage"] = $"Equipment listing '{model.Name}' successfully {(isEdit ? "updated" : "created")}!";
+            TempData["SuccessMessage"] = _localizer[isEdit ? "Equipment listing '{0}' successfully updated!" : "Equipment listing '{0}' successfully created!", model.Name].Value;
             return RedirectToAction(nameof(Index));
         }
 
@@ -254,11 +261,11 @@ namespace KrishiLink.Controllers
             var (success, error) = await _equipment.AddMaintenanceRecordAsync(OwnerId, equipmentId, model);
             if (!success)
             {
-                TempData["ErrorMessage"] = error ?? "Failed to save maintenance record.";
+                TempData["ErrorMessage"] = _localizer[error ?? "Failed to save maintenance record."].Value;
                 return RedirectToAction(nameof(Maintenance), new { id = equipmentId });
             }
 
-            TempData["SuccessMessage"] = "Maintenance event successfully logged!";
+            TempData["SuccessMessage"] = _localizer["Maintenance event successfully logged!"].Value;
             return RedirectToAction(nameof(Maintenance), new { id = equipmentId });
         }
 
@@ -270,11 +277,11 @@ namespace KrishiLink.Controllers
             var success = await _equipment.DeleteMaintenanceRecordAsync(OwnerId, recordId);
             if (!success)
             {
-                TempData["ErrorMessage"] = "Could not delete the maintenance record.";
+                TempData["ErrorMessage"] = _localizer["Could not delete the maintenance record."].Value;
             }
             else
             {
-                TempData["SuccessMessage"] = "Maintenance record removed.";
+                TempData["SuccessMessage"] = _localizer["Maintenance record removed."].Value;
             }
 
             return RedirectToAction(nameof(Maintenance), new { id = equipmentId });
@@ -287,6 +294,17 @@ namespace KrishiLink.Controllers
             var model = await _equipment.GetPricingAsync(OwnerId, id);
             if (model is null) return NotFound();
 
+            if (!string.IsNullOrWhiteSpace(model.District))
+            {
+                model.PriceBenchmark = new PriceBenchmarkViewModel
+                {
+                    Benchmark = await _benchmarks.ForEquipmentAsync(model.Category, model.District, cancellationToken: HttpContext.RequestAborted),
+                    Price = model.BaseDailyRate,
+                    Category = model.Category,
+                    District = model.District,
+                    ForOwner = true
+                };
+            }
             return View("Pricing", model);
         }
 
@@ -298,18 +316,18 @@ namespace KrishiLink.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-                TempData["ErrorMessage"] = errors;
+                TempData["ErrorMessage"] = _localizer[errors].Value;
                 return RedirectToAction(nameof(Pricing), new { id = equipmentId });
             }
 
             var error = await _equipment.SaveRateRuleAsync(OwnerId, equipmentId, model);
             if (error != null)
             {
-                TempData["ErrorMessage"] = error;
+                TempData["ErrorMessage"] = _localizer[error].Value;
             }
             else
             {
-                TempData["SuccessMessage"] = "Rate rule saved successfully!";
+                TempData["SuccessMessage"] = _localizer["Rate rule saved successfully!"].Value;
             }
 
             return RedirectToAction(nameof(Pricing), new { id = equipmentId });
@@ -323,11 +341,11 @@ namespace KrishiLink.Controllers
             var success = await _equipment.ToggleRateRuleAsync(OwnerId, ruleId);
             if (!success)
             {
-                TempData["ErrorMessage"] = "Could not activate rule (ensure no overlapping active season rules or duplicate active weekend rules).";
+                TempData["ErrorMessage"] = _localizer["Could not activate rule (ensure no overlapping active season rules or duplicate active weekend rules)."].Value;
             }
             else
             {
-                TempData["SuccessMessage"] = "Rate rule status updated.";
+                TempData["SuccessMessage"] = _localizer["Rate rule status updated."].Value;
             }
 
             return RedirectToAction(nameof(Pricing), new { id = equipmentId });
@@ -341,11 +359,11 @@ namespace KrishiLink.Controllers
             var success = await _equipment.DeleteRateRuleAsync(OwnerId, ruleId);
             if (!success)
             {
-                TempData["ErrorMessage"] = "Could not delete the rate rule.";
+                TempData["ErrorMessage"] = _localizer["Could not delete the rate rule."].Value;
             }
             else
             {
-                TempData["SuccessMessage"] = "Rate rule removed successfully.";
+                TempData["SuccessMessage"] = _localizer["Rate rule removed successfully."].Value;
             }
 
             return RedirectToAction(nameof(Pricing), new { id = equipmentId });

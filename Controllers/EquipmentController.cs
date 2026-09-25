@@ -4,19 +4,27 @@ using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Localization;
 
 namespace KrishiLink.Controllers
 {
     public class EquipmentController : Controller
     {
         private readonly IEquipmentService _equipment;
+        private readonly IPriceBenchmarkService _benchmarks;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
-        public EquipmentController(IEquipmentService equipment)
+        public EquipmentController(IEquipmentService equipment, IPriceBenchmarkService benchmarks, IStringLocalizer<SharedResource> localizer)
         {
             _equipment = equipment;
+            _benchmarks = benchmarks;
+            _localizer = localizer;
         }
 
         /// <summary>GET: /Equipment — browse & search with server-side filtering.</summary>
+        [AllowAnonymous]
+        [SlowPath("search")]
         public async Task<IActionResult> Index(EquipmentSearchCriteria criteria)
         {
             criteria.CurrentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -24,7 +32,10 @@ namespace KrishiLink.Controllers
         }
 
         /// <summary>GET: /Equipment/FilterData — JSON endpoint for live filtering.</summary>
+        [AllowAnonymous]
         [HttpGet]
+        [EnableRateLimiting(RateLimitPolicies.ReadJson)]
+        [SlowPath("search")]
         public async Task<IActionResult> FilterData(EquipmentSearchCriteria criteria)
         {
             criteria.CurrentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -42,6 +53,8 @@ namespace KrishiLink.Controllers
                 location = e.Location,
                 district = e.District,
                 distanceKm = e.DistanceKm,
+                latitude = e.Latitude,
+                longitude = e.Longitude,
                 isAvailable = e.IsAvailable,
                 isFavorite = e.IsFavorite,
                 status = e.Status,
@@ -62,6 +75,8 @@ namespace KrishiLink.Controllers
             return Json(new
             {
                 totalCount = model.TotalCount,
+                fuzzy = model.IsFuzzyMatch,
+                near = model.IsNearSearch,
                 page = model.Page,
                 pageSize = model.PageSize,
                 totalPages = model.TotalPages,
@@ -72,7 +87,9 @@ namespace KrishiLink.Controllers
         }
 
         /// <summary>GET: /Equipment/Quote?id=&start=&end=&units=1 — Live rule-aware rental price quote.</summary>
+        [AllowAnonymous]
         [HttpGet]
+        [EnableRateLimiting(RateLimitPolicies.ReadJson)]
         public async Task<IActionResult> Quote(int id, DateTime? start, DateTime? end, int units = 1)
         {
             var quote = await _equipment.QuoteAsync(id, start, end, units);
@@ -100,7 +117,9 @@ namespace KrishiLink.Controllers
         }
 
         /// <summary>GET: /Equipment/FreeUnits?id=&start=&end= — returns free units for range.</summary>
+        [AllowAnonymous]
         [HttpGet]
+        [EnableRateLimiting(RateLimitPolicies.ReadJson)]
         public async Task<IActionResult> FreeUnits(int id, DateTime? start, DateTime? end)
         {
             var eq = await _equipment.GetDetailsAsync(id);
@@ -116,6 +135,7 @@ namespace KrishiLink.Controllers
         }
 
         /// <summary>GET: /Equipment/Details/5 — details & rental request form.</summary>
+        [AllowAnonymous]
         public async Task<IActionResult> Details(int id, bool requestSent = false)
         {
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -123,13 +143,27 @@ namespace KrishiLink.Controllers
             if (model is null) return NotFound();
 
             model.IsRequestSubmitted = requestSent;
+            if (!string.IsNullOrWhiteSpace(model.District))
+            {
+                model.PriceBenchmark = new PriceBenchmarkViewModel
+                {
+                    Benchmark = await _benchmarks.ForEquipmentAsync(model.Category, model.District, cancellationToken: HttpContext.RequestAborted),
+                    Price = model.DailyRateAmount,
+                    Category = model.Category,
+                    District = model.District
+                };
+            }
             return View(model);
         }
 
         /// <summary>POST: /Equipment/SubmitRequest — farmer sends a rental request to the owner.</summary>
         [HttpPost]
         [Authorize(Roles = AppRoles.Farmer)]
+        [Authorize(Policy = AppPolicies.VerifiedEmail)]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
+        [TypeFilter(typeof(AgentProposalGate), Arguments = new object[] { AgentProposal.EquipmentType })]
+        [SlowPath("booking")]
         public async Task<IActionResult> SubmitRequest(EquipmentDetailViewModel model)
         {
             var farmerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -146,11 +180,11 @@ namespace KrishiLink.Controllers
 
             if (error is null && bookingId.HasValue)
             {
-                TempData["SuccessMessage"] = "Rental request sent successfully! Here is your official booking confirmation pass.";
+                TempData["SuccessMessage"] = _localizer["Rental request sent successfully! Here is your official booking confirmation pass."].Value;
                 return RedirectToAction("Confirmation", "Bookings", new { type = "Equipment", id = bookingId.Value, justCreated = true });
             }
 
-            TempData["ErrorMessage"] = error ?? "Failed to submit rental request.";
+            TempData["ErrorMessage"] = _localizer[error ?? "Failed to submit rental request."].Value;
             return RedirectToAction(nameof(Details), new { id = model.Id });
         }
     }

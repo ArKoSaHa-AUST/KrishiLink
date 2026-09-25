@@ -5,7 +5,7 @@
     ViewData["BodyClass"] = "krishi-body-gradient";
     var s = Model.Settlement;
     var ratePercent = (s.CommissionRate * 100).ToString("0.#");
-    var delayText = KrishiLink.Controllers.OwnerRevenueControllerBase.DelayText(Model.SettlementDelay);
+    var delayText = KrishiLink.Controllers.OwnerRevenueControllerBase.DelayText(Model.SettlementDelay, L);
     var hasProcessing = s.Payouts.Any(p => p.Status == "Processing");
     string Money(decimal v) => "৳" + v.ToString("N0");
 }

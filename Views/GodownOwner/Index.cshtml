@@ -120,7 +120,7 @@ else
                     @if (Model.BadgeWidget.CurrentRank.HasValue)
                     {
                         <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-0.5 fw-bold" style="font-size: 0.72rem;">
-                            🏆 @L["Leaderboard Rank"] #@Model.BadgeWidget.CurrentRank.Value
+                            <i class="bi bi-trophy-fill" aria-hidden="true"></i> @L["Leaderboard Rank"] #@Model.BadgeWidget.CurrentRank.Value
                         </span>
                     }
                 </div>
@@ -403,7 +403,7 @@ else
 
             KrishiRequests.optimisticDecision({
                 url: RESPOND_URL, id, decision, reason, row,
-                acceptedMsg: '@L["Booking request accepted ✓"]',
+                acceptedMsg: '@L["Booking request accepted"]',
                 rejectedMsg: '@L["Booking request rejected"]',
                 onApply: () => { if (accepted) applyCapacityChange(godownId, cap); },
                 onRowHidden: refreshPendingUI,

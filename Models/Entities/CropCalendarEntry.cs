@@ -70,5 +70,35 @@ namespace KrishiLink.Models.Entities
 
         /// <summary>Canonical mapping to onboarding farmer crop options (e.g. "Rice (Boro)", "Potato", "Wheat")</summary>
         public string? ProfileCropName { get; set; }
+
+        // ---- Added for the Smart Advisor and bilingual content. Seeded from App_Data/seed/crop-calendar.json. ----
+
+        /// <summary>Stable slug from the seed file (e.g. "boro-rice"); survives renames of <see cref="Name"/>.</summary>
+        public string Key { get; set; } = string.Empty;
+
+        public string? SoilTypesBn { get; set; }
+        public string? WaterRequirementBn { get; set; }
+        public string? KeyTipsBn { get; set; }
+
+        /// <summary>How much the crop depends on assured irrigation, decided once in the seed rather than parsed from prose per request.</summary>
+        public CropWaterNeed WaterNeed { get; set; } = CropWaterNeed.Medium;
+
+        public double? MinPh { get; set; }
+        public double? MaxPh { get; set; }
+
+        /// <summary>Indicative yield range in tonnes of harvested product per acre (100 decimals).</summary>
+        public double? TypicalYieldPerAcreMin { get; set; }
+        public double? TypicalYieldPerAcreMax { get; set; }
+
+        /// <summary>Who the agronomic content is attributed to (DAE, BARI, BRRI, BWMRI, BJRI, BSRI...).</summary>
+        public string Source { get; set; } = string.Empty;
+    }
+
+    /// <summary>Dependence on assured irrigation.</summary>
+    public enum CropWaterNeed
+    {
+        Low,
+        Medium,
+        High
     }
 }

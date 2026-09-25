@@ -5,6 +5,7 @@
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
 @inject IHarvestPlanService HarvestPlanService
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment HostEnvironment
 @{
     var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
     var targetCulture = isBangla ? "en" : "bn";
@@ -22,6 +23,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - KrishiLink</title>
     <meta name="description" content="KrishiLink - Empowering Farmers with Equipment Rental, Godown Storage, and Agricultural Advisory Services." />
+    <!-- Installable app (REA-01) -->
+    <link rel="manifest" href="~/manifest.json" />
+    <meta name="theme-color" content="#2d6a4f" />
+    <link rel="apple-touch-icon" href="~/images/icons/apple-touch-icon.png" />
     
     <!-- Bootstrap 5 CSS (via wwwroot/lib) -->
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -38,14 +43,23 @@
     <!-- Page Specific Styles -->
     @await RenderSectionAsync("Styles", required: false)
 </head>
-<body class="d-flex flex-column min-vh-100 @(isBangla ? "lang-bn" : "") @ViewData["BodyClass"]">
+<body class="d-flex flex-column min-vh-100 @(isBangla ? "lang-bn" : "") @ViewData["BodyClass"]"
+      data-service-worker="@(HostEnvironment.EnvironmentName == Microsoft.Extensions.Hosting.Environments.Development ? "off" : "on")"
+      data-offline-saved="@L["You are offline. Showing this page as saved on {0}.", "{0}"]"
+      data-offline-now="@L["You are offline. Saved pages and the crop calendar still open."]"
+      data-msg-action-failed="@L["That did not go through. Check your connection and try again."]"
+      data-msg-undo-failed="@L["The undo did not reach the server. Reload the page to see the current status."]"
+      data-msg-notifications-failed="@L["Could not load notifications."]"
+      data-msg-reviews-failed="@L["Could not load more reviews. Please try again."]"
+      data-msg-favorite-added="@L["Added to favorites"]"
+      data-msg-favorite-removed="@L["Removed from favorites"]">
     <!-- Header & Sticky Top Navbar -->
     <header class="sticky-top d-print-none">
         <nav class="navbar navbar-expand-lg navbar-dark navbar-krishi shadow-sm py-2.5">
             <div class="container">
                 <!-- Brand / Logo -->
                 <a class="navbar-brand fw-bold text-white d-flex align-items-center gap-2" asp-controller="Home" asp-action="Index">
-                    <img src="~/images/dp.png" alt="KrishiLink Logo" class="rounded-circle object-fit-cover bg-white p-0.5" style="width: 32px; height: 32px;" />
+                    <img src="~/images/dp.png" alt="KrishiLink Logo" class="rounded-circle object-fit-cover bg-white p-0.5" style="width: 32px; height: 32px;" width="32" height="32" />
                     <span>KrishiLink</span>
                 </a>
 
@@ -266,7 +280,7 @@
                 <div class="offcanvas offcanvas-end offcanvas-krishi d-lg-none" tabindex="-1" id="krishiMobileNav" aria-labelledby="krishiMobileNavLabel">
                     <div class="offcanvas-header text-white">
                         <h5 class="offcanvas-title d-flex align-items-center gap-2 fw-bold" id="krishiMobileNavLabel">
-                            <img src="~/images/dp.png" alt="KrishiLink Logo" class="rounded-circle object-fit-cover bg-white p-0.5" style="width: 28px; height: 28px;" />
+                            <img src="~/images/dp.png" alt="KrishiLink Logo" class="rounded-circle object-fit-cover bg-white p-0.5" style="width: 28px; height: 28px;" width="28" height="28" loading="lazy" />
                             KrishiLink
                         </h5>
                         <button type="button" class="btn-close btn-close-white text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
@@ -366,6 +380,20 @@
     <!-- Main Content Body -->
     <div class="container flex-grow-1 py-4">
         <main role="main">
+            @if (User.HasClaim(KrishiLink.Models.Entities.AppPolicies.EmailVerifiedClaim, "false"))
+            {
+                <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center gap-2 flex-wrap rounded-3 mb-4 d-print-none" role="alert">
+                    <i class="bi bi-envelope-exclamation-fill"></i>
+                    <span class="small fw-semibold">@L["Confirm your e-mail to book and list"]</span>
+                    <a asp-controller="Account" asp-action="VerifyEmail" class="alert-link small">@L["Enter code"]</a>
+                    <span class="small">·</span>
+                    <form asp-controller="Account" asp-action="ResendConfirmation" method="post" class="d-inline">
+                        <input type="hidden" name="Email" value="@User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value" />
+                        <button type="submit" class="btn btn-link alert-link p-0 small align-baseline">@L["Resend code"]</button>
+                    </form>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="@L["Close"]"></button>
+                </div>
+            }
             @RenderBody()
         </main>
     </div>
@@ -373,13 +401,16 @@
     <!-- Reusable Confirmation Modal Partial Shell -->
     <partial name="_Modal" />
 
+    <!-- AI assistant (signed-in users only) -->
+    <partial name="_AiAgent" />
+
     <!-- Footer -->
     <footer class="footer-krishi py-5 mt-auto d-print-none">
         <div class="container">
             <div class="row gy-4">
                 <div class="col-12 col-md-5">
                     <div class="d-flex align-items-center gap-2 mb-3">
-                        <img src="~/images/dp.png" alt="KrishiLink Logo" class="rounded-circle object-fit-cover bg-white p-0.5" style="width: 32px; height: 32px;" />
+                        <img src="~/images/dp.png" alt="KrishiLink Logo" class="rounded-circle object-fit-cover bg-white p-0.5" style="width: 32px; height: 32px;" width="32" height="32" />
                         <span class="fw-bold fs-4 text-white">KrishiLink</span>
                     </div>
                     <p class="small text-white-50 mb-3" style="max-width: 380px;">
@@ -409,9 +440,9 @@
                         <li class="d-flex align-items-center gap-2"><i class="bi bi-geo-alt text-success"></i> @L["Dhaka, Bangladesh"]</li>
                     </ul>
                     <div class="d-flex gap-2">
-                        <span class="badge bg-dark text-white-50 p-2 rounded-circle"><i class="bi bi-facebook fs-6"></i></span>
-                        <span class="badge bg-dark text-white-50 p-2 rounded-circle"><i class="bi bi-youtube fs-6"></i></span>
-                        <span class="badge bg-dark text-white-50 p-2 rounded-circle"><i class="bi bi-whatsapp fs-6"></i></span>
+                        <span class="badge bg-white bg-opacity-10 text-white-50 p-2 rounded-circle"><i class="bi bi-facebook fs-6"></i></span>
+                        <span class="badge bg-white bg-opacity-10 text-white-50 p-2 rounded-circle"><i class="bi bi-youtube fs-6"></i></span>
+                        <span class="badge bg-white bg-opacity-10 text-white-50 p-2 rounded-circle"><i class="bi bi-whatsapp fs-6"></i></span>
                     </div>
                 </div>
             </div>
@@ -419,7 +450,7 @@
                 <span>&copy; @DateTime.Now.Year KrishiLink Platform. All rights reserved.</span>
                 <div class="mt-2 mt-sm-0">
                     <a asp-controller="Home" asp-action="Privacy" class="me-3 text-white-50 hover-white">@L["Privacy Policy"]</a>
-                    <span>🌾 @L["Empowering Bangladesh Farmers"]</span>
+                    <span><i class="bi bi-flower1 me-1" aria-hidden="true"></i>@L["Empowering Bangladesh Farmers"]</span>
                 </div>
             </div>
         </div>
@@ -432,8 +463,15 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     
+    <!-- data-on* handlers (CSP forbids inline on* attributes) -->
+    <script src="~/js/inline-handlers.js" asp-append-version="true"></script>
+
     <!-- Custom site JS -->
     <script src="~/js/site.js" asp-append-version="true"></script>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <script src="~/js/ai-agent.js" asp-append-version="true"></script>
+    }
     
     <!-- Page Specific Scripts -->
     @await RenderSectionAsync("Scripts", required: false)

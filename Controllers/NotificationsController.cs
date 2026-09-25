@@ -2,6 +2,7 @@ using System.Security.Claims;
 using KrishiLink.BLL.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Localization;
 
@@ -43,6 +44,7 @@ namespace KrishiLink.Controllers
         /// GET: /Notifications/UnreadCount — lightweight JSON endpoint for navbar polling.
         /// </summary>
         [HttpGet]
+        [EnableRateLimiting(RateLimitPolicies.ReadJson)]
         public async Task<IActionResult> UnreadCount()
         {
             var count = await _notifications.GetUnreadCountAsync(CurrentUserId);
@@ -53,6 +55,7 @@ namespace KrishiLink.Controllers
         /// GET: /Notifications/Recent — JSON endpoint for navbar dropdown list.
         /// </summary>
         [HttpGet]
+        [EnableRateLimiting(RateLimitPolicies.ReadJson)]
         public async Task<IActionResult> Recent(int take = 5)
         {
             var items = await _notifications.GetRecentNotificationsAsync(CurrentUserId, take);
@@ -157,8 +160,7 @@ namespace KrishiLink.Controllers
             if (!_env.IsDevelopment()) return NotFound();
 
             var summary = await _reminders.SendDueRemindersAsync(ct, onlyUserId: CurrentUserId);
-            var format = _localizer["[Dev] Reminders: {0} sent, {1} already delivered."].Value;
-            TempData["SuccessMessage"] = string.Format(format, summary.Sent, summary.Skipped);
+            TempData["SuccessMessage"] = _localizer["[Dev] Reminders: {0} sent, {1} already delivered.", summary.Sent, summary.Skipped].Value;
 
             return RedirectToAction(nameof(Index));
         }

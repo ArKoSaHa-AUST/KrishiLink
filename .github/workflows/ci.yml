@@ -8,8 +8,22 @@ on:
 
 jobs:
   build-and-test:
-    name: Build and PostgreSQL Migration Checks
+    name: Build, Test and Security Audit
     runs-on: ubuntu-latest
+
+    services:
+      # Disposable server for the database test suites; each run creates and drops its own database.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci-test-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
     - name: Checkout Code
@@ -31,13 +45,31 @@ jobs:
     - name: Restore Dependencies
       run: |
         dotnet tool restore
-        dotnet restore KrishiLink.csproj
+        dotnet restore KrishiLink.sln
 
     - name: Verify Code Formatting
-      run: dotnet format --verify-no-changes
+      run: dotnet format KrishiLink.sln --verify-no-changes
+
+    - name: Check View Utility Classes Exist
+      run: python3 .github/scripts/check_css_classes.py
+
+    - name: Check TempData Messages Are Localized
+      run: python3 .github/scripts/check_localized_tempdata.py
+
+    - name: Check CSP-Safe Event Handlers
+      run: |
+        python3 .github/scripts/extract_handlers.py "$RUNNER_TEMP/handlers.json"
+        node tests/js/inline-handlers.test.js "$RUNNER_TEMP/handlers.json"
+
+    - name: Check Service Worker Never Caches Private Pages
+      run: node tests/js/sw-routing.test.js
 
     - name: Audit Vulnerable NuGet Packages
-      run: dotnet list package --vulnerable --include-transitive
+      run: |
+        dotnet list KrishiLink.sln package --vulnerable --include-transitive 2>&1 | tee audit.log
+        if grep -qiE '(Critical|High|Moderate)' audit.log; then
+          echo "::error::Vulnerable NuGet packages detected."; exit 1
+        fi
 
     - name: Secret and Sensitive Key Scanner
       run: |
@@ -46,14 +78,40 @@ jobs:
           echo "ERROR: Local environment files must not be committed."
           exit 1
         fi
-        if git grep -IlE 'sb_secret_[A-Za-z0-9_-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----' -- . ':!README.md' ':!.env.example'; then
+        if git grep -IlE 'sb_secret_[A-Za-z0-9_-]{20,}|gsk_[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{35}|AQ\.[A-Za-z0-9_-]{40,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----' -- . ':!README.md' ':!.env.example'; then
           echo "ERROR: Potential secret detected in a tracked file."
           exit 1
         fi
         echo "Secret scan passed."
 
-    - name: Build Project (Release)
-      run: dotnet build KrishiLink.csproj --configuration Release --no-restore
+    - name: Build Solution (Release)
+      run: dotnet build KrishiLink.sln --configuration Release --no-restore
+
+    - name: Run Tests
+      env:
+        KRISHILINK_TEST_POSTGRES: Host=localhost;Port=5432;Username=postgres;Password=ci-test-only;Database=postgres
+        KRISHILINK_TEST_POSTGRES_REQUIRED: 'true'
+      run: >-
+        dotnet test KrishiLink.sln --configuration Release --no-build
+        --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage"
+        --results-directory "$RUNNER_TEMP/test-results"
+
+    - name: Run Tests (sharded workflow locks)
+      env:
+        KRISHILINK_TEST_POSTGRES: Host=localhost;Port=5432;Username=postgres;Password=ci-test-only;Database=postgres
+        KRISHILINK_TEST_POSTGRES_REQUIRED: 'true'
+        KRISHILINK_TEST_SHARDED_LOCKS: 'true'
+      run: >-
+        dotnet test KrishiLink.sln --configuration Release --no-build
+        --logger "trx;LogFileName=test-results-sharded.trx"
+        --results-directory "$RUNNER_TEMP/test-results"
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: ${{ runner.temp }}/test-results
 
     - name: Validate PostgreSQL Model and Migration Script
       env:

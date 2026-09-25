@@ -5,6 +5,9 @@ namespace KrishiLink.Models.ViewModels
 {
     public class GodownDetailViewModel
     {
+        /// <summary>What renters paid for similar listings in this district (DIS-03).</summary>
+        public PriceBenchmarkViewModel? PriceBenchmark { get; set; }
+
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string StorageType { get; set; } = string.Empty;

@@ -1,7 +1,11 @@
 using System.Security.Claims;
 using KrishiLink.BLL.Services;
 using KrishiLink.Models.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Options;
 
 namespace KrishiLink.Controllers
 {
@@ -9,18 +13,28 @@ namespace KrishiLink.Controllers
     {
         private readonly IBookingService _bookings;
         private readonly IStorageIntakeService _intakeService;
+        private readonly IOptions<AppOptions> _appOptions;
+        private readonly IWebHostEnvironment _env;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
-        public VerifyController(IBookingService bookings, IStorageIntakeService intakeService)
+        public VerifyController(IBookingService bookings, IStorageIntakeService intakeService, IOptions<AppOptions> appOptions, IWebHostEnvironment env,
+            IStringLocalizer<SharedResource> localizer)
         {
+            _localizer = localizer;
             _bookings = bookings;
             _intakeService = intakeService;
+            _appOptions = appOptions;
+            _env = env;
         }
+
+        private string PublicOrigin => AppLinks.PublicOrigin(_appOptions, _env, Request);
 
         /// <summary>
         /// Booking Verification Certificate endpoint: /Verify/KL-EQ-2026-001?t={qr secret}
         /// The two parties and administrators see the full certificate when signed in; anyone else must present
         /// the secret from the QR link, and then sees no phone numbers and no money.
         /// </summary>
+        [AllowAnonymous]
         [HttpGet]
         [Route("Verify/{code}")]
         [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
@@ -31,8 +45,7 @@ namespace KrishiLink.Controllers
 
             Response.Headers.CacheControl = "no-store";
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var host = $"{Request.Scheme}://{Request.Host}";
-            var model = await _bookings.GetVerificationByCodeAsync(code, t, currentUserId, User.IsInRole(AppRoles.Admin), host);
+            var model = await _bookings.GetVerificationByCodeAsync(code, t, currentUserId, User.IsInRole(AppRoles.Admin), PublicOrigin);
 
             return View(model);
         }
@@ -43,12 +56,10 @@ namespace KrishiLink.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Route("Verify/{code}/Action")]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
         public async Task<IActionResult> QuickAction(string code, string action)
         {
-            var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(ownerId))
-                return Challenge();
-
+            var ownerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             var error = await _bookings.QuickVerifyActionAsync(ownerId, code, action);
             if (error is null)
             {
@@ -60,11 +71,11 @@ namespace KrishiLink.Controllers
                     "complete" => "Booking marked as Completed & Handover Settled.",
                     _ => "Action completed successfully."
                 };
-                TempData["SuccessMessage"] = actionMsg;
+                TempData["SuccessMessage"] = _localizer[actionMsg].Value;
             }
             else
             {
-                TempData["ErrorMessage"] = error;
+                TempData["ErrorMessage"] = _localizer[error].Value;
             }
 
             return RedirectToAction(nameof(Index), new { code });
@@ -74,13 +85,14 @@ namespace KrishiLink.Controllers
         /// Public & Anonymous Warehouse Receipt Verification endpoint: /Verify/Receipt/KL-WR-2026-00001
         /// Scannable by any smartphone camera. Never exposes farmer personal details.
         /// </summary>
+        [AllowAnonymous]
         [HttpGet]
         [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         [Route("Verify/Receipt/{receiptNumber}")]
         public async Task<IActionResult> Receipt(string receiptNumber)
         {
             Response.Headers.CacheControl = "no-store";
-            var model = await _intakeService.GetVerificationAsync(receiptNumber, $"{Request.Scheme}://{Request.Host}");
+            var model = await _intakeService.GetVerificationAsync(receiptNumber, PublicOrigin);
             return View(model);
         }
     }

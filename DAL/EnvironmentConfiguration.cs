@@ -13,7 +13,12 @@ public static class EnvironmentConfiguration
         ["SUPABASE_PRIVATE_BUCKET"] = "Supabase:PrivateBucket",
         ["SUPABASE_ADMIN_EMAIL"] = "Supabase:AdminEmail",
         ["DATABASE_URL"] = "ConnectionStrings:DefaultConnection",
-        ["DIRECT_URL"] = "ConnectionStrings:MigrationConnection"
+        ["DIRECT_URL"] = "ConnectionStrings:MigrationConnection",
+        ["GROQ_API_KEY"] = "Groq:ApiKey",
+        ["GROQ_API_KEY_2"] = "Groq:BackupApiKeys:0",
+        ["GROQ_API_KEY_3"] = "Groq:BackupApiKeys:1",
+        ["GEMINI_API_KEY"] = "Gemini:ApiKey",
+        ["GEMINI_API_KEY_2"] = "Gemini:BackupApiKeys:0"
     };
 
     public static void AddLocalEnvironmentFiles(

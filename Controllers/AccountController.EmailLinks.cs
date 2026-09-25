@@ -1,7 +1,9 @@
 using System.Text.RegularExpressions;
 using KrishiLink.BLL.Services;
 using KrishiLink.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace KrishiLink.Controllers;
 
@@ -9,16 +11,17 @@ public partial class AccountController
 {
     private const string EmailLinkCookie = "__Secure-KrishiLink.EmailLink";
 
+    [AllowAnonymous]
     [HttpGet]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    [ServiceFilter(typeof(SupabaseAuthRateLimitFilter))]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public IActionResult AuthCallback(string? token_hash, string? type, [FromServices] SupabaseEmailLinkStore links)
     {
         Response.Headers["Referrer-Policy"] = "no-referrer";
         if (type is not ("signup" or "recovery" or "email_change") ||
             token_hash == null || !Regex.IsMatch(token_hash, @"\A[a-fA-F0-9]{32,128}\z"))
         {
-            TempData["ErrorMessage"] = "This email link is invalid. Request a new verification or recovery email.";
+            TempData["ErrorMessage"] = _localizer["This email link is invalid. Request a new verification or recovery email."].Value;
             return RedirectToAction(nameof(Login));
         }
 
@@ -37,6 +40,7 @@ public partial class AccountController
         return RedirectToAction(nameof(EmailLink));
     }
 
+    [AllowAnonymous]
     [HttpGet]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public IActionResult EmailLink([FromServices] SupabaseEmailLinkStore links)
@@ -51,10 +55,11 @@ public partial class AccountController
         });
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    [ServiceFilter(typeof(SupabaseAuthRateLimitFilter))]
+    [EnableRateLimiting(RateLimitPolicies.Auth)]
     public async Task<IActionResult> EmailLink(EmailLinkViewModel model, [FromServices] SupabaseEmailLinkStore links)
     {
         Response.Headers["Referrer-Policy"] = "no-referrer";
@@ -82,7 +87,7 @@ public partial class AccountController
             {
                 if (pending.Type != "email_change")
                     throw new SupabaseAuthException("The email link could not be verified.");
-                TempData["SuccessMessage"] = "Confirmation accepted. Open the confirmation email sent to your other address to finish the email change.";
+                TempData["SuccessMessage"] = _localizer["Confirmation accepted. Open the confirmation email sent to your other address to finish the email change."].Value;
                 return RedirectToAction(nameof(Login));
             }
             var remote = await _auth.GetUserAsync(tokens.AccessToken);
@@ -94,7 +99,7 @@ public partial class AccountController
                 if (local == null) throw new SupabaseAuthException("No application profile exists for this account. Contact support.");
                 await _auth.ChangePasswordAsync(tokens.AccessToken, model.NewPassword!);
                 await InvalidatePasswordSessionsAsync(local, tokens.AccessToken);
-                TempData["SuccessMessage"] = "Password reset. Sign in with your new password.";
+                TempData["SuccessMessage"] = _localizer["Password reset. Sign in with your new password."].Value;
             }
             else
             {
@@ -107,13 +112,13 @@ public partial class AccountController
                     if (!updated.Succeeded)
                         throw new SupabaseAuthException("Email confirmed, but your profile needs administrator attention.");
                 }
-                TempData["SuccessMessage"] = "Email confirmed. Sign in with your verified email and password.";
+                TempData["SuccessMessage"] = _localizer["Email confirmed. Sign in with your verified email and password."].Value;
             }
             return RedirectToAction(nameof(Login));
         }
         catch (SupabaseAuthException ex)
         {
-            TempData["ErrorMessage"] = ex.Message + " Reopen the email link or request a new email if it has expired.";
+            TempData["ErrorMessage"] = _localizer["{0} Reopen the email link or request a new email if it has expired.", _localizer[ex.Message].Value].Value;
             return RedirectToAction(nameof(Login));
         }
         finally
@@ -124,7 +129,7 @@ public partial class AccountController
 
     private IActionResult ExpiredEmailLink()
     {
-        TempData["ErrorMessage"] = "This email confirmation page expired. Reopen the email link or request a new email.";
+        TempData["ErrorMessage"] = _localizer["This email confirmation page expired. Reopen the email link or request a new email."].Value;
         return RedirectToAction(nameof(Login));
     }
 }

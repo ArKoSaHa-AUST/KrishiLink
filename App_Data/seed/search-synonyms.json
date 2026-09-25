@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "description": "Bangla <-> English marketplace vocabulary (DIS-01). Each group lists interchangeable search terms; a search for any term also matches the others. Edit here; validated at startup.",
+  "groups": [
+    ["tractor", "ট্রাক্টর"],
+    ["power tiller", "tiller", "পাওয়ার টিলার", "টিলার", "হালের যন্ত্র"],
+    ["combine harvester", "harvester", "combine", "কম্বাইন হারভেস্টার", "হারভেস্টার", "ধান কাটার যন্ত্র"],
+    ["seeder", "seed drill", "সিডার", "বীজ বপন যন্ত্র"],
+    ["sprayer", "power sprayer", "স্প্রেয়ার", "স্প্রে মেশিন"],
+    ["pump", "irrigation pump", "shallow pump", "পাম্প", "সেচ পাম্প", "শ্যালো মেশিন"],
+    ["thresher", "থ্রেশার", "মাড়াই যন্ত্র"],
+    ["transplanter", "rice transplanter", "ট্রান্সপ্লান্টার", "চারা রোপণ যন্ত্র"],
+    ["reaper", "রিপার"],
+    ["godown", "warehouse", "store", "গুদাম"],
+    ["cold storage", "cold store", "হিমাগার", "কোল্ড স্টোরেজ"],
+    ["silo", "সাইলো"],
+    ["seed", "বীজ"],
+    ["rice", "paddy", "ধান", "চাল"],
+    ["wheat", "গম"],
+    ["maize", "corn", "ভুট্টা"],
+    ["potato", "আলু"],
+    ["onion", "পেঁয়াজ"],
+    ["garlic", "রসুন"],
+    ["jute", "পাট"],
+    ["mustard", "সরিষা"],
+    ["lentil", "masur", "মসুর", "ডাল"],
+    ["vegetable", "vegetables", "সবজি"],
+    ["fertilizer", "সার"],
+    ["irrigation", "সেচ"],
+    ["harvest", "ফসল কাটা"],
+    ["rent", "rental", "ভাড়া"]
+  ]
+}

@@ -27,25 +27,24 @@ namespace KrishiLink.BLL.Services
 
     public interface IOwnerRevenueService
     {
-        OwnerRevenueViewModel GetReport(string ownerId, RevenueFilter filter);
-        BookingInvoiceViewModel? GetInvoice(string ownerId, int bookingId);
+        Task<OwnerRevenueViewModel> GetReportAsync(string ownerId, RevenueFilter filter);
+        Task<BookingInvoiceViewModel?> GetInvoiceAsync(string ownerId, int bookingId);
 
         /// <summary>Builds the bank-statement style PDF for one calendar month; returns the bytes and a file name.</summary>
-        (byte[] Content, string FileName) GenerateMonthlyStatement(string ownerId, DateTime month, StatementOwner owner);
+        Task<(byte[] Content, string FileName)> GenerateMonthlyStatementAsync(string ownerId, DateTime month, StatementOwner owner);
 
-        PayoutHistoryViewModel GetPayoutHistory(string ownerId);
+        Task<PayoutHistoryViewModel> GetPayoutHistoryAsync(string ownerId);
 
         /// <summary>Creates a "Processing" payout for every unpaid completed booking. Returns an error message, or null on success.</summary>
         Task<string?> RequestPayoutAsync(string ownerId, string method, string? account);
-        string? RequestPayout(string ownerId, string method, string? account);
 
         /// <summary>Adds (expenseId null) or updates an expense. Returns an error message, or null on success.</summary>
-        string? SaveExpense(string ownerId, int? expenseId, int bookingId, decimal amount, string? note);
-        string? SaveExpense(string ownerId, int? expenseId, int? bookingId, int? listingId, decimal amount, string category, string? note, DateTime? expenseDate);
-        bool DeleteExpense(string ownerId, int expenseId);
+        Task<string?> SaveExpenseAsync(string ownerId, int? expenseId, int bookingId, decimal amount, string? note);
+        Task<string?> SaveExpenseAsync(string ownerId, int? expenseId, int? bookingId, int? listingId, decimal amount, string category, string? note, DateTime? expenseDate);
+        Task<bool> DeleteExpenseAsync(string ownerId, int expenseId);
 
         /// <summary>Builds the standalone one-page Profit & Loss PDF for the given range.</summary>
-        (byte[] Content, string FileName) GenerateProfitAndLoss(string ownerId, RevenueFilter filter, StatementOwner owner);
+        Task<(byte[] Content, string FileName)> GenerateProfitAndLossAsync(string ownerId, RevenueFilter filter, StatementOwner owner);
     }
 
     public interface IGodownRevenueService : IOwnerRevenueService { }
@@ -94,15 +93,15 @@ namespace KrishiLink.BLL.Services
             _notifications = notifications;
         }
 
-        public OwnerRevenueViewModel GetReport(string ownerId, RevenueFilter filter)
+        public async Task<OwnerRevenueViewModel> GetReportAsync(string ownerId, RevenueFilter filter)
         {
             var today = DateTime.Today;
             var (from, to, rangeLabel, isFy, fyName) = ResolveRange(filter, today);
 
-            var listings = _repo.GetListings(ownerId);
-            var allBookings = _repo.GetBookings(ownerId);
-            var expenses = _repo.GetExpenses(ownerId);
-            var payouts = _repo.GetPayouts(ownerId);
+            var listings = await _repo.GetListingsAsync(ownerId);
+            var allBookings = await _repo.GetBookingsAsync(ownerId);
+            var expenses = await _repo.GetExpensesAsync(ownerId);
+            var payouts = await _repo.GetPayoutsAsync(ownerId);
 
             // Range + listing filters drive every analytics block; the status filter is for the transaction list only.
             var inRange = allBookings
@@ -203,11 +202,11 @@ namespace KrishiLink.BLL.Services
             return model;
         }
 
-        public BookingInvoiceViewModel? GetInvoice(string ownerId, int bookingId)
+        public async Task<BookingInvoiceViewModel?> GetInvoiceAsync(string ownerId, int bookingId)
         {
             // An accepted booking already has an agreed price, so the owner can raise the document straight away;
             // until it completes it is a proforma, because nothing has been earned or settled yet.
-            var b = _repo.GetBookings(ownerId).FirstOrDefault(x => x.Id == bookingId && ConfirmedStatuses.Contains(x.Status));
+            var b = (await _repo.GetBookingsAsync(ownerId)).FirstOrDefault(x => x.Id == bookingId && ConfirmedStatuses.Contains(x.Status));
             if (b is null) return null;
 
             var isProforma = b.Status != BookingStatus.Completed;
@@ -238,25 +237,25 @@ namespace KrishiLink.BLL.Services
             };
         }
 
-        public (byte[] Content, string FileName) GenerateMonthlyStatement(string ownerId, DateTime month, StatementOwner owner)
+        public async Task<(byte[] Content, string FileName)> GenerateMonthlyStatementAsync(string ownerId, DateTime month, StatementOwner owner)
         {
             var first = new DateTime(month.Year, month.Month, 1);
-            var report = GetReport(ownerId, new RevenueFilter { From = first, To = first.AddMonths(1).AddDays(-1) });
+            var report = await GetReportAsync(ownerId, new RevenueFilter { From = first, To = first.AddMonths(1).AddDays(-1) });
             var document = new MonthlyStatementDocument(report, owner, first);
             return (document.GeneratePdf(), document.FileName);
         }
 
-        public (byte[] Content, string FileName) GenerateProfitAndLoss(string ownerId, RevenueFilter filter, StatementOwner owner)
+        public async Task<(byte[] Content, string FileName)> GenerateProfitAndLossAsync(string ownerId, RevenueFilter filter, StatementOwner owner)
         {
-            var report = GetReport(ownerId, filter);
+            var report = await GetReportAsync(ownerId, filter);
             var document = new ProfitAndLossDocument(report.ProfitAndLoss, owner, _profile.ListingLabel);
             return (document.GeneratePdf(), document.FileName);
         }
 
-        public string? SaveExpense(string ownerId, int? expenseId, int bookingId, decimal amount, string? note) =>
-            SaveExpense(ownerId, expenseId, bookingId, null, amount, ExpenseCategories.Other, note, DateTime.Today);
+        public Task<string?> SaveExpenseAsync(string ownerId, int? expenseId, int bookingId, decimal amount, string? note) =>
+            SaveExpenseAsync(ownerId, expenseId, bookingId, null, amount, ExpenseCategories.Other, note, DateTime.Today);
 
-        public string? SaveExpense(string ownerId, int? expenseId, int? bookingId, int? listingId, decimal amount, string category, string? note, DateTime? expenseDate)
+        public async Task<string?> SaveExpenseAsync(string ownerId, int? expenseId, int? bookingId, int? listingId, decimal amount, string category, string? note, DateTime? expenseDate)
         {
             if (amount <= 0) return "Expense must be a positive amount.";
 
@@ -270,23 +269,23 @@ namespace KrishiLink.BLL.Services
 
             if (bookingId.HasValue)
             {
-                var booking = _repo.GetBookings(ownerId).FirstOrDefault(b => b.Id == bookingId.Value && ConfirmedStatuses.Contains(b.Status));
+                var booking = (await _repo.GetBookingsAsync(ownerId)).FirstOrDefault(b => b.Id == bookingId.Value && ConfirmedStatuses.Contains(b.Status));
                 if (booking is null) return "Expenses can only be recorded against accepted or completed bookings.";
                 listingId ??= booking.ListingId;
             }
             else if (listingId.HasValue)
             {
-                var listings = _repo.GetListings(ownerId);
+                var listings = await _repo.GetListingsAsync(ownerId);
                 if (!listings.Any(l => l.Id == listingId.Value))
                     return "The specified listing does not belong to your account.";
             }
 
-            var expense = expenseId is null ? null : _repo.GetExpense(ownerId, expenseId.Value);
+            var expense = expenseId is null ? null : await _repo.GetExpenseAsync(ownerId, expenseId.Value);
             if (expenseId is not null && expense is null) return "That expense no longer exists.";
 
             if (expense is null)
             {
-                _repo.AddExpense(new BookingExpense
+                await _repo.AddExpenseAsync(new BookingExpense
                 {
                     BookingId = bookingId,
                     ListingId = listingId,
@@ -306,45 +305,43 @@ namespace KrishiLink.BLL.Services
                 expense.Category = cat;
                 expense.Note = (note ?? string.Empty).Trim();
                 expense.ExpenseDate = date;
-                _repo.UpdateExpense(expense);
+                await _repo.UpdateExpenseAsync(expense);
             }
             return null;
         }
 
-        public bool DeleteExpense(string ownerId, int expenseId)
+        public async Task<bool> DeleteExpenseAsync(string ownerId, int expenseId)
         {
-            var expense = _repo.GetExpense(ownerId, expenseId);
+            var expense = await _repo.GetExpenseAsync(ownerId, expenseId);
             if (expense is null) return false;
-            _repo.RemoveExpense(expense);
+            await _repo.RemoveExpenseAsync(expense);
             return true;
         }
 
-        public PayoutHistoryViewModel GetPayoutHistory(string ownerId)
+        public async Task<PayoutHistoryViewModel> GetPayoutHistoryAsync(string ownerId)
         {
-            var bookings = _repo.GetBookings(ownerId);
+            var bookings = await _repo.GetBookingsAsync(ownerId);
             return new PayoutHistoryViewModel
             {
                 ListingLabel = _profile.ListingLabel,
                 CompletedBookings = bookings.Count(b => b.Status == BookingStatus.Completed),
-                Settlement = BuildSettlement(bookings, _repo.GetExpenses(ownerId), _repo.GetPayouts(ownerId))
+                Settlement = BuildSettlement(bookings, await _repo.GetExpensesAsync(ownerId), await _repo.GetPayoutsAsync(ownerId))
             };
         }
 
-        public string? RequestPayout(string ownerId, string method, string? account) =>
-            RequestPayoutAsync(ownerId, method, account).GetAwaiter().GetResult();
-
         public async Task<string?> RequestPayoutAsync(string ownerId, string method, string? account)
         {
-            await using var transaction = await _repo.BeginWorkflowAsync();
+            // Owner decisions that complete or undo a booking take the same owner lock.
+            await using var transaction = await _repo.BeginWorkflowAsync(new[] { WorkflowLock.User(ownerId) });
             if (!PayoutHistoryViewModel.PayoutMethods.Contains(method)) return "Please choose a valid payout method.";
             if (string.IsNullOrWhiteSpace(account) || account.Trim().Length < 6) return "Please enter the account or wallet number the payout should go to.";
 
             // Only an in-flight transfer blocks a new request; a Failed one has already released its bookings.
-            if (_repo.GetPayouts(ownerId).Any(p => p.Status == PayoutStatus.Processing))
+            if ((await _repo.GetPayoutsAsync(ownerId)).Any(p => p.Status == PayoutStatus.Processing))
                 return "A payout is already being processed. Please wait for it to complete.";
 
             // Settle exactly the completed bookings that no earlier payout has covered
-            var unpaid = _repo.GetBookings(ownerId).Where(b => b.Status == BookingStatus.Completed && b.PayoutId is null).ToList();
+            var unpaid = (await _repo.GetBookingsAsync(ownerId)).Where(b => b.Status == BookingStatus.Completed && b.PayoutId is null).ToList();
             if (unpaid.Count == 0) return "There is no pending balance to pay out yet.";
 
             // Escrow can only pay out what the farmer actually put in: every booking needs a matching succeeded payment.
@@ -355,7 +352,7 @@ namespace KrishiLink.BLL.Services
             var gross = unpaid.Sum(b => b.Gross);
             var commission = unpaid.Sum(Commission);
             var netAmount = gross - commission;
-            var payoutId = _repo.AddPayout(new Transaction
+            var payoutId = await _repo.AddPayoutAsync(new Transaction
             {
                 UserId = ownerId,
                 Reference = $"KL-PO-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
@@ -368,7 +365,7 @@ namespace KrishiLink.BLL.Services
                 Status = PayoutStatus.Processing,
                 TransactionDate = DateTime.UtcNow
             });
-            _repo.MarkBookingsPaid(unpaid.Select(b => b.Id), payoutId);
+            await _repo.MarkBookingsPaidAsync(unpaid.Select(b => b.Id), payoutId);
             await transaction.CommitAsync();
 
             var payoutLink = AppLinks.OwnerPayouts(_profile.ListingLabel);

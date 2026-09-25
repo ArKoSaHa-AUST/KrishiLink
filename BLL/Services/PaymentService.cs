@@ -98,7 +98,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<(string? Error, string? RedirectUrl)> InitiateAsync(string farmerId, string bookingType, int bookingId, string method, string? account)
         {
-            await using var transaction = await _payments.BeginWorkflowAsync();
+            await using var transaction = await _payments.BeginWorkflowAsync(new[] { await ListingLockAsync(bookingType, bookingId) });
             var b = await LoadAsync(bookingType, bookingId);
             if (b is null || b.Booking.FarmerId != farmerId) return ("This booking could not be found.", null);
             if (b.Booking.Status != BookingStatus.Accepted) return ($"A {b.Booking.Status.ToLowerInvariant()} booking cannot be paid for.", null);
@@ -146,7 +146,11 @@ namespace KrishiLink.BLL.Services
 
         public async Task<(string? Error, PaymentSummary? Payment)> CompleteAsync(string gatewayReference, string outcome)
         {
-            await using var transaction = await _payments.BeginWorkflowAsync();
+            var target = await _payments.Query().Where(p => p.GatewayReference == gatewayReference)
+                .Select(p => new { p.BookingType, p.BookingId }).FirstOrDefaultAsync();
+            await using var transaction = await _payments.BeginWorkflowAsync(target is null
+                ? Array.Empty<WorkflowLock>()
+                : new[] { await ListingLockAsync(target.BookingType, target.BookingId) });
             var payment = await _payments.QueryTracked().FirstOrDefaultAsync(p => p.GatewayReference == gatewayReference);
             if (payment is null) return ("This payment could not be found.", null);
 
@@ -220,12 +224,14 @@ namespace KrishiLink.BLL.Services
                         if (receipt != null)
                         {
                             var emailSubject = $"[KrishiLink] Payment receipt {payment.Reference}";
+                            // Names and references are user-controlled text: encode them for the HTML body.
+                            static string H(string? value) => System.Net.WebUtility.HtmlEncode(value ?? string.Empty);
                             var emailHtml = $@"<div style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
                                 <h2 style='color: #2d6a4f;'>KrishiLink Payment Receipt</h2>
-                                <p>Dear {farmer.FullName ?? "Farmer"},</p>
-                                <p>Your payment of <strong>BDT {payment.Amount:N0}</strong> for <strong>{itemName}</strong> has been confirmed and placed into secure escrow.</p>
-                                <p><strong>Payment Reference:</strong> <code>{payment.Reference}</code><br/>
-                                <strong>Method:</strong> {payment.Method}<br/>
+                                <p>Dear {H(farmer.FullName ?? "Farmer")},</p>
+                                <p>Your payment of <strong>BDT {payment.Amount:N0}</strong> for <strong>{H(itemName)}</strong> has been confirmed and placed into secure escrow.</p>
+                                <p><strong>Payment Reference:</strong> <code>{H(payment.Reference)}</code><br/>
+                                <strong>Method:</strong> {H(payment.Method)}<br/>
                                 <strong>Date:</strong> {payment.PaidOn:dd MMM yyyy HH:mm} UTC</p>
                                 <p>Your official payment receipt PDF is attached to this email. You can also view and download it at any time from your KrishiLink dashboard.</p>
                                 <hr style='border: none; border-top: 1px solid #e2e8df; margin: 20px 0;' />
@@ -236,7 +242,8 @@ namespace KrishiLink.BLL.Services
                                 farmer.Email!,
                                 emailSubject,
                                 emailHtml,
-                                new EmailAttachment(receipt.Value.FileName, receipt.Value.Content, "application/pdf")
+                                new EmailAttachment(receipt.Value.FileName, receipt.Value.Content, "application/pdf"),
+                                farmer.Id
                             ));
                         }
                     }
@@ -260,6 +267,14 @@ namespace KrishiLink.BLL.Services
         }
 
         // ---- Helpers -------------------------------------------------------------------------
+
+        /// <summary>Payment status moves the booking; owner decisions on the same booking take the same listing lock.</summary>
+        private async Task<WorkflowLock> ListingLockAsync(string bookingType, int bookingId)
+        {
+            if (string.Equals(bookingType, "Godown", StringComparison.OrdinalIgnoreCase))
+                return WorkflowLock.Godown(await _storage.Query().Where(x => x.Id == bookingId).Select(x => x.GodownId).FirstOrDefaultAsync());
+            return WorkflowLock.Equipment(await _rentals.Query().Where(x => x.Id == bookingId).Select(x => x.EquipmentId).FirstOrDefaultAsync());
+        }
 
         private record Loaded(string Type, IPayableBooking Booking, string Code, string ItemName, string OwnerId, string OwnerName, string QuantityText, string RateText);
 

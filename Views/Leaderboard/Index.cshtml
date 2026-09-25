@@ -24,14 +24,17 @@
                         <i class="bi bi-clock-history"></i>
                         <span>@L["Cached rankings • 15m update cycle"]</span>
                     </div>
-                    <form asp-controller="Leaderboard" asp-action="Refresh" method="post" class="d-inline">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                        <button type="submit" class="btn btn-outline-light btn-sm rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5">
-                            <i class="bi bi-arrow-clockwise"></i>
-                            <span>@L["Refresh Rankings"]</span>
-                        </button>
-                    </form>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <form asp-controller="Leaderboard" asp-action="Refresh" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                            <button type="submit" class="btn btn-outline-light btn-sm rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1.5">
+                                <i class="bi bi-arrow-clockwise"></i>
+                                <span>@L["Refresh Rankings"]</span>
+                            </button>
+                        </form>
+                    }
                 </div>
             </div>
         </div>
@@ -43,6 +46,13 @@
     <div class="alert alert-success border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2">
         <i class="bi bi-check-circle-fill text-success"></i>
         <span class="small">@TempData["SuccessMessage"]</span>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-warning border-0 shadow-sm rounded-3 mb-4 d-flex align-items-center gap-2">
+        <i class="bi bi-hourglass-split text-warning"></i>
+        <span class="small">@TempData["ErrorMessage"]</span>
     </div>
 }
 
@@ -89,10 +99,10 @@
                     <!-- Sort Dropdown -->
                     <div class="d-flex align-items-center gap-1.5">
                         <label class="text-muted small fw-medium text-nowrap"><i class="bi bi-sort-down"></i> @L["Sort By"]:</label>
-                        <select name="sortBy" class="form-select form-select-sm rounded-pill border-light-subtle shadow-2xs" style="width: auto; min-width: 150px;" onchange="this.form.submit()">
-                            <option value="trust" selected="@(Model.SortBy == "trust" ? "selected" : null)">🏆 @L["Trust Score"]</option>
-                            <option value="bookings" selected="@(Model.SortBy == "bookings" ? "selected" : null)">⚡ @L["Most Bookings"]</option>
-                            <option value="rating" selected="@(Model.SortBy == "rating" ? "selected" : null)">⭐ @L["Highest Rating"]</option>
+                        <select name="sortBy" class="form-select form-select-sm rounded-pill border-light-subtle shadow-2xs" style="width: auto; min-width: 150px;" data-onchange="this.form.submit()">
+                            <option value="trust" selected="@(Model.SortBy == "trust" ? "selected" : null)">@L["Trust Score"]</option>
+                            <option value="bookings" selected="@(Model.SortBy == "bookings" ? "selected" : null)">@L["Most Bookings"]</option>
+                            <option value="rating" selected="@(Model.SortBy == "rating" ? "selected" : null)">@L["Highest Rating"]</option>
                         </select>
                     </div>
                 </div>
@@ -209,7 +219,7 @@ else
 
                             <div class="mt-3 mb-2">
                                 <span class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-bold mb-2 shadow-2xs">
-                                    👑 #1 @L["Gold Champion"]
+                                    #1 @L["Gold Champion"]
                                 </span>
                                 <h4 class="fw-bold text-dark mb-0 text-truncate" title="@rank1.DisplayName">@rank1.DisplayName</h4>
                                 <span class="text-muted small d-block"><i class="bi bi-geo-alt"></i> @(!string.IsNullOrWhiteSpace(rank1.District) ? rank1.District : rank1.Location)</span>

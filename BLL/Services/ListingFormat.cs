@@ -9,6 +9,11 @@ namespace KrishiLink.BLL.Services
     {
         private const char Separator = '|';
 
+        /// <summary>The listing's first photo at thumbnail size (REA-02), for cards, grids and small previews.</summary>
+
+        public static string FirstThumbnail(string? imageUrls) => ImageVariants.ThumbnailUrl(Split(imageUrls).FirstOrDefault());
+
+
         public static List<string> Split(string? delimited) =>
             string.IsNullOrWhiteSpace(delimited)
                 ? new List<string>()

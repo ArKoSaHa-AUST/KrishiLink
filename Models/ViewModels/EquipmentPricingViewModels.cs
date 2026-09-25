@@ -51,6 +51,10 @@ namespace KrishiLink.Models.ViewModels
         public string ListingName { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
+        public string? District { get; set; }
+
+        /// <summary>What renters paid for this category in the district (DIS-03).</summary>
+        public PriceBenchmarkViewModel? PriceBenchmark { get; set; }
         public string ThumbnailUrl { get; set; } = string.Empty;
         public decimal BaseDailyRate { get; set; }
         public string RateText { get; set; } = string.Empty;

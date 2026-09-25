@@ -2,19 +2,26 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using KrishiLink.BLL.Helpers;
 using KrishiLink.DAL.Repositories;
 using KrishiLink.Models.Entities;
 using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace KrishiLink.BLL.Services
 {
-    public interface IWeatherSuggestionService
+    /// <summary>Suggestion generation without the notification-sending batch job (see <see cref="IEquipmentQueries"/>).</summary>
+    public interface IWeatherSuggestionQueries
+    {
+        Task<WeatherSuggestionViewModel> GenerateSuggestionForDistrictAndCropAsync(string district, string? cropName, int? month = null);
+    }
+
+    public interface IWeatherSuggestionService : IWeatherSuggestionQueries
     {
         Task<WeatherSuggestionViewModel?> GetProactiveSuggestionForFarmerAsync(string farmerId);
-        Task<WeatherSuggestionViewModel> GenerateSuggestionForDistrictAndCropAsync(string district, string? cropName, int? month = null);
         Task<int> ProcessDailyFarmerSuggestionsAsync();
     }
 
@@ -27,14 +34,21 @@ namespace KrishiLink.BLL.Services
         private readonly IRepository<Notification> _notifications;
         private readonly ILogger<WeatherSuggestionService> _logger;
 
+        private readonly IMemoryCache _cache;
+
+        /// <summary>Inputs only change when the forecast refreshes, so rule evaluation is cached (ADV-09).</summary>
+        public static readonly TimeSpan CacheFor = TimeSpan.FromMinutes(30);
+
         public WeatherSuggestionService(
             IPestAlertService pestAlertService,
             ICropCalendarService cropCalendarService,
             INotificationService notificationService,
             UserManager<ApplicationUser> userManager,
             IRepository<Notification> notifications,
-            ILogger<WeatherSuggestionService> logger)
+            ILogger<WeatherSuggestionService> logger,
+            IMemoryCache cache)
         {
+            _cache = cache;
             _pestAlertService = pestAlertService;
             _cropCalendarService = cropCalendarService;
             _notificationService = notificationService;
@@ -62,7 +76,19 @@ namespace KrishiLink.BLL.Services
 
         public async Task<WeatherSuggestionViewModel> GenerateSuggestionForDistrictAndCropAsync(string district, string? cropName, int? month = null)
         {
-            int currentMonth = month.HasValue && month.Value >= 1 && month.Value <= 12 ? month.Value : DateTime.Today.Month;
+            var key = $"advisory:suggestion:{district}|{cropName}|{month}|{BangladeshClock.Today:yyyyMMdd}";
+            if (!_cache.TryGetValue(key, out WeatherSuggestionViewModel? cached) || cached is null)
+            {
+                cached = await BuildSuggestionAsync(district, cropName, month);
+                _cache.Set(key, cached, CacheFor);
+            }
+            // Callers filter the list per user (done / snoozed); the cached result must stay whole.
+            return cached.Copy();
+        }
+
+        private async Task<WeatherSuggestionViewModel> BuildSuggestionAsync(string district, string? cropName, int? month)
+        {
+            int currentMonth = month.HasValue && month.Value >= 1 && month.Value <= 12 ? month.Value : BangladeshClock.Today.Month;
             string safeDistrict = string.IsNullOrWhiteSpace(district) ? "Bogra" : district.Trim();
             string rawCrop = string.IsNullOrWhiteSpace(cropName) ? "Rice (Boro)" : cropName.Trim();
 
@@ -133,6 +159,7 @@ namespace KrishiLink.BLL.Services
             var suggestionItems = new List<WeatherSuggestionItem>();
             string overallRiskLevel = "Optimal";
             string overallBadgeClass = "success";
+            string bannerIcon = "bi-cloud-sun-fill";
             string bannerTitle = $"Weather & Crop Advisory for {canonicalCropName} in {safeDistrict}";
             string banglaBannerTitle = $"{safeDistrict}-এ {banglaCropName} চাষে আবহাওয়া ও যন্ত্রপাতির পরামর্শ";
             string bannerMessage = $"Current conditions are normal for {canonicalCropName}. Track machinery and storage availability in {safeDistrict}.";
@@ -145,8 +172,9 @@ namespace KrishiLink.BLL.Services
                 {
                     overallRiskLevel = "Urgent";
                     overallBadgeClass = "danger";
-                    bannerTitle = $"⚠️ Rain Forecasted During Your {canonicalCropName} Harvest in {safeDistrict}!";
-                    banglaBannerTitle = $"⚠️ {safeDistrict}-এ {banglaCropName} তোলার মৌসুমে বৃষ্টির পূর্বাভাস!";
+                    bannerIcon = "bi-cloud-rain-heavy-fill";
+                    bannerTitle = $"Rain Forecasted During Your {canonicalCropName} Harvest in {safeDistrict}!";
+                    banglaBannerTitle = $"{safeDistrict}-এ {banglaCropName} তোলার মৌসুমে বৃষ্টির পূর্বাভাস!";
                     bannerMessage = $"Forecast indicates {maxRainChance:0}% rain probability over the next {Math.Max(1, rainWindowDays)}–3 days. Secure your harvested produce from moisture damage, discoloration, and mold by booking storage now.";
                     banglaBannerMessage = $"আগামী {Math.Max(1, rainWindowDays)}–৩ দিনের মধ্যে {safeDistrict}-এ {maxRainChance:0}% বৃষ্টির পূর্বাভাস রয়েছে। পাকা ফসল ভিজে ক্ষতি ও ছত্রাক আক্রমণ ঠেকাতে এখনই গুদামে জায়গা নিশ্চিত করুন।";
 
@@ -159,7 +187,7 @@ namespace KrishiLink.BLL.Services
                         BanglaTitle = $"{safeDistrict}-এ {banglaCropName} সংরক্ষণে গুদাম বুকিং করুন",
                         Message = $"Heavy rain or moisture can ruin fresh harvest quality. Book dry storage or cold storage capacity in {safeDistrict} before rains start.",
                         BanglaMessage = $"বৃষ্টির পানিতে ভেজা ফসল নষ্ট হয়ে মূল্য কমে যেতে পারে। বৃষ্টি শুরুর আগেই {safeDistrict}-এ নিকটস্থ গুদাম বা কোল্ড স্টোরেজে জায়গা বুক করুন।",
-                        ActionUrl = $"/Godown?location={Uri.EscapeDataString(safeDistrict)}",
+                        ActionUrl = AppLinks.GodownSearch(safeDistrict),
                         ActionText = $"Reserve Storage in {safeDistrict}",
                         BanglaActionText = "গুদাম বা হিমাগারে জায়গা খুঁজুন",
                         ActionIcon = "bi-building-check",
@@ -180,7 +208,7 @@ namespace KrishiLink.BLL.Services
                         BanglaTitle = $"বৃষ্টির আগেই দ্রুত ফসল কাটতে কম্বাইন হারভেস্টার ভাড়া নিন",
                         Message = $"Finish harvesting days faster with an automated combine harvester or reaper before bad weather sets in.",
                         BanglaMessage = $"বৃষ্টিতে পাকা ধান বা ফসল মাটিতে শুয়ে পড়ার আগেই কম্বাইন হারভেস্টার দিয়ে কয়েক ঘণ্টার মধ্যে দ্রুত ফসল কেটে নিন।",
-                        ActionUrl = $"/Equipment?location={Uri.EscapeDataString(safeDistrict)}&category={Uri.EscapeDataString("Combine Harvester")}",
+                        ActionUrl = AppLinks.EquipmentSearch(safeDistrict, "Combine Harvester", BangladeshClock.Today, BangladeshClock.Today.AddDays(Math.Max(0, rainWindowDays - 1))),
                         ActionText = $"Find Harvesters in {safeDistrict}",
                         BanglaActionText = "নিকটস্থ হারভেস্টার খুঁজুন",
                         ActionIcon = "bi-truck",
@@ -196,8 +224,9 @@ namespace KrishiLink.BLL.Services
                 {
                     overallRiskLevel = "Optimal";
                     overallBadgeClass = "success";
-                    bannerTitle = $"☀️ Ideal Sunny Harvesting Window for {canonicalCropName} in {safeDistrict}";
-                    banglaBannerTitle = $"☀️ {safeDistrict}-এ {banglaCropName} কাটার মোক্ষম রৌদ্রোজ্জ্বল আবহাওয়া";
+                    bannerIcon = "bi-sun-fill";
+                    bannerTitle = $"Ideal Sunny Harvesting Window for {canonicalCropName} in {safeDistrict}";
+                    banglaBannerTitle = $"{safeDistrict}-এ {banglaCropName} কাটার মোক্ষম রৌদ্রোজ্জ্বল আবহাওয়া";
                     bannerMessage = $"Clear and dry weather expected in {safeDistrict}. Take advantage of sunny days to complete harvesting and sun-drying.";
                     banglaBannerMessage = $"{safeDistrict}-এ রোদ ঝলমলে অনুকূল আবহাওয়া বিদ্যমান। এ সুযোগে ফসল কাটা ও রোদে শুকানোর কাজ দ্রুত সম্পন্ন করুন।";
 
@@ -209,7 +238,7 @@ namespace KrishiLink.BLL.Services
                         BanglaTitle = $"{safeDistrict}-এ ফসল পরবর্তী গুদাম সংরক্ষণ নিশ্চিত করুন",
                         Message = $"Plan ahead to store dried {canonicalCropName} safely in certified grain warehouses or ventilated godowns.",
                         BanglaMessage = $"শুকানো {banglaCropName} নিরাপদ রাখতে নিকটস্থ অনুমোদিত গুদামে অগ্রিম বুকিং দিয়ে রাখুন।",
-                        ActionUrl = $"/Godown?location={Uri.EscapeDataString(safeDistrict)}",
+                        ActionUrl = AppLinks.GodownSearch(safeDistrict),
                         ActionText = "Browse Storage Facilities",
                         BanglaActionText = "গুদাম তালিকা দেখুন",
                         ActionIcon = "bi-building",
@@ -226,10 +255,11 @@ namespace KrishiLink.BLL.Services
             {
                 overallRiskLevel = "Advisory";
                 overallBadgeClass = "info";
-                bannerTitle = $"🌱 Prime Sowing & Land Prep Window for {canonicalCropName}";
-                banglaBannerTitle = $"🌱 {safeDistrict}-এ {banglaCropName} বপন ও জমি প্রস্তুতের উপযুক্ত সময়";
-                bannerMessage = $"{DateTime.Today:MMMM} is the prime agricultural window for {canonicalCropName} in {safeDistrict}. Ensure fine seedbed tilth and timely seeding.";
-                banglaBannerMessage = $"{DateTime.Today:MMMM} মাস {safeDistrict}-এ {banglaCropName} বীজ বপন ও জমি প্রস্তুতির প্রধান সময়। সময়মতো জমি চাষ ও সেচ ব্যবস্থা নিশ্চিত করুন।";
+                bannerIcon = "bi-flower1";
+                bannerTitle = $"Prime Sowing & Land Prep Window for {canonicalCropName}";
+                banglaBannerTitle = $"{safeDistrict}-এ {banglaCropName} বপন ও জমি প্রস্তুতের উপযুক্ত সময়";
+                bannerMessage = $"{BangladeshClock.Today:MMMM} is the prime agricultural window for {canonicalCropName} in {safeDistrict}. Ensure fine seedbed tilth and timely seeding.";
+                banglaBannerMessage = $"{BangladeshClock.Today:MMMM} মাস {safeDistrict}-এ {banglaCropName} বীজ বপন ও জমি প্রস্তুতির প্রধান সময়। সময়মতো জমি চাষ ও সেচ ব্যবস্থা নিশ্চিত করুন।";
 
                 suggestionItems.Add(new WeatherSuggestionItem
                 {
@@ -239,7 +269,7 @@ namespace KrishiLink.BLL.Services
                     BanglaTitle = $"জমি তৈরির জন্য পাওয়ার টিলার বা ট্রাক্টর ভাড়া নিন",
                     Message = $"Achieve ideal soil pulverized tilth before sowing by renting modern tillage machinery from nearby owners.",
                     BanglaMessage = $"বীজ গজানোর উপযুক্ত মাটি তৈরি করতে নিকটস্থ মালিকদের কাছ থেকে পাওয়ার টিলার বা ট্রাক্টর ভাড়া নিন।",
-                    ActionUrl = $"/Equipment?location={Uri.EscapeDataString(safeDistrict)}&category={Uri.EscapeDataString("Power Tiller")}",
+                    ActionUrl = AppLinks.EquipmentSearch(safeDistrict, "Power Tiller"),
                     ActionText = $"Find Tillage Equipment",
                     BanglaActionText = "চাষের যন্ত্রপাতি খুঁজুন",
                     ActionIcon = "bi-tools",
@@ -261,7 +291,7 @@ namespace KrishiLink.BLL.Services
                         BanglaTitle = $"জমিতে রসের জন্য সেচ পাম্প ভাড়া নিন",
                         Message = $"Dry weather forecasted in {safeDistrict}. Apply light pre-sowing irrigation to ensure uniform germination.",
                         BanglaMessage = $"শুষ্ক আবহাওয়ায় বীজের সমহারে অঙ্কুরোদগম নিশ্চিত করতে হালকা সেচের জন্য সেচ পাম্প ভাড়া নিন।",
-                        ActionUrl = $"/Equipment?location={Uri.EscapeDataString(safeDistrict)}&category={Uri.EscapeDataString("Irrigation Pump")}",
+                        ActionUrl = AppLinks.EquipmentSearch(safeDistrict, "Irrigation Pump"),
                         ActionText = $"Find Irrigation Pumps",
                         BanglaActionText = "সেচ পাম্প খুঁজুন",
                         ActionIcon = "bi-droplet-fill",
@@ -283,8 +313,9 @@ namespace KrishiLink.BLL.Services
                     var topAlert = diseaseAlerts.First(a => a.Severity == "Critical" || a.Severity == "High");
                     overallRiskLevel = "High";
                     overallBadgeClass = "warning";
-                    bannerTitle = $"⚠️ {topAlert.DiseaseName} Risk Alert for {canonicalCropName} in {safeDistrict}";
-                    banglaBannerTitle = $"⚠️ {safeDistrict}-এ {banglaCropName}-এ {topAlert.BanglaName} রোগের ঝুঁকি!";
+                    bannerIcon = "bi-exclamation-triangle-fill";
+                    bannerTitle = $"{topAlert.DiseaseName} Risk Alert for {canonicalCropName} in {safeDistrict}";
+                    banglaBannerTitle = $"{safeDistrict}-এ {banglaCropName}-এ {topAlert.BanglaName} রোগের ঝুঁকি!";
                     bannerMessage = $"Current humidity ({weather.Humidity:0}%) and temperature ({weather.Temperature:0.#}°C) match high disease risk for {canonicalCropName}. Take preventive action immediately.";
                     banglaBannerMessage = $"বর্তমান আর্দ্রতা ({weather.Humidity:0}%) ও তাপমাত্রা ({weather.Temperature:0.#}° সে.) {topAlert.BanglaName} বিস্তারের অনুকূল। অবিলম্বে আগাম সুরক্ষা ব্যবস্থা নিন।";
 
@@ -296,7 +327,7 @@ namespace KrishiLink.BLL.Services
                         BanglaTitle = $"{topAlert.BanglaName} প্রতিরোধে স্প্রে প্রয়োগ করুন",
                         Message = $"Spray recommended treatment: {topAlert.PreventiveSpray}. Inspect plant tillers and leaf undersides daily.",
                         BanglaMessage = $"প্রস্তাবিত প্রতিষেধক বা ছত্রাকনাশক স্প্রে করুন। প্রতিদিন গাছের গোড়া ও পাতার নিচের অংশ পর্যবেক্ষণ করুন।",
-                        ActionUrl = $"/Advisory/Alerts?district={Uri.EscapeDataString(safeDistrict)}&crop={Uri.EscapeDataString(canonicalCropName)}",
+                        ActionUrl = AppLinks.PestAlerts(safeDistrict, PestAlertCrops.ForProfileCrop(rawCrop)),
                         ActionText = "View Disease Remedies & Guide",
                         BanglaActionText = "রোগের প্রতিকার ও সমাধান দেখুন",
                         ActionIcon = "bi-shield-exclamation",
@@ -316,7 +347,7 @@ namespace KrishiLink.BLL.Services
                         BanglaTitle = $"কার্যকর ওষুধ স্প্রে করার জন্য পাওয়ার স্প্রেয়ার ভাড়া নিন",
                         Message = $"Ensure quick and complete canopy coverage across your fields using a high-pressure Power Sprayer.",
                         BanglaMessage = $"পুরো জমিতে দ্রুত ও সমহারে স্প্রে করতে উচ্চ ক্ষমতাসম্পন্ন পাওয়ার স্প্রেয়ার ভাড়া নিন।",
-                        ActionUrl = $"/Equipment?location={Uri.EscapeDataString(safeDistrict)}&category={Uri.EscapeDataString("Power Sprayer")}",
+                        ActionUrl = AppLinks.EquipmentSearch(safeDistrict, "Power Sprayer"),
                         ActionText = "Find Power Sprayers",
                         BanglaActionText = "স্প্রেয়ার খুঁজুন",
                         ActionIcon = "bi-spraycan",
@@ -332,8 +363,9 @@ namespace KrishiLink.BLL.Services
                 {
                     overallRiskLevel = "Optimal";
                     overallBadgeClass = "success";
-                    bannerTitle = $"🌾 Active Vegetative Growth Stage for {canonicalCropName}";
-                    banglaBannerTitle = $"🌾 {safeDistrict}-এ {banglaCropName}-এর সন্তোষজনক বৃদ্ধি পর্যায়";
+                    bannerIcon = "bi-tree-fill";
+                    bannerTitle = $"Active Vegetative Growth Stage for {canonicalCropName}";
+                    banglaBannerTitle = $"{safeDistrict}-এ {banglaCropName}-এর সন্তোষজনক বৃদ্ধি পর্যায়";
                     bannerMessage = $"Weather conditions in {safeDistrict} are stable. Maintain weed-free plots and standard nutrition splits.";
                     banglaBannerMessage = $"{safeDistrict}-এ আবহাওয়া অনুকূল রয়েছে। সময়মতো নিড়ানি ও সুষম সার প্রয়োগ বজায় রাখুন।";
 
@@ -368,18 +400,19 @@ namespace KrishiLink.BLL.Services
                 CropStage = cropStage,
                 BanglaCropStage = banglaCropStage,
                 CurrentMonth = currentMonth,
-                CurrentMonthName = DateTime.Today.ToString("MMMM"),
+                CurrentMonthName = BangladeshClock.Today.ToString("MMMM"),
                 Weather = weather,
                 RainAlert = rainAlert,
                 MaxRainChance = maxRainChance,
                 RainWindowDays = rainWindowDays,
                 OverallRiskLevel = overallRiskLevel,
                 OverallBadgeClass = overallBadgeClass,
+                BannerIconClass = bannerIcon,
                 BannerTitle = bannerTitle,
                 BanglaBannerTitle = banglaBannerTitle,
                 BannerMessage = bannerMessage,
                 BanglaBannerMessage = banglaBannerMessage,
-                Suggestions = suggestionItems.OrderBy(s => s.Priority).ToList()
+                Suggestions = SuggestionUrgency.Rank(suggestionItems, cropStage, rainAlert, rainWindowDays, safeDistrict, canonicalCropName, BangladeshClock.Today)
             };
         }
 

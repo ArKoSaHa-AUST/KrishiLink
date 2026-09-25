@@ -1,7 +1,5 @@
-using System.Collections.Concurrent;
 using System.Data;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text.Json;
 using KrishiLink.DAL;
 using KrishiLink.Models.Entities;
@@ -16,19 +14,24 @@ public static class SupabaseAuthentication
 {
     public const string SessionClaim = "krishilink:supabase-session";
 
-    public static IServiceCollection AddSupabaseAuthentication(this IServiceCollection services, IConfiguration configuration)
+    /// <param name="databaseSessions">
+    /// True stores sessions in PostgreSQL (restarts and multiple instances keep everyone signed in);
+    /// false keeps them in process memory, which suits Development only.
+    /// </param>
+    public static IServiceCollection AddSupabaseAuthentication(this IServiceCollection services, IConfiguration configuration, bool databaseSessions)
     {
         services.Configure<SupabaseAuthOptions>(configuration.GetSection(SupabaseAuthOptions.SectionName));
         services.AddHttpClient<SupabaseAuthClient>(client => client.Timeout = TimeSpan.FromSeconds(20))
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
-        services.AddSingleton<SupabaseSessionStore>();
+        if (databaseSessions)
+            services.AddScoped<ISupabaseSessionStore, DatabaseSupabaseSessionStore>();
+        else
+            services.AddSingleton<ISupabaseSessionStore, InMemorySupabaseSessionStore>();
         services.AddScoped<SupabaseSessionService>();
         services.AddScoped<SupabaseAdminBootstrap>();
         services.AddMemoryCache();
         services.AddSingleton<SupabaseEmailLinkStore>();
         services.AddScoped<SupabaseCookieEvents>();
-        services.AddSingleton<SupabaseAuthRateLimiter>();
-        services.AddScoped<SupabaseAuthRateLimitFilter>();
         services.ConfigureApplicationCookie(options =>
         {
             options.EventsType = typeof(SupabaseCookieEvents);
@@ -41,68 +44,23 @@ public static class SupabaseAuthentication
     }
 }
 
-public sealed class SupabaseSession
-{
-    public required string UserId { get; init; }
-    public required string SecurityStamp { get; init; }
-    public required SupabaseAuthTokens Tokens { get; set; }
-    public required DateTimeOffset TokenExpiresAt { get; set; }
-    public required DateTimeOffset ExpiresAt { get; init; }
-    public SemaphoreSlim Gate { get; } = new(1, 1);
-}
-
-/// <summary>Opaque-cookie sessions. Restarting the process signs everyone out; deploy as one instance.</summary>
-public sealed class SupabaseSessionStore : IDisposable
-{
-    private readonly ConcurrentDictionary<string, SupabaseSession> _sessions = new();
-    private readonly Timer _cleanup;
-
-    public SupabaseSessionStore() => _cleanup = new Timer(state =>
-    {
-        foreach (var item in _sessions)
-            if (item.Value.ExpiresAt <= DateTimeOffset.UtcNow) _sessions.TryRemove(item.Key, out _);
-    }, null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
-
-    public string Add(SupabaseSession session)
-    {
-        var id = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-        _sessions[id] = session;
-        return id;
-    }
-
-    public SupabaseSession? Get(string? id) =>
-        id != null && _sessions.TryGetValue(id, out var session) && session.ExpiresAt > DateTimeOffset.UtcNow
-            ? session : null;
-
-    public void Remove(string? id)
-    {
-        if (id != null) _sessions.TryRemove(id, out _);
-    }
-
-    public void RemoveUser(string userId)
-    {
-        foreach (var item in _sessions)
-            if (item.Value.UserId == userId) _sessions.TryRemove(item.Key, out _);
-    }
-
-    public void Dispose() => _cleanup.Dispose();
-}
-
+/// <summary>Opaque-cookie sessions backed by <see cref="ISupabaseSessionStore"/>.</summary>
 public sealed class SupabaseSessionService(
     SupabaseAuthClient auth,
-    SupabaseSessionStore store,
+    ISupabaseSessionStore store,
     UserManager<ApplicationUser> users,
     SignInManager<ApplicationUser> signIn,
     ApplicationDbContext db)
 {
-    public SupabaseSession? Current(ClaimsPrincipal principal) =>
-        store.Get(principal.FindFirstValue(SupabaseAuthentication.SessionClaim));
+    public Task<SupabaseSession?> CurrentAsync(ClaimsPrincipal principal) =>
+        store.GetAsync(principal.FindFirstValue(SupabaseAuthentication.SessionClaim));
 
     public async Task SignInAsync(HttpContext context, ApplicationUser user, SupabaseAuthTokens tokens, bool persistent)
     {
+        // An unconfirmed address may sign in and browse; the VerifiedEmail policy gates the actions where it matters.
         var remote = await auth.GetUserAsync(tokens.AccessToken);
-        if (remote.Id != user.Id || remote.EmailConfirmedAt == null || string.IsNullOrWhiteSpace(tokens.RefreshToken))
-            throw new SupabaseAuthException("Verify your email before signing in.");
+        if (remote.Id != user.Id || string.IsNullOrWhiteSpace(tokens.RefreshToken))
+            throw new SupabaseAuthException("Unable to sign in. Please try again.");
         await SynchronizeEmailAsync(user, remote);
         if (await users.IsLockedOutAsync(user))
             throw new SupabaseAuthException("This account is unavailable.");
@@ -116,8 +74,8 @@ public sealed class SupabaseSessionService(
             TokenExpiresAt = now.AddSeconds(tokens.ExpiresIn),
             ExpiresAt = expires
         };
-        store.Remove(context.User.FindFirstValue(SupabaseAuthentication.SessionClaim));
-        var id = store.Add(session);
+        await store.RemoveAsync(context.User.FindFirstValue(SupabaseAuthentication.SessionClaim));
+        var id = await store.AddAsync(session);
         var principal = await signIn.CreateUserPrincipalAsync(user);
         ((ClaimsIdentity)principal.Identity!).AddClaim(new Claim(SupabaseAuthentication.SessionClaim, id));
         await context.SignInAsync(IdentityConstants.ApplicationScheme, principal, new AuthenticationProperties
@@ -131,60 +89,55 @@ public sealed class SupabaseSessionService(
     public async Task<ApplicationUser?> ValidateAsync(ClaimsPrincipal principal)
     {
         var id = principal.FindFirstValue(SupabaseAuthentication.SessionClaim);
-        var session = store.Get(id);
+        if (id == null) return null;
+        var stored = await store.GetAsync(id);
+        if (stored == null) return null;
+        var user = await users.FindByIdAsync(stored.UserId);
+        if (user == null || await users.IsLockedOutAsync(user) ||
+            await users.GetSecurityStampAsync(user) != stored.SecurityStamp) return null;
+
+        // Refresh tokens are single-use: the store serializes refreshes across requests and instances.
+        var session = await store.RefreshIfDueAsync(id,
+            s => s.TokenExpiresAt <= DateTimeOffset.UtcNow.AddMinutes(1),
+            s => auth.RefreshAsync(s.Tokens.RefreshToken));
         if (session == null) return null;
-        await session.Gate.WaitAsync();
-        try
-        {
-            if (store.Get(id) != session) return null;
-            var user = await users.FindByIdAsync(session.UserId);
-            if (user == null || await users.IsLockedOutAsync(user) ||
-                await users.GetSecurityStampAsync(user) != session.SecurityStamp) return null;
-            if (session.TokenExpiresAt <= DateTimeOffset.UtcNow.AddMinutes(1))
-            {
-                session.Tokens = await auth.RefreshAsync(session.Tokens.RefreshToken);
-                session.TokenExpiresAt = DateTimeOffset.UtcNow.AddSeconds(session.Tokens.ExpiresIn);
-            }
-            var remote = await auth.GetUserAsync(session.Tokens.AccessToken);
-            if (remote.Id != user.Id || remote.EmailConfirmedAt == null) return null;
-            // getUser validates JWTs but JWTs can outlive sign-out. Check the server's session row too.
-            if (!await IsRemoteSessionActiveAsync(session.Tokens.AccessToken, user.Id)) return null;
-            await SynchronizeEmailAsync(user, remote);
-            return user;
-        }
-        finally
-        {
-            session.Gate.Release();
-        }
+
+        var remote = await auth.GetUserAsync(session.Tokens.AccessToken);
+        if (remote.Id != user.Id) return null;
+        // getUser validates JWTs but JWTs can outlive sign-out. Check the server's session row too.
+        if (!await IsRemoteSessionActiveAsync(session.Tokens.AccessToken, user.Id)) return null;
+        await SynchronizeEmailAsync(user, remote);
+        return user;
     }
 
     public async Task<bool> SignOutAsync(HttpContext context, bool allSessions = false)
     {
         var id = context.User.FindFirstValue(SupabaseAuthentication.SessionClaim);
-        var session = store.Get(id);
-        store.Remove(id);
+        var session = await store.GetAsync(id);
+        await store.RemoveAsync(id);
         await context.SignOutAsync(IdentityConstants.ApplicationScheme);
         if (session == null) return true;
-        if (allSessions) store.RemoveUser(session.UserId);
-        await session.Gate.WaitAsync();
+        if (allSessions) await store.RemoveUserAsync(session.UserId);
         try
         {
+            // Revokes the Supabase session itself, so a refresh racing this sign-out cannot keep it alive.
             await auth.LogoutAsync(session.Tokens.AccessToken, allSessions);
             return true;
         }
         catch (SupabaseAuthException) { return false; }
-        finally { session.Gate.Release(); }
     }
 
-    public void RevokeLocalSessions(string userId) => store.RemoveUser(userId);
+    public Task RevokeLocalSessionsAsync(string userId) => store.RemoveUserAsync(userId);
 
     private async Task SynchronizeEmailAsync(ApplicationUser user, SupabaseAuthUser remote)
     {
-        if (string.IsNullOrWhiteSpace(remote.Email)) throw new SupabaseAuthException("A verified email is required.");
-        if (string.Equals(user.Email, remote.Email, StringComparison.OrdinalIgnoreCase) && user.EmailConfirmed) return;
+        if (string.IsNullOrWhiteSpace(remote.Email)) throw new SupabaseAuthException("An email address is required.");
+        // EmailConfirmed only ever mirrors Supabase's email_confirmed_at; it is never asserted locally.
+        var confirmed = remote.EmailConfirmedAt != null;
+        if (string.Equals(user.Email, remote.Email, StringComparison.OrdinalIgnoreCase) && user.EmailConfirmed == confirmed) return;
         user.Email = remote.Email;
         user.UserName = remote.Email;
-        user.EmailConfirmed = remote.EmailConfirmedAt != null;
+        user.EmailConfirmed = confirmed;
         var result = await users.UpdateAsync(user);
         if (!result.Succeeded) throw new SupabaseAuthException("Your account profile could not be synchronized. Contact support.");
     }
@@ -225,7 +178,7 @@ public sealed class SupabaseSessionService(
 
 public sealed class SupabaseCookieEvents(
     SupabaseSessionService sessions,
-    SupabaseSessionStore store,
+    ISupabaseSessionStore store,
     SignInManager<ApplicationUser> signIn,
     ILogger<SupabaseCookieEvents> logger) : CookieAuthenticationEvents
 {
@@ -249,7 +202,12 @@ public sealed class SupabaseCookieEvents(
             // Fail closed on Auth/database outages without logging credentials, tokens or upstream payloads.
             logger.LogWarning("Supabase session validation failed ({ErrorType}).", ex.GetType().Name);
         }
-        store.Remove(id);
+        try { await store.RemoveAsync(id); }
+        catch (Exception ex)
+        {
+            // The cookie is rejected either way; an unreachable store must not turn this into a 500.
+            logger.LogWarning("Supabase session could not be removed ({ErrorType}).", ex.GetType().Name);
+        }
         context.RejectPrincipal();
         await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
     }

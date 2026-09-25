@@ -4,6 +4,8 @@ using KrishiLink.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Localization;
 
 namespace KrishiLink.Controllers
 {
@@ -11,16 +13,19 @@ namespace KrishiLink.Controllers
     {
         private readonly IReviewService _reviewService;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
-        public ReviewsController(IReviewService reviewService, UserManager<ApplicationUser> userManager)
+        public ReviewsController(IReviewService reviewService, UserManager<ApplicationUser> userManager, IStringLocalizer<SharedResource> localizer)
         {
             _reviewService = reviewService;
             _userManager = userManager;
+            _localizer = localizer;
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = AppRoles.Farmer)]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
         public async Task<IActionResult> Submit([FromForm] SubmitReviewViewModel model)
         {
             var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
@@ -33,7 +38,7 @@ namespace KrishiLink.Controllers
                 {
                     return BadRequest(new { success = false, message = errors });
                 }
-                TempData["ErrorMessage"] = errors;
+                TempData["ErrorMessage"] = _localizer[errors].Value;
                 return RedirectToAction("Index", "Bookings");
             }
 
@@ -68,11 +73,11 @@ namespace KrishiLink.Controllers
 
             if (result.Success)
             {
-                TempData["SuccessMessage"] = result.Message;
+                TempData["SuccessMessage"] = _localizer[result.Message].Value;
             }
             else
             {
-                TempData["ErrorMessage"] = result.Message;
+                TempData["ErrorMessage"] = _localizer[result.Message].Value;
             }
 
             return RedirectToAction("Index", "Bookings");
@@ -81,6 +86,7 @@ namespace KrishiLink.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize(Roles = $"{AppRoles.EquipmentOwner},{AppRoles.GodownOwner}")]
+        [EnableRateLimiting(RateLimitPolicies.Write)]
         public async Task<IActionResult> Reply([FromForm] ReplyReviewViewModel model)
         {
             var isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
@@ -93,7 +99,7 @@ namespace KrishiLink.Controllers
                 {
                     return BadRequest(new { success = false, message = errors });
                 }
-                TempData["ErrorMessage"] = errors;
+                TempData["ErrorMessage"] = _localizer[errors].Value;
                 return Redirect(Request.Headers["Referer"].ToString() ?? "/");
             }
 
@@ -125,11 +131,11 @@ namespace KrishiLink.Controllers
 
             if (success)
             {
-                TempData["SuccessMessage"] = message;
+                TempData["SuccessMessage"] = _localizer[message].Value;
             }
             else
             {
-                TempData["ErrorMessage"] = message;
+                TempData["ErrorMessage"] = _localizer[message].Value;
             }
 
             var referer = Request.Headers["Referer"].ToString();
@@ -138,6 +144,7 @@ namespace KrishiLink.Controllers
 
         [HttpGet]
         [AllowAnonymous]
+        [EnableRateLimiting(RateLimitPolicies.ReadJson)]
         public async Task<IActionResult> List([FromQuery] string type, [FromQuery] int id, [FromQuery] int page = 1)
         {
             if (string.IsNullOrWhiteSpace(type) || id <= 0)

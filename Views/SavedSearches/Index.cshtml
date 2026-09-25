@@ -120,7 +120,7 @@
                             </div>
 
                             <!-- Delete button -->
-                            <form asp-action="Delete" method="post" onsubmit="return confirm('@L["Are you sure you want to delete this saved search?"]');">
+                            <form asp-action="Delete" method="post" data-onsubmit="return confirm('@L["Are you sure you want to delete this saved search?"]');">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="id" value="@search.Id" />
                                 <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;" title="@L["Delete search"]">

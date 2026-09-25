@@ -256,7 +256,7 @@
                             <td class="px-3 text-center">
                                 <button type="button" class="btn btn-outline-danger btn-sm rounded-circle p-1" style="width: 32px; height: 32px;"
                                         title="@L["Delete Record"]"
-                                        onclick="confirmDeleteRecord(@record.Id, '@record.ServiceType', '@record.ServiceDateFormatted')">
+                                        data-onclick="confirmDeleteRecord(@record.Id, '@record.ServiceType', '@record.ServiceDateFormatted')">
                                     <i class="bi bi-trash3"></i>
                                 </button>
                             </td>

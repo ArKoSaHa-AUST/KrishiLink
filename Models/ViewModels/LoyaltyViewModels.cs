@@ -25,7 +25,7 @@ namespace KrishiLink.Models.ViewModels
         public string TierBadgeClass { get; set; } = "bg-secondary";
         public string BadgeColorClass => TierBadgeClass;
         public string TierColor { get; set; } = "#cd7f32";
-        public string TierIcon { get; set; } = "🥉";
+        public string TierIcon { get; set; } = "bi-seedling";
         public decimal DiscountMultiplier { get; set; } = 1.0m;
         public int MinPoints { get; set; }
         public int MaxPoints { get; set; }
@@ -143,7 +143,7 @@ namespace KrishiLink.Models.ViewModels
         public decimal EstimatedDiscountValue { get; set; }
         public string TierName { get; set; } = "Bronze Farmer";
         public string TierBadgeClass { get; set; } = "bg-secondary";
-        public string TierIcon { get; set; } = "🥉";
+        public string TierIcon { get; set; } = "bi-seedling";
         public string TierIconClass { get => TierIcon; set => TierIcon = value; }
         public decimal DiscountMultiplier { get; set; } = 1.0m;
         public int ActiveVouchersCount { get; set; }

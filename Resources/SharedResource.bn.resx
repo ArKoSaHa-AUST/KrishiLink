@@ -234,8 +234,8 @@
   <data name="Booking Reference:" xml:space="preserve">
     <value>বুকিং রেফারেন্স:</value>
   </data>
-  <data name="Booking Requested ✓" xml:space="preserve">
-    <value>বুকিং অনুরোধ করা হয়েছে ✓</value>
+  <data name="Booking Requested" xml:space="preserve">
+    <value>বুকিং অনুরোধ করা হয়েছে</value>
   </data>
   <data name="Booking Requests" xml:space="preserve">
     <value>বুকিং অনুরোধ</value>
@@ -1438,31 +1438,13 @@
     <value>{0}?? ???????</value>
   </data>
   <data name="{0} km away" xml:space="preserve">
-    <value>{0} ???? ????</value>
+    <value>{0} কিমি দূরে</value>
   </data>
-  <data name="⚙️ Power Tiller" xml:space="preserve">
-    <value>⚙️ পাওয়ার টিলার</value>
+  <data name="Crop Thresher" xml:space="preserve">
+    <value>ফসল মাড়াই যন্ত্র</value>
   </data>
-  <data name="⚡ Irrigation Pump" xml:space="preserve">
-    <value>⚡ সেচ পাম্প</value>
-  </data>
-  <data name="🌱 Seed Drill / Seeder" xml:space="preserve">
-    <value>🌱 সিড ড্রিল / বীজ বপন যন্ত্র</value>
-  </data>
-  <data name="🌾 Combine Harvester" xml:space="preserve">
-    <value>🌾 কম্বাইন হারভেস্টার</value>
-  </data>
-  <data name="🌾 Crop Thresher" xml:space="preserve">
-    <value>🌾 ফসল মাড়াই যন্ত্র</value>
-  </data>
-  <data name="💧 Power Sprayer" xml:space="preserve">
-    <value>💧 পাওয়ার স্প্রেয়ার</value>
-  </data>
-  <data name="📦 Other Agricultural Tool" xml:space="preserve">
-    <value>📦 অন্যান্য কৃষি যন্ত্র</value>
-  </data>
-  <data name="🚜 Tractor" xml:space="preserve">
-    <value>🚜 ট্রাক্টর</value>
+  <data name="Other Agricultural Tool" xml:space="preserve">
+    <value>অন্যান্য কৃষি যন্ত্র</value>
   </data>
   <data name="/ mo" xml:space="preserve">
     <value>/ মাস</value>
@@ -1545,20 +1527,17 @@
   <data name="Backup Generator" xml:space="preserve">
     <value>ব্যাকআপ জেনারেটর</value>
   </data>
-  <data name="Booking Requested" xml:space="preserve">
-    <value>বুকিং অনুরোধ করা হয়েছে</value>
+  <data name="Booking accepted — the farmer has been notified" xml:space="preserve">
+    <value>বুকিং গৃহীত — কৃষককে জানানো হয়েছে</value>
   </data>
-  <data name="Booking accepted — the farmer has been notified ✓" xml:space="preserve">
-    <value>বুকিং গৃহীত — কৃষককে জানানো হয়েছে ✓</value>
-  </data>
-  <data name="Booking marked as completed — capacity freed ✓" xml:space="preserve">
-    <value>বুকিং সম্পন্ন হিসেবে চিহ্নিত — ধারণক্ষমতা খালি হয়েছে ✓</value>
+  <data name="Booking marked as completed — capacity freed" xml:space="preserve">
+    <value>বুকিং সম্পন্ন হিসেবে চিহ্নিত — ধারণক্ষমতা খালি হয়েছে</value>
   </data>
   <data name="Booking rejected — the farmer has been notified" xml:space="preserve">
     <value>বুকিং প্রত্যাখ্যাত — কৃষককে জানানো হয়েছে</value>
   </data>
-  <data name="Booking request accepted ✓" xml:space="preserve">
-    <value>বুকিং অনুরোধ গৃহীত ✓</value>
+  <data name="Booking request accepted" xml:space="preserve">
+    <value>বুকিং অনুরোধ গৃহীত</value>
   </data>
   <data name="Booking request rejected" xml:space="preserve">
     <value>বুকিং অনুরোধ প্রত্যাখ্যাত</value>
@@ -1845,11 +1824,11 @@
   <data name="Rental Requested" xml:space="preserve">
     <value>ভাড়ার অনুরোধ করা হয়েছে</value>
   </data>
-  <data name="Rental marked as completed ✓" xml:space="preserve">
-    <value>ভাড়া সম্পন্ন হিসেবে চিহ্নিত ✓</value>
+  <data name="Rental marked as completed" xml:space="preserve">
+    <value>ভাড়া সম্পন্ন হিসেবে চিহ্নিত</value>
   </data>
-  <data name="Rental request accepted ✓" xml:space="preserve">
-    <value>ভাড়ার অনুরোধ গৃহীত ✓</value>
+  <data name="Rental request accepted" xml:space="preserve">
+    <value>ভাড়ার অনুরোধ গৃহীত</value>
   </data>
   <data name="Rental request rejected" xml:space="preserve">
     <value>ভাড়ার অনুরোধ প্রত্যাখ্যাত</value>
@@ -1863,8 +1842,8 @@
   <data name="Request Submitted" xml:space="preserve">
     <value>অনুরোধ জমা হয়েছে</value>
   </data>
-  <data name="Request accepted — the farmer has been notified ✓" xml:space="preserve">
-    <value>অনুরোধ গৃহীত — কৃষককে জানানো হয়েছে ✓</value>
+  <data name="Request accepted — the farmer has been notified" xml:space="preserve">
+    <value>অনুরোধ গৃহীত — কৃষককে জানানো হয়েছে</value>
   </data>
   <data name="Request for 10 Tons submitted" xml:space="preserve">
     <value>১০ টনের জন্য অনুরোধ জমা হয়েছে</value>
@@ -2133,14 +2112,14 @@
   <data name="Timeline Legend:" xml:space="preserve">
     <value>সময়রেখার সংকেত:</value>
   </data>
-  <data name="🌱 Sowing / Transplanting" xml:space="preserve">
-    <value>🌱 বীজবপন / রোপণ</value>
+  <data name="Sowing / Transplanting" xml:space="preserve">
+    <value>বীজবপন / রোপণ</value>
   </data>
-  <data name="🌿 Growing / Vegetative" xml:space="preserve">
-    <value>🌿 বাড়ন্ত অবস্থা</value>
+  <data name="Growing / Vegetative" xml:space="preserve">
+    <value>বাড়ন্ত অবস্থা</value>
   </data>
-  <data name="🌾 Harvesting / Reaping" xml:space="preserve">
-    <value>🌾 ফসল কাটা / সংগ্রহ</value>
+  <data name="Harvesting / Reaping" xml:space="preserve">
+    <value>ফসল কাটা / সংগ্রহ</value>
   </data>
   <data name="Showing {0} crops matching criteria" xml:space="preserve">
     <value>মানদণ্ড অনুযায়ী {0}টি ফসল প্রদর্শিত</value>
@@ -3000,8 +2979,8 @@
   <data name="Top Rated Host" xml:space="preserve">
     <value>শীর্ষ রেটেড হোস্ট</value>
   </data>
-  <data name="Maintains an average rating of 4.7★ or higher with trusted farmer reviews." xml:space="preserve">
-    <value>কৃষকদের বিশ্বস্ত মূল্যায়নের মাধ্যমে ৪.৭★ বা ততোধিক গড় রেটিং বজায় রেখেছেন।</value>
+  <data name="Maintains an average rating of 4.7 or higher with trusted farmer reviews." xml:space="preserve">
+    <value>কৃষকদের বিশ্বস্ত মূল্যায়নের মাধ্যমে ৪.৭ বা ততোধিক গড় রেটিং বজায় রেখেছেন।</value>
   </data>
   <data name="Achieve 4.7+ star rating with at least 3 customer reviews." xml:space="preserve">
     <value>কমপক্ষে ৩টি রিভিউ সহ ৪.৭+ স্টার রেটিং অর্জন করুন।</value>
@@ -4260,8 +4239,8 @@
   <data name="Platform Feedback Given" xml:space="preserve">
     <value>প্ল্যাটফর্মে প্রদত্ত মতামত</value>
   </data>
-  <data name="{0} reviews given by this farmer · average rating: {1} ★" xml:space="preserve">
-    <value>এই কৃষকের প্রদত্ত {0}টি রিভিউ · গড় রেটিং: {1} ★</value>
+  <data name="{0} reviews given by this farmer · average rating: {1}" xml:space="preserve">
+    <value>এই কৃষকের প্রদত্ত {0}টি রিভিউ · গড় রেটিং: {1}</value>
   </data>
   <data name="No reviews submitted by this farmer yet." xml:space="preserve">
     <value>এই কৃষক এখনও কোনো রিভিউ প্রদান করেননি।</value>
@@ -4272,8 +4251,8 @@
   <data name="Shown to you because this farmer has requested one of your listings. Contact details are visible only for confirmed bookings." xml:space="preserve">
     <value>এই কৃষক আপনার একটি তালিকায় অনুরোধ করার কারণে এটি আপনাকে দেখানো হচ্ছে। যোগাযোগের বিবরণ শুধুমাত্র নিশ্চিত বুকিংয়ের ক্ষেত্রে দৃশ্যমান হয়।</value>
   </data>
-  <data name="✔ {0} completed · {1}% cancellations · since {2}" xml:space="preserve">
-    <value>✔ {0}টি সম্পন্ন · {1}% বাতিল · সদস্য {2} থেকে</value>
+  <data name="{0} completed · {1}% cancellations · since {2}" xml:space="preserve">
+    <value>{0}টি সম্পন্ন · {1}% বাতিল · সদস্য {2} থেকে</value>
   </data>
   <data name="View Farmer Profile" xml:space="preserve">
     <value>কৃষকের প্রোফাইল দেখুন</value>
@@ -4746,4 +4725,1604 @@
   <data name="Stored goods released: {0} kg of {1} from {2} to {3} (Receipt #{4})." xml:space="preserve">
     <value>সংরক্ষিত পণ্য খালাস করা হয়েছে: {0} কেজি {1}, {2} থেকে {3}-কে প্রদান করা হয়েছে (রসিদ #{4})।</value>
   </data>
-<data name="Fuel" xml:space="preserve"><value>জ্বালানি</value></data><data name="Labour" xml:space="preserve"><value>শ্রমিক</value></data><data name="Repair" xml:space="preserve"><value>মেরামত</value></data><data name="Transport" xml:space="preserve"><value>পরিবহন</value></data><data name="Fumigation" xml:space="preserve"><value>জীবাণুমুক্তকরণ</value></data><data name="Utilities" xml:space="preserve"><value>ইউটিলিটি ও বিদ্যুৎ</value></data><data name="Fiscal Year" xml:space="preserve"><value>অর্থবছর</value></data><data name="Last FY" xml:space="preserve"><value>পূর্ববর্তী অর্থবছর</value></data><data name="YTD" xml:space="preserve"><value>চলতি বছর (YTD)</value></data><data name="Last 12 Months" xml:space="preserve"><value>বিগত ১২ মাস</value></data><data name="This Month" xml:space="preserve"><value>চলতি মাস</value></data><data name="Profit &amp; Loss / Tax Summary" xml:space="preserve"><value>লাভ-ক্ষতি ও কর বিবরণী</value></data><data name="Expenses by Category" xml:space="preserve"><value>খাত অনুযায়ী ব্যয়</value></data><data name="General Operating Expenses" xml:space="preserve"><value>সাধারণ পরিচালন ব্যয়</value></data><data name="General operating expense (no booking)" xml:space="preserve"><value>সাধারণ পরিচালন ব্যয় (কোনো নির্দিষ্ট বুকিং ছাড়া)</value></data><data name="Download P&amp;L (PDF)" xml:space="preserve"><value>লাভ-ক্ষতি বিবরণী (PDF)</value></data><data name="Add general expense" xml:space="preserve"><value>সাধারণ ব্যয় যোগ করুন</value></data><data name="Operating Expenses" xml:space="preserve"><value>পরিচালন ব্যয়</value></data><data name="Net Operating Profit" xml:space="preserve"><value>নিট পরিচালন লাভ</value></data><data name="Margin" xml:space="preserve"><value>মার্জিন</value></data><data name="Tax-deductible" xml:space="preserve"><value>কর-ছাড়যোগ্য</value></data><data name="Figures for your tax adviser: gross receipts, platform commission (deductible), operating expenses by category, net profit. KrishiLink does not calculate tax." xml:space="preserve"><value>আপনার কর উপদেষ্টার জন্য প্রয়োজনীয় তথ্য: মোট প্রাপ্তি, প্ল্যাটফর্ম কমিশন (ছাড়যোগ্য), খাতভিত্তিক পরিচালন ব্যয় ও নিট লাভ। কৃষিলিংক সরাসরি কর হিসাব করে না।</value></data><data name="Payment confirmed" xml:space="preserve"><value>পেমেন্ট নিশ্চিত হয়েছে</value></data><data name="Your payment of ৳{0} for {1} is confirmed (ref {2}). Your receipt is available in My Bookings." xml:space="preserve"><value>{1}-এর জন্য আপনার ৳{0} পেমেন্ট নিশ্চিত হয়েছে (রেফারেন্স {2})। আপনার রসিদ মাই বুকিং-এ সংরক্ষিত আছে।</value></data><data name="Payment Receipt" xml:space="preserve"><value>পেমেন্ট রসিদ</value></data><data name="Farmer receipt" xml:space="preserve"><value>কৃষকের রসিদ</value></data><data name="Listing (optional)" xml:space="preserve"><value>লিস্টিং (ঐচ্ছিক)</value></data><data name="None / General facility" xml:space="preserve"><value>কোনোটি নয় / সাধারণ সুবিধা</value></data><data name="Expense Date" xml:space="preserve"><value>ব্যয়ের তারিখ</value></data></root>
+<data name="Fuel" xml:space="preserve"><value>জ্বালানি</value></data><data name="Labour" xml:space="preserve"><value>শ্রমিক</value></data><data name="Repair" xml:space="preserve"><value>মেরামত</value></data><data name="Transport" xml:space="preserve"><value>পরিবহন</value></data><data name="Fumigation" xml:space="preserve"><value>জীবাণুমুক্তকরণ</value></data><data name="Utilities" xml:space="preserve"><value>ইউটিলিটি ও বিদ্যুৎ</value></data><data name="Fiscal Year" xml:space="preserve"><value>অর্থবছর</value></data><data name="Last FY" xml:space="preserve"><value>পূর্ববর্তী অর্থবছর</value></data><data name="YTD" xml:space="preserve"><value>চলতি বছর (YTD)</value></data><data name="Last 12 Months" xml:space="preserve"><value>বিগত ১২ মাস</value></data><data name="This Month" xml:space="preserve"><value>চলতি মাস</value></data><data name="Profit &amp; Loss / Tax Summary" xml:space="preserve"><value>লাভ-ক্ষতি ও কর বিবরণী</value></data><data name="Expenses by Category" xml:space="preserve"><value>খাত অনুযায়ী ব্যয়</value></data><data name="General Operating Expenses" xml:space="preserve"><value>সাধারণ পরিচালন ব্যয়</value></data><data name="General operating expense (no booking)" xml:space="preserve"><value>সাধারণ পরিচালন ব্যয় (কোনো নির্দিষ্ট বুকিং ছাড়া)</value></data><data name="Download P&amp;L (PDF)" xml:space="preserve"><value>লাভ-ক্ষতি বিবরণী (PDF)</value></data><data name="Add general expense" xml:space="preserve"><value>সাধারণ ব্যয় যোগ করুন</value></data><data name="Operating Expenses" xml:space="preserve"><value>পরিচালন ব্যয়</value></data><data name="Net Operating Profit" xml:space="preserve"><value>নিট পরিচালন লাভ</value></data><data name="Margin" xml:space="preserve"><value>মার্জিন</value></data><data name="Tax-deductible" xml:space="preserve"><value>কর-ছাড়যোগ্য</value></data><data name="Figures for your tax adviser: gross receipts, platform commission (deductible), operating expenses by category, net profit. KrishiLink does not calculate tax." xml:space="preserve"><value>আপনার কর উপদেষ্টার জন্য প্রয়োজনীয় তথ্য: মোট প্রাপ্তি, প্ল্যাটফর্ম কমিশন (ছাড়যোগ্য), খাতভিত্তিক পরিচালন ব্যয় ও নিট লাভ। কৃষিলিংক সরাসরি কর হিসাব করে না।</value></data><data name="Payment confirmed" xml:space="preserve"><value>পেমেন্ট নিশ্চিত হয়েছে</value></data><data name="Your payment of ৳{0} for {1} is confirmed (ref {2}). Your receipt is available in My Bookings." xml:space="preserve"><value>{1}-এর জন্য আপনার ৳{0} পেমেন্ট নিশ্চিত হয়েছে (রেফারেন্স {2})। আপনার রসিদ মাই বুকিং-এ সংরক্ষিত আছে।</value></data><data name="Payment Receipt" xml:space="preserve"><value>পেমেন্ট রসিদ</value></data><data name="Farmer receipt" xml:space="preserve"><value>কৃষকের রসিদ</value></data><data name="Listing (optional)" xml:space="preserve"><value>লিস্টিং (ঐচ্ছিক)</value></data><data name="None / General facility" xml:space="preserve"><value>কোনোটি নয় / সাধারণ সুবিধা</value></data><data name="Expense Date" xml:space="preserve"><value>ব্যয়ের তারিখ</value></data>
+  <data name="Leaderboard rankings refreshed successfully!" xml:space="preserve">
+    <value>লিডারবোর্ডের র‍্যাংকিং সফলভাবে হালনাগাদ করা হয়েছে!</value>
+  </data>
+  <data name="Rankings were refreshed moments ago. Please try again in a little while." xml:space="preserve">
+    <value>র‍্যাংকিং কিছুক্ষণ আগেই হালনাগাদ করা হয়েছে। অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।</value>
+  </data>
+  <data name="Welcome to KrishiLink, {0}! We e-mailed a code to {1}. Confirm your e-mail to book, list and pay." xml:space="preserve">
+    <value>কৃষিলিংকে স্বাগতম, {0}! আমরা {1} ঠিকানায় একটি কোড ই-মেইল করেছি। বুকিং, লিস্টিং ও পেমেন্ট করতে আপনার ই-মেইল নিশ্চিত করুন।</value>
+  </data>
+  <data name="Your account was created. Enter the code we e-mailed to {0} to confirm your address, then sign in." xml:space="preserve">
+    <value>আপনার অ্যাকাউন্ট তৈরি হয়েছে। ঠিকানা নিশ্চিত করতে {0} ঠিকানায় পাঠানো কোডটি লিখুন, তারপর সাইন ইন করুন।</value>
+  </data>
+  <data name="Your e-mail address is not confirmed yet. Enter the code we e-mailed you, or request a new one." xml:space="preserve">
+    <value>আপনার ই-মেইল ঠিকানা এখনো নিশ্চিত হয়নি। আমাদের ই-মেইল করা কোডটি লিখুন, অথবা নতুন কোড চেয়ে নিন।</value>
+  </data>
+  <data name="E-mail confirmed. Booking, listing and payments are now unlocked." xml:space="preserve">
+    <value>ই-মেইল নিশ্চিত হয়েছে। বুকিং, লিস্টিং ও পেমেন্ট এখন চালু হয়েছে।</value>
+  </data>
+  <data name="This database role cannot modify auth.users. Run the SQL shown on this page in the Supabase SQL editor, then use this page again to re-send the codes." xml:space="preserve">
+    <value>এই ডাটাবেস রোল auth.users পরিবর্তন করতে পারে না। এই পাতায় দেখানো SQL টি Supabase SQL এডিটরে চালান, তারপর কোড আবার পাঠাতে এই পাতাটি আবার ব্যবহার করুন।</value>
+  </data>
+  <data name="Removed {0} unproven confirmation(s) and re-sent {1} confirmation code(s)." xml:space="preserve">
+    <value>অপ্রমাণিত {0}টি নিশ্চিতকরণ বাতিল করা হয়েছে এবং {1}টি নিশ্চিতকরণ কোড আবার পাঠানো হয়েছে।</value>
+  </data>
+  <data name="Confirm your e-mail first" xml:space="preserve">
+    <value>আগে আপনার ই-মেইল নিশ্চিত করুন</value>
+  </data>
+  <data name="Booking, listing, payments, payouts and ID verification unlock once you confirm your e-mail address. Enter the code we e-mailed you, or request a new one." xml:space="preserve">
+    <value>ই-মেইল ঠিকানা নিশ্চিত করলেই বুকিং, লিস্টিং, পেমেন্ট, পেআউট ও পরিচয় যাচাই চালু হবে। আমাদের ই-মেইল করা কোডটি লিখুন, অথবা নতুন কোড চেয়ে নিন।</value>
+  </data>
+  <data name="Enter code" xml:space="preserve">
+    <value>কোড লিখুন</value>
+  </data>
+  <data name="Resend code" xml:space="preserve">
+    <value>কোড আবার পাঠান</value>
+  </data>
+  <data name="Confirm your e-mail to book and list" xml:space="preserve">
+    <value>বুকিং ও লিস্টিং করতে আপনার ই-মেইল নিশ্চিত করুন</value>
+  </data>
+  <data name="E-mail Confirmation Clean-up" xml:space="preserve">
+    <value>ই-মেইল নিশ্চিতকরণ সংশোধন</value>
+  </data>
+  <data name="Development only. Lists accounts marked as confirmed although Supabase never sent them a confirmation e-mail. Clean-up removes that confirmation and re-sends a code; it can never confirm an address." xml:space="preserve">
+    <value>শুধু ডেভেলপমেন্টের জন্য। যেসব অ্যাকাউন্টকে নিশ্চিত দেখানো হয়েছে অথচ Supabase কখনো নিশ্চিতকরণ ই-মেইল পাঠায়নি, সেগুলোর তালিকা। সংশোধন সেই নিশ্চিতকরণ বাতিল করে নতুন কোড পাঠায়; এটি কখনো কোনো ঠিকানা নিশ্চিত করতে পারে না।</value>
+  </data>
+  <data name="No unproven confirmations found." xml:space="preserve">
+    <value>কোনো অপ্রমাণিত নিশ্চিতকরণ পাওয়া যায়নি।</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>নাম</value>
+  </data>
+  <data name="Email" xml:space="preserve">
+    <value>ই-মেইল</value>
+  </data>
+  <data name="Role" xml:space="preserve">
+    <value>ভূমিকা</value>
+  </data>
+  <data name="Confirmed in Supabase" xml:space="preserve">
+    <value>Supabase-এ নিশ্চিত</value>
+  </data>
+  <data name="Confirmation e-mail sent" xml:space="preserve">
+    <value>নিশ্চিতকরণ ই-মেইল পাঠানো হয়েছে</value>
+  </data>
+  <data name="Remove unproven confirmations and re-send codes" xml:space="preserve">
+    <value>অপ্রমাণিত নিশ্চিতকরণ বাতিল করে কোড আবার পাঠান</value>
+  </data>
+  <data name="SQL for the Supabase SQL editor" xml:space="preserve">
+    <value>Supabase SQL এডিটরের জন্য SQL</value>
+  </data>
+  <data name="This was just updated by someone else. Please review the latest details and try again." xml:space="preserve">
+    <value>এইমাত্র অন্য কেউ এটি হালনাগাদ করেছেন। অনুগ্রহ করে সর্বশেষ তথ্য দেখে আবার চেষ্টা করুন।</value>
+  </data>
+  <data name="Too many attempts. Please wait a minute and try again." xml:space="preserve">
+    <value>অনেকবার চেষ্টা করা হয়েছে। অনুগ্রহ করে এক মিনিট অপেক্ষা করে আবার চেষ্টা করুন।</value>
+  </data>
+  <data name="Page not found" xml:space="preserve">
+    <value>পাতাটি পাওয়া যায়নি</value>
+  </data>
+  <data name="The page you were looking for does not exist or has moved." xml:space="preserve">
+    <value>আপনি যে পাতাটি খুঁজছেন সেটি নেই অথবা সরিয়ে নেওয়া হয়েছে।</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>ত্রুটি</value>
+  </data>
+  <data name="Something went wrong. Please try again." xml:space="preserve">
+    <value>কিছু একটা ভুল হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।</value>
+  </data>
+  <data name="Booking cancelled and ৳{0} refunded to your payment method. The owner has been notified." xml:space="preserve">
+    <value>বুকিং বাতিল হয়েছে এবং ৳{0} আপনার পেমেন্ট মাধ্যমে ফেরত দেওয়া হয়েছে। মালিককে জানানো হয়েছে।</value>
+  </data>
+  <data name="Booking cancelled. The owner has been notified and the dates are free again." xml:space="preserve">
+    <value>বুকিং বাতিল হয়েছে। মালিককে জানানো হয়েছে এবং তারিখগুলো আবার খালি হয়েছে।</value>
+  </data>
+  <data name="Booking confirmation could not be found." xml:space="preserve">
+    <value>বুকিং নিশ্চিতকরণ পাওয়া যায়নি।</value>
+  </data>
+  <data name="Booking marked as Completed &amp; Handover Settled." xml:space="preserve">
+    <value>বুকিং সম্পন্ন হিসেবে চিহ্নিত এবং হস্তান্তর নিষ্পত্তি হয়েছে।</value>
+  </data>
+  <data name="Booking pass could not be found." xml:space="preserve">
+    <value>বুকিং পাস পাওয়া যায়নি।</value>
+  </data>
+  <data name="Booking request accepted successfully!" xml:space="preserve">
+    <value>বুকিং অনুরোধ সফলভাবে গ্রহণ করা হয়েছে!</value>
+  </data>
+  <data name="Booking request rejected." xml:space="preserve">
+    <value>বুকিং অনুরোধ প্রত্যাখ্যান করা হয়েছে।</value>
+  </data>
+  <data name="Code accepted. If another confirmation email was sent, enter that code too. Otherwise, log in." xml:space="preserve">
+    <value>কোড গৃহীত হয়েছে। আরেকটি নিশ্চিতকরণ ই-মেইল পাঠানো হলে সেই কোডটিও লিখুন। না হলে লগ ইন করুন।</value>
+  </data>
+  <data name="Confirmation accepted. Open the confirmation email sent to your other address to finish the email change." xml:space="preserve">
+    <value>নিশ্চিতকরণ গৃহীত হয়েছে। ই-মেইল পরিবর্তন সম্পন্ন করতে আপনার অন্য ঠিকানায় পাঠানো নিশ্চিতকরণ ই-মেইলটি খুলুন।</value>
+  </data>
+  <data name="Could not activate rule (ensure no overlapping active season rules or duplicate active weekend rules)." xml:space="preserve">
+    <value>নিয়মটি চালু করা যায়নি (নিশ্চিত করুন যে একই সময়ের সক্রিয় মৌসুমি নিয়ম বা একাধিক সক্রিয় সাপ্তাহিক ছুটির নিয়ম নেই)।</value>
+  </data>
+  <data name="Could not delete the maintenance record." xml:space="preserve">
+    <value>রক্ষণাবেক্ষণ রেকর্ডটি মুছে ফেলা যায়নি।</value>
+  </data>
+  <data name="Could not delete the rate rule." xml:space="preserve">
+    <value>ভাড়ার নিয়মটি মুছে ফেলা যায়নি।</value>
+  </data>
+  <data name="Email confirmed. Sign in with your verified email and password." xml:space="preserve">
+    <value>ই-মেইল নিশ্চিত হয়েছে। আপনার যাচাইকৃত ই-মেইল ও পাসওয়ার্ড দিয়ে সাইন ইন করুন।</value>
+  </data>
+  <data name="Email verified. You can now sign in using your verified email or registered phone number." xml:space="preserve">
+    <value>ই-মেইল যাচাই হয়েছে। এখন আপনার যাচাইকৃত ই-মেইল বা নিবন্ধিত ফোন নম্বর দিয়ে সাইন ইন করতে পারবেন।</value>
+  </data>
+  <data name="Equipment listing '{0}' successfully created!" xml:space="preserve">
+    <value>যন্ত্রপাতির লিস্টিং '{0}' সফলভাবে তৈরি হয়েছে!</value>
+  </data>
+  <data name="Equipment listing '{0}' successfully updated!" xml:space="preserve">
+    <value>যন্ত্রপাতির লিস্টিং '{0}' সফলভাবে হালনাগাদ হয়েছে!</value>
+  </data>
+  <data name="Expense of ৳{0} ({1}) recorded to booking #{2}." xml:space="preserve">
+    <value>৳{0} ({1}) ব্যয় বুকিং #{2}-এ যুক্ত করা হয়েছে।</value>
+  </data>
+  <data name="Expense of ৳{0} ({1}) recorded to general operating expenses." xml:space="preserve">
+    <value>৳{0} ({1}) ব্যয় সাধারণ পরিচালন ব্যয়ে যুক্ত করা হয়েছে।</value>
+  </data>
+  <data name="Expense of ৳{0} ({1}) updated on booking #{2}." xml:space="preserve">
+    <value>বুকিং #{2}-এর ৳{0} ({1}) ব্যয় হালনাগাদ করা হয়েছে।</value>
+  </data>
+  <data name="Expense of ৳{0} ({1}) updated on general operating expenses." xml:space="preserve">
+    <value>সাধারণ পরিচালন ব্যয়ের ৳{0} ({1}) ব্যয় হালনাগাদ করা হয়েছে।</value>
+  </data>
+  <data name="Expense removed." xml:space="preserve">
+    <value>ব্যয়টি মুছে ফেলা হয়েছে।</value>
+  </data>
+  <data name="Failed to approve verification." xml:space="preserve">
+    <value>যাচাই অনুমোদন করা যায়নি।</value>
+  </data>
+  <data name="Failed to reject verification." xml:space="preserve">
+    <value>যাচাই প্রত্যাখ্যান করা যায়নি।</value>
+  </data>
+  <data name="Failed to save maintenance record." xml:space="preserve">
+    <value>রক্ষণাবেক্ষণ রেকর্ড সংরক্ষণ করা যায়নি।</value>
+  </data>
+  <data name="Failed to save search." xml:space="preserve">
+    <value>অনুসন্ধানটি সংরক্ষণ করা যায়নি।</value>
+  </data>
+  <data name="Failed to submit rental request." xml:space="preserve">
+    <value>ভাড়ার অনুরোধ পাঠানো যায়নি।</value>
+  </data>
+  <data name="Failed to submit storage booking." xml:space="preserve">
+    <value>সংরক্ষণ বুকিং পাঠানো যায়নি।</value>
+  </data>
+  <data name="Farmer identity verified &amp; handover confirmed! Booking is now marked as Completed." xml:space="preserve">
+    <value>কৃষকের পরিচয় যাচাই ও হস্তান্তর নিশ্চিত হয়েছে! বুকিংটি এখন সম্পন্ন হিসেবে চিহ্নিত।</value>
+  </data>
+  <data name="Harvest plan deleted." xml:space="preserve">
+    <value>ফসল কাটার পরিকল্পনা মুছে ফেলা হয়েছে।</value>
+  </data>
+  <data name="Harvest plan duplicated with dates shifted by {0} days." xml:space="preserve">
+    <value>ফসল কাটার পরিকল্পনাটি {0} দিন সরানো তারিখসহ অনুলিপি করা হয়েছে।</value>
+  </data>
+  <data name="Harvest plan updated." xml:space="preserve">
+    <value>ফসল কাটার পরিকল্পনা হালনাগাদ হয়েছে।</value>
+  </data>
+  <data name="If an account exists, a password recovery code will be emailed. Check your inbox and spam folder." xml:space="preserve">
+    <value>অ্যাকাউন্ট থাকলে পাসওয়ার্ড পুনরুদ্ধারের কোড ই-মেইলে পাঠানো হবে। আপনার ইনবক্স ও স্প্যাম ফোল্ডার দেখুন।</value>
+  </data>
+  <data name="If an unverified account exists, a new code will be emailed. Please wait before requesting another." xml:space="preserve">
+    <value>অযাচাইকৃত অ্যাকাউন্ট থাকলে নতুন কোড ই-মেইলে পাঠানো হবে। আরেকটি চাওয়ার আগে অনুগ্রহ করে অপেক্ষা করুন।</value>
+  </data>
+  <data name="Item removed from harvest plan." xml:space="preserve">
+    <value>আইটেমটি ফসল কাটার পরিকল্পনা থেকে সরানো হয়েছে।</value>
+  </data>
+  <data name="Item successfully added to your harvest plan." xml:space="preserve">
+    <value>আইটেমটি আপনার ফসল কাটার পরিকল্পনায় সফলভাবে যোগ হয়েছে।</value>
+  </data>
+  <data name="Item updated successfully." xml:space="preserve">
+    <value>আইটেমটি সফলভাবে হালনাগাদ হয়েছে।</value>
+  </data>
+  <data name="Maintenance event successfully logged!" xml:space="preserve">
+    <value>রক্ষণাবেক্ষণের তথ্য সফলভাবে সংরক্ষিত হয়েছে!</value>
+  </data>
+  <data name="Maintenance record removed." xml:space="preserve">
+    <value>রক্ষণাবেক্ষণ রেকর্ড মুছে ফেলা হয়েছে।</value>
+  </data>
+  <data name="New harvest plan created. You can now add equipment and storage items." xml:space="preserve">
+    <value>নতুন ফসল কাটার পরিকল্পনা তৈরি হয়েছে। এখন যন্ত্রপাতি ও সংরক্ষণের আইটেম যোগ করতে পারবেন।</value>
+  </data>
+  <data name="Other profile changes were saved. Email change failed: {0}" xml:space="preserve">
+    <value>প্রোফাইলের অন্যান্য পরিবর্তন সংরক্ষিত হয়েছে। ই-মেইল পরিবর্তন ব্যর্থ হয়েছে: {0}</value>
+  </data>
+  <data name="Owner verification approved successfully." xml:space="preserve">
+    <value>মালিকের যাচাই সফলভাবে অনুমোদিত হয়েছে।</value>
+  </data>
+  <data name="Owner verification request rejected." xml:space="preserve">
+    <value>মালিকের যাচাইয়ের অনুরোধ প্রত্যাখ্যান করা হয়েছে।</value>
+  </data>
+  <data name="Password reset. Sign in with your new password." xml:space="preserve">
+    <value>পাসওয়ার্ড রিসেট হয়েছে। নতুন পাসওয়ার্ড দিয়ে সাইন ইন করুন।</value>
+  </data>
+  <data name="Payment failed: {0}. You can try again from your bookings." xml:space="preserve">
+    <value>পেমেন্ট ব্যর্থ হয়েছে: {0}। আপনার বুকিং থেকে আবার চেষ্টা করতে পারবেন।</value>
+  </data>
+  <data name="Payment of ৳{0} confirmed. Reference {1}. Your booking is now confirmed." xml:space="preserve">
+    <value>৳{0} পেমেন্ট নিশ্চিত হয়েছে। রেফারেন্স {1}। আপনার বুকিং এখন নিশ্চিত।</value>
+  </data>
+  <data name="Payment {0} is already {1}." xml:space="preserve">
+    <value>পেমেন্ট {0} ইতিমধ্যে {1}।</value>
+  </data>
+  <data name="Payout requested. It will settle automatically in about {0}." xml:space="preserve">
+    <value>পেআউটের অনুরোধ করা হয়েছে। প্রায় {0}-এর মধ্যে এটি স্বয়ংক্রিয়ভাবে নিষ্পত্তি হবে।</value>
+  </data>
+  <data name="Please provide a reason for rejection." xml:space="preserve">
+    <value>অনুগ্রহ করে প্রত্যাখ্যানের কারণ লিখুন।</value>
+  </data>
+  <data name="Please provide valid search criteria." xml:space="preserve">
+    <value>অনুগ্রহ করে সঠিক অনুসন্ধানের মানদণ্ড দিন।</value>
+  </data>
+  <data name="Profile details updated." xml:space="preserve">
+    <value>প্রোফাইলের তথ্য হালনাগাদ হয়েছে।</value>
+  </data>
+  <data name="Profile updated successfully." xml:space="preserve">
+    <value>প্রোফাইল সফলভাবে হালনাগাদ হয়েছে।</value>
+  </data>
+  <data name="Profile updated successfully. Confirm the codes sent to your old and new email addresses using Verify email. Your sign-in email stays unchanged until confirmation." xml:space="preserve">
+    <value>প্রোফাইল সফলভাবে হালনাগাদ হয়েছে। 'ই-মেইল যাচাই' ব্যবহার করে আপনার পুরোনো ও নতুন ঠিকানায় পাঠানো কোডগুলো নিশ্চিত করুন। নিশ্চিত না হওয়া পর্যন্ত সাইন-ইন ই-মেইল অপরিবর্তিত থাকবে।</value>
+  </data>
+  <data name="Promo Voucher generated successfully! Code: {0} (Save ৳{1} on your next booking)" xml:space="preserve">
+    <value>প্রোমো ভাউচার সফলভাবে তৈরি হয়েছে! কোড: {0} (পরবর্তী বুকিংয়ে ৳{1} সাশ্রয় করুন)</value>
+  </data>
+  <data name="Rate rule removed successfully." xml:space="preserve">
+    <value>ভাড়ার নিয়ম সফলভাবে মুছে ফেলা হয়েছে।</value>
+  </data>
+  <data name="Rate rule saved successfully!" xml:space="preserve">
+    <value>ভাড়ার নিয়ম সফলভাবে সংরক্ষিত হয়েছে!</value>
+  </data>
+  <data name="Rental request sent successfully! Here is your official booking confirmation pass." xml:space="preserve">
+    <value>ভাড়ার অনুরোধ সফলভাবে পাঠানো হয়েছে! এই আপনার অফিসিয়াল বুকিং নিশ্চিতকরণ পাস।</value>
+  </data>
+  <data name="Storage facility '{0}' successfully listed!" xml:space="preserve">
+    <value>সংরক্ষণাগার '{0}' সফলভাবে তালিকাভুক্ত হয়েছে!</value>
+  </data>
+  <data name="Storage facility '{0}' successfully updated!" xml:space="preserve">
+    <value>সংরক্ষণাগার '{0}' সফলভাবে হালনাগাদ হয়েছে!</value>
+  </data>
+  <data name="Storage space request ({0} Tons) sent successfully! Here is your official booking confirmation pass." xml:space="preserve">
+    <value>সংরক্ষণের জায়গার অনুরোধ ({0} টন) সফলভাবে পাঠানো হয়েছে! এই আপনার অফিসিয়াল বুকিং নিশ্চিতকরণ পাস।</value>
+  </data>
+  <data name="That expense no longer exists." xml:space="preserve">
+    <value>ব্যয়টি আর নেই।</value>
+  </data>
+  <data name="This booking is not awaiting payment." xml:space="preserve">
+    <value>এই বুকিংটি পেমেন্টের অপেক্ষায় নেই।</value>
+  </data>
+  <data name="This email confirmation page expired. Reopen the email link or request a new email." xml:space="preserve">
+    <value>এই ই-মেইল নিশ্চিতকরণ পাতার মেয়াদ শেষ হয়েছে। ই-মেইলের লিংকটি আবার খুলুন অথবা নতুন ই-মেইল চেয়ে নিন।</value>
+  </data>
+  <data name="This email link is invalid. Request a new verification or recovery email." xml:space="preserve">
+    <value>এই ই-মেইল লিংকটি সঠিক নয়। নতুন যাচাই বা পুনরুদ্ধারের ই-মেইল চেয়ে নিন।</value>
+  </data>
+  <data name="Unable to generate promo code. You may not have enough KrishiPoints for this tier." xml:space="preserve">
+    <value>প্রোমো কোড তৈরি করা যায়নি। এই ধাপের জন্য আপনার যথেষ্ট KrishiPoints নাও থাকতে পারে।</value>
+  </data>
+  <data name="Verification status RESET to Unverified." xml:space="preserve">
+    <value>যাচাইয়ের অবস্থা আবার 'অযাচাইকৃত' করা হয়েছে।</value>
+  </data>
+  <data name="Verification status set to REJECTED. Reason recorded." xml:space="preserve">
+    <value>যাচাইয়ের অবস্থা 'প্রত্যাখ্যাত' করা হয়েছে। কারণ সংরক্ষিত হয়েছে।</value>
+  </data>
+  <data name="Verification successfully APPROVED! The 'Verified Owner' trust badge is now active on all your listings." xml:space="preserve">
+    <value>যাচাই সফলভাবে অনুমোদিত হয়েছে! আপনার সব লিস্টিংয়ে এখন 'যাচাইকৃত মালিক' ব্যাজ দেখা যাবে।</value>
+  </data>
+  <data name="Welcome to KrishiLink, {0}! Your profile is set up." xml:space="preserve">
+    <value>কৃষিলিংকে স্বাগতম, {0}! আপনার প্রোফাইল প্রস্তুত।</value>
+  </data>
+  <data name="You are signed out of KrishiLink. The authentication provider was unavailable, so its session could not be revoked." xml:space="preserve">
+    <value>আপনি কৃষিলিংক থেকে সাইন আউট হয়েছেন। প্রমাণীকরণ সেবা পাওয়া যায়নি, তাই সেখানকার সেশন বাতিল করা যায়নি।</value>
+  </data>
+  <data name="Your National ID verification documents have been submitted successfully and are now pending review." xml:space="preserve">
+    <value>আপনার জাতীয় পরিচয়পত্র যাচাইয়ের নথি সফলভাবে জমা হয়েছে এবং এখন পর্যালোচনার অপেক্ষায় আছে।</value>
+  </data>
+  <data name="Your account was created. Please sign in to continue." xml:space="preserve">
+    <value>আপনার অ্যাকাউন্ট তৈরি হয়েছে। চালিয়ে যেতে অনুগ্রহ করে সাইন ইন করুন।</value>
+  </data>
+  <data name="[Dev] No processing payouts found to settle." xml:space="preserve">
+    <value>[Dev] নিষ্পত্তির জন্য প্রক্রিয়াধীন কোনো পেআউট পাওয়া যায়নি।</value>
+  </data>
+  <data name="[Dev] Successfully settled {0} pending payout(s)." xml:space="preserve">
+    <value>[Dev] {0}টি অপেক্ষমাণ পেআউট সফলভাবে নিষ্পত্তি হয়েছে।</value>
+  </data>
+  <data name="{0} Reopen the email link or request a new email if it has expired." xml:space="preserve">
+    <value>{0} মেয়াদ শেষ হলে ই-মেইলের লিংকটি আবার খুলুন অথবা নতুন ই-মেইল চেয়ে নিন।</value>
+  </data>
+  <data name="{0} hour(s)" xml:space="preserve">
+    <value>{0} ঘণ্টা</value>
+  </data>
+  <data name="{0} minutes" xml:space="preserve">
+    <value>{0} মিনিট</value>
+  </data>
+  <data name="Action completed successfully." xml:space="preserve">
+    <value>কাজটি সফলভাবে সম্পন্ন হয়েছে।</value>
+  </data>
+  <data name="You" xml:space="preserve">
+    <value>আপনি</value>
+  </data>
+  <data name="Krishi Shohayok" xml:space="preserve">
+    <value>কৃষি সহায়ক</value>
+  </data>
+  <data name="Reading your question…" xml:space="preserve">
+    <value>আপনার প্রশ্ন পড়ছি…</value>
+  </data>
+  <data name="Checking KrishiLink data…" xml:space="preserve">
+    <value>কৃষিলিংকের তথ্য যাচাই করছি…</value>
+  </data>
+  <data name="Writing the answer…" xml:space="preserve">
+    <value>উত্তর লিখছি…</value>
+  </data>
+  <data name="The assistant is unavailable right now — you can still search and book normally." xml:space="preserve">
+    <value>সহায়ক এখন পাওয়া যাচ্ছে না — আপনি স্বাভাবিকভাবেই খুঁজতে ও বুক করতে পারবেন।</value>
+  </data>
+  <data name="You're sending messages quickly. Please wait a minute and try again." xml:space="preserve">
+    <value>আপনি খুব দ্রুত বার্তা পাঠাচ্ছেন। এক মিনিট অপেক্ষা করে আবার চেষ্টা করুন।</value>
+  </data>
+  <data name="Open the page instead" xml:space="preserve">
+    <value>বরং পেজটি খুলুন</value>
+  </data>
+  <data name="Based on" xml:space="preserve">
+    <value>তথ্যসূত্র</value>
+  </data>
+  <data name="View" xml:space="preserve">
+    <value>দেখুন</value>
+  </data>
+  <data name="Rent this" xml:space="preserve">
+    <value>এটি ভাড়া নিন</value>
+  </data>
+  <data name="Store here" xml:space="preserve">
+    <value>এখানে রাখুন</value>
+  </data>
+  <data name="I'd like to rent #{0} {1}. " xml:space="preserve">
+    <value>আমি #{0} {1} ভাড়া নিতে চাই। </value>
+  </data>
+  <data name="I'd like to store my crop at #{0} {1}. " xml:space="preserve">
+    <value>আমি #{0} {1}-এ আমার ফসল রাখতে চাই। </value>
+  </data>
+  <data name="New conversation" xml:space="preserve">
+    <value>নতুন কথোপকথন</value>
+  </data>
+  <data name="No earlier conversations yet." xml:space="preserve">
+    <value>এখনও কোনো আগের কথোপকথন নেই।</value>
+  </data>
+  <data name="Preparing your request form…" xml:space="preserve">
+    <value>আপনার অনুরোধ ফর্ম তৈরি হচ্ছে…</value>
+  </data>
+  <data name="The request form could not be loaded. Ask again for a fresh one." xml:space="preserve">
+    <value>অনুরোধ ফর্মটি লোড করা যায়নি। নতুন একটির জন্য আবার বলুন।</value>
+  </data>
+  <data name="{0} characters left" xml:space="preserve">
+    <value>আর {0}টি অক্ষর লেখা যাবে</value>
+  </data>
+  <data name="Equipment listings" xml:space="preserve">
+    <value>যন্ত্রপাতির তালিকা</value>
+  </data>
+  <data name="Storage listings" xml:space="preserve">
+    <value>গুদামের তালিকা</value>
+  </data>
+  <data name="Listing details" xml:space="preserve">
+    <value>তালিকার বিস্তারিত</value>
+  </data>
+  <data name="Availability check" xml:space="preserve">
+    <value>প্রাপ্যতা যাচাই</value>
+  </data>
+  <data name="Price quote" xml:space="preserve">
+    <value>মূল্য হিসাব</value>
+  </data>
+  <data name="DAE crop calendar" xml:space="preserve">
+    <value>ডিএই ফসল পঞ্জিকা</value>
+  </data>
+  <data name="Open-Meteo forecast" xml:space="preserve">
+    <value>Open-Meteo পূর্বাভাস</value>
+  </data>
+  <data name="Weather Suggestions" xml:space="preserve">
+    <value>আবহাওয়াভিত্তিক পরামর্শ</value>
+  </data>
+  <data name="Your bookings" xml:space="preserve">
+    <value>আপনার বুকিং</value>
+  </data>
+  <data name="Your profile" xml:space="preserve">
+    <value>আপনার প্রোফাইল</value>
+  </data>
+  <data name="Rental request draft" xml:space="preserve">
+    <value>ভাড়ার অনুরোধের খসড়া</value>
+  </data>
+  <data name="Storage request draft" xml:space="preserve">
+    <value>সংরক্ষণ অনুরোধের খসড়া</value>
+  </data>
+  <data name="Find a harvester near me" xml:space="preserve">
+    <value>আমার কাছাকাছি হারভেস্টার খুঁজুন</value>
+  </data>
+  <data name="What should I plant this month?" xml:space="preserve">
+    <value>এই মাসে আমি কী লাগাব?</value>
+  </data>
+  <data name="Rent a tiller for next week" xml:space="preserve">
+    <value>আগামী সপ্তাহের জন্য একটি টিলার ভাড়া নিন</value>
+  </data>
+  <data name="Any pest risk for my crop this week?" xml:space="preserve">
+    <value>এই সপ্তাহে আমার ফসলে পোকার ঝুঁকি আছে কি?</value>
+  </data>
+  <data name="What should farmers in my district plant this month?" xml:space="preserve">
+    <value>এই মাসে আমার জেলার কৃষকদের কী লাগানো উচিত?</value>
+  </data>
+  <data name="Show storage listings in my district" xml:space="preserve">
+    <value>আমার জেলার গুদামগুলো দেখান</value>
+  </data>
+  <data name="What is the weather this week?" xml:space="preserve">
+    <value>এই সপ্তাহের আবহাওয়া কেমন?</value>
+  </data>
+  <data name="Open the KrishiLink assistant" xml:space="preserve">
+    <value>কৃষিলিংক সহায়ক খুলুন</value>
+  </data>
+  <data name="Equipment, storage and crop advice — from KrishiLink's own data" xml:space="preserve">
+    <value>যন্ত্রপাতি, গুদাম ও ফসল পরামর্শ — কৃষিলিংকের নিজস্ব তথ্য থেকে</value>
+  </data>
+  <data name="Earlier conversations" xml:space="preserve">
+    <value>আগের কথোপকথন</value>
+  </data>
+  <data name="Hello! How can I help with your farm today?" xml:space="preserve">
+    <value>হ্যালো! আজ আপনার খামারে কীভাবে সাহায্য করতে পারি?</value>
+  </data>
+  <data name="I search real listings, check prices and dates, and read the DAE crop calendar and live weather. I never book anything without your click." xml:space="preserve">
+    <value>আমি আসল তালিকা খুঁজি, দাম ও তারিখ যাচাই করি, এবং ডিএই ফসল পঞ্জিকা ও সরাসরি আবহাওয়া দেখি। আপনার ক্লিক ছাড়া আমি কিছুই বুক করি না।</value>
+  </data>
+  <data name="Suggestions" xml:space="preserve">
+    <value>পরামর্শ</value>
+  </data>
+  <data name="Conversation" xml:space="preserve">
+    <value>কথোপকথন</value>
+  </data>
+  <data name="Message to the assistant" xml:space="preserve">
+    <value>সহায়কের কাছে বার্তা</value>
+  </data>
+  <data name="Ask about equipment, storage or crops…" xml:space="preserve">
+    <value>যন্ত্রপাতি, গুদাম বা ফসল নিয়ে জিজ্ঞেস করুন…</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>পাঠান</value>
+  </data>
+  <data name="Enter to send · Shift+Enter for a new line" xml:space="preserve">
+    <value>পাঠাতে Enter · নতুন লাইনে Shift+Enter</value>
+  </data>
+  <data name="Rental request, ready for you to confirm" xml:space="preserve">
+    <value>ভাড়ার অনুরোধ, আপনার নিশ্চিতকরণের জন্য প্রস্তুত</value>
+  </data>
+  <data name="Storage request, ready for you to confirm" xml:space="preserve">
+    <value>সংরক্ষণ অনুরোধ, আপনার নিশ্চিতকরণের জন্য প্রস্তুত</value>
+  </data>
+  <data name="{0} day(s)" xml:space="preserve">
+    <value>{0} দিন</value>
+  </data>
+  <data name="Crop" xml:space="preserve">
+    <value>ফসল</value>
+  </data>
+  <data name="Estimated total" xml:space="preserve">
+    <value>আনুমানিক মোট</value>
+  </data>
+  <data name="Confirm and send request" xml:space="preserve">
+    <value>নিশ্চিত করে অনুরোধ পাঠান</value>
+  </data>
+  <data name="Nothing is booked until you confirm. The owner then accepts or declines, and you pay only after they accept. This draft is valid until {0}." xml:space="preserve">
+    <value>আপনি নিশ্চিত না করা পর্যন্ত কিছুই বুক হবে না। এরপর মালিক গ্রহণ বা প্রত্যাখ্যান করবেন, এবং গ্রহণ করার পরেই আপনি টাকা দেবেন। এই খসড়াটি {0} পর্যন্ত বৈধ।</value>
+  </data>
+  <data name="This request has already been sent." xml:space="preserve">
+    <value>এই অনুরোধটি আগেই পাঠানো হয়েছে।</value>
+  </data>
+  <data name="This draft has expired. Ask me again for a fresh one." xml:space="preserve">
+    <value>এই খসড়ার মেয়াদ শেষ। নতুন একটির জন্য আমাকে আবার বলুন।</value>
+  </data>
+  <data name="Please type a message." xml:space="preserve">
+    <value>অনুগ্রহ করে একটি বার্তা লিখুন।</value>
+  </data>
+  <data name="Messages can be at most {0} characters." xml:space="preserve">
+    <value>বার্তা সর্বোচ্চ {0} অক্ষরের হতে পারে।</value>
+  </data>
+  <data name="You have reached today's assistant limit. It resets at midnight — you can still search and book normally." xml:space="preserve">
+    <value>আজকের জন্য সহায়ক ব্যবহারের সীমা পূর্ণ হয়েছে। মধ্যরাতে আবার চালু হবে — আপনি স্বাভাবিকভাবেই খুঁজতে ও বুক করতে পারবেন।</value>
+  </data>
+  <data name="I'm not sure I understood. Could you tell me a bit more — which listing, which dates, or which district?" xml:space="preserve">
+    <value>আমি ঠিক বুঝতে পারিনি। আরেকটু বলবেন — কোন তালিকা, কোন তারিখ, বা কোন জেলা?</value>
+  </data>
+  <data name="That needed too many steps. Could you narrow it down — for example one listing, one district or exact dates?" xml:space="preserve">
+    <value>এতে অনেক বেশি ধাপ লাগছে। একটু নির্দিষ্ট করে বলবেন — যেমন একটি তালিকা, একটি জেলা বা নির্দিষ্ট তারিখ?</value>
+  </data>
+  <data name="This assistant proposal has expired or was already used. Ask the assistant for a fresh one, or book on this page." xml:space="preserve">
+    <value>সহায়কের এই প্রস্তাবের মেয়াদ শেষ হয়েছে বা আগেই ব্যবহার করা হয়েছে। সহায়কের কাছে নতুন একটি চান, অথবা এই পেজ থেকে বুক করুন।</value>
+  </data>
+  <data name="AI assistant (Krishi Shohayok)" xml:space="preserve">
+    <value>এআই সহায়ক (কৃষি সহায়ক)</value>
+  </data>
+  <data name="When you use the in-app assistant, your messages and the assistant's replies are stored with your account so the conversation continues across visits, and so we can explain why the assistant suggested a booking." xml:space="preserve">
+    <value>আপনি অ্যাপের সহায়ক ব্যবহার করলে আপনার বার্তা ও সহায়কের উত্তর আপনার অ্যাকাউন্টে সংরক্ষিত থাকে, যাতে পরের বার কথোপকথন চালিয়ে যাওয়া যায় এবং সহায়ক কেন কোনো বুকিং প্রস্তাব করেছিল তা আমরা ব্যাখ্যা করতে পারি।</value>
+  </data>
+  <data name="To answer, your message and public listing, crop-calendar and weather data are sent to our AI providers: Groq, and Google Gemini as a backup when Groq is unavailable. We never send your name, phone number, e-mail, NID or payment details from your account." xml:space="preserve">
+    <value>উত্তর দিতে আপনার বার্তা এবং তালিকা, ফসল পঞ্জিকা ও আবহাওয়ার সর্বজনীন তথ্য আমাদের এআই সেবাদাতাদের কাছে পাঠানো হয়: Groq, এবং Groq পাওয়া না গেলে বিকল্প হিসেবে Google Gemini। আপনার অ্যাকাউন্ট থেকে নাম, ফোন নম্বর, ই-মেইল, এনআইডি বা পেমেন্টের তথ্য আমরা কখনো পাঠাই না।</value>
+  </data>
+  <data name="Conversations are archived after 90 days without activity and permanently deleted after 180 days." xml:space="preserve">
+    <value>৯০ দিন কোনো কার্যক্রম না থাকলে কথোপকথন আর্কাইভ করা হয় এবং ১৮০ দিন পর স্থায়ীভাবে মুছে ফেলা হয়।</value>
+  </data>
+  <data name="The assistant never books, pays or cancels anything on its own. It can only prepare a request form that you review and confirm yourself." xml:space="preserve">
+    <value>সহায়ক নিজে থেকে কখনো কিছু বুক, পেমেন্ট বা বাতিল করে না। এটি কেবল একটি অনুরোধ ফর্ম তৈরি করতে পারে, যা আপনি নিজে দেখে নিশ্চিত করেন।</value>
+  </data>
+  <data name="Loam (Doash)" xml:space="preserve">
+    <value>দোআঁশ</value>
+  </data>
+  <data name="Silt Loam (Poli-Doash)" xml:space="preserve">
+    <value>পলি-দোআঁশ</value>
+  </data>
+  <data name="Alluvial Silt (Poli)" xml:space="preserve">
+    <value>পলি মাটি</value>
+  </data>
+  <data name="Sandy (Bele)" xml:space="preserve">
+    <value>বেলে</value>
+  </data>
+  <data name="Not sure" xml:space="preserve">
+    <value>নিশ্চিত নই</value>
+  </data>
+  <data name="kg" xml:space="preserve">
+    <value>কেজি</value>
+  </data>
+  <data name="tonnes" xml:space="preserve">
+    <value>টন</value>
+  </data>
+  <data name="≈ {0} per acre" xml:space="preserve">
+    <value>একরে ≈ {0}</value>
+  </data>
+  <data name="≈ {0} on your {1} decimals" xml:space="preserve">
+    <value>আপনার {1} শতাংশে ≈ {0}</value>
+  </data>
+  <data name="met" xml:space="preserve">
+    <value>পূরণ হয়েছে</value>
+  </data>
+  <data name="partly met" xml:space="preserve">
+    <value>আংশিক পূরণ</value>
+  </data>
+  <data name="not met" xml:space="preserve">
+    <value>পূরণ হয়নি</value>
+  </data>
+  <data name="Crops scored against your season, soil, water and district using the DAE crop calendar, with every point explained." xml:space="preserve">
+    <value>ডিএই ফসল পঞ্জিকা অনুযায়ী আপনার মৌসুম, মাটি, পানি ও জেলার সাথে মিলিয়ে ফসলের নম্বর দেওয়া হয়, এবং প্রতিটি নম্বরের ব্যাখ্যা দেখানো হয়।</value>
+  </data>
+  <data name="Please check the highlighted details and try again." xml:space="preserve">
+    <value>চিহ্নিত তথ্যগুলো দেখে আবার চেষ্টা করুন।</value>
+  </data>
+  <data name="District" xml:space="preserve">
+    <value>জেলা</value>
+  </data>
+  <data name="Not tested / I don't know" xml:space="preserve">
+    <value>পরীক্ষা করা হয়নি / জানি না</value>
+  </data>
+  <data name="Soil pH must be between 3.5 and 9.5." xml:space="preserve">
+    <value>মাটির পিএইচ ৩.৫ থেকে ৯.৫-এর মধ্যে হতে হবে।</value>
+  </data>
+  <data name="100 decimals = 1 acre. A bigha is about 33 decimals in most districts." xml:space="preserve">
+    <value>১০০ শতাংশ = ১ একর। বেশিরভাগ জেলায় এক বিঘা প্রায় ৩৩ শতাংশ।</value>
+  </data>
+  <data name="Land size must be at least 1 decimal." xml:space="preserve">
+    <value>জমির পরিমাণ কমপক্ষে ১ শতাংশ হতে হবে।</value>
+  </data>
+  <data name="Scoring crops for your farm..." xml:space="preserve">
+    <value>আপনার খামারের জন্য ফসলের নম্বর হিসাব করা হচ্ছে...</value>
+  </data>
+  <data name="weak match" xml:space="preserve">
+    <value>দুর্বল মিল</value>
+  </data>
+  <data name="match score" xml:space="preserve">
+    <value>মিলের নম্বর</value>
+  </data>
+  <data name="Why this score" xml:space="preserve">
+    <value>কেন এই নম্বর</value>
+  </data>
+  <data name="Indicative yield:" xml:space="preserve">
+    <value>আনুমানিক ফলন:</value>
+  </data>
+  <data name="Source: {0} crop calendar" xml:space="preserve">
+    <value>উৎস: {0} ফসল পঞ্জিকা</value>
+  </data>
+  <data name="Cultivation details" xml:space="preserve">
+    <value>চাষের বিস্তারিত</value>
+  </data>
+  <data name="Open in crop calendar" xml:space="preserve">
+    <value>ফসল পঞ্জিকায় খুলুন</value>
+  </data>
+  <data name="Save to dashboard" xml:space="preserve">
+    <value>ড্যাশবোর্ডে সংরক্ষণ করুন</value>
+  </data>
+  <data name="Sign in to save" xml:space="preserve">
+    <value>সংরক্ষণ করতে সাইন ইন করুন</value>
+  </data>
+  <data name="Sowing" xml:space="preserve">
+    <value>বপন</value>
+  </data>
+  <data name="Growing" xml:space="preserve">
+    <value>বাড়ন্ত</value>
+  </data>
+  <data name="Harvest" xml:space="preserve">
+    <value>ফসল কাটা</value>
+  </data>
+  <data name="Optimal temperature" xml:space="preserve">
+    <value>উপযুক্ত তাপমাত্রা</value>
+  </data>
+  <data name="Soil" xml:space="preserve">
+    <value>মাটি</value>
+  </data>
+  <data name="Water" xml:space="preserve">
+    <value>পানি</value>
+  </data>
+  <data name="Popular varieties" xml:space="preserve">
+    <value>জনপ্রিয় জাত</value>
+  </data>
+  <data name="Key tips" xml:space="preserve">
+    <value>গুরুত্বপূর্ণ পরামর্শ</value>
+  </data>
+  <data name="Yields are indicative ranges from the {0}-attributed calendar entry; your field may differ. Fertilizer doses are not shown: ask your local Upazila Agriculture Office for a soil-test-based dose." xml:space="preserve">
+    <value>ফলন {0}-এর উল্লেখিত পঞ্জিকা অনুযায়ী আনুমানিক পরিসর; আপনার জমিতে ভিন্ন হতে পারে। সারের মাত্রা দেখানো হয় না: মাটি পরীক্ষাভিত্তিক মাত্রার জন্য স্থানীয় উপজেলা কৃষি অফিসে যোগাযোগ করুন।</value>
+  </data>
+  <data name="Crops for your farm" xml:space="preserve">
+    <value>আপনার খামারের জন্য ফসল</value>
+  </data>
+  <data name="{0} · {1} · {2} soil · {3}" xml:space="preserve">
+    <value>{0} · {1} · {2} মাটি · {3}</value>
+  </data>
+  <data name="irrigated" xml:space="preserve">
+    <value>সেচযুক্ত</value>
+  </data>
+  <data name="rainfed" xml:space="preserve">
+    <value>বৃষ্টিনির্ভর</value>
+  </data>
+  <data name="{0} decimals" xml:space="preserve">
+    <value>{0} শতাংশ</value>
+  </data>
+  <data name="{0} crops suit these details. Scores add up six factors: season 30, sowing time 20, soil 20, irrigation 15, region 10, pH 5." xml:space="preserve">
+    <value>এই তথ্যের সাথে {0}টি ফসল মানানসই। নম্বর ছয়টি বিষয়ের যোগফল: মৌসুম ৩০, বপনের সময় ২০, মাটি ২০, সেচ ১৫, অঞ্চল ১০, পিএইচ ৫।</value>
+  </data>
+  <data name="No strongly suited crop for this combination" xml:space="preserve">
+    <value>এই সমন্বয়ের জন্য ভালোভাবে মানানসই কোনো ফসল নেই</value>
+  </data>
+  <data name="Nothing in the crop calendar scores {0} or more for these details. The closest options are below, marked as weak matches; the full calendar lists every crop." xml:space="preserve">
+    <value>এই তথ্যের জন্য ফসল পঞ্জিকার কোনো ফসল {0} বা তার বেশি নম্বর পায়নি। কাছাকাছি বিকল্পগুলো নিচে দুর্বল মিল হিসেবে দেখানো হলো; পূর্ণ পঞ্জিকায় সব ফসল আছে।</value>
+  </data>
+  <data name="Open the full crop calendar" xml:space="preserve">
+    <value>পূর্ণ ফসল পঞ্জিকা খুলুন</value>
+  </data>
+  <data name="from your profile" xml:space="preserve">
+    <value>আপনার প্রোফাইল থেকে</value>
+  </data>
+  <data name="your selection" xml:space="preserve">
+    <value>আপনার বাছাই</value>
+  </data>
+  <data name="default region" xml:space="preserve">
+    <value>ডিফল্ট অঞ্চল</value>
+  </data>
+  <data name="Showing advice for" xml:space="preserve">
+    <value>যার জন্য পরামর্শ দেখানো হচ্ছে:</value>
+  </data>
+  <data name="change" xml:space="preserve">
+    <value>পরিবর্তন</value>
+  </data>
+  <data name="Use my profile instead" xml:space="preserve">
+    <value>বরং আমার প্রোফাইল ব্যবহার করুন</value>
+  </data>
+  <data name="Sign in to see advice for your own district" xml:space="preserve">
+    <value>নিজের জেলার পরামর্শ দেখতে সাইন ইন করুন</value>
+  </data>
+  <data name="items" xml:space="preserve">
+    <value>টি আইটেম</value>
+  </data>
+  <data name="Proactive Weather Nudge" xml:space="preserve">
+    <value>আবহাওয়াভিত্তিক আগাম পরামর্শ</value>
+  </data>
+  <data name="Rain Risk: {0}% in next 3-5 days" xml:space="preserve">
+    <value>বৃষ্টির ঝুঁকি: আগামী ৩–৫ দিনে {0}%</value>
+  </data>
+  <data name="Explore All Advisory Nudges" xml:space="preserve">
+    <value>সব পরামর্শ দেখুন</value>
+  </data>
+  <data name="High Priority" xml:space="preserve">
+    <value>উচ্চ অগ্রাধিকার</value>
+  </data>
+  <data name="Want more personalized nudges? Update your primary crop and district in your profile." xml:space="preserve">
+    <value>আরও ব্যক্তিগত পরামর্শ চান? প্রোফাইলে আপনার প্রধান ফসল ও জেলা হালনাগাদ করুন।</value>
+  </data>
+  <data name="Edit Profile" xml:space="preserve">
+    <value>প্রোফাইল সম্পাদনা</value>
+  </data>
+  <data name="Discount Power" xml:space="preserve">
+    <value>ছাড়ের ক্ষমতা</value>
+  </data>
+  <data name="{0} Active Vouchers" xml:space="preserve">
+    <value>{0}টি সক্রিয় ভাউচার</value>
+  </data>
+  <data name="{0} pts to {1}" xml:space="preserve">
+    <value>{1} পর্যন্ত আর {0} পয়েন্ট</value>
+  </data>
+  <data name="Loyalty Hub &amp; Redeem" xml:space="preserve">
+    <value>লয়্যালটি হাব ও রিডিম</value>
+  </data>
+  <data name="Tier Progress" xml:space="preserve">
+    <value>স্তরের অগ্রগতি</value>
+  </data>
+  <data name="unspecified" xml:space="preserve">
+    <value>অনির্দিষ্ট</value>
+  </data>
+  <data name="Based on your {0} decimals of {1} soil in {2} ({3}), saved {4}." xml:space="preserve">
+    <value>{2}-এ আপনার {0} শতাংশ {1} মাটির ({3}) ভিত্তিতে, {4} তারিখে সংরক্ষিত।</value>
+  </data>
+  <data name="Based on {0} soil in {1} ({2}), saved {3}." xml:space="preserve">
+    <value>{1}-এ {0} মাটির ({2}) ভিত্তিতে, {3} তারিখে সংরক্ষিত।</value>
+  </data>
+  <data name="Run the advisor again" xml:space="preserve">
+    <value>আবার পরামর্শ নিন</value>
+  </data>
+  <data name="Sowing time" xml:space="preserve">
+    <value>বপনের সময়</value>
+  </data>
+  <data name="Region" xml:space="preserve">
+    <value>অঞ্চল</value>
+  </data>
+  <data name="Soil pH" xml:space="preserve">
+    <value>মাটির পিএইচ</value>
+  </data>
+  <data name="Year-round" xml:space="preserve">
+    <value>বারোমাসি</value>
+  </data>
+  <data name="Sandy" xml:space="preserve">
+    <value>বেলে</value>
+  </data>
+  <data name="Loam" xml:space="preserve">
+    <value>দোআঁশ</value>
+  </data>
+  <data name="Silt Loam" xml:space="preserve">
+    <value>পলি-দোআঁশ</value>
+  </data>
+  <data name="Alluvial Silt" xml:space="preserve">
+    <value>পলি</value>
+  </data>
+  <data name="Heavy Clay" xml:space="preserve">
+    <value>ভারী এঁটেল</value>
+  </data>
+  <data name="Grown year-round, so it fits any season" xml:space="preserve">
+    <value>সারা বছর চাষ হয়, তাই যেকোনো মৌসুমে মানানসই</value>
+  </data>
+  <data name="{0} crop, matching your season" xml:space="preserve">
+    <value>{0}-এর ফসল, আপনার মৌসুমের সাথে মিলে যায়</value>
+  </data>
+  <data name="{0} crop, next to your {1} season" xml:space="preserve">
+    <value>{0}-এর ফসল, আপনার {1} মৌসুমের পাশের মৌসুম</value>
+  </data>
+  <data name="{0} crop, not grown in the {1} season" xml:space="preserve">
+    <value>{0}-এর ফসল, {1} মৌসুমে চাষ হয় না</value>
+  </data>
+  <data name="Sowing time is now ({0})" xml:space="preserve">
+    <value>এখনই বপনের সময় ({0})</value>
+  </data>
+  <data name="Sowing window is within a month ({0})" xml:space="preserve">
+    <value>এক মাসের মধ্যে বপনের সময় ({0})</value>
+  </data>
+  <data name="Not sowing time now; sow in {0}" xml:space="preserve">
+    <value>এখন বপনের সময় নয়; বপন করুন {0}</value>
+  </data>
+  <data name="Soil type not given; this crop needs {0}" xml:space="preserve">
+    <value>মাটির ধরন দেওয়া হয়নি; এই ফসলের দরকার {0}</value>
+  </data>
+  <data name="{0} soil cannot hold the water this crop needs ({1})" xml:space="preserve">
+    <value>{0} মাটি এই ফসলের প্রয়োজনীয় পানি ধরে রাখতে পারে না ({1})</value>
+  </data>
+  <data name="Your {0} soil suits this crop" xml:space="preserve">
+    <value>আপনার {0} মাটি এই ফসলের উপযোগী</value>
+  </data>
+  <data name="{0} soil is workable; this crop prefers {1}" xml:space="preserve">
+    <value>{0} মাটিতে চলবে; তবে এই ফসলের জন্য ভালো {1}</value>
+  </data>
+  <data name="{0} soil does not suit; this crop needs {1}" xml:space="preserve">
+    <value>{0} মাটি উপযোগী নয়; এই ফসলের দরকার {1}</value>
+  </data>
+  <data name="You have irrigation for this crop's water needs" xml:space="preserve">
+    <value>এই ফসলের পানির চাহিদা মেটানোর মতো সেচ আপনার আছে</value>
+  </data>
+  <data name="Low water need, fine without irrigation" xml:space="preserve">
+    <value>পানি কম লাগে, সেচ ছাড়াই চলে</value>
+  </data>
+  <data name="Needs a few irrigations or reliable rain" xml:space="preserve">
+    <value>কয়েকটি সেচ বা নিয়মিত বৃষ্টি দরকার</value>
+  </data>
+  <data name="Needs assured irrigation; risky without a pump or canal" xml:space="preserve">
+    <value>নিশ্চিত সেচ দরকার; পাম্প বা খাল ছাড়া ঝুঁকিপূর্ণ</value>
+  </data>
+  <data name="District not given" xml:space="preserve">
+    <value>জেলা দেওয়া হয়নি</value>
+  </data>
+  <data name="{0} is a major growing district" xml:space="preserve">
+    <value>{0} এই ফসলের প্রধান উৎপাদনকারী জেলা</value>
+  </data>
+  <data name="Suited to {0} division" xml:space="preserve">
+    <value>{0} বিভাগের জন্য উপযোগী</value>
+  </data>
+  <data name="Grown across Bangladesh" xml:space="preserve">
+    <value>সারা বাংলাদেশে চাষ হয়</value>
+  </data>
+  <data name="Not a usual crop for {0} division" xml:space="preserve">
+    <value>{0} বিভাগে সাধারণত চাষ হয় না</value>
+  </data>
+  <data name="Soil pH not given" xml:space="preserve">
+    <value>মাটির পিএইচ দেওয়া হয়নি</value>
+  </data>
+  <data name="No pH range recorded for this crop" xml:space="preserve">
+    <value>এই ফসলের পিএইচ পরিসর লিপিবদ্ধ নেই</value>
+  </data>
+  <data name="pH {0} is in this crop's range ({1})" xml:space="preserve">
+    <value>পিএইচ {0} এই ফসলের পরিসরের মধ্যে ({1})</value>
+  </data>
+  <data name="pH {0} is just outside this crop's range ({1})" xml:space="preserve">
+    <value>পিএইচ {0} এই ফসলের পরিসরের সামান্য বাইরে ({1})</value>
+  </data>
+  <data name="pH {0} is outside this crop's range ({1})" xml:space="preserve">
+    <value>পিএইচ {0} এই ফসলের পরিসরের বাইরে ({1})</value>
+  </data>
+  <data name="That crop is no longer among the results for these details. Please run the advisor again." xml:space="preserve">
+    <value>এই তথ্যের ফলাফলে ফসলটি আর নেই। অনুগ্রহ করে আবার পরামর্শ নিন।</value>
+  </data>
+  <data name="Crop advice saved to your dashboard." xml:space="preserve">
+    <value>ফসলের পরামর্শ আপনার ড্যাশবোর্ডে সংরক্ষিত হয়েছে।</value>
+  </data>
+  <data name="Rice (Boro)" xml:space="preserve">
+    <value>বোরো ধান</value>
+  </data>
+  <data name="Rice (Aman)" xml:space="preserve">
+    <value>আমন ধান</value>
+  </data>
+  <data name="Rice (Aus)" xml:space="preserve">
+    <value>আউশ ধান</value>
+  </data>
+  <data name="Wheat" xml:space="preserve">
+    <value>গম</value>
+  </data>
+  <data name="Maize" xml:space="preserve">
+    <value>ভুট্টা</value>
+  </data>
+  <data name="Potato" xml:space="preserve">
+    <value>আলু</value>
+  </data>
+  <data name="Jute" xml:space="preserve">
+    <value>পাট</value>
+  </data>
+  <data name="Vegetables" xml:space="preserve">
+    <value>সবজি</value>
+  </data>
+  <data name="Pulses" xml:space="preserve">
+    <value>ডাল</value>
+  </data>
+  <data name="Oilseeds" xml:space="preserve">
+    <value>তেলবীজ</value>
+  </data>
+  <data name="Fruits" xml:space="preserve">
+    <value>ফল</value>
+  </data>
+  <data name="All" xml:space="preserve">
+    <value>সব</value>
+  </data>
+  <data name="Rice" xml:space="preserve">
+    <value>ধান</value>
+  </data>
+  <data name="Mustard" xml:space="preserve">
+    <value>সরিষা</value>
+  </data>
+  <data name="Tomato" xml:space="preserve">
+    <value>টমেটো</value>
+  </data>
+  <data name="Brinjal" xml:space="preserve">
+    <value>বেগুন</value>
+  </data>
+  <data name="Chili" xml:space="preserve">
+    <value>মরিচ</value>
+  </data>
+  <data name="Source: Open-Meteo forecast API" xml:space="preserve">
+    <value>উৎস: Open-Meteo পূর্বাভাস</value>
+  </data>
+  <data name="Find a Power Sprayer in {0}" xml:space="preserve">
+    <value>{0}-এ পাওয়ার স্প্রেয়ার খুঁজুন</value>
+  </data>
+  <data name="Source: {0}" xml:space="preserve">
+    <value>উৎস: {0}</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>রিসেট</value>
+  </data>
+  <data name="Quick Filter:" xml:space="preserve">
+    <value>দ্রুত ফিল্টার:</value>
+  </data>
+  <data name="Sowing &amp; Seedbed: {0}" xml:space="preserve">
+    <value>বপন ও বীজতলা: {0}</value>
+  </data>
+  <data name="Harvesting &amp; Reaping: {0}" xml:space="preserve">
+    <value>ফসল কাটা ও মাড়াই: {0}</value>
+  </data>
+  <data name="Growing &amp; Tillering: {0}" xml:space="preserve">
+    <value>বৃদ্ধি ও কুশি গজানো: {0}</value>
+  </data>
+  <data name="Weather-Triggered Crop &amp; Equipment Suggestions" xml:space="preserve">
+    <value>আবহাওয়াভিত্তিক ফসল ও যন্ত্রপাতির পরামর্শ</value>
+  </data>
+  <data name="Weather-Triggered Suggestions" xml:space="preserve">
+    <value>আবহাওয়াভিত্তিক পরামর্শ</value>
+  </data>
+  <data name="Proactive agricultural nudges connecting 5-day weather forecasts, crop calendar growth stages, and machinery/storage availability." xml:space="preserve">
+    <value>৫ দিনের আবহাওয়া পূর্বাভাস, ফসল পঞ্জিকার বৃদ্ধির পর্যায় এবং যন্ত্রপাতি ও গুদামের প্রাপ্যতা মিলিয়ে আগাম কৃষি পরামর্শ।</value>
+  </data>
+  <data name="Select Cultivated Crop" xml:space="preserve">
+    <value>চাষ করা ফসল বাছাই করুন</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>হালনাগাদ</value>
+  </data>
+  <data name="Rain Expected in 2–4 Days" xml:space="preserve">
+    <value>২–৪ দিনের মধ্যে বৃষ্টির সম্ভাবনা</value>
+  </data>
+  <data name="Rain Probability:" xml:space="preserve">
+    <value>বৃষ্টির সম্ভাবনা:</value>
+  </data>
+  <data name="5-Day Regional Forecast" xml:space="preserve">
+    <value>৫ দিনের আঞ্চলিক পূর্বাভাস</value>
+  </data>
+  <data name="Targeted Agricultural Nudges ({0})" xml:space="preserve">
+    <value>লক্ষ্যভিত্তিক কৃষি পরামর্শ ({0})</value>
+  </data>
+  <data name="Rain in {0} day(s)" xml:space="preserve">
+    <value>{0} দিনের মধ্যে বৃষ্টি</value>
+  </data>
+  <data name="No Critical Weather Risks Detected" xml:space="preserve">
+    <value>কোনো গুরুতর আবহাওয়া ঝুঁকি পাওয়া যায়নি</value>
+  </data>
+  <data name="Weather conditions are currently optimal for your selected crop and region." xml:space="preserve">
+    <value>আপনার বাছাই করা ফসল ও অঞ্চলের জন্য আবহাওয়া এখন অনুকূল।</value>
+  </data>
+  <data name="Show {0} more suggestions" xml:space="preserve">
+    <value>আরও {0}টি পরামর্শ দেখুন</value>
+  </data>
+  <data name="{0} suggestion(s) hidden because you marked them done or snoozed them." xml:space="preserve">
+    <value>আপনি সম্পন্ন বা স্থগিত করায় {0}টি পরামর্শ লুকানো আছে।</value>
+  </data>
+  <data name="How Weather Nudges Work" xml:space="preserve">
+    <value>আবহাওয়াভিত্তিক পরামর্শ যেভাবে কাজ করে</value>
+  </data>
+  <data name="Protecting Harvests &amp; Maximizing Farm Profits Through Proactive Intelligence" xml:space="preserve">
+    <value>আগাম তথ্যের মাধ্যমে ফসল রক্ষা ও খামারের লাভ বাড়ানো</value>
+  </data>
+  <data name="KrishiLink continuously monitors regional meteorological parameters across Bangladesh. When adverse rainstorms, humid spore conditions, or optimal sowing moisture levels are detected, the system immediately cross-checks your cultivated crop with verified DAE crop calendars and alerts you in advance." xml:space="preserve">
+    <value>কৃষিলিংক সারা বাংলাদেশের আঞ্চলিক আবহাওয়ার তথ্য নিয়মিত পর্যবেক্ষণ করে। ক্ষতিকর ঝড়বৃষ্টি, রোগজীবাণু ছড়ানোর মতো আর্দ্রতা বা বপনের উপযুক্ত রস দেখা দিলে সিস্টেম সঙ্গে সঙ্গে আপনার ফসলকে ডিএই ফসল পঞ্জিকার সাথে মিলিয়ে আগেই সতর্ক করে।</value>
+  </data>
+  <data name="Pre-book storage capacity before rain damages harvest." xml:space="preserve">
+    <value>বৃষ্টিতে ফসল নষ্ট হওয়ার আগে গুদামে জায়গা বুক করুন।</value>
+  </data>
+  <data name="Rent combine harvesters to cut crop days faster." xml:space="preserve">
+    <value>দ্রুত ফসল কাটতে কম্বাইন হারভেস্টার ভাড়া নিন।</value>
+  </data>
+  <data name="Apply prophylactic fungicides before heavy dense fog." xml:space="preserve">
+    <value>ঘন কুয়াশার আগে প্রতিরোধমূলক ছত্রাকনাশক প্রয়োগ করুন।</value>
+  </data>
+  <data name="Schedule irrigation pumps during dry sowing spells." xml:space="preserve">
+    <value>শুকনো বপনের সময়ে সেচ পাম্পের ব্যবস্থা করুন।</value>
+  </data>
+  <data name="Automatic In-App &amp; Email Alerts" xml:space="preserve">
+    <value>স্বয়ংক্রিয় অ্যাপ ও ই-মেইল সতর্কবার্তা</value>
+  </data>
+  <data name="Keep your profile updated with your active district and crop to receive instant notifications on your device." xml:space="preserve">
+    <value>ডিভাইসে তাৎক্ষণিক বার্তা পেতে প্রোফাইলে আপনার জেলা ও ফসল হালনাগাদ রাখুন।</value>
+  </data>
+  <data name="Update My Crop Profile" xml:space="preserve">
+    <value>আমার ফসলের প্রোফাইল হালনাগাদ করুন</value>
+  </data>
+  <data name="What you'll need" xml:space="preserve">
+    <value>যা যা লাগবে</value>
+  </data>
+  <data name="Land preparation" xml:space="preserve">
+    <value>জমি প্রস্তুতি</value>
+  </data>
+  <data name="Storage after harvest" xml:space="preserve">
+    <value>ফসল কাটার পর সংরক্ষণ</value>
+  </data>
+  <data name="from {0}" xml:space="preserve">
+    <value>{0} থেকে</value>
+  </data>
+  <data name="Done" xml:space="preserve">
+    <value>সম্পন্ন</value>
+  </data>
+  <data name="Snooze 3 days" xml:space="preserve">
+    <value>৩ দিন পরে মনে করিয়ে দিন</value>
+  </data>
+  <data name="Marked as done. It will not show again this month." xml:space="preserve">
+    <value>সম্পন্ন হিসেবে চিহ্নিত হয়েছে। এই মাসে আর দেখানো হবে না।</value>
+  </data>
+  <data name="Snoozed for three days." xml:space="preserve">
+    <value>তিন দিনের জন্য স্থগিত করা হয়েছে।</value>
+  </data>
+  <data name="The suggestion is back on your list." xml:space="preserve">
+    <value>পরামর্শটি আবার আপনার তালিকায় ফিরে এসেছে।</value>
+  </data>
+  <data name="Cold Storage" xml:space="preserve">
+    <value>হিমাগার</value>
+  </data>
+  <data name="Grain Warehouse" xml:space="preserve">
+    <value>শস্য গুদাম</value>
+  </data>
+  <data name="Seed Vault" xml:space="preserve">
+    <value>বীজ ভাণ্ডার</value>
+  </data>
+  <data name="Silo Facility" xml:space="preserve">
+    <value>সাইলো</value>
+  </data>
+  <data name="Dry Godown" xml:space="preserve">
+    <value>শুকনো গুদাম</value>
+  </data>
+  <data name="Crop Planner" xml:space="preserve">
+    <value>ফসল পরিকল্পনা</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>কম</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>বেশি</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>মাঝারি</value>
+  </data>
+  <data name="What to do this week, what a sowing date means for harvest and rain, and crops side by side." xml:space="preserve">
+    <value>এই সপ্তাহে কী করবেন, বপনের তারিখ অনুযায়ী ফসল কাটা ও বৃষ্টির সময়, এবং ফসলের তুলনা।</value>
+  </data>
+  <data name="Planner" xml:space="preserve">
+    <value>পরিকল্পনা</value>
+  </data>
+  <data name="This week on your farm" xml:space="preserve">
+    <value>এই সপ্তাহে আপনার খামারে</value>
+  </data>
+  <data name="Harvest time" xml:space="preserve">
+    <value>ফসল কাটার সময়</value>
+  </data>
+  <data name="Off season" xml:space="preserve">
+    <value>মৌসুম নয়</value>
+  </data>
+  <data name="from your saved crop advice" xml:space="preserve">
+    <value>আপনার সংরক্ষিত ফসল পরামর্শ থেকে</value>
+  </data>
+  <data name="from your profile crop" xml:space="preserve">
+    <value>আপনার প্রোফাইলের ফসল থেকে</value>
+  </data>
+  <data name="It is sowing time for this crop. Popular varieties: {0}." xml:space="preserve">
+    <value>এই ফসলের বপনের সময় এখন। জনপ্রিয় জাত: {0}।</value>
+  </data>
+  <data name="The crop is in its growing stage. Watch for pests and follow the key tips below." xml:space="preserve">
+    <value>ফসলটি বাড়ন্ত পর্যায়ে আছে। পোকামাকড়ের দিকে নজর রাখুন এবং নিচের পরামর্শগুলো মেনে চলুন।</value>
+  </data>
+  <data name="It is harvest time. Book machinery and storage before the dates fill up." xml:space="preserve">
+    <value>এখন ফসল কাটার সময়। তারিখ ফুরিয়ে যাওয়ার আগেই যন্ত্রপাতি ও গুদাম বুক করুন।</value>
+  </data>
+  <data name="Off season for this crop. Next sowing starts {0}." xml:space="preserve">
+    <value>এখন এই ফসলের মৌসুম নয়। পরবর্তী বপন শুরু {0}।</value>
+  </data>
+  <data name="Check pest risk in {0}" xml:space="preserve">
+    <value>{0}-এ পোকামাকড়ের ঝুঁকি দেখুন</value>
+  </data>
+  <data name="Save a crop from the Smart Advisor, or set your primary crop in your profile, to see what to do this week." xml:space="preserve">
+    <value>এই সপ্তাহে কী করবেন তা দেখতে স্মার্ট পরামর্শ থেকে একটি ফসল সংরক্ষণ করুন, অথবা প্রোফাইলে আপনার প্রধান ফসল ঠিক করুন।</value>
+  </data>
+  <data name="Sign in and save a crop from the Smart Advisor to see what to do this week." xml:space="preserve">
+    <value>এই সপ্তাহে কী করবেন তা দেখতে সাইন ইন করে স্মার্ট পরামর্শ থেকে একটি ফসল সংরক্ষণ করুন।</value>
+  </data>
+  <data name="Sign In" xml:space="preserve">
+    <value>সাইন ইন</value>
+  </data>
+  <data name="Sowing-date simulator" xml:space="preserve">
+    <value>বপনের তারিখ হিসাবকারী</value>
+  </data>
+  <data name="Pick a crop and a sowing date to see the harvest window, whether it runs into the monsoon, and when you will need machinery and storage." xml:space="preserve">
+    <value>ফসল ও বপনের তারিখ বেছে নিন: কখন ফসল কাটা যাবে, তা বর্ষায় পড়বে কি না, এবং কখন যন্ত্রপাতি ও গুদাম লাগবে তা দেখুন।</value>
+  </data>
+  <data name="Sowing date" xml:space="preserve">
+    <value>বপনের তারিখ</value>
+  </data>
+  <data name="Simulate" xml:space="preserve">
+    <value>হিসাব করুন</value>
+  </data>
+  <data name="Expected harvest" xml:space="preserve">
+    <value>সম্ভাব্য ফসল কাটা</value>
+  </data>
+  <data name="DAE sowing window" xml:space="preserve">
+    <value>ডিএই বপনের সময়</value>
+  </data>
+  <data name="on time" xml:space="preserve">
+    <value>সময়মতো</value>
+  </data>
+  <data name="about {0} week(s) late" xml:space="preserve">
+    <value>প্রায় {0} সপ্তাহ দেরিতে</value>
+  </data>
+  <data name="about {0} week(s) early" xml:space="preserve">
+    <value>প্রায় {0} সপ্তাহ আগে</value>
+  </data>
+  <data name="The harvest window runs into monsoon months ({0}), when rain is likely. Plan drying and covered storage, or consider sowing earlier." xml:space="preserve">
+    <value>ফসল কাটার সময় বর্ষার মাসে ({0}) পড়ছে, তখন বৃষ্টির সম্ভাবনা বেশি। শুকানো ও ঢাকা গুদামের ব্যবস্থা রাখুন, অথবা আগে বপনের কথা ভাবুন।</value>
+  </data>
+  <data name="Add these dates to my phone calendar" xml:space="preserve">
+    <value>এই তারিখগুলো আমার ফোনের ক্যালেন্ডারে যোগ করুন</value>
+  </data>
+  <data name="Compare crops" xml:space="preserve">
+    <value>ফসলের তুলনা</value>
+  </data>
+  <data name="Choose two or three crops. Pest warnings are for {0} today." xml:space="preserve">
+    <value>দুটি বা তিনটি ফসল বেছে নিন। পোকামাকড়ের সতর্কতা আজ {0}-এর জন্য।</value>
+  </data>
+  <data name="Crop {0}" xml:space="preserve">
+    <value>ফসল {0}</value>
+  </data>
+  <data name="Choose a crop" xml:space="preserve">
+    <value>একটি ফসল বেছে নিন</value>
+  </data>
+  <data name="Compare" xml:space="preserve">
+    <value>তুলনা করুন</value>
+  </data>
+  <data name="Attribute" xml:space="preserve">
+    <value>বিষয়</value>
+  </data>
+  <data name="Duration" xml:space="preserve">
+    <value>মেয়াদ</value>
+  </data>
+  <data name="{0}–{1} days" xml:space="preserve">
+    <value>{0}–{1} দিন</value>
+  </data>
+  <data name="Water need" xml:space="preserve">
+    <value>পানির চাহিদা</value>
+  </data>
+  <data name="Indicative yield" xml:space="preserve">
+    <value>আনুমানিক ফলন</value>
+  </data>
+  <data name="{0}–{1} t/acre" xml:space="preserve">
+    <value>{0}–{1} টন/একর</value>
+  </data>
+  <data name="Pest warnings today" xml:space="preserve">
+    <value>আজকের পোকামাকড় সতর্কতা</value>
+  </data>
+  <data name="no rules for this crop" xml:space="preserve">
+    <value>এই ফসলের জন্য কোনো নিয়ম নেই</value>
+  </data>
+  <data name="none active" xml:space="preserve">
+    <value>কোনোটি সক্রিয় নয়</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>উৎস</value>
+  </data>
+  <data name="Yields are indicative ranges from the crop calendar; expected earnings depend on the price you get, so they are not estimated here." xml:space="preserve">
+    <value>ফলন ফসল পঞ্জিকা অনুযায়ী আনুমানিক পরিসর; আয় নির্ভর করে আপনি কত দাম পান তার উপর, তাই এখানে আয়ের হিসাব দেওয়া হয়নি।</value>
+  </data>
+  <data name="Choose at least two different crops to compare." xml:space="preserve">
+    <value>তুলনা করতে কমপক্ষে দুটি ভিন্ন ফসল বেছে নিন।</value>
+  </data>
+  <data name="Fired on {0} of the last {1} days" xml:space="preserve">
+    <value>গত {1} দিনের মধ্যে {0} দিন সতর্কতা ছিল</value>
+  </data>
+  <data name="fired ({0})" xml:space="preserve">
+    <value>সতর্কতা ({0})</value>
+  </data>
+  <data name="not fired" xml:space="preserve">
+    <value>সতর্কতা নেই</value>
+  </data>
+  <data name="Thanks for rating this warning." xml:space="preserve">
+    <value>সতর্কতাটি মূল্যায়ন করার জন্য ধন্যবাদ।</value>
+  </data>
+  <data name="Was this warning accurate?" xml:space="preserve">
+    <value>সতর্কতাটি কি সঠিক ছিল?</value>
+  </data>
+  <data name="Yes, accurate" xml:space="preserve">
+    <value>হ্যাঁ, সঠিক</value>
+  </data>
+  <data name="No, not accurate" xml:space="preserve">
+    <value>না, সঠিক নয়</value>
+  </data>
+  <data name="Sign in to rate this warning" xml:space="preserve">
+    <value>সতর্কতাটি মূল্যায়ন করতে সাইন ইন করুন</value>
+  </data>
+  <data name="Harvest window" xml:space="preserve">
+    <value>ফসল কাটার সময়সীমা</value>
+  </data>
+  <data name="Thanks, your feedback helps tune these warnings." xml:space="preserve">
+    <value>ধন্যবাদ, আপনার মতামত এই সতর্কতাগুলো আরও নির্ভুল করতে সাহায্য করে।</value>
+  </data>
+  <data name="Pest alert: {0}" xml:space="preserve">
+    <value>পোকামাকড় সতর্কতা: {0}</value>
+  </data>
+  <data name="{0} risk is high in {1} today: {2}" xml:space="preserve">
+    <value>আজ {1}-এ {0}-এর ঝুঁকি বেশি: {2}</value>
+  </data>
+  <data name="Booked for {0}, but land for {1} is usually prepared in {2}." xml:space="preserve">
+    <value>{0}-এর জন্য বুক করা হয়েছে, কিন্তু {1}-এর জমি সাধারণত {2}-এ তৈরি করা হয়।</value>
+  </data>
+  <data name="Booked for {0}, but {1} is in the field in {2}." xml:space="preserve">
+    <value>{0}-এর জন্য বুক করা হয়েছে, কিন্তু {1} মাঠে থাকে {2}-এ।</value>
+  </data>
+  <data name="Booked for {0}, but {1} is harvested around {2}." xml:space="preserve">
+    <value>{0}-এর জন্য বুক করা হয়েছে, কিন্তু {1} কাটা হয় {2}-এর দিকে।</value>
+  </data>
+  <data name="Storage starts in {0}, but {1} usually comes out of the field for storage in {2}." xml:space="preserve">
+    <value>সংরক্ষণ শুরু {0}-এ, কিন্তু {1} সাধারণত {2}-এ মাঠ থেকে সংরক্ষণের জন্য আসে।</value>
+  </data>
+  <data name="Check the dates; you know your field best." xml:space="preserve">
+    <value>তারিখগুলো দেখে নিন; আপনার জমি আপনিই সবচেয়ে ভালো জানেন।</value>
+  </data>
+  <data name="Season costs &amp; returns" xml:space="preserve">
+    <value>মৌসুমের খরচ ও আয়</value>
+  </data>
+  <data name="Land lease" xml:space="preserve">
+    <value>জমি বর্গা/লিজ</value>
+  </data>
+  <data name="Seed" xml:space="preserve">
+    <value>বীজ</value>
+  </data>
+  <data name="Fertilizer" xml:space="preserve">
+    <value>সার</value>
+  </data>
+  <data name="Pesticide" xml:space="preserve">
+    <value>কীটনাশক</value>
+  </data>
+  <data name="Download season summary (PDF)" xml:space="preserve">
+    <value>মৌসুমের সারসংক্ষেপ ডাউনলোড (PDF)</value>
+  </data>
+  <data name="Rentals and storage on KrishiLink" xml:space="preserve">
+    <value>কৃষিলিংকে ভাড়া ও সংরক্ষণ</value>
+  </data>
+  <data name="No rentals or storage in this plan yet." xml:space="preserve">
+    <value>এই পরিকল্পনায় এখনও কোনো ভাড়া বা সংরক্ষণ নেই।</value>
+  </data>
+  <data name="estimate" xml:space="preserve">
+    <value>আনুমানিক</value>
+  </data>
+  <data name="Estimates use today's price; the agreed price replaces them once the owner accepts." xml:space="preserve">
+    <value>আনুমানিক হিসাব আজকের দামে; মালিক গ্রহণ করলে চূড়ান্ত দাম বসবে।</value>
+  </data>
+  <data name="Other costs you paid" xml:space="preserve">
+    <value>আপনার অন্যান্য খরচ</value>
+  </data>
+  <data name="Seed, fertilizer, labour and anything else you paid for outside KrishiLink." xml:space="preserve">
+    <value>বীজ, সার, শ্রমিক এবং কৃষিলিংকের বাইরে যা কিছুর জন্য আপনি টাকা দিয়েছেন।</value>
+  </data>
+  <data name="Date" xml:space="preserve">
+    <value>তারিখ</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>কার্যক্রম</value>
+  </data>
+  <data name="Remove {0}" xml:space="preserve">
+    <value>{0} মুছুন</value>
+  </data>
+  <data name="Amount (৳)" xml:space="preserve">
+    <value>পরিমাণ (৳)</value>
+  </data>
+  <data name="Note (optional)" xml:space="preserve">
+    <value>নোট (ঐচ্ছিক)</value>
+  </data>
+  <data name="Add cost" xml:space="preserve">
+    <value>খরচ যোগ করুন</value>
+  </data>
+  <data name="Season at a glance" xml:space="preserve">
+    <value>এক নজরে মৌসুম</value>
+  </data>
+  <data name="Total season cost" xml:space="preserve">
+    <value>মৌসুমের মোট খরচ</value>
+  </data>
+  <data name="Cost per {0}" xml:space="preserve">
+    <value>প্রতি {0} খরচ</value>
+  </data>
+  <data name="Cost per acre" xml:space="preserve">
+    <value>প্রতি একর খরচ</value>
+  </data>
+  <data name="Expected gross" xml:space="preserve">
+    <value>প্রত্যাশিত মোট আয়</value>
+  </data>
+  <data name="Expected net" xml:space="preserve">
+    <value>প্রত্যাশিত নিট আয়</value>
+  </data>
+  <data name="Break-even harvest" xml:space="preserve">
+    <value>খরচ উঠে আসার ফলন</value>
+  </data>
+  <data name="Expected harvest {0} to {1}; costs are covered at {2}." xml:space="preserve">
+    <value>প্রত্যাশিত ফলন {0} থেকে {1}; {2}-এ খরচ উঠে আসে।</value>
+  </data>
+  <data name="Covers your costs" xml:space="preserve">
+    <value>খরচ উঠে আসে</value>
+  </data>
+  <data name="At this price even a good harvest does not cover the costs." xml:space="preserve">
+    <value>এই দামে ভালো ফলন হলেও খরচ উঠবে না।</value>
+  </data>
+  <data name="Choose the exact crop below to see the expected harvest." xml:space="preserve">
+    <value>প্রত্যাশিত ফলন দেখতে নিচে নির্দিষ্ট ফসলটি বেছে নিন।</value>
+  </data>
+  <data name="The crop calendar has no yield range for this crop, so only costs are shown." xml:space="preserve">
+    <value>ফসল পঞ্জিকায় এই ফসলের ফলনের পরিসর নেই, তাই শুধু খরচ দেখানো হচ্ছে।</value>
+  </data>
+  <data name="Add your land size below to see the expected harvest." xml:space="preserve">
+    <value>প্রত্যাশিত ফলন দেখতে নিচে জমির পরিমাণ দিন।</value>
+  </data>
+  <data name="Add your expected selling price below to see the return." xml:space="preserve">
+    <value>আয় দেখতে নিচে আপনার প্রত্যাশিত বিক্রয়মূল্য দিন।</value>
+  </data>
+  <data name="Your field and price" xml:space="preserve">
+    <value>আপনার জমি ও দাম</value>
+  </data>
+  <data name="&quot;{0}&quot; covers several crops; pick the one you are growing." xml:space="preserve">
+    <value>"{0}"-এর মধ্যে কয়েকটি ফসল আছে; আপনি যেটি চাষ করছেন সেটি বেছে নিন।</value>
+  </data>
+  <data name="Land under this crop" xml:space="preserve">
+    <value>এই ফসলের জমি</value>
+  </data>
+  <data name="Land unit" xml:space="preserve">
+    <value>জমির একক</value>
+  </data>
+  <data name="1 bigha = 33 decimal; 1 acre = 100 decimal." xml:space="preserve">
+    <value>১ বিঘা = ৩৩ শতাংশ; ১ একর = ১০০ শতাংশ।</value>
+  </data>
+  <data name="Your expected selling price (৳)" xml:space="preserve">
+    <value>আপনার প্রত্যাশিত বিক্রয়মূল্য (৳)</value>
+  </data>
+  <data name="Price unit" xml:space="preserve">
+    <value>দামের একক</value>
+  </data>
+  <data name="per maund" xml:space="preserve">
+    <value>প্রতি মণ</value>
+  </data>
+  <data name="per kg" xml:space="preserve">
+    <value>প্রতি কেজি</value>
+  </data>
+  <data name="Your own estimate, not a market price. 1 maund = 40 kg." xml:space="preserve">
+    <value>এটি আপনার নিজের অনুমান, বাজারদর নয়। ১ মণ = ৪০ কেজি।</value>
+  </data>
+  <data name="Season details saved." xml:space="preserve">
+    <value>মৌসুমের তথ্য সংরক্ষিত হয়েছে।</value>
+  </data>
+  <data name="Please check the values you entered." xml:space="preserve">
+    <value>আপনার দেওয়া মানগুলো যাচাই করুন।</value>
+  </data>
+  <data name="Cost added to the season." xml:space="preserve">
+    <value>মৌসুমে খরচ যোগ হয়েছে।</value>
+  </data>
+  <data name="Cost removed." xml:space="preserve">
+    <value>খরচ মুছে ফেলা হয়েছে।</value>
+  </data>
+  <data name="Could not start a season plan." xml:space="preserve">
+    <value>মৌসুম পরিকল্পনা শুরু করা যায়নি।</value>
+  </data>
+  <data name="Season plan started from your saved advice. Add your costs and expected price." xml:space="preserve">
+    <value>আপনার সংরক্ষিত পরামর্শ থেকে মৌসুম পরিকল্পনা শুরু হয়েছে। খরচ ও প্রত্যাশিত দাম যোগ করুন।</value>
+  </data>
+  <data name="Harvest plan not found." xml:space="preserve">
+    <value>ফসল কাটার পরিকল্পনা পাওয়া যায়নি।</value>
+  </data>
+  <data name="Enter a land size greater than zero." xml:space="preserve">
+    <value>শূন্যের বেশি জমির পরিমাণ দিন।</value>
+  </data>
+  <data name="Enter a selling price greater than zero." xml:space="preserve">
+    <value>শূন্যের বেশি বিক্রয়মূল্য দিন।</value>
+  </data>
+  <data name="Please choose a crop from the list." xml:space="preserve">
+    <value>তালিকা থেকে একটি ফসল বেছে নিন।</value>
+  </data>
+  <data name="Please choose a cost type from the list." xml:space="preserve">
+    <value>তালিকা থেকে খরচের ধরন বেছে নিন।</value>
+  </data>
+  <data name="Enter an amount greater than zero." xml:space="preserve">
+    <value>শূন্যের বেশি পরিমাণ দিন।</value>
+  </data>
+  <data name="This season already has the maximum number of cost entries." xml:space="preserve">
+    <value>এই মৌসুমে সর্বোচ্চ সংখ্যক খরচ যোগ করা হয়ে গেছে।</value>
+  </data>
+  <data name="That saved advice was not found." xml:space="preserve">
+    <value>সংরক্ষিত পরামর্শটি পাওয়া যায়নি।</value>
+  </data>
+  <data name="katha" xml:space="preserve">
+    <value>কাঠা</value>
+  </data>
+  <data name="bigha" xml:space="preserve">
+    <value>বিঘা</value>
+  </data>
+  <data name="acre" xml:space="preserve">
+    <value>একর</value>
+  </data>
+  <data name="decimal" xml:space="preserve">
+    <value>শতাংশ</value>
+  </data>
+  <data name="{0} {1} ({2} ha)" xml:space="preserve">
+    <value>{0} {1} ({2} হেক্টর)</value>
+  </data>
+  <data name="{0} maund ({1} t)" xml:space="preserve">
+    <value>{0} মণ ({1} টন)</value>
+  </data>
+  <data name="{0} maund ({1} kg)" xml:space="preserve">
+    <value>{0} মণ ({1} কেজি)</value>
+  </data>
+  <data name="{0}–{1} maund ({2}–{3} t)" xml:space="preserve">
+    <value>{0}–{1} মণ ({2}–{3} টন)</value>
+  </data>
+  <data name="{0}–{1} maund ({2}–{3} kg)" xml:space="preserve">
+    <value>{0}–{1} মণ ({2}–{3} কেজি)</value>
+  </data>
+  <data name="Based on your {0} of {1} soil in {2} ({3}), saved {4}." xml:space="preserve">
+    <value>{2}-এ আপনার {0} {1} মাটির ভিত্তিতে ({3}), সংরক্ষিত {4}।</value>
+  </data>
+  <data name="Plan this season's costs" xml:space="preserve">
+    <value>এই মৌসুমের খরচ পরিকল্পনা করুন</value>
+  </data>
+  <data name="≈ {0} on your {1}" xml:space="preserve">
+    <value>আপনার {1} জমিতে ≈ {0}</value>
+  </data>
+  <data name="Measurement units" xml:space="preserve">
+    <value>পরিমাপের একক</value>
+  </data>
+  <data name="How land sizes are shown to you across KrishiLink" xml:space="preserve">
+    <value>কৃষিলিংকে জমির পরিমাণ আপনাকে কীভাবে দেখানো হবে</value>
+  </data>
+  <data name="KrishiLink uses the standard bigha of 33 decimal (20 katha). If your area counts a bigha differently, choose decimal or acre instead. Weights are shown in maund (40 kg) with the metric value alongside." xml:space="preserve">
+    <value>কৃষিলিংক ৩৩ শতাংশের (২০ কাঠা) প্রমিত বিঘা ব্যবহার করে। আপনার এলাকায় বিঘার হিসাব ভিন্ন হলে শতাংশ বা একর বেছে নিন। ওজন মণে (৪০ কেজি) দেখানো হয়, পাশে মেট্রিক মানসহ।</value>
+  </data>
+  <data name="Measurement units saved." xml:space="preserve">
+    <value>পরিমাপের একক সংরক্ষিত হয়েছে।</value>
+  </data>
+  <data name="৳{0}/ton/month" xml:space="preserve">
+    <value>৳{0}/টন/মাস</value>
+  </data>
+  <data name="৳{0}/day" xml:space="preserve">
+    <value>৳{0}/দিন</value>
+  </data>
+  <data name="Not enough completed bookings of {0} in {1} yet to compare prices." xml:space="preserve">
+    <value>{1}-এ {0}-এর যথেষ্ট সম্পন্ন বুকিং এখনও নেই, তাই দাম তুলনা করা যাচ্ছে না।</value>
+  </data>
+  <data name="Not enough completed rentals of {0} in {1} yet to compare prices." xml:space="preserve">
+    <value>{1}-এ {0}-এর যথেষ্ট সম্পন্ন ভাড়া এখনও নেই, তাই দাম তুলনা করা যাচ্ছে না।</value>
+  </data>
+  <data name="Your rate {0}" xml:space="preserve">
+    <value>আপনার রেট {0}</value>
+  </data>
+  <data name="{0} is below what most renters paid for {1} in {2} ({3}–{4})." xml:space="preserve">
+    <value>{2}-এ {1}-এর জন্য বেশিরভাগ ভাড়াটিয়া যা দিয়েছেন ({3}–{4}), {0} তার চেয়ে কম।</value>
+  </data>
+  <data name="{0} is above what most renters paid for {1} in {2} ({3}–{4})." xml:space="preserve">
+    <value>{2}-এ {1}-এর জন্য বেশিরভাগ ভাড়াটিয়া যা দিয়েছেন ({3}–{4}), {0} তার চেয়ে বেশি।</value>
+  </data>
+  <data name="{0} is about average for {1} in {2} (most paid {3}–{4})." xml:space="preserve">
+    <value>{2}-এ {1}-এর জন্য {0} মোটামুটি গড় দাম (বেশিরভাগ দিয়েছেন {3}–{4})।</value>
+  </data>
+  <data name="Median {0}, from {1} completed bookings in {2}." xml:space="preserve">
+    <value>মধ্যমা {0}, {2}-এর {1}টি সম্পন্ন বুকিং থেকে।</value>
+  </data>
+  <data name="Median {0}, from {1} completed bookings across the year." xml:space="preserve">
+    <value>মধ্যমা {0}, বছরজুড়ে {1}টি সম্পন্ন বুকিং থেকে।</value>
+  </data>
+  <data name="Within {0} km of your location" xml:space="preserve">
+    <value>আপনার অবস্থান থেকে {0} কিমির মধ্যে</value>
+  </data>
+  <data name="Within {0} km of {1}" xml:space="preserve">
+    <value>{1} থেকে {0} কিমির মধ্যে</value>
+  </data>
+  <data name="Choose a district or use your location to search by distance." xml:space="preserve">
+    <value>দূরত্ব দিয়ে খুঁজতে একটি জেলা বেছে নিন বা আপনার অবস্থান ব্যবহার করুন।</value>
+  </data>
+  <data name="Finding your location…" xml:space="preserve">
+    <value>আপনার অবস্থান খোঁজা হচ্ছে…</value>
+  </data>
+  <data name="Location is off or was not allowed. Choose a district instead." xml:space="preserve">
+    <value>লোকেশন বন্ধ আছে বা অনুমতি দেওয়া হয়নি। এর বদলে একটি জেলা বেছে নিন।</value>
+  </data>
+  <data name="This browser cannot share your location here. Choose a district instead." xml:space="preserve">
+    <value>এই ব্রাউজার এখানে আপনার অবস্থান জানাতে পারছে না। এর বদলে একটি জেলা বেছে নিন।</value>
+  </data>
+  <data name="You are here" xml:space="preserve">
+    <value>আপনি এখানে</value>
+  </data>
+  <data name="The map shows the first {0} of {1} results; narrow the filters to see the rest." xml:space="preserve">
+    <value>মানচিত্রে {1}টি ফলাফলের প্রথম {0}টি দেখানো হচ্ছে; বাকিগুলো দেখতে ফিল্টার সংকুচিত করুন।</value>
+  </data>
+  <data name="{0} listings have no map location and appear only in the list." xml:space="preserve">
+    <value>{0}টি তালিকার মানচিত্রে অবস্থান নেই, সেগুলো শুধু তালিকায় দেখা যাবে।</value>
+  </data>
+  <data name="The map could not load. Check your connection, or use the list view." xml:space="preserve">
+    <value>মানচিত্র লোড হয়নি। সংযোগ পরীক্ষা করুন, অথবা তালিকা ভিউ ব্যবহার করুন।</value>
+  </data>
+  <data name="Within" xml:space="preserve">
+    <value>দূরত্ব</value>
+  </data>
+  <data name="Any distance" xml:space="preserve">
+    <value>যেকোনো দূরত্ব</value>
+  </data>
+  <data name="{0} km" xml:space="preserve">
+    <value>{0} কিমি</value>
+  </data>
+  <data name="Use my location" xml:space="preserve">
+    <value>আমার অবস্থান ব্যবহার করুন</value>
+  </data>
+  <data name="Results view" xml:space="preserve">
+    <value>ফলাফলের ভিউ</value>
+  </data>
+  <data name="List" xml:space="preserve">
+    <value>তালিকা</value>
+  </data>
+  <data name="Map" xml:space="preserve">
+    <value>মানচিত্র</value>
+  </data>
+  <data name="Map of results" xml:space="preserve">
+    <value>ফলাফলের মানচিত্র</value>
+  </data>
+  <data name="Could not load results. Check your connection and try again." xml:space="preserve">
+    <value>ফলাফল লোড করা যায়নি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।</value>
+  </data>
+  <data name="Try again" xml:space="preserve">
+    <value>আবার চেষ্টা করুন</value>
+  </data>
+  <data name="At least 1 photo, max 5 MB each. WebP photos load fastest for farmers on mobile data; JPG and PNG work too." xml:space="preserve">
+    <value>কমপক্ষে ১টি ছবি, প্রতিটি সর্বোচ্চ ৫ MB। WebP ছবি মোবাইল ডেটায় কৃষকদের জন্য সবচেয়ে দ্রুত লোড হয়; JPG ও PNG-ও চলবে।</value>
+  </data>
+  <data name="You are offline" xml:space="preserve">
+    <value>আপনি অফলাইনে আছেন</value>
+  </data>
+  <data name="Showing data saved on {0}." xml:space="preserve">
+    <value>{0} তারিখে সংরক্ষিত তথ্য দেখানো হচ্ছে।</value>
+  </data>
+  <data name="Sow now" xml:space="preserve">
+    <value>এখন বপন করুন</value>
+  </data>
+  <data name="Harvest now" xml:space="preserve">
+    <value>এখন কাটুন</value>
+  </data>
+  <data name="Nothing in the calendar is sown or harvested this month." xml:space="preserve">
+    <value>এই মাসে পঞ্জিকার কোনো ফসল বপন বা কাটা হয় না।</value>
+  </data>
+  <data name="The crop calendar has not been saved on this phone yet. Open KrishiLink once while online." xml:space="preserve">
+    <value>ফসল পঞ্জিকা এখনও এই ফোনে সংরক্ষিত হয়নি। অনলাইনে থাকা অবস্থায় একবার কৃষিলিংক খুলুন।</value>
+  </data>
+  <data name="No forecast saved yet. Open Pest Alerts once while online to keep a copy." xml:space="preserve">
+    <value>এখনও কোনো পূর্বাভাস সংরক্ষিত নেই। একটি কপি রাখতে অনলাইনে একবার পোকামাকড় সতর্কতা খুলুন।</value>
+  </data>
+  <data name="{0}: {1}°C (low {2}°C), humidity {3}%, rain chance {4}%" xml:space="preserve">
+    <value>{0}: {1}°সে (সর্বনিম্ন {2}°সে), আর্দ্রতা {3}%, বৃষ্টির সম্ভাবনা {4}%</value>
+  </data>
+  <data name="Bookings, payments and your account need a connection. The crop calendar and your last forecast still work." xml:space="preserve">
+    <value>বুকিং, পেমেন্ট ও আপনার অ্যাকাউন্টের জন্য সংযোগ লাগবে। ফসল পঞ্জিকা ও আপনার সর্বশেষ পূর্বাভাস এখনও দেখা যাবে।</value>
+  </data>
+  <data name="This month in the field" xml:space="preserve">
+    <value>এই মাসে মাঠে</value>
+  </data>
+  <data name="Last weather you viewed" xml:space="preserve">
+    <value>আপনার দেখা সর্বশেষ আবহাওয়া</value>
+  </data>
+  <data name="You are offline. Showing this page as saved on {0}." xml:space="preserve">
+    <value>আপনি অফলাইনে আছেন। {0} তারিখে সংরক্ষিত এই পৃষ্ঠা দেখানো হচ্ছে।</value>
+  </data>
+  <data name="You are offline. Saved pages and the crop calendar still open." xml:space="preserve">
+    <value>আপনি অফলাইনে আছেন। সংরক্ষিত পৃষ্ঠা ও ফসল পঞ্জিকা এখনও খোলা যাবে।</value>
+  </data>
+  <data name="That did not go through. Check your connection and try again." xml:space="preserve">
+    <value>কাজটি সম্পন্ন হয়নি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।</value>
+  </data>
+  <data name="The undo did not reach the server. Reload the page to see the current status." xml:space="preserve">
+    <value>বাতিলের অনুরোধ সার্ভারে পৌঁছায়নি। বর্তমান অবস্থা দেখতে পৃষ্ঠাটি রিলোড করুন।</value>
+  </data>
+  <data name="Could not load notifications." xml:space="preserve">
+    <value>বিজ্ঞপ্তি লোড করা যায়নি।</value>
+  </data>
+  <data name="Could not load more reviews. Please try again." xml:space="preserve">
+    <value>আরও রিভিউ লোড করা যায়নি। আবার চেষ্টা করুন।</value>
+  </data>
+  <data name="Could not load this crop's details. Please try again." xml:space="preserve">
+    <value>এই ফসলের বিস্তারিত লোড করা যায়নি। আবার চেষ্টা করুন।</value>
+  </data>
+  <data name="Could not reach KrishiLink. Check your connection and try again." xml:space="preserve">
+    <value>কৃষিলিংকে পৌঁছানো যায়নি। সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।</value>
+  </data>
+  <data name="Added to favorites" xml:space="preserve">
+    <value>প্রিয় তালিকায় যোগ হয়েছে</value>
+  </data>
+  <data name="Removed from favorites" xml:space="preserve">
+    <value>প্রিয় তালিকা থেকে সরানো হয়েছে</value>
+  </data>
+</root>

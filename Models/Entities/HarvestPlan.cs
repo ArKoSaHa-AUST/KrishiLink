@@ -33,6 +33,16 @@ namespace KrishiLink.Models.Entities
         /// <summary>Optional crop target (e.g. "Rice (Boro)", "Wheat", "Potato").</summary>
         public string? Crop { get; set; }
 
+        /// <summary>The exact crop calendar entry, when known; <see cref="Crop"/> alone may name a group such as "Pulses".</summary>
+        public int? CropCalendarEntryId { get; set; }
+        public CropCalendarEntry? CropEntry { get; set; }
+
+        /// <summary>Land under this crop, in decimals (100 = 1 acre). Drives cost per acre and expected yield (ECO-01).</summary>
+        public double? LandSizeDecimal { get; set; }
+
+        /// <summary>The farmer's own expected selling price per kg of harvest. Their estimate, not a market feed.</summary>
+        public decimal? ExpectedPricePerKg { get; set; }
+
         /// <summary>Farmer's internal notes or instructions for the plan.</summary>
         public string? Note { get; set; }
 
@@ -45,6 +55,9 @@ namespace KrishiLink.Models.Entities
         public DateTime? SubmittedOn { get; set; }
 
         public ICollection<HarvestPlanItem> Items { get; set; } = new List<HarvestPlanItem>();
+
+        /// <summary>Off-platform costs (seed, fertilizer, labour) for the season cost sheet.</summary>
+        public ICollection<SeasonCost> Costs { get; set; } = new List<SeasonCost>();
     }
 
     /// <summary>

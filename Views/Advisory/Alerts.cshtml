@@ -1,7 +1,21 @@
-﻿@model KrishiLink.Models.ViewModels.PestAlertsIndexViewModel
+@model KrishiLink.Models.ViewModels.PestAlertsIndexViewModel
 @{
     ViewData["Title"] = L["Pest & Disease Alerts"].Value;
     var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+}
+
+@if (!Model.IsCustomSimulated && Model.Weather is { } snapshot)
+{
+    @* REA-01: the forecast just shown, kept on the phone by site.js for the offline page. Real forecasts only, never what-ifs. *@
+    <div id="krishiForecastSnapshot" hidden
+         data-district="@(isBangla ? L[snapshot.District].Value : snapshot.District)"
+         data-condition="@snapshot.Condition"
+         data-condition-bn="@snapshot.BanglaCondition"
+         data-max="@snapshot.MaxTemp.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+         data-min="@snapshot.MinTemp.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+         data-humidity="@snapshot.Humidity.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+         data-rain="@snapshot.RainProbability.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+         data-retrieved="@snapshot.RetrievedAtUtc.ToString("o")"></div>
 }
 
 <!-- ADVISORY SECTION 3-TAB NAVIGATION -->
@@ -25,6 +39,10 @@
             <i class="bi bi-calendar-week"></i>
             <span>@L["Crop Calendar"]</span>
         </a>
+        <a asp-controller="Advisory" asp-action="Planner" class="nav-link rounded-pill px-3 py-1.5 fw-semibold text-muted d-flex align-items-center gap-1.5">
+            <i class="bi bi-calendar2-check"></i>
+            <span>@L["Planner"]</span>
+        </a>
         <a asp-controller="Advisory" asp-action="Alerts" class="nav-link active bg-danger text-white rounded-pill px-3.5 py-1.5 fw-bold d-flex align-items-center gap-1.5 shadow-sm">
             <i class="bi bi-shield-shaded"></i>
             <span>@L["Pest Alerts"]</span>
@@ -34,6 +52,21 @@
             <span>@L["Weather Suggestions"]</span>
         </a>
     </div>
+    @if (ViewData["AdvisoryContext"] is AdvisoryContextViewModel advisoryContext)
+    {
+        advisoryContext.ChangeAnchor = "#advisoryFilters";
+        <partial name="_AdvisoryContext" model="advisoryContext" />
+    }
+</div>
+
+<!-- Current Season Context -->
+<div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+    <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+        <i class="bi bi-clock-history me-1"></i>@L["Current Agricultural Window"]
+    </span>
+    <span class="badge bg-light text-dark px-2.5 py-1 rounded-pill small">
+        @CropCalendarService.GetCurrentSeasonName()
+    </span>
 </div>
 
 <!-- LIVE DISTRICT WEATHER HERO & TELEMETRY BAR -->
@@ -148,7 +181,7 @@
 </div>
 
 <!-- DISTRICT SELECTOR & WEATHER SCENARIO SIMULATOR -->
-<div class="card krishi-card border-0 shadow-sm rounded-4 p-3.5 mb-4">
+<div id="advisoryFilters" class="card krishi-card border-0 shadow-sm rounded-4 p-3.5 mb-4">
     <div class="row g-3 align-items-center">
         
         <!-- Division + District Dropdowns -->
@@ -182,7 +215,7 @@
                     <input type="hidden" name="humidity" value="@Model.CustomHumidity" />
                     <input type="hidden" name="condition" value="@Model.CustomCondition" />
                 }
-                <select name="crop" class="form-select form-select-lg fs-6 bg-light" onchange="this.form.submit()">
+                <select name="crop" class="form-select form-select-lg fs-6 bg-light" data-onchange="this.form.submit()">
                     @foreach (var c in Model.Crops)
                     {
                         <option value="@c.Value" selected="@(Model.SelectedCrop == c.Value)">
@@ -245,7 +278,7 @@
                             <span id="tempDisplay" class="badge bg-primary">@Model.Weather.Temperature.ToString("0.#")°C</span>
                         </label>
                         <input type="range" name="temp" class="form-range" min="8" max="40" step="0.5"
-                               value="@Model.Weather.Temperature" oninput="document.getElementById('tempDisplay').textContent = this.value + '°C'" />
+                               value="@Model.Weather.Temperature" data-oninput="document.getElementById('tempDisplay').textContent = this.value + '°C'" />
                     </div>
 
                     <div class="col-12 col-md-4">
@@ -254,7 +287,7 @@
                             <span id="humDisplay" class="badge bg-info">@Model.Weather.Humidity.ToString("0.#")%</span>
                         </label>
                         <input type="range" name="humidity" class="form-range" min="30" max="100" step="1"
-                               value="@Model.Weather.Humidity" oninput="document.getElementById('humDisplay').textContent = this.value + '%'" />
+                               value="@Model.Weather.Humidity" data-oninput="document.getElementById('humDisplay').textContent = this.value + '%'" />
                     </div>
 
                     <div class="col-12 col-md-3">
@@ -353,6 +386,10 @@
                                     </span>
                                 </div>
                             </div>
+                            @if (ViewData["PestHistory"] is PestAlertHistoryViewModel pestHistory)
+                            {
+                                <partial name="_PestHistory" model="@(new PestHistoryStrip(pestHistory, alert.RuleId))" />
+                            }
                         </div>
 
                         <!-- Card Body: Symptoms & Actionable Remedies -->
@@ -397,16 +434,24 @@
                                             <div class="col-12 col-sm-6">
                                                 <div class="p-2 rounded bg-danger bg-opacity-10 border border-danger-subtle small">
                                                     <strong class="text-danger d-block mb-0.5"><i class="bi bi-capsule me-1"></i>@L["Recommended Spray:"]</strong>
-                                                    <span class="text-dark">@alert.PreventiveSpray</span>
+                                                    <span class="text-dark">@(isBangla && !string.IsNullOrWhiteSpace(alert.PreventiveSprayBn) ? alert.PreventiveSprayBn : alert.PreventiveSpray)</span>
                                                 </div>
                                             </div>
                                             <div class="col-12 col-sm-6">
                                                 <div class="p-2 rounded bg-success bg-opacity-10 border border-success-subtle small">
                                                     <strong class="text-success d-block mb-0.5"><i class="bi bi-tree-fill me-1"></i>@L["Eco/Organic Control:"]</strong>
-                                                    <span class="text-dark">@alert.OrganicControl</span>
+                                                    <span class="text-dark">@(isBangla && !string.IsNullOrWhiteSpace(alert.OrganicControlBn) ? alert.OrganicControlBn : alert.OrganicControl)</span>
                                                 </div>
                                             </div>
                                         </div>
+                                        <!-- ADV-04: an outbreak warning leads to the equipment that treats it -->
+                                        <a href="@AppLinks.EquipmentSearch(Model.SelectedDistrict, "Power Sprayer")" class="btn btn-sm btn-krishi-outline rounded-pill mt-3 d-inline-flex align-items-center gap-1">
+                                            <i class="bi bi-search" aria-hidden="true"></i>@L["Find a Power Sprayer in {0}", Model.SelectedDistrict]
+                                        </a>
+                                        @if (!string.IsNullOrWhiteSpace(alert.Source))
+                                        {
+                                            <p class="small text-muted mt-2 mb-0">@L["Source: {0}", alert.Source]</p>
+                                        }
                                     </div>
                                 </div>
 
@@ -470,7 +515,8 @@
                                 <p class="small text-secondary mb-2">@(isBangla ? rule.BanglaSymptoms : rule.Symptoms)</p>
 
                                 <strong class="text-muted small text-uppercase d-block mb-1">@L["Preventive Spray & Dose"]</strong>
-                                <p class="small text-danger fw-semibold mb-0">@rule.PreventiveSpray</p>
+                                <p class="small text-danger fw-semibold mb-0">@(isBangla && !string.IsNullOrWhiteSpace(rule.PreventiveSprayBn) ? rule.PreventiveSprayBn : rule.PreventiveSpray)</p>
+                                <p class="small text-muted mb-0 mt-1">@L["Source: {0}", rule.Source]</p>
                             </div>
                         </div>
                     </div>

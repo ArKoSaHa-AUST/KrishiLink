@@ -6,6 +6,9 @@ namespace KrishiLink.Models.Entities
         public string Name { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+
+        /// <summary>Generated full-text index of the listing (simple configuration, so Bangla is tokenized, not stemmed). Never set in code.</summary>
+        public NpgsqlTypes.NpgsqlTsVector SearchVector { get; set; } = null!;
         public string Location { get; set; } = string.Empty;
         public string? District { get; set; }
 

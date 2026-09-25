@@ -257,7 +257,7 @@
             <div class="small text-muted">
                 @if (Model.ReviewsGiven > 0)
                 {
-                    <span>@L["{0} reviews given by this farmer · average rating: {1} ★", Model.ReviewsGiven, Model.AvgRatingGiven.HasValue ? Model.AvgRatingGiven.Value.ToString("F1") : "—"]</span>
+                    <span>@L["{0} reviews given by this farmer · average rating: {1}", Model.ReviewsGiven, Model.AvgRatingGiven.HasValue ? Model.AvgRatingGiven.Value.ToString("F1") : "—"]</span>
                 }
                 else
                 {

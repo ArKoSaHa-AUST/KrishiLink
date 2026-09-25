@@ -1,0 +1,27 @@
+@model CropNeedsStrip
+@*
+    "What you'll need": the machinery and storage a crop's stages call for, each a pre-filtered, date-scoped search (ADV-04).
+*@
+@if (Model.Needs.Count > 0)
+{
+    <div class="krishi-crop-needs">
+        <span class="krishi-crop-needs-label">@L["What you'll need"]</span>
+        <ul class="list-unstyled d-flex flex-wrap gap-2 mb-0">
+            @foreach (var need in Model.Needs)
+            {
+                var stage = need.Stage switch
+                {
+                    CropNeedStage.LandPreparation => L["Land preparation"].Value,
+                    CropNeedStage.Harvest => L["Harvest"].Value,
+                    _ => L["Storage after harvest"].Value
+                };
+                <li>
+                    <a class="krishi-crop-need" href="@need.SearchUrl(Model.District)">
+                        <i class="bi @(need.IsStorage ? "bi-box-seam" : "bi-truck")" aria-hidden="true"></i>
+                        <span><strong>@L[need.Category]</strong> · @stage · @L["from {0}", need.From.ToString("d MMM")]</span>
+                    </a>
+                </li>
+            }
+        </ul>
+    </div>
+}

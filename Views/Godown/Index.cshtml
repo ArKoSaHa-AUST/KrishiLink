@@ -53,7 +53,7 @@
                 @(activeFiltersCount > 0 ? L["{0} active", activeFiltersCount] : L["Filters"])
             </span>
         </button>
-        <button type="button" class="btn btn-outline-secondary rounded-3 px-3" onclick="resetAllFilters()" title='@L["Reset Filters"]'>
+        <button type="button" class="btn btn-outline-secondary rounded-3 px-3" data-onclick="resetAllFilters()" title='@L["Reset Filters"]'>
             <i class="bi bi-arrow-counterclockwise"></i>
         </button>
     </div>
@@ -73,11 +73,11 @@
                     <h5 class="fw-bold mb-0 text-dark">@L["Filters"]</h5>
                 </div>
                 <div class="d-flex align-items-center gap-1.5">
-                    <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-1 d-flex align-items-center gap-1 fw-semibold" onclick="openSaveSearchModal('Godown')" title="@L["Save this search"]">
+                    <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-1 d-flex align-items-center gap-1 fw-semibold" data-onclick="openSaveSearchModal('Godown')" title="@L["Save this search"]">
                         <i class="bi bi-bookmark-plus"></i>
                         <span class="small">@L["Save"]</span>
                     </button>
-                    <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0 fw-semibold clear-filters-btn @(activeFiltersCount > 0 ? "" : "d-none")" onclick="resetAllFilters()">
+                    <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0 fw-semibold clear-filters-btn @(activeFiltersCount > 0 ? "" : "d-none")" data-onclick="resetAllFilters()">
                         <i class="bi bi-x-circle me-1"></i>@L["Clear Filters"]
                     </button>
                 </div>
@@ -109,8 +109,8 @@
                 <input type="range" class="form-range filter-input" id="desktopCapacitySlider"
                        min="0" max="300" step="10"
                        value="@(Model.SelectedMinCapacity ?? 0)"
-                       oninput="syncCapacity(this.value)"
-                       onchange="onFilterChanged(1)" />
+                       data-oninput="syncCapacity(this.value)"
+                       data-onchange="onFilterChanged(1)" />
                 <div class="d-flex justify-content-between small text-muted">
                     <span>@L["Any"]</span>
                     <span>@L["{0} Tons", "300+"]</span>
@@ -130,7 +130,7 @@
                         <div class="form-check custom-checkbox">
                             <input class="form-check-input filter-input desktop-type-filter" type="checkbox"
                                    value="@type" id="desk_type_@type.Replace(" ", "_").Replace("(", "").Replace(")", "").Replace("&", "")"
-                                   @(isChecked ? "checked" : "") onchange="onFilterChanged(1)" />
+                                   @(isChecked ? "checked" : "") data-onchange="onFilterChanged(1)" />
                             <label class="form-check-label text-secondary small user-select-none" for="desk_type_@type.Replace(" ", "_").Replace("(", "").Replace(")", "").Replace("&", "")">
                                 @L[type]
                             </label>
@@ -155,21 +155,21 @@
                         <input type="number" class="form-control form-control-sm filter-input" id="desktopMinPriceInput"
                                min="@Model.MinPrice" max="@Model.MaxPrice" step="50" 
                                value="@(Model.SelectedMinPrice ?? Model.MinPrice)" 
-                               onchange="syncPriceInputs(); onFilterChanged(1);" />
+                               data-onchange="syncPriceInputs(); onFilterChanged(1);" />
                     </div>
                     <div class="col-6">
                         <label class="small text-muted mb-1" for="desktopMaxPriceInput">@L["Max ৳"]</label>
                         <input type="number" class="form-control form-control-sm filter-input" id="desktopMaxPriceInput"
                                min="@Model.MinPrice" max="@Model.MaxPrice" step="50" 
                                value="@(Model.SelectedMaxPrice ?? Model.MaxPrice)" 
-                               onchange="syncPriceInputs(); onFilterChanged(1);" />
+                               data-onchange="syncPriceInputs(); onFilterChanged(1);" />
                     </div>
                 </div>
                 <input type="range" class="form-range filter-input" id="desktopPriceSlider"
                        min="@Model.MinPrice" max="@Model.MaxPrice" step="50"
                        value="@(Model.SelectedMaxPrice ?? Model.MaxPrice)"
-                       oninput="syncSliderToMaxInput(this.value)"
-                       onchange="onFilterChanged(1)" />
+                       data-oninput="syncSliderToMaxInput(this.value)"
+                       data-onchange="onFilterChanged(1)" />
                 <div class="d-flex justify-content-between small text-muted">
                     <span>৳@Model.MinPrice.ToString("N0")</span>
                     <span>৳@Model.MaxPrice.ToString("N0")</span>
@@ -186,20 +186,20 @@
                         <label class="small text-muted mb-1" for="desktopStartDateInput">@L["From"]</label>
                         <input type="date" class="form-control form-control-sm filter-input" id="desktopStartDateInput"
                                value="@(Model.AvailableStartDate.HasValue ? Model.AvailableStartDate.Value.ToString("yyyy-MM-dd") : "")"
-                               min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncDates(); onFilterChanged(1);" />
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")" data-onchange="syncDates(); onFilterChanged(1);" />
                     </div>
                     <div class="col-6">
                         <label class="small text-muted mb-1" for="desktopEndDateInput">@L["To"]</label>
                         <input type="date" class="form-control form-control-sm filter-input" id="desktopEndDateInput"
                                value="@(Model.AvailableEndDate.HasValue ? Model.AvailableEndDate.Value.ToString("yyyy-MM-dd") : "")"
-                               min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncDates(); onFilterChanged(1);" />
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")" data-onchange="syncDates(); onFilterChanged(1);" />
                     </div>
                 </div>
             </div>
 
             <!-- Clear Filters -->
             <div class="pt-2">
-                <button type="button" class="btn btn-outline-secondary w-100 btn-sm py-2 rounded-3" onclick="resetAllFilters()">
+                <button type="button" class="btn btn-outline-secondary w-100 btn-sm py-2 rounded-3" data-onclick="resetAllFilters()">
                     <i class="bi bi-arrow-counterclockwise me-1"></i> @L["Clear Filters"]
                 </button>
             </div>
@@ -224,8 +224,8 @@
                         </span>
                         <input type="text" class="form-control border-start-0 py-2" id="mainSearchInput"
                                value="@Model.SearchTerm" placeholder='@L["Search godown name, facility, storage type, or owner..."]'
-                               oninput="onSearchInput(this.value)" />
-                        <button class="btn btn-outline-light border text-muted d-none" type="button" id="clearSearchBtn" onclick="clearSearch()">
+                               data-oninput="onSearchInput(this.value)" />
+                        <button class="btn btn-outline-light border text-muted d-none" type="button" id="clearSearchBtn" data-onclick="clearSearch()">
                             <i class="bi bi-x-lg small"></i>
                         </button>
                     </div>
@@ -237,7 +237,7 @@
                         <label class="small text-muted text-nowrap fw-semibold d-none d-sm-inline" for="mainSortSelect">
                             <i class="bi bi-arrow-down-up me-1"></i>@L["Sort:"]
                         </label>
-                        <select class="form-select form-select-sm py-2" id="mainSortSelect" onchange="onFilterChanged(1)">
+                        <select class="form-select form-select-sm py-2" id="mainSortSelect" data-onchange="onFilterChanged(1)">
                             <option value="newest" selected="@(Model.SortBy == "newest" ? "selected" : null)">@L["Newest First"]</option>
                             <option value="rating_desc" selected="@(Model.SortBy == "rating_desc" ? "selected" : null)">@L["Highest Rated"]</option>
                             <option value="price_asc" selected="@(Model.SortBy == "price_asc" ? "selected" : null)">@L["Price: Low to High"]</option>
@@ -249,6 +249,21 @@
                 </div>
 
             </div>
+            <partial name="_ListingGeoControls" model="@(new KrishiLink.Models.ViewModels.ListingGeoControlsViewModel {
+                DistrictSelectId = "desktopLocationSelect",
+                HideInMap = "godownResultsGrid,godownPaginationContainer",
+                PriceField = "pricePerTonPerMonthFormatted",
+                RadiusKm = Model.RadiusKm
+            })" />
+        </div>
+
+        <!-- A failed live update is said out loud, never left as a silent stale grid (QLT-05). -->
+        <div id="resultsError" class="alert alert-warning border-0 shadow-sm rounded-3 d-none" role="alert">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <i class="bi bi-wifi-off" aria-hidden="true"></i>
+                <span class="me-auto">@L["Could not load results. Check your connection and try again."]</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="resultsRetry">@L["Try again"]</button>
+            </div>
         </div>
 
         <!-- Results Summary & Active Filter Tags Bar -->
@@ -256,6 +271,7 @@
             <span class="text-secondary small fw-medium" id="resultsCountSummary">
                 @L["Showing"] <strong class="text-dark" id="resultsCountNumber">@Model.GodownList.Count</strong> @L["of"] <strong class="text-dark">@Model.TotalCount</strong> @L["storage facilities"]
             </span>
+            <span id="fuzzyMatchNote" class="small text-warning-emphasis @(Model.IsFuzzyMatch ? "" : "d-none")" role="status"><i class="bi bi-magic me-1" aria-hidden="true"></i>@L["No exact matches, so these are close matches for your search."]</span>
 
             <div class="d-flex flex-wrap align-items-center gap-1.5" id="activeFilterTagsContainer">
                 <!-- Injected via JS -->
@@ -263,6 +279,9 @@
         </div>
 
         <!-- Skeleton Loading Placeholders -->
+        <div id="listingMap" class="krishi-listing-map mb-2 d-none" role="region" aria-label="@L["Map of results"]"></div>
+        <p id="listingMapNote" class="small text-muted mb-4 d-none" role="status"></p>
+
         <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 d-none" id="skeletonLoadingContainer">
             @for (int i = 0; i < 6; i++)
             {
@@ -288,11 +307,11 @@
             {
                 <div class="col godown-card-col">
                     <div class="card krishi-card h-100 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column transition-hover"
-                         style="cursor: pointer;" onclick="location.href='@Url.Action("Details", "Godown", new { id = item.Id })'">
+                         style="cursor: pointer;" data-onclick="location.href='@Url.Action("Details", "Godown", new { id = item.Id })'">
 
                         <!-- Image & Badges -->
                         <div class="krishi-equipment-img-box">
-                            <img src="@item.ImageUrl" alt="@item.Name" loading="lazy" />
+                            <img src="@item.ImageUrl" alt="@item.Name" loading="lazy" width="400" height="300" decoding="async" />
 
                             <!-- Type Pill -->
                             <div class="position-absolute top-0 start-0 m-2.5">
@@ -320,7 +339,7 @@
                                         style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 2;"
                                         data-type="Godown" 
                                         data-id="@item.Id" 
-                                        onclick="event.stopPropagation(); KrishiFavorites.toggle(this);" 
+                                        data-onclick="event.stopPropagation(); KrishiFavorites.toggle(this);" 
                                         title="@(item.IsFavorite ? L["Remove from favorites"] : L["Add to favorites"])">
                                     <i class="bi @(item.IsFavorite ? "bi-heart-fill text-danger" : "bi-heart")"></i>
                                 </button>
@@ -410,7 +429,7 @@
 
                                 <a asp-controller="Godown" asp-action="Details" asp-route-id="@item.Id"
                                    class="btn btn-krishi-primary w-100 fw-semibold rounded-3 py-2 d-flex align-items-center justify-content-center gap-1.5 shadow-sm"
-                                   onclick="event.stopPropagation();">
+                                   data-onclick="event.stopPropagation();">
                                     <span>@L["View Details & Book"]</span>
                                     <i class="bi bi-arrow-right small"></i>
                                 </a>
@@ -427,20 +446,20 @@
             <nav aria-label='@L["Godown Listings Pagination"]'>
                 <ul class="pagination pagination-sm flex-wrap justify-content-center gap-1" id="godownPaginationList">
                     <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
-                        <a class="page-link rounded-pill px-3 me-1" href="javascript:void(0)" onclick="goToPage(@(Model.Page - 1))">
+                        <a class="page-link rounded-pill px-3 me-1" href="#" data-onclick="event.preventDefault(); goToPage(@(Model.Page - 1))">
                             <i class="bi bi-chevron-left me-1"></i> @L["Previous"]
                         </a>
                     </li>
                     @for (int p = 1; p <= Model.TotalPages; p++)
                     {
                         <li class="page-item @(p == Model.Page ? "active" : "")">
-                            <a class="page-link rounded-circle mx-0.5 text-center" style="width: 32px; height: 32px; line-height: 18px;" href="javascript:void(0)" onclick="goToPage(@p)">
+                            <a class="page-link rounded-circle mx-0.5 text-center" style="width: 32px; height: 32px; line-height: 18px;" href="#" data-onclick="event.preventDefault(); goToPage(@p)">
                                 @p
                             </a>
                         </li>
                     }
                     <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
-                        <a class="page-link rounded-pill px-3 ms-1" href="javascript:void(0)" onclick="goToPage(@(Model.Page + 1))">
+                        <a class="page-link rounded-pill px-3 ms-1" href="#" data-onclick="event.preventDefault(); goToPage(@(Model.Page + 1))">
                             @L["Next"] <i class="bi bi-chevron-right ms-1"></i>
                         </a>
                     </li>
@@ -538,8 +557,8 @@
             <input type="range" class="form-range" id="mobileCapacitySlider"
                    min="0" max="300" step="10"
                    value="@(Model.SelectedMinCapacity ?? 0)"
-                   oninput="syncCapacity(this.value)"
-                   onchange="onFilterChanged(1)" />
+                   data-oninput="syncCapacity(this.value)"
+                   data-onchange="onFilterChanged(1)" />
         </div>
 
         <!-- Mobile: Storage Type -->
@@ -552,7 +571,7 @@
                     <div class="form-check custom-checkbox w-100">
                         <input class="form-check-input mobile-type-filter" type="checkbox"
                                value="@type" id="mob_type_@type.Replace(" ", "_").Replace("(", "").Replace(")", "").Replace("&", "")"
-                               @(isChecked ? "checked" : "") onchange="syncMobileToDesktopType(); onFilterChanged(1);" />
+                               @(isChecked ? "checked" : "") data-onchange="syncMobileToDesktopType(); onFilterChanged(1);" />
                         <label class="form-check-label text-secondary small" for="mob_type_@type.Replace(" ", "_").Replace("(", "").Replace(")", "").Replace("&", "")">
                             @L[type]
                         </label>
@@ -575,21 +594,21 @@
                     <input type="number" class="form-control form-control-sm" id="mobileMinPriceInput"
                            min="@Model.MinPrice" max="@Model.MaxPrice" step="50" 
                            value="@(Model.SelectedMinPrice ?? Model.MinPrice)" 
-                           onchange="syncPriceInputsFromMobile(); onFilterChanged(1);" />
+                           data-onchange="syncPriceInputsFromMobile(); onFilterChanged(1);" />
                 </div>
                 <div class="col-6">
                     <label class="small text-muted mb-1" for="mobileMaxPriceInput">@L["Max ৳"]</label>
                     <input type="number" class="form-control form-control-sm" id="mobileMaxPriceInput"
                            min="@Model.MinPrice" max="@Model.MaxPrice" step="50" 
                            value="@(Model.SelectedMaxPrice ?? Model.MaxPrice)" 
-                           onchange="syncPriceInputsFromMobile(); onFilterChanged(1);" />
+                           data-onchange="syncPriceInputsFromMobile(); onFilterChanged(1);" />
                 </div>
             </div>
             <input type="range" class="form-range" id="mobilePriceSlider"
                    min="@Model.MinPrice" max="@Model.MaxPrice" step="50"
                    value="@(Model.SelectedMaxPrice ?? Model.MaxPrice)"
-                   oninput="syncSliderToMaxInput(this.value)"
-                   onchange="onFilterChanged(1)" />
+                   data-oninput="syncSliderToMaxInput(this.value)"
+                   data-onchange="onFilterChanged(1)" />
         </div>
 
         <!-- Mobile: Available Dates -->
@@ -600,13 +619,13 @@
                     <label class="small text-muted mb-1" for="mobileStartDateInput">@L["From"]</label>
                     <input type="date" class="form-control form-control-sm" id="mobileStartDateInput"
                            value="@(Model.AvailableStartDate.HasValue ? Model.AvailableStartDate.Value.ToString("yyyy-MM-dd") : "")"
-                           min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncMobileDates(); onFilterChanged(1);" />
+                           min="@DateTime.Today.ToString("yyyy-MM-dd")" data-onchange="syncMobileDates(); onFilterChanged(1);" />
                 </div>
                 <div class="col-6">
                     <label class="small text-muted mb-1" for="mobileEndDateInput">@L["To"]</label>
                     <input type="date" class="form-control form-control-sm" id="mobileEndDateInput"
                            value="@(Model.AvailableEndDate.HasValue ? Model.AvailableEndDate.Value.ToString("yyyy-MM-dd") : "")"
-                           min="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="syncMobileDates(); onFilterChanged(1);" />
+                           min="@DateTime.Today.ToString("yyyy-MM-dd")" data-onchange="syncMobileDates(); onFilterChanged(1);" />
                 </div>
             </div>
         </div>
@@ -616,7 +635,7 @@
             <button type="button" class="btn btn-krishi-primary py-2.5 fw-bold rounded-pill" data-bs-dismiss="offcanvas">
                 @L["View Results ("]<span id="mobileSheetResultCount">@Model.TotalCount</span>)
             </button>
-            <button type="button" class="btn btn-outline-danger btn-sm py-2 rounded-pill" onclick="resetAllFilters()">
+            <button type="button" class="btn btn-outline-danger btn-sm py-2 rounded-pill" data-onclick="resetAllFilters()">
                 @L["Clear Filters"]
             </button>
         </div>
@@ -836,11 +855,16 @@
             if (sortBy && sortBy !== 'newest') params.append('sortBy', sortBy);
             if (currentPage > 1) params.append('page', currentPage);
 
+            window.KrishiListingGeo?.appendParams(params);
+            document.getElementById('resultsError')?.classList.add('d-none');
+
             const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
             window.history.replaceState({}, '', newUrl);
+            const fetchParams = new URLSearchParams(params);
+            window.KrishiListingGeo?.fetchParams(fetchParams);
 
             try {
-                const response = await fetch('/Godown/FilterData?' + params.toString(), {
+                const response = await fetch('/Godown/FilterData?' + fetchParams.toString(), {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
 
@@ -849,8 +873,10 @@
                 const data = await response.json();
                 renderGodownResults(data);
                 renderPagination(data);
+                if (window.KrishiListingGeo?.isMap()) window.KrishiListingGeo.render(data);
             } catch (err) {
                 console.error('Filter fetch failed:', err);
+                document.getElementById('resultsError')?.classList.remove('d-none');
                 if (grid) grid.classList.remove('d-none');
             } finally {
                 if (skeleton) skeleton.classList.add('d-none');
@@ -865,6 +891,7 @@
             const mobileCount = document.getElementById('mobileSheetResultCount');
             const mobileFilterBadge = document.getElementById('mobileFilterBadge');
 
+            document.getElementById('fuzzyMatchNote')?.classList.toggle('d-none', !data.fuzzy);
             const count = data.totalCount || 0;
             if (countNum) countNum.innerText = (data.items ? data.items.length : 0);
             if (heroCount) heroCount.innerText = '@L["{0} Storage Options", "__COUNT__"]'.replace('__COUNT__', count);
@@ -926,11 +953,11 @@
                     return `
                     <div class="col godown-card-col">
                         <div class="card krishi-card h-100 border-0 shadow-sm rounded-4 overflow-hidden d-flex flex-column transition-hover"
-                             style="cursor: pointer;" onclick="location.href='${item.detailsUrl}'">
+                             style="cursor: pointer;" data-onclick="location.href='${item.detailsUrl}'">
 
                             <!-- Image & Badges -->
                             <div class="krishi-equipment-img-box">
-                                <img src="${item.imageUrl}" alt="${item.name}" loading="lazy" />
+                                <img src="${item.imageUrl}" alt="${item.name}" loading="lazy" width="400" height="300" decoding="async" />
 
                                 <div class="position-absolute top-0 start-0 m-2.5">
                                     <span class="badge bg-white text-dark shadow-sm rounded-pill px-2.5 py-1 small fw-semibold opacity-95">
@@ -948,7 +975,7 @@
                                             style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; z-index: 2;"
                                             data-type="Godown" 
                                             data-id="${item.id}" 
-                                            onclick="event.stopPropagation(); KrishiFavorites.toggle(this);" 
+                                            data-onclick="event.stopPropagation(); KrishiFavorites.toggle(this);" 
                                             title="${item.isFavorite ? '@L["Remove from favorites"]' : '@L["Add to favorites"]'}">
                                         <i class="bi ${item.isFavorite ? 'bi-heart-fill text-danger' : 'bi-heart'}"></i>
                                     </button>
@@ -1007,7 +1034,7 @@
 
                                     <a href="${item.detailsUrl}"
                                        class="btn btn-krishi-primary w-100 fw-semibold rounded-3 py-2 d-flex align-items-center justify-content-center gap-1.5 shadow-sm"
-                                       onclick="event.stopPropagation();">
+                                       data-onclick="event.stopPropagation();">
                                         <span>@L["View Details & Book"]</span>
                                         <i class="bi bi-arrow-right small"></i>
                                     </a>
@@ -1034,7 +1061,7 @@
             container.classList.remove('d-none');
             let html = `
                 <li class="page-item ${!data.hasPreviousPage ? 'disabled' : ''}">
-                    <a class="page-link rounded-pill px-3 me-1" href="javascript:void(0)" onclick="goToPage(${data.page - 1})">
+                    <a class="page-link rounded-pill px-3 me-1" href="#" data-onclick="event.preventDefault(); goToPage(${data.page - 1})">
                         <i class="bi bi-chevron-left me-1"></i> @L["Previous"]
                     </a>
                 </li>
@@ -1043,7 +1070,7 @@
             for (let p = 1; p <= data.totalPages; p++) {
                 html += `
                     <li class="page-item ${p === data.page ? 'active' : ''}">
-                        <a class="page-link rounded-circle mx-0.5 text-center" style="width: 32px; height: 32px; line-height: 18px;" href="javascript:void(0)" onclick="goToPage(${p})">
+                        <a class="page-link rounded-circle mx-0.5 text-center" style="width: 32px; height: 32px; line-height: 18px;" href="#" data-onclick="event.preventDefault(); goToPage(${p})">
                             ${p}
                         </a>
                     </li>
@@ -1052,7 +1079,7 @@
 
             html += `
                 <li class="page-item ${!data.hasNextPage ? 'disabled' : ''}">
-                    <a class="page-link rounded-pill px-3 ms-1" href="javascript:void(0)" onclick="goToPage(${data.page + 1})">
+                    <a class="page-link rounded-pill px-3 ms-1" href="#" data-onclick="event.preventDefault(); goToPage(${data.page + 1})">
                         @L["Next"] <i class="bi bi-chevron-right ms-1"></i>
                     </a>
                 </li>
@@ -1068,7 +1095,7 @@
             let html = '';
             if (search && search.trim()) {
                 html += `<span class="badge bg-light text-dark border px-2.5 py-1.5 rounded-pill small d-inline-flex align-items-center gap-1">
-                    @L["Search:"] "${search.trim()}" <i class="bi bi-x-circle-fill text-muted ms-1" style="cursor:pointer;" onclick="clearSearch()"></i>
+                    @L["Search:"] "${search.trim()}" <i class="bi bi-x-circle-fill text-muted ms-1" style="cursor:pointer;" data-onclick="clearSearch()"></i>
                 </span>`;
             }
             if (types && types.length > 0) {
@@ -1169,6 +1196,7 @@
             );
         });
     </script>
+    <script src="~/js/listing-map.js" asp-append-version="true"></script>
 
     <!-- Save Search Modal -->
     <div class="modal fade" id="saveSearchModal" tabindex="-1" aria-labelledby="saveSearchModalLabel" aria-hidden="true">

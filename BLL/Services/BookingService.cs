@@ -9,9 +9,14 @@ using Microsoft.EntityFrameworkCore;
 namespace KrishiLink.BLL.Services
 {
     /// <summary>Farmer-side view of their own equipment rentals and godown storage bookings.</summary>
-    public interface IBookingService
+    /// <summary>The read-only booking history, split out so the AI assistant cannot reach the cancel/modify paths.</summary>
+    public interface IBookingQueries
     {
         Task<BookingHistoryViewModel> GetHistoryAsync(string farmerId, string tab, string status, DateTime? from, DateTime? to, string? search);
+    }
+
+    public interface IBookingService : IBookingQueries
+    {
         Task<FarmerDashboardViewModel> GetDashboardAsync(string farmerId);
 
         /// <summary>Farmer cancels their own pending, unpaid-accepted, or paid-but-not-started booking. Paid bookings are refunded in the same operation.</summary>
@@ -207,7 +212,7 @@ namespace KrishiLink.BLL.Services
 
         public async Task<(string? Error, decimal? Refunded)> CancelAsync(string farmerId, string bookingType, int bookingId)
         {
-            await using var transaction = await _rentals.BeginWorkflowAsync();
+            await using var transaction = await _rentals.BeginWorkflowAsync(await FarmerBookingLocksAsync(farmerId, bookingType, bookingId));
             if (bookingType.Equals("Equipment", StringComparison.OrdinalIgnoreCase))
             {
                 var b = await _rentals.QueryTracked()
@@ -280,6 +285,19 @@ namespace KrishiLink.BLL.Services
             return (null, refundedTons);
         }
 
+        /// <summary>
+        /// The booking's listing (capacity, owner decisions on the same booking) and the farmer (points and vouchers).
+        /// Non-"Equipment" types are godown bookings, matching how Cancel and Modify branch.
+        /// </summary>
+        private async Task<WorkflowLock[]> FarmerBookingLocksAsync(string farmerId, string bookingType, int bookingId)
+        {
+            var isEquipment = bookingType.Equals("Equipment", StringComparison.OrdinalIgnoreCase);
+            var listingId = isEquipment
+                ? await _rentals.Query().Where(x => x.Id == bookingId).Select(x => (int?)x.EquipmentId).FirstOrDefaultAsync()
+                : await _storage.Query().Where(x => x.Id == bookingId).Select(x => (int?)x.GodownId).FirstOrDefaultAsync();
+            return new[] { isEquipment ? WorkflowLock.Equipment(listingId ?? 0) : WorkflowLock.Godown(listingId ?? 0), WorkflowLock.User(farmerId) };
+        }
+
         /// <summary>Flips the booking to Cancelled and, when the farmer had paid, refunds in the same unit of work. Returns the refunded amount.</summary>
         private async Task<decimal?> CancelCoreAsync(IPayableBooking b)
         {
@@ -345,7 +363,7 @@ namespace KrishiLink.BLL.Services
             if (endDate.Date < startDate.Date)
                 return ("End date cannot be before start date.", false);
 
-            await using var transaction = await _rentals.BeginWorkflowAsync();
+            await using var transaction = await _rentals.BeginWorkflowAsync(await FarmerBookingLocksAsync(farmerId, bookingType, bookingId));
 
             if (bookingType.Equals("Equipment", StringComparison.OrdinalIgnoreCase))
             {
@@ -653,7 +671,7 @@ namespace KrishiLink.BLL.Services
                     ListingId = b.EquipmentId,
                     ItemName = b.Equipment.Name,
                     Category = b.Equipment.Category,
-                    ImageUrl = ListingFormat.Split(b.Equipment.ImageUrls).FirstOrDefault() ?? string.Empty,
+                    ImageUrl = ListingFormat.FirstThumbnail(b.Equipment.ImageUrls),
                     Location = b.Equipment.Location,
                     StartDate = b.StartDate,
                     EndDate = b.EndDate,
@@ -731,7 +749,7 @@ namespace KrishiLink.BLL.Services
                     ListingId = g.GodownId,
                     ItemName = g.Godown.Name,
                     Category = g.Godown.StorageType,
-                    ImageUrl = ListingFormat.Split(g.Godown.ImageUrls).FirstOrDefault() ?? string.Empty,
+                    ImageUrl = ListingFormat.FirstThumbnail(g.Godown.ImageUrls),
                     Location = g.Godown.Location,
                     StartDate = g.StartDate,
                     EndDate = g.EndDate,
@@ -871,7 +889,7 @@ namespace KrishiLink.BLL.Services
                 ListingId = e.Id,
                 ItemName = e.Name,
                 Category = e.Category,
-                ImageUrl = ListingFormat.Split(e.ImageUrls).FirstOrDefault() ?? string.Empty,
+                ImageUrl = ListingFormat.FirstThumbnail(e.ImageUrls),
                 Location = e.Location,
                 Latitude = e.Latitude,
                 Longitude = e.Longitude,
@@ -932,7 +950,7 @@ namespace KrishiLink.BLL.Services
                 ListingId = g.Id,
                 ItemName = g.Name,
                 Category = g.StorageType,
-                ImageUrl = ListingFormat.Split(g.ImageUrls).FirstOrDefault() ?? string.Empty,
+                ImageUrl = ListingFormat.FirstThumbnail(g.ImageUrls),
                 Location = g.Location,
                 Latitude = g.Latitude,
                 Longitude = g.Longitude,
@@ -1056,7 +1074,7 @@ namespace KrishiLink.BLL.Services
                 ItemName = e.Name,
                 BookingType = "Equipment",
                 Category = e.Category,
-                ImageUrl = ListingFormat.Split(e.ImageUrls).FirstOrDefault() ?? string.Empty,
+                ImageUrl = ListingFormat.FirstThumbnail(e.ImageUrls),
                 Location = e.Location,
                 StartDate = b.StartDate,
                 EndDate = b.EndDate,
@@ -1089,7 +1107,7 @@ namespace KrishiLink.BLL.Services
                 ItemName = g.Name,
                 BookingType = "Godown",
                 Category = g.StorageType,
-                ImageUrl = ListingFormat.Split(g.ImageUrls).FirstOrDefault() ?? string.Empty,
+                ImageUrl = ListingFormat.FirstThumbnail(g.ImageUrls),
                 Location = g.Location,
                 StartDate = b.StartDate,
                 EndDate = b.EndDate,

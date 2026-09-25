@@ -115,7 +115,7 @@ else
                     @if (Model.BadgeWidget.CurrentRank.HasValue)
                     {
                         <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-0.5 fw-bold" style="font-size: 0.72rem;">
-                            🏆 @L["Leaderboard Rank"] #@Model.BadgeWidget.CurrentRank.Value
+                            <i class="bi bi-trophy-fill" aria-hidden="true"></i> @L["Leaderboard Rank"] #@Model.BadgeWidget.CurrentRank.Value
                         </span>
                     }
                 </div>
@@ -259,7 +259,7 @@ else
                 <div class="col-12 col-sm-6 col-lg-3 @(i >= previewCap ? "d-none extra-listing" : "")">
                     <div class="card krishi-card border-0 shadow-sm h-100 overflow-hidden">
                         <div class="krishi-card-img-wrapper position-relative" style="height: 140px;">
-                            <img src="@item.ImageUrl" class="w-100 h-100 object-fit-cover" alt="@item.Name" />
+                            <img src="@item.ImageUrl" class="w-100 h-100 object-fit-cover" alt="@item.Name" width="400" height="300" loading="lazy" decoding="async" />
                             <span class="krishi-badge position-absolute top-0 end-0 m-2 shadow-sm @(item.Status == "Available" ? "krishi-badge-available" : item.Status == "Rented" ? "krishi-badge-pending" : "krishi-badge-unavailable")">
                                 @L[item.Status]
                             </span>
@@ -320,7 +320,7 @@ else
         {
             <div class="text-center mt-3">
                 <button type="button" class="btn btn-krishi-outline rounded-pill px-4 fw-semibold" id="showAllListingsBtn"
-                        onclick="document.querySelectorAll('.extra-listing').forEach(el => el.classList.remove('d-none')); this.remove();">
+                        data-onclick="showHidden('.extra-listing', this)">
                     @L["Show all {0} listings", Model.Listings.Count] <i class="bi bi-chevron-down"></i>
                 </button>
             </div>
@@ -360,7 +360,7 @@ else
             const accepted = decision === 'accept';
             KrishiRequests.optimisticDecision({
                 url: RESPOND_URL, id, decision, reason, row,
-                acceptedMsg: '@L["Rental request accepted ✓"]',
+                acceptedMsg: '@L["Rental request accepted"]',
                 rejectedMsg: '@L["Rental request rejected"]',
                 undoDelay: UNDO_DELAY_MS,
                 onApply: () => { if (accepted) bumpActiveRentals(1); },

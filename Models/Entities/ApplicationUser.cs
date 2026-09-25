@@ -16,6 +16,9 @@ namespace KrishiLink.Models.Entities
         public string? Specialization { get; set; }
         public DateTime? OnboardingCompletedAt { get; set; }
 
+        /// <summary>How land sizes are shown to this user; null means decimals (shotangsho).</summary>
+        public LandUnit? PreferredLandUnit { get; set; }
+
         /// <summary>First day of the last month whose statement was emailed by the scheduler (owners only).</summary>
         public DateTime? LastStatementSentMonth { get; set; }
 

@@ -112,23 +112,38 @@ namespace KrishiLink.BLL.Services
                 throw new ArgumentException(string.Join(" ", errors), nameof(files));
 
             var attemptedKeys = new List<string>();
+            var thumbnailKeys = new List<string>();
             try
             {
                 foreach (var file in uploads)
                 {
                     var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-                    var key = $"{folder}/{Guid.NewGuid():N}{extension}";
+                    // Public listing photos also get a small WebP for grids on slow connections (REA-02); identity documents never do.
+                    byte[]? thumbnail = null;
+                    if (!isPrivate)
+                    {
+                        await using var source = file.OpenReadStream();
+                        thumbnail = ImageVariants.CreateThumbnail(source);
+                    }
+                    var key = ImageVariants.OriginalKey(folder, Guid.NewGuid().ToString("N"), extension, hasThumbnail: thumbnail is not null);
                     // Include the in-flight object: a transport failure may occur after Storage persisted it.
                     attemptedKeys.Add(key);
-                    await using var stream = file.OpenReadStream();
-                    await _storage.UploadAsync(key, isPrivate, stream, ContentType(extension), CancellationToken.None);
+                    await using (var stream = file.OpenReadStream())
+                        await _storage.UploadAsync(key, isPrivate, stream, ContentType(extension), CancellationToken.None);
+
+                    if (thumbnail is not null && ImageVariants.ThumbnailKey(key) is { } thumbKey)
+                    {
+                        thumbnailKeys.Add(thumbKey);
+                        await using var thumbStream = new MemoryStream(thumbnail, writable: false);
+                        await _storage.UploadAsync(thumbKey, false, thumbStream, "image/webp", CancellationToken.None);
+                    }
                 }
             }
             catch (Exception uploadError)
             {
                 try
                 {
-                    await _storage.DeleteAsync(attemptedKeys, isPrivate, CancellationToken.None);
+                    await _storage.DeleteAsync(attemptedKeys.Concat(thumbnailKeys), isPrivate, CancellationToken.None);
                 }
                 catch (Exception cleanupError)
                 {
@@ -145,7 +160,10 @@ namespace KrishiLink.BLL.Services
             var keys = (urls ?? Enumerable.Empty<string>())
                 .Where(url => url is not null && url.StartsWith(_storage.PublicObjectPrefix, StringComparison.Ordinal))
                 .Select(url => url[_storage.PublicObjectPrefix.Length..])
-                .Where(key => IsObjectKey(key, folder));
+                .Where(key => IsObjectKey(key, folder))
+                .ToList();
+            // A thumbnail goes with its original.
+            keys.AddRange(keys.Select(ImageVariants.ThumbnailKey).OfType<string>().ToList());
             return _storage.DeleteAsync(keys, false, CancellationToken.None);
         }
 
@@ -179,7 +197,8 @@ namespace KrishiLink.BLL.Services
         {
             if (key is null || !key.StartsWith(folder + "/", StringComparison.Ordinal)) return false;
             var fileName = key[(folder.Length + 1)..];
-            return Regex.IsMatch(fileName, @"\A[a-f0-9]{32}\.(?:jpg|jpeg|png|webp)\z", RegexOptions.CultureInvariant);
+            // {guid}.{ext} (before thumbnails), {guid}_o.{ext} (with a thumbnail), {guid}_w400.webp (the thumbnail).
+            return Regex.IsMatch(fileName, @"\A[a-f0-9]{32}(?:(?:_o)?\.(?:jpg|jpeg|png|webp)|_w400\.webp)\z", RegexOptions.CultureInvariant);
         }
 
         private static string ContentType(string extension) => extension switch

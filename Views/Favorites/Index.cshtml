@@ -66,9 +66,8 @@
     <div class="tab-content" id="favoritesTabContent">
         <!-- 1. Equipment Tab -->
         <div class="tab-pane fade show active" id="equipment-pane" role="tabpanel" aria-labelledby="equipment-tab" tabindex="0">
-            @if (!Model.EquipmentFavorites.Any())
-            {
-                <div class="card krishi-card border-0 shadow-sm rounded-4 p-5 text-center my-3 bg-white">
+            @* Always rendered: removing the last favourite on this page reveals it without a reload (QLT-05). *@
+                <div class="card krishi-card border-0 shadow-sm rounded-4 p-5 text-center my-3 bg-white @(Model.EquipmentFavorites.Any() ? "d-none" : "")" data-favorites-empty>
                     <div class="rounded-circle bg-danger-subtle text-danger mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 72px; height: 72px;">
                         <i class="bi bi-heart fs-1"></i>
                     </div>
@@ -82,9 +81,6 @@
                         </a>
                     </div>
                 </div>
-            }
-            else
-            {
                 <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
                     @foreach (var item in Model.EquipmentFavorites)
                     {
@@ -94,7 +90,7 @@
                                 <div class="position-relative bg-light text-center" style="height: 200px;">
                                     @if (!string.IsNullOrEmpty(item.ImageUrl))
                                     {
-                                        <img src="@item.ImageUrl" class="w-100 h-100 object-fit-cover" alt="@item.Name" loading="lazy" />
+                                        <img src="@item.ImageUrl" class="w-100 h-100 object-fit-cover" alt="@item.Name" loading="lazy" width="400" height="300" decoding="async" />
                                     }
                                     else
                                     {
@@ -118,7 +114,7 @@
                                                 style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;"
                                                 data-type="Equipment" 
                                                 data-id="@item.ListingId" 
-                                                onclick="KrishiFavorites.toggle(this);"
+                                                data-onclick="KrishiFavorites.toggle(this);"
                                                 title="@L["Remove from favorites"]">
                                             <i class="bi bi-heart-fill text-danger"></i>
                                         </button>
@@ -190,14 +186,12 @@
                         </div>
                     }
                 </div>
-            }
         </div>
 
         <!-- 2. Godown Tab -->
         <div class="tab-pane fade" id="godown-pane" role="tabpanel" aria-labelledby="godown-tab" tabindex="0">
-            @if (!Model.GodownFavorites.Any())
-            {
-                <div class="card krishi-card border-0 shadow-sm rounded-4 p-5 text-center my-3 bg-white">
+            @* Always rendered: removing the last favourite on this page reveals it without a reload (QLT-05). *@
+                <div class="card krishi-card border-0 shadow-sm rounded-4 p-5 text-center my-3 bg-white @(Model.GodownFavorites.Any() ? "d-none" : "")" data-favorites-empty>
                     <div class="rounded-circle bg-danger-subtle text-danger mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 72px; height: 72px;">
                         <i class="bi bi-heart fs-1"></i>
                     </div>
@@ -211,9 +205,6 @@
                         </a>
                     </div>
                 </div>
-            }
-            else
-            {
                 <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
                     @foreach (var item in Model.GodownFavorites)
                     {
@@ -223,7 +214,7 @@
                                 <div class="position-relative bg-light text-center" style="height: 200px;">
                                     @if (!string.IsNullOrEmpty(item.ImageUrl))
                                     {
-                                        <img src="@item.ImageUrl" class="w-100 h-100 object-fit-cover" alt="@item.Name" loading="lazy" />
+                                        <img src="@item.ImageUrl" class="w-100 h-100 object-fit-cover" alt="@item.Name" loading="lazy" width="400" height="300" decoding="async" />
                                     }
                                     else
                                     {
@@ -247,7 +238,7 @@
                                                 style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;"
                                                 data-type="Godown" 
                                                 data-id="@item.ListingId" 
-                                                onclick="KrishiFavorites.toggle(this);"
+                                                data-onclick="KrishiFavorites.toggle(this);"
                                                 title="@L["Remove from favorites"]">
                                             <i class="bi bi-heart-fill text-danger"></i>
                                         </button>
@@ -319,7 +310,6 @@
                         </div>
                     }
                 </div>
-            }
         </div>
     </div>
 </div>

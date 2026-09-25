@@ -36,5 +36,8 @@ namespace KrishiLink.DAL.Repositories
 
         public Task<WorkflowTransaction> BeginWorkflowAsync(CancellationToken ct = default) =>
             WorkflowTransaction.BeginAsync(_db, ct);
+
+        public Task<WorkflowTransaction> BeginWorkflowAsync(IEnumerable<WorkflowLock> locks, CancellationToken ct = default) =>
+            WorkflowTransaction.BeginAsync(_db, locks, ct);
     }
 }
