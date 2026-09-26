@@ -2,6 +2,13 @@
 @*
     "What you'll need": the machinery and storage a crop's stages call for, each a pre-filtered, date-scoped search (ADV-04).
 *@
+@using System.Globalization
+@{
+    var bn = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+    string ToBn(object? val) => val is null ? "" : (bn ? string.Concat(val.ToString()!.Select(c => c >= '0' && c <= '9' ? (char)('০' + (c - '0')) : c)) : val.ToString()!);
+    string[] bnMonths = new[] { "", "জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর" };
+    string FormatDate(DateTime d) => bn ? $"{ToBn(d.Day)} {bnMonths[d.Month]}" : d.ToString("d MMM");
+}
 @if (Model.Needs.Count > 0)
 {
     <div class="krishi-crop-needs">
@@ -18,7 +25,7 @@
                 <li>
                     <a class="krishi-crop-need" href="@need.SearchUrl(Model.District)">
                         <i class="bi @(need.IsStorage ? "bi-box-seam" : "bi-truck")" aria-hidden="true"></i>
-                        <span><strong>@L[need.Category]</strong> · @stage · @L["from {0}", need.From.ToString("d MMM")]</span>
+                        <span><strong>@L[need.Category]</strong> · @stage · @L["from {0}", FormatDate(need.From)]</span>
                     </a>
                 </li>
             }

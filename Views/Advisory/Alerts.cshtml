@@ -2,6 +2,7 @@
 @{
     ViewData["Title"] = L["Pest & Disease Alerts"].Value;
     var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+    string ToBn(object? val) => val is null ? "" : (isBangla ? string.Concat(val.ToString()!.Select(c => c >= '0' && c <= '9' ? (char)('০' + (c - '0')) : c)) : val.ToString()!);
 }
 
 @if (!Model.IsCustomSimulated && Model.Weather is { } snapshot)
@@ -82,7 +83,7 @@
                         <i class="bi @(Model.Weather.IsLive ? "bi-broadcast" : "bi-cloud-slash") me-1"></i>@L[Model.Weather.FreshnessLabel]
                     </span>
                     <span class="badge bg-white bg-opacity-20 text-white px-2.5 py-1 rounded-pill small">
-                        @Model.Weather.Division @L["Division"]
+                        @L[Model.Weather.Division] @L["Division"]
                     </span>
                     @if (Model.IsCustomSimulated)
                     {
@@ -293,12 +294,12 @@
                     <div class="col-12 col-md-3">
                         <label class="form-label small fw-bold text-dark mb-1">@L["Weather Condition:"]</label>
                         <select name="condition" class="form-select form-select-sm">
-                            <option value="Cloudy with Showers">Cloudy with Showers</option>
-                            <option value="Dense Fog & High Moisture">Dense Fog & High Moisture</option>
-                            <option value="Monsoon Rain & High Humidity">Monsoon Rain & High Humidity</option>
-                            <option value="Overcast with Light Drizzle">Overcast with Light Drizzle</option>
-                            <option value="Warm & Humid with Stagnant Air">Warm & Humid with Stagnant Air</option>
-                            <option value="Clear & Dry Skies">Clear & Dry Skies</option>
+                            <option value="Cloudy with Showers">@L["Cloudy with Showers"]</option>
+                            <option value="Dense Fog & High Moisture">@L["Dense Fog & High Moisture"]</option>
+                            <option value="Monsoon Rain & High Humidity">@L["Monsoon Rain & High Humidity"]</option>
+                            <option value="Overcast with Light Drizzle">@L["Overcast with Light Drizzle"]</option>
+                            <option value="Warm & Humid with Stagnant Air">@L["Warm & Humid with Stagnant Air"]</option>
+                            <option value="Clear & Dry Skies">@L["Clear & Dry Skies"]</option>
                         </select>
                     </div>
 
@@ -375,7 +376,7 @@
                                         @foreach (var cr in alert.TargetCrops)
                                         {
                                             <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle rounded-pill px-2 py-0.5">
-                                                @cr
+                                                @L[cr]
                                             </span>
                                         }
                                     </div>
@@ -488,14 +489,14 @@
                         <div class="d-flex align-items-center justify-content-between w-100 me-3 flex-wrap gap-2">
                             <div class="d-flex align-items-center gap-2">
                                 <span class="badge @(rule.Severity == "Critical" ? "bg-danger" : "bg-warning text-dark") rounded-pill px-2.5 py-1 small">
-                                    @rule.Severity
+                                    @L[rule.Severity]
                                 </span>
                                 <span>@(isBangla ? rule.BanglaName : rule.DiseaseName)</span>
                             </div>
                             <div class="text-muted small">
-                                <i class="bi bi-thermometer-half"></i> @rule.MinTemp°–@rule.MaxTemp°C |
-                                <i class="bi bi-moisture"></i> @rule.MinHumidity%+ |
-                                <span class="badge bg-white text-dark border">@string.Join(", ", rule.TargetCrops.Take(2))</span>
+                                <i class="bi bi-thermometer-half"></i> @ToBn(rule.MinTemp)°–@ToBn(rule.MaxTemp)°C |
+                                <i class="bi bi-moisture"></i> @ToBn(rule.MinHumidity)%+ |
+                                <span class="badge bg-white text-dark border">@string.Join(", ", rule.TargetCrops.Take(2).Select(c => L[c].Value))</span>
                             </div>
                         </div>
                     </button>
@@ -505,7 +506,7 @@
                         <div class="row g-3">
                             <div class="col-12 col-md-6">
                                 <strong class="text-muted small text-uppercase d-block mb-1">@L["Pathogen & Biology"]</strong>
-                                <p class="small text-dark mb-2">@rule.PathogenOrPest (@rule.Category)</p>
+                                <p class="small text-dark mb-2">@rule.PathogenOrPest (@L[rule.Category])</p>
 
                                 <strong class="text-muted small text-uppercase d-block mb-1">@L["Weather Trigger Mechanism"]</strong>
                                 <p class="small text-secondary mb-0">@(isBangla ? rule.BanglaTriggerReason : rule.TriggerReason)</p>

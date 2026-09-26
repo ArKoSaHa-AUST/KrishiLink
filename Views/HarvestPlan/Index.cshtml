@@ -3,6 +3,25 @@
     ViewData["Title"] = L["Harvest Plans"];
     var successMsg = TempData["Success"] as string ?? TempData["SuccessMessage"] as string;
     var errorMsg = TempData["Error"] as string ?? TempData["ErrorMessage"] as string;
+    var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+    string ToBn(object? val) => val is null ? "" : (isBangla ? string.Concat(val.ToString()!.Select(c => c >= '0' && c <= '9' ? (char)('০' + (c - '0')) : c)) : val.ToString()!);
+    string FormatDateRange(string? range)
+    {
+        if (string.IsNullOrWhiteSpace(range) || range.Equals("No items", StringComparison.OrdinalIgnoreCase)) return L["No items"].Value;
+        if (!isBangla) return range;
+        var r = range;
+        var months = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Jan"] = "জানু", ["Feb"] = "ফেব্রু", ["Mar"] = "মার্চ", ["Apr"] = "এপ্রিল",
+            ["May"] = "মে", ["Jun"] = "জুন", ["Jul"] = "জুলাই", ["Aug"] = "আগস্ট",
+            ["Sep"] = "সেপ্টে", ["Oct"] = "অক্টো", ["Nov"] = "নভে", ["Dec"] = "ডিসে"
+        };
+        foreach (var m in months)
+        {
+            r = System.Text.RegularExpressions.Regex.Replace(r, $@"\b{m.Key}\b", m.Value, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+        return ToBn(r);
+    }
 }
 
 <div class="container py-4">
@@ -154,12 +173,12 @@
                                     @if (!string.IsNullOrWhiteSpace(plan.Crop))
                                     {
                                         <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle rounded-pill me-1">
-                                            <i class="bi bi-flower1 me-1"></i>@plan.Crop
+                                            <i class="bi bi-flower1 me-1"></i>@L[plan.Crop]
                                         </span>
                                     }
                                 </div>
                                 <span class="badge @statusBadgeClass rounded-pill px-3 py-1.5 fw-semibold text-uppercase" style="font-size: 0.75rem;">
-                                    @plan.Status
+                                    @L[plan.Status.ToString()]
                                 </span>
                             </div>
 
@@ -171,18 +190,18 @@
                             <div class="bg-light rounded-3 p-3 mb-3">
                                 <div class="row g-2 text-center">
                                     <div class="col-4 border-end">
-                                        <div class="text-muted small">@L["Items"]</div>
-                                        <div class="fw-bold fs-5 text-dark">@plan.ItemCount <span class="fs-6 fw-normal text-muted">/ 10</span></div>
+                                        <div class="text-muted small">@L["items"]</div>
+                                        <div class="fw-bold fs-5 text-dark">@ToBn(plan.ItemCount) <span class="fs-6 fw-normal text-muted">/ @ToBn(10)</span></div>
                                     </div>
                                     <div class="col-4 border-end">
                                         <div class="text-muted small">@L["Target Window"]</div>
                                         <div class="fw-semibold small text-dark mt-1 text-truncate" title="@plan.DateRangeSummary">
-                                            @plan.DateRangeSummary
+                                            @FormatDateRange(plan.DateRangeSummary)
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="text-muted small">@L["Est. Gross"]</div>
-                                        <div class="fw-bold fs-5 text-success">৳@plan.TotalEstimatedGross.ToString("N0")</div>
+                                        <div class="fw-bold fs-5 text-success">৳@ToBn(plan.TotalEstimatedGross.ToString("N0"))</div>
                                     </div>
                                 </div>
                             </div>

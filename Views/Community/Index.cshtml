@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="~/css/community.css" asp-append-version="true" />
 }
 
-<div class="community-hub-wrapper py-4 py-lg-5">
+<div class="community-hub-wrapper pt-0 pb-4">
     <div class="container-xl" style="max-width: 1440px;">
         <div class="row g-4 g-xl-4 justify-content-center">
 
@@ -15,7 +15,7 @@
             <!-- 1. LEFT SIDEBAR: PROFILE, NAV, GEO FILTER  -->
             <!-- ========================================== -->
             <aside class="col-lg-3 d-none d-lg-block community-sidebar-left">
-                <div class="sticky-top" style="top: 88px; z-index: 10;">
+                <div class="sticky-top krishi-sticky-scroll" style="z-index: 10;">
                     <!-- User Profile Card -->
                     @if (Model.IsAuthenticated && Model.CurrentUser != null)
                     {
@@ -283,7 +283,7 @@
             <!-- 3. RIGHT SIDEBAR: EMERGENCY, WEATHER, LEADER-->
             <!-- ========================================== -->
             <aside class="col-lg-3 col-xl-3 d-none d-xl-block community-sidebar-right">
-                <div class="sticky-top" style="top: 88px; z-index: 10;">
+                <div class="sticky-top krishi-sticky-scroll" style="z-index: 10;">
 
                     <!-- Emergency District Dispatch Board -->
                     @if (Model.EmergencyAlerts != null && Model.EmergencyAlerts.Any())

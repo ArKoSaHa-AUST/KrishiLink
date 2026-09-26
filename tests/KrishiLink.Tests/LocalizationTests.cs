@@ -60,6 +60,40 @@ public class LocalizationTests
         Assert.Empty(mismatched);
     }
 
+    [Fact]
+    public void Views_do_not_use_undefined_resource_keys()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "KrishiLink.csproj")))
+            dir = dir.Parent;
+        Assert.NotNull(dir);
+
+        var en = Load("en");
+        var viewsDir = Path.Combine(dir!.FullName, "Views");
+        var viewFiles = Directory.GetFiles(viewsDir, "*.cshtml", SearchOption.AllDirectories);
+        var pattern = new System.Text.RegularExpressions.Regex(@"L\[""([^""]+)""\]");
+
+        var missing = new Dictionary<string, List<string>>();
+        foreach (var file in viewFiles)
+        {
+            var text = File.ReadAllText(file);
+            foreach (System.Text.RegularExpressions.Match match in pattern.Matches(text))
+            {
+                var key = match.Groups[1].Value;
+                if (!en.ContainsKey(key))
+                {
+                    if (!missing.ContainsKey(key)) missing[key] = new List<string>();
+                    var rel = Path.GetRelativePath(dir.FullName, file);
+                    if (!missing[key].Contains(rel)) missing[key].Add(rel);
+                }
+            }
+        }
+
+        var json = System.Text.Json.JsonSerializer.Serialize(missing, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "missing_view_keys.json"), json);
+        Assert.Empty(missing);
+    }
+
     private static HashSet<string> Placeholders(string text) =>
         System.Text.RegularExpressions.Regex.Matches(text, @"\{(\d+)(?:[:,][^}]*)?\}").Select(m => m.Groups[1].Value).ToHashSet();
 }

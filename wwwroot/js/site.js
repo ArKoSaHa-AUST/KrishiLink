@@ -3,6 +3,273 @@
  * Shared helper functions for modals, navigation, and user interactions.
  */
 
+// ===========================================================================
+// KrishiLink Universal Bengali Numeral & Frontend Localization Engine
+// Automatically transforms ASCII digits (0-9) to Bengali numerals (০-৯)
+// across all visible text nodes and dynamic DOM updates when in Bangla mode.
+// ===========================================================================
+(function () {
+    'use strict';
+
+    const BN_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    const ASCII_DIGIT_REGEX = /[0-9]/;
+    const ASCII_DIGIT_GLOBAL_REGEX = /[0-9]/g;
+
+    /**
+     * Converts any ASCII digits in a string or number to Bengali numerals (০-৯).
+     * @param {string|number} input
+     * @returns {string}
+     */
+    window.toBanglaDigits = function (input) {
+        if (input === null || input === undefined) return '';
+        return String(input).replace(ASCII_DIGIT_GLOBAL_REGEX, function (d) {
+            return BN_DIGITS[d.charCodeAt(0) - 48];
+        });
+    };
+    window.toBengaliNumerals = window.toBanglaDigits;
+
+    /**
+     * Converts Bengali numerals (০-৯) to standard ASCII digits (0-9).
+     * @param {string|number} input
+     * @returns {string}
+     */
+    window.toAsciiDigits = function (input) {
+        if (input === null || input === undefined) return '';
+        return String(input).replace(/[০-৯]/g, function (d) {
+            return String(d.charCodeAt(0) - 0x09E6);
+        });
+    };
+
+    function isBanglaActive() {
+        return (document.documentElement && document.documentElement.lang === 'bn') ||
+            (document.body && document.body.classList.contains('lang-bn')) ||
+            (document.cookie && (document.cookie.includes('uic=bn') || document.cookie.includes('c=bn')));
+    }
+
+    // Auto-normalize Bengali numerals to ASCII on form submission across all forms
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
+        if (!form || !form.elements) return;
+        for (let i = 0; i < form.elements.length; i++) {
+            const el = form.elements[i];
+            if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'number' || el.type === 'hidden' || !el.type)) {
+                if (el.value && /[০-৯]/.test(el.value)) {
+                    el.value = window.toAsciiDigits(el.value);
+                }
+            }
+        }
+    }, true);
+
+    const EXCLUDED_TAGS = new Set([
+        'SCRIPT', 'STYLE', 'NOSCRIPT', 'TEXTAREA', 'CODE', 'PRE', 'SVG', 'CANVAS', 'INPUT'
+    ]);
+
+    function isExcluded(el) {
+        if (!el) return true;
+        if (EXCLUDED_TAGS.has(el.tagName)) return true;
+        if (el.isContentEditable) return true;
+        if (el.closest && el.closest('[data-no-numeral-convert], [data-raw-digits], .no-translate-digits, .raw-number, code, pre')) {
+            return true;
+        }
+        return false;
+    }
+
+    function convertTextNode(node) {
+        if (!node || node.nodeType !== Node.TEXT_NODE) return;
+        const parent = node.parentElement;
+        if (!parent || isExcluded(parent)) return;
+        const val = node.nodeValue;
+        if (val && ASCII_DIGIT_REGEX.test(val)) {
+            node.nodeValue = window.toBanglaDigits(val);
+        }
+    }
+
+    function convertElement(root) {
+        if (!root) return;
+        if (root.nodeType === Node.TEXT_NODE) {
+            convertTextNode(root);
+            return;
+        }
+        if (root.nodeType !== Node.ELEMENT_NODE) return;
+        if (isExcluded(root)) return;
+
+        // Convert select options
+        if (root.tagName === 'SELECT') {
+            const options = root.querySelectorAll('option');
+            for (let i = 0; i < options.length; i++) {
+                const opt = options[i];
+                if (ASCII_DIGIT_REGEX.test(opt.textContent)) {
+                    opt.textContent = window.toBanglaDigits(opt.textContent);
+                }
+            }
+            return;
+        }
+
+        // Convert inputs with placeholder (display only)
+        if (root.tagName === 'INPUT') {
+            const type = root.type || 'text';
+            if ((type === 'text' || type === 'search') && root.placeholder && ASCII_DIGIT_REGEX.test(root.placeholder)) {
+                root.placeholder = window.toBanglaDigits(root.placeholder);
+            }
+            return;
+        }
+
+        // TreeWalker is extremely fast for deep traversal
+        const walker = document.createTreeWalker(
+            root,
+            NodeFilter.SHOW_TEXT,
+            {
+                acceptNode: function (node) {
+                    const parent = node.parentElement;
+                    if (!parent || isExcluded(parent)) return NodeFilter.FILTER_REJECT;
+                    if (!ASCII_DIGIT_REGEX.test(node.nodeValue)) return NodeFilter.FILTER_SKIP;
+                    return NodeFilter.FILTER_ACCEPT;
+                }
+            }
+        );
+
+        let curr;
+        while ((curr = walker.nextNode())) {
+            curr.nodeValue = window.toBanglaDigits(curr.nodeValue);
+        }
+
+        // Also check any child placeholders
+        const placeholders = root.querySelectorAll ? root.querySelectorAll('input[type="text"][placeholder], input[type="search"][placeholder], input:not([type])[placeholder]') : [];
+        for (let i = 0; i < placeholders.length; i++) {
+            const inp = placeholders[i];
+            if (ASCII_DIGIT_REGEX.test(inp.placeholder)) {
+                inp.placeholder = window.toBanglaDigits(inp.placeholder);
+            }
+        }
+
+        initLocalizedDateInputs(root);
+    }
+
+    function initLocalizedDateInputs(container) {
+        if (!isBanglaActive()) return;
+        const root = container || document;
+        const dateInputs = root.querySelectorAll ? root.querySelectorAll('input[type="date"]:not(.bn-date-enhanced)') : [];
+        for (let i = 0; i < dateInputs.length; i++) {
+            const input = dateInputs[i];
+            input.classList.add('bn-date-enhanced');
+
+            const visible = document.createElement('input');
+            visible.type = 'text';
+            visible.className = input.className;
+            visible.readOnly = true;
+            visible.style.cursor = 'pointer';
+            visible.style.backgroundColor = input.disabled ? '#e9ecef' : '#fff';
+            if (input.placeholder) visible.placeholder = window.toBanglaDigits(input.placeholder);
+
+            const updateDisplay = function () {
+                if (!input.value) {
+                    visible.value = '';
+                    return;
+                }
+                const parts = input.value.split('-');
+                if (parts.length === 3) {
+                    const y = window.toBanglaDigits(parts[0]);
+                    const m = window.toBanglaDigits(parts[1]);
+                    const d = window.toBanglaDigits(parts[2]);
+                    visible.value = `${d}/${m}/${y}`;
+                } else {
+                    visible.value = window.toBanglaDigits(input.value);
+                }
+            };
+
+            updateDisplay();
+            input.addEventListener('change', updateDisplay);
+            input.addEventListener('input', updateDisplay);
+
+            input.style.position = 'absolute';
+            input.style.opacity = '0';
+            input.style.width = '0px';
+            input.style.height = '0px';
+            input.style.padding = '0';
+            input.style.margin = '0';
+            input.style.border = 'none';
+            input.style.pointerEvents = 'none';
+
+            if (input.parentElement) {
+                const group = document.createElement('div');
+                group.className = 'input-group bn-date-wrapper';
+                input.parentElement.insertBefore(group, input);
+                group.appendChild(visible);
+
+                const iconBtn = document.createElement('button');
+                iconBtn.type = 'button';
+                iconBtn.tabIndex = -1;
+                iconBtn.className = 'btn btn-outline-secondary border-start-0';
+                iconBtn.innerHTML = '<i class="bi bi-calendar3"></i>';
+                group.appendChild(iconBtn);
+                group.appendChild(input);
+
+                const triggerPicker = function () {
+                    try {
+                        if (typeof input.showPicker === 'function') {
+                            input.showPicker();
+                        } else {
+                            input.focus();
+                        }
+                    } catch (e) {
+                        input.focus();
+                    }
+                };
+
+                visible.addEventListener('click', triggerPicker);
+                iconBtn.addEventListener('click', triggerPicker);
+            }
+        }
+    }
+
+    let observer = null;
+    function startBanglaNumeralEngine() {
+        if (!isBanglaActive()) return;
+
+        // Initial DOM sweep
+        if (document.body) {
+            convertElement(document.body);
+            initLocalizedDateInputs(document.body);
+        }
+
+        if (!window.MutationObserver || !document.body) return;
+
+        observer = new MutationObserver(function (mutations) {
+            observer.disconnect();
+            try {
+                for (let i = 0; i < mutations.length; i++) {
+                    const m = mutations[i];
+                    if (m.type === 'childList') {
+                        for (let j = 0; j < m.addedNodes.length; j++) {
+                            convertElement(m.addedNodes[j]);
+                        }
+                    } else if (m.type === 'characterData') {
+                        convertTextNode(m.target);
+                    }
+                }
+            } finally {
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true,
+                    characterData: true
+                });
+            }
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startBanglaNumeralEngine);
+    } else {
+        startBanglaNumeralEngine();
+    }
+})();
+
 window.KrishiModal = {
     /**
      * Triggers the global confirmation modal (_Modal.cshtml) dynamically.
@@ -750,8 +1017,12 @@ window.KrishiNotifications = {
         const mobileBadge = document.getElementById('mobileNotificationBadge');
         const headerBadge = document.getElementById('notificationUnreadHeaderBadge');
         const markAllBtn = document.getElementById('markAllReadDropdownBtn');
+        const isBn = (document.documentElement && document.documentElement.lang === 'bn') ||
+            (document.body && document.body.classList.contains('lang-bn')) ||
+            (document.cookie && (document.cookie.includes('uic=bn') || document.cookie.includes('c=bn')));
 
-        const displayCount = count > 99 ? '99+' : count.toString();
+        const rawDisplay = count > 99 ? '99+' : count.toString();
+        const displayCount = isBn ? window.toBanglaDigits(rawDisplay) : rawDisplay;
 
         if (desktopBadge) {
             if (count > 0) {
@@ -773,7 +1044,7 @@ window.KrishiNotifications = {
 
         if (headerBadge) {
             if (count > 0) {
-                headerBadge.textContent = `${count} new`;
+                headerBadge.textContent = isBn ? `${window.toBanglaDigits(count)}টি নতুন` : `${count} new`;
                 headerBadge.style.display = 'inline-block';
             } else {
                 headerBadge.style.display = 'none';
@@ -785,9 +1056,131 @@ window.KrishiNotifications = {
         }
     },
 
+    translateNotificationText: function (str) {
+        if (!str || typeof str !== 'string') return str;
+        const isBn = (document.documentElement && document.documentElement.lang === 'bn') ||
+            (document.body && document.body.classList.contains('lang-bn')) ||
+            (document.cookie && (document.cookie.includes('uic=bn') || document.cookie.includes('c=bn')));
+        if (!isBn) return str;
+
+        let res = str;
+
+        // Payout un-interpolated template placeholders or fallback patterns
+        res = res.replace(/Your payout of ৳?\{0:N0\} via \{1\} \(\{2\}\) has been settled successfully\.?/gi, 'আপনার পেআউট সফলভাবে নিষ্পত্তি হয়েছে।');
+        res = res.replace(/Your payout request of ৳?\{0:N0\} via \{1\} is being processed\.?/gi, 'আপনার পেআউটের অনুরোধটি প্রক্রিয়াধীন রয়েছে।');
+        res = res.replace(/Your payout of ৳?\{0\} via \{1\} \(\{2\}\) failed: \{3\}\.?/gi, 'আপনার পেআউট ব্যর্থ হয়েছে।');
+
+        // Populated payout messages
+        res = res.replace(/Your payout of (?:৳|Tk\.?|BDT\s*)?([0-9,.]+)\s+via\s+(.+?)\s+\((.+?)\)\s+has been settled successfully\.?/gi, function (_, amt, method, acc) {
+            return `${method} (${acc})-এর মাধ্যমে আপনার ৳${window.toBanglaDigits(amt)} পেআউট সফলভাবে নিষ্পত্তি হয়েছে।`;
+        });
+        res = res.replace(/Your payout request of (?:৳|Tk\.?|BDT\s*)?([0-9,.]+)\s+via\s+(.+?)\s+is being processed\.?/gi, function (_, amt, method) {
+            return `${method}-এর মাধ্যমে আপনার ৳${window.toBanglaDigits(amt)} পেআউটের অনুরোধটি প্রক্রিয়াধীন রয়েছে।`;
+        });
+        res = res.replace(/Your payout of (?:৳|Tk\.?|BDT\s*)?([0-9,.]+)\s+via\s+(.+?)\s+\((.+?)\)\s+failed:\s*(.+?)\.?\s*(?:The bookings are back in your pending balance\.?)?/gi, function (_, amt, method, acc, reason) {
+            return `${method} (${acc})-এর মাধ্যমে আপনার ৳${window.toBanglaDigits(amt)} পেআউট ব্যর্থ হয়েছে: ${reason}। বুকিংগুলো আপনার অপেক্ষমাণ ব্যালেন্সে ফিরে এসেছে।`;
+        });
+
+        const dict = [
+            ['Payout Completed', 'পেআউট সম্পন্ন হয়েছে'],
+            ['Payout Requested', 'পেআউটের অনুরোধ করা হয়েছে'],
+            ['Payout Failed', 'পেআউট ব্যর্থ হয়েছে'],
+            ['Rental Request Accepted', 'ভাড়ার অনুরোধ গৃহীত হয়েছে'],
+            ['Rental Request Declined', 'ভাড়ার অনুরোধ প্রত্যাখ্যাত হয়েছে'],
+            ['Rental Request Received', 'নতুন ভাড়ার অনুরোধ এসেছে'],
+            ['Rental Request Cancelled', 'ভাড়ার অনুরোধ বাতিল হয়েছে'],
+            ['Equipment Booking Confirmed', 'যন্ত্রপাতি বুকিং নিশ্চিত হয়েছে'],
+            ['Godown Booking Confirmed', 'গুদাম বুকিং নিশ্চিত হয়েছে'],
+            ['Booking Confirmed', 'বুকিং নিশ্চিত হয়েছে'],
+            ['Booking Completed', 'বুকিং সম্পন্ন হয়েছে'],
+            ['Booking Cancelled', 'বুকিং বাতিল হয়েছে'],
+            ['Booking Update', 'বুকিং আপডেট'],
+            ['Payment Received', 'পেমেন্ট গ্রহণ করা হয়েছে'],
+            ['Payment Successful', 'পেমেন্ট সফল হয়েছে'],
+            ['Payment confirmed', 'পেমেন্ট নিশ্চিত করা হয়েছে'],
+            ['New Review Received', 'নতুন রিভিউ পেয়েছেন'],
+            ['Review Submitted', 'রিভিউ জমা দেওয়া হয়েছে'],
+            ['Harvest Plan', 'ফসল কাটার পরিকল্পনা'],
+            ['Electric Farm Tractor', 'ইলেকট্রিক ফার্ম ট্র্যাক্টর'],
+            ['Combine Harvester', 'কম্বাইন হারভেস্টার'],
+            ['Power Tiller', 'পাওয়ার টিলার'],
+            ['Tractor', 'ট্র্যাক্টর'],
+            ['Power Sprayer', 'পাওয়ার স্প্রেয়ার'],
+            ['Rice Transplanter', 'রাইস ট্রান্সপ্লান্টার'],
+            ['Thresher', 'মাড়াই কল (থ্রেশার)'],
+            ['Grain Dryer', 'গ্রেইন ড্রায়ার'],
+            ['Rice Blast (Leaf & Neck Blast)', 'রাইস ব্লাস্ট (পাতা ও শীষ ব্লাস্ট)'],
+            ['Rice Blast', 'রাইস ব্লাস্ট'],
+            ['Bacterial Leaf Blight (BLB)', 'ব্যাকটেরিয়াল পাতা পোড়া (বিএলবি)'],
+            ['Bacterial Leaf Blight', 'ব্যাকটেরিয়াল পাতা পোড়া'],
+            ['Brown Plant Hopper (BPH)', 'বাদামি গাছফড়িং (বিপিএইচ)'],
+            ['Brown Plant Hopper', 'বাদামি গাছফড়িং'],
+            ['Potato Late Blight', 'আলুর নাবি ধসা (লেট ব্লাইট)'],
+            ['Mustard Aphid Infestation', 'সরিষার জাবপোকা আক্রমণ'],
+            ['Mustard Aphid', 'সরিষার জাবপোকা'],
+            ['Chili Anthracnose / Dieback', 'মরিচের অ্যানথ্রাকনোজ / ডাইব্যাক'],
+            ['Wheat Rust (Leaf & Stripe Rust)', 'গমের মরিচা রোগ'],
+            ['Wheat Rust', 'গমের মরিচা রোগ'],
+            ['Eggplant Fruit & Shoot Borer (FSB)', 'বেগুনের ডগা ও ফল ছিদ্রকারী পোকা'],
+            ['Corn / Maize Fall Armyworm', 'ভুট্টার ফল আর্মিওয়ার্ম'],
+            ['Tomato Early Blight', 'টমেটোর আগাম ধসা (আর্লি ব্লাইট)'],
+            ['Onion Purple Blotch', 'পেঁয়াজের পার্পল ব্লচ (বেগুনি দাগ রোগ)'],
+            ['Jute Stem Rot', 'পাটের কাণ্ড পচা রোগ'],
+            ['No notifications yet', 'কোনো বিজ্ঞপ্তি নেই'],
+            ['No unread notifications', 'কোনো অপঠিত বিজ্ঞপ্তি নেই'],
+            ['Just now', 'এইমাত্র'],
+            ['Yesterday', 'গতকাল'],
+            ['Bogura', 'বগুড়া'],
+            ['Bogra', 'বগুড়া'],
+            ['Dhaka', 'ঢাকা'],
+            ['Chattogram', 'চট্টগ্রাম'],
+            ['Rajshahi', 'রাজশাহী'],
+            ['Khulna', 'খুলনা'],
+            ['Barishal', 'বরিশাল'],
+            ['Sylhet', 'সিলেট'],
+            ['Rangpur', 'রংপুর'],
+            ['Mymensingh', 'ময়মনসিংহ']
+        ];
+
+        for (let i = 0; i < dict.length; i++) {
+            const [en, bn] = dict[i];
+            if (res.includes(en)) {
+                res = res.replaceAll(en, bn);
+            }
+        }
+
+        // Date replacement (e.g. 29 Sep 2026 - 06 Nov 2026 or 29 September 2026)
+        const monthMap = {
+            'Jan': 'জানু', 'Feb': 'ফেব্রু', 'Mar': 'মার্চ', 'Apr': 'এপ্রিল',
+            'May': 'মে', 'Jun': 'জুন', 'Jul': 'জুলাই', 'Aug': 'আগস্ট',
+            'Sep': 'সেপ', 'Oct': 'অক্টো', 'Nov': 'নভে', 'Dec': 'ডিসে',
+            'January': 'জানুয়ারি', 'February': 'ফেব্রুয়ারি', 'March': 'মার্চ',
+            'April': 'এপ্রিল', 'June': 'জুন', 'July': 'জুলাই', 'August': 'আগস্ট',
+            'September': 'সেপ্টেম্বর', 'October': 'অক্টোবর', 'November': 'নভেম্বর', 'December': 'ডিসেম্বর'
+        };
+
+        res = res.replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/g, function (m) {
+            return monthMap[m] || m;
+        });
+
+        // Time ago (e.g. 5 mins ago, 2 hours ago, 1 day ago)
+        res = res.replace(/(\d+)\s+mins?\s+ago/gi, function (_, n) { return `${window.toBanglaDigits(n)} মিনিট আগে`; });
+        res = res.replace(/(\d+)\s+hours?\s+ago/gi, function (_, n) { return `${window.toBanglaDigits(n)} ঘণ্টা আগে`; });
+        res = res.replace(/(\d+)\s+days?\s+ago/gi, function (_, n) { return `${window.toBanglaDigits(n)} দিন আগে`; });
+        res = res.replace(/(\d+)\s+secs?\s+ago/gi, function (_, n) { return `${window.toBanglaDigits(n)} সেকেন্ড আগে`; });
+
+        // Convert any ASCII digits left
+        res = window.toBanglaDigits(res);
+
+        return res;
+    },
+
     loadRecentNotifications: function () {
         const listContainer = document.getElementById('notificationListDropdown');
         if (!listContainer) return;
+        const isBn = (document.documentElement && document.documentElement.lang === 'bn') ||
+            (document.body && document.body.classList.contains('lang-bn')) ||
+            (document.cookie && (document.cookie.includes('uic=bn') || document.cookie.includes('c=bn')));
 
         fetch('/Notifications/Recent?take=5', {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -802,10 +1195,11 @@ window.KrishiNotifications = {
             this.updateBadges(data.unreadCount || 0);
 
             if (!data.items || data.items.length === 0) {
+                const emptyMsg = isBn ? 'কোনো বিজ্ঞপ্তি নেই' : 'No notifications yet';
                 listContainer.innerHTML = `
                     <div class="p-4 text-center text-muted">
                         <i class="bi bi-bell-slash text-secondary fs-3 d-block mb-2"></i>
-                        <span class="small">No notifications yet</span>
+                        <span class="small">${emptyMsg}</span>
                     </div>`;
                 return;
             }
@@ -815,28 +1209,31 @@ window.KrishiNotifications = {
                 const unreadClass = !item.isRead ? 'unread' : '';
                 const openUrl = `/Notifications/Open/${item.id}`;
                 const unreadAction = !item.isRead 
-                    ? `<button type="button" class="btn btn-link p-0 text-muted ms-1 flex-shrink-0" title="Mark as read" data-onclick="event.preventDefault(); event.stopPropagation(); KrishiNotifications.markAsRead(${item.id});">
+                    ? `<button type="button" class="btn btn-link p-0 text-muted ms-1 flex-shrink-0" title="${isBn ? 'পড়া হিসেবে চিহ্নিত করুন' : 'Mark as read'}" data-onclick="event.preventDefault(); event.stopPropagation(); KrishiNotifications.markAsRead(${item.id});">
                          <span class="notification-unread-dot d-inline-block"></span>
                        </button>`
                     : '';
+                const titleText = this.translateNotificationText(item.title);
+                const msgText = this.translateNotificationText(item.message);
+                const timeText = this.translateNotificationText(item.timeAgo);
                 html += `
                     <a href="${openUrl}" class="list-group-item list-group-item-action notification-dropdown-item ${unreadClass} p-3 border-bottom">
                         <div class="d-flex align-items-start gap-2">
                             <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
                                  style="width: 32px; height: 32px; background-color: var(--bs-${item.badgeColor}-bg-subtle, #e8f5e9);">
-                                <i class="${item.iconClass} small text-${item.badgeColor}"></i>
+                                 <i class="${item.iconClass} small text-${item.badgeColor}"></i>
                             </div>
                             <div class="flex-grow-1 min-w-0">
                                 <div class="d-flex align-items-center justify-content-between gap-1 mb-0.5">
                                     <h6 class="mb-0 fw-bold text-dark text-truncate small ${!item.isRead ? 'text-success' : ''}" style="max-width: 180px;">
-                                        ${this.escapeHtml(item.title)}
+                                        ${this.escapeHtml(titleText)}
                                     </h6>
                                     <span class="text-muted text-nowrap" style="font-size: 0.7rem;">
-                                        ${this.escapeHtml(item.timeAgo)}
+                                        ${this.escapeHtml(timeText)}
                                     </span>
                                 </div>
                                 <p class="mb-0 text-secondary text-truncate small" style="font-size: 0.8rem;">
-                                    ${this.escapeHtml(item.message)}
+                                    ${this.escapeHtml(msgText)}
                                 </p>
                             </div>
                             ${unreadAction}

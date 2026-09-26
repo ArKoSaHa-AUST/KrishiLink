@@ -5,11 +5,15 @@
     var f = Model.Filter;
     var s = Model.Settlement;
     var statuses = new[] { "Completed", "Paid", "Accepted", "Pending", "Cancelled", "Rejected" };
+    var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+    string ToBn(object? val) => val is null ? "" : (isBangla ? string.Concat(val.ToString()!.Select(c => c >= '0' && c <= '9' ? (char)('০' + (c - '0')) : c)) : val.ToString()!);
+    string Money(decimal v) => "৳" + ToBn(v.ToString("N0"));
     var currentUrl = Context.Request.Path + Context.Request.QueryString;
-    var rangeText = $"{Model.RangeStart:dd MMM yyyy} – {Model.RangeEnd:dd MMM yyyy}";
     var isEquipment = Model.ListingLabel == "Equipment";
     var listingLabel = L[Model.ListingLabel].Value;
-    string Money(decimal v) => "৳" + v.ToString("N0");
+    var rangeText = isBangla 
+        ? $"{ToBn(Model.RangeStart.ToString("dd"))} {L[Model.RangeStart.ToString("MMM")].Value} {ToBn(Model.RangeStart.ToString("yyyy"))} – {ToBn(Model.RangeEnd.ToString("dd"))} {L[Model.RangeEnd.ToString("MMM")].Value} {ToBn(Model.RangeEnd.ToString("yyyy"))}" 
+        : $"{Model.RangeStart:dd MMM yyyy} – {Model.RangeEnd:dd MMM yyyy}";
     string PeriodUrl(string period) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, Period = period, f.Sort })!;
     string SortUrl(string sort) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, f.Period, Sort = sort, f.Page })! + "#breakdown";
     string PageUrl(int page) => Url.Action("Revenue", new { From = f.From?.ToString("yyyy-MM-dd"), To = f.To?.ToString("yyyy-MM-dd"), f.ListingId, f.Status, f.Period, f.Sort, Page = page })! + "#transactions";
@@ -80,7 +84,7 @@
          style="background-color: var(--krishi-primary-subtle); color: var(--krishi-primary-hover);">
         <i class="bi bi-cash-coin fs-5"></i>
         <span class="small fw-semibold">
-            @L["Your payout of {0} was processed on {1} via {2}.", Money(payout.Amount), payout.Date.ToString("dd MMM"), payout.Method]
+            @L["Your payout of {0} was processed on {1} via {2}.", Money(payout.Amount), isBangla ? (ToBn(payout.Date.ToString("dd")) + " " + L[payout.Date.ToString("MMM")].Value) : payout.Date.ToString("dd MMM"), payout.Method]
         </span>
         <a href="#settlement" class="small fw-semibold ms-auto text-decoration-none" style="color: var(--krishi-primary);">@L["View payouts"] <i class="bi bi-arrow-right"></i></a>
     </div>
@@ -221,7 +225,7 @@ else if (Model.TotalRevenue == 0 && Model.UpcomingRevenue == 0 && Model.Complete
         <div class="col-6 col-md-3 col-lg-2">
             <label for="Status" class="form-label small fw-semibold mb-1">@L["Status"] <span class="fw-normal" style="color: var(--krishi-text-muted);">(@L["transactions"])</span></label>
             <select class="form-select form-select-sm" id="Status" name="Status">
-                <option value="">@L["All statuses"]</option>
+                <option value="">@L["All Statuses"]</option>
                 @foreach (var st in statuses)
                 {
                     <option value="@st" selected="@(string.Equals(f.Status, st, StringComparison.OrdinalIgnoreCase))">@L[st]</option>
@@ -284,7 +288,7 @@ else if (Model.TotalRevenue == 0 && Model.UpcomingRevenue == 0 && Model.Complete
             <dl class="row small mb-2 gy-1">
                 <dt class="col-7 fw-normal" style="color: var(--krishi-text-muted);">@L["Gross revenue"]</dt>
                 <dd class="col-5 text-end mb-0 fw-semibold">@Money(s.Gross)</dd>
-                <dt class="col-7 fw-normal" style="color: var(--krishi-text-muted);">@L["Platform commission ({0}%)", (s.CommissionRate * 100).ToString("0.#")]</dt>
+                <dt class="col-7 fw-normal" style="color: var(--krishi-text-muted);">@L["Platform commission ({0}%)", ToBn((s.CommissionRate * 100).ToString("0.#"))]</dt>
                 <dd class="col-5 text-end mb-0 text-danger">− @Money(s.Commission)</dd>
                 <dt class="col-7 fw-semibold border-top pt-1">@L["Net earned"]</dt>
                 <dd class="col-5 text-end mb-0 fw-bold border-top pt-1">@Money(s.NetEarned)</dd>
@@ -309,7 +313,7 @@ else if (Model.TotalRevenue == 0 && Model.UpcomingRevenue == 0 && Model.Complete
 
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h6 class="small text-uppercase fw-bold mb-0" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L["Payout history"]</h6>
-                <a asp-action="Payouts" class="small fw-semibold text-decoration-none d-print-none" style="color: var(--krishi-primary);">@L["View all"] <i class="bi bi-arrow-right"></i></a>
+                <a asp-action="Payouts" class="small fw-semibold text-decoration-none d-print-none" style="color: var(--krishi-primary);">@L["View All"] <i class="bi bi-arrow-right"></i></a>
             </div>
             @if (!s.Payouts.Any())
             {
@@ -323,7 +327,7 @@ else if (Model.TotalRevenue == 0 && Model.UpcomingRevenue == 0 && Model.Complete
                         <li class="d-flex align-items-center gap-2">
                             <i class="bi @(p.Status == "Completed" ? "bi-check-circle-fill text-success" : p.Status == "Failed" ? "bi-x-circle-fill text-danger" : "bi-clock-history") flex-shrink-0" style="@(p.Status == "Processing" ? "color: var(--krishi-status-pending-text);" : "")"></i>
                             <span class="flex-grow-1">
-                                @(p.Status == "Completed" ? L["Paid on {0}", (p.SettledOn ?? p.Date).ToString("dd MMM")] : p.Status == "Failed" ? L["Failed on {0}", (p.SettledOn ?? p.Date).ToString("dd MMM")] : L["Processing since {0}", p.Date.ToString("dd MMM")])
+                                @(p.Status == "Completed" ? L["Paid on {0}", isBangla ? (ToBn((p.SettledOn ?? p.Date).ToString("dd")) + " " + L[(p.SettledOn ?? p.Date).ToString("MMM")].Value) : (p.SettledOn ?? p.Date).ToString("dd MMM")] : p.Status == "Failed" ? L["Failed on {0}", isBangla ? (ToBn((p.SettledOn ?? p.Date).ToString("dd")) + " " + L[(p.SettledOn ?? p.Date).ToString("MMM")].Value) : (p.SettledOn ?? p.Date).ToString("dd MMM")] : L["Processing since {0}", isBangla ? (ToBn(p.Date.ToString("dd")) + " " + L[p.Date.ToString("MMM")].Value) : p.Date.ToString("dd MMM")])
                                 <span class="d-block" style="color: var(--krishi-text-muted);">@p.Method · <code>@p.Reference</code></span>
                             </span>
                             <strong>@Money(p.Amount)</strong>
@@ -368,7 +372,7 @@ else if (Model.TotalRevenue == 0 && Model.UpcomingRevenue == 0 && Model.Complete
     <div class="row g-3 mb-3">
         <div class="col-6 col-md-3">
             <div class="bg-light rounded-3 p-3 text-center">
-                <div class="small text-muted">@L["Gross Revenue"]</div>
+                <div class="small text-muted">@L["Gross revenue"]</div>
                 <div class="fs-5 fw-bold text-dark">@Money(pnl.Gross)</div>
                 <div class="small text-muted" style="font-size: 0.75rem;">@L["{0} completed", pnl.CompletedBookingsCount]</div>
             </div>
@@ -503,7 +507,7 @@ else if (Model.TotalRevenue == 0 && Model.UpcomingRevenue == 0 && Model.Complete
         <div class="card border-0 shadow-sm h-100 p-3 p-md-4" style="border-radius: var(--krishi-radius-lg);">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="fw-bold mb-0" style="color: var(--krishi-text-primary);"><i class="bi bi-funnel me-2 text-success"></i>@L["Booking Status Breakdown"]</h5>
-                <span class="small" style="color: var(--krishi-text-muted);">@L["{0} requested", Model.Funnel.Requested]</span>
+                <span class="small" style="color: var(--krishi-text-muted);">@L["{0} requested", ToBn(Model.Funnel.Requested)]</span>
             </div>
             @{
                 var fn = Model.Funnel;
@@ -523,14 +527,14 @@ else if (Model.TotalRevenue == 0 && Model.UpcomingRevenue == 0 && Model.Complete
                 @foreach (var st in stages)
                 {
                     <div class="rounded-3 px-3 py-2 text-center flex-grow-1" style="background-color: @st.Bg; color: @st.Fg; min-width: 90px;">
-                        <div class="fs-4 fw-bold lh-1">@st.Count</div>
+                        <div class="fs-4 fw-bold lh-1">@ToBn(st.Count)</div>
                         <div class="small fw-semibold">@L[st.Label]</div>
                     </div>
                 }
             </div>
             <div class="d-flex align-items-center gap-2 small">
                 <i class="bi @(fn.CancellationRatePercent >= 20 ? "bi-exclamation-triangle-fill text-danger" : "bi-shield-check text-success")"></i>
-                <span>@L["Cancellation rate: {0}% of confirmed bookings", fn.CancellationRatePercent]</span>
+                <span>@L["Cancellation rate: {0}% of confirmed bookings", ToBn(fn.CancellationRatePercent)]</span>
                 @if (fn.CancellationRatePercent >= 20)
                 {
                     <span style="color: var(--krishi-text-muted);">— @L["consider requesting a deposit to reduce no-shows"]</span>
@@ -548,7 +552,7 @@ else if (Model.TotalRevenue == 0 && Model.UpcomingRevenue == 0 && Model.Complete
                     <li class="d-flex gap-3">
                         <i class="bi bi-speedometer fs-5" style="color: var(--krishi-status-pending-text);"></i>
                         <div>
-                            <strong>@L["{0} of {1} listings were booked less than {2}% of the time", Model.Insights.UnderUtilizedListings, Model.Breakdown.Count, Model.Insights.LowUtilizationPercent]</strong>
+                            <strong>@L["{0} of {1} listings were booked less than {2}% of the time", ToBn(Model.Insights.UnderUtilizedListings), ToBn(Model.Breakdown.Count), ToBn(Model.Insights.LowUtilizationPercent)]</strong>
                             <div style="color: var(--krishi-text-muted);">@L["Idle assets are lost income. Lower the rate for off-peak weeks, add clear photos, and describe what the listing is best suited for."]</div>
                         </div>
                     </li>
@@ -556,7 +560,7 @@ else if (Model.TotalRevenue == 0 && Model.UpcomingRevenue == 0 && Model.Complete
                 <li class="d-flex gap-3">
                     <i class="bi bi-people-fill fs-5 text-success"></i>
                     <div>
-                        <strong>@L["{0} of {1} renters in this period are repeat customers", Model.Insights.RepeatCustomers, Model.Insights.DistinctCustomers]</strong>
+                        <strong>@L["{0} of {1} renters in this period are repeat customers", ToBn(Model.Insights.RepeatCustomers), ToBn(Model.Insights.DistinctCustomers)]</strong>
                         <div style="color: var(--krishi-text-muted);">@L["Repeat renters signal trust — reward them with priority on peak-season capacity."]</div>
                     </div>
                 </li>
@@ -568,7 +572,7 @@ else if (Model.TotalRevenue == 0 && Model.UpcomingRevenue == 0 && Model.Complete
                             <strong>
                                 @if (Model.Insights.TopVsWeakestMultiplier is { } mult)
                                 {
-                                    @L["{0} earned {1}× more than {2}", Model.Insights.TopListing, mult.ToString("0.#"), Model.Insights.WeakestListing!]
+                                    @L["{0} earned {1}× more than {2}", Model.Insights.TopListing, ToBn(mult.ToString("0.#")), Model.Insights.WeakestListing!]
                                 }
                                 else
                                 {
@@ -632,7 +636,7 @@ else if (Model.TotalRevenue == 0 && Model.UpcomingRevenue == 0 && Model.Complete
                     var barClass = b.UtilizationPercent >= 70 ? "bg-success" : b.UtilizationPercent >= 35 ? "bg-warning" : "bg-danger";
                     <tr>
                         <td class="ps-4 fw-semibold">@b.Name</td>
-                        <td class="text-end">@b.Bookings</td>
+                        <td class="text-end">@ToBn(b.Bookings)</td>
                         <td class="text-end fw-bold text-success">@Money(b.Revenue)</td>
                         <td class="text-end">@Money(b.AveragePerBooking)</td>
                         <td>
@@ -640,10 +644,10 @@ else if (Model.TotalRevenue == 0 && Model.UpcomingRevenue == 0 && Model.Complete
                                 <div class="progress flex-grow-1" role="progressbar" aria-label="@L["Utilization"]" aria-valuenow="@b.UtilizationPercent" aria-valuemin="0" aria-valuemax="100" style="height: 6px;">
                                     <div class="progress-bar @barClass" style="width: @b.UtilizationPercent%;"></div>
                                 </div>
-                                <span class="small fw-semibold" style="min-width: 36px;">@b.UtilizationPercent%</span>
+                                <span class="small fw-semibold" style="min-width: 36px;">@ToBn(b.UtilizationPercent)%</span>
                             </div>
                             <div class="small" style="color: var(--krishi-text-muted);">
-                                @L["{0} / {1} days", b.BookedDays.ToString("0"), b.PeriodDays] · @L[Model.UtilizationHint]
+                                @L["{0} / {1} days", ToBn(b.BookedDays.ToString("0")), ToBn(b.PeriodDays)] · @L[Model.UtilizationHint]
                             </div>
                             @if (b.IsUnderUtilized)
                             {
@@ -672,7 +676,7 @@ else if (Model.TotalRevenue == 0 && Model.UpcomingRevenue == 0 && Model.Complete
 <!-- Transactions -->
 <div class="card border-0 shadow-sm mb-4 overflow-hidden" id="transactions" style="border-radius: var(--krishi-radius-lg);">
     <div class="p-3 px-4 d-flex align-items-center justify-content-between" style="background-color: var(--krishi-primary-light);">
-        <h5 class="fw-bold mb-0" style="color: var(--krishi-primary);"><i class="bi bi-receipt me-2"></i>@L["Transactions"]
+        <h5 class="fw-bold mb-0" style="color: var(--krishi-primary);"><i class="bi bi-receipt me-2"></i>@L["transactions"]
             <span class="badge rounded-pill bg-white shadow-sm ms-1" style="color: var(--krishi-primary);">@Model.TransactionsTotal</span>
         </h5>
         @if (!string.IsNullOrEmpty(f.Status))
@@ -824,7 +828,7 @@ else if (Model.TotalRevenue == 0 && Model.UpcomingRevenue == 0 && Model.Complete
             <input type="hidden" name="expenseId" id="expenseId" />
             <input type="hidden" name="returnUrl" value="@currentUrl" />
             <div class="modal-header border-bottom-0 pb-2">
-                <h5 class="modal-title fw-bold" id="expenseModalLabel"><span id="expenseModalTitle">@L["Add Expense"]</span> <span class="small fw-normal" id="expenseBookingLabel" style="color: var(--krishi-text-muted);"></span></h5>
+                <h5 class="modal-title fw-bold" id="expenseModalLabel"><span id="expenseModalTitle">@L["Add expense"]</span> <span class="small fw-normal" id="expenseBookingLabel" style="color: var(--krishi-text-muted);"></span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body py-2">
@@ -891,7 +895,7 @@ else if (Model.TotalRevenue == 0 && Model.UpcomingRevenue == 0 && Model.Complete
             document.getElementById('expenseBookingId').value = bookingId;
             document.getElementById('expenseId').value = btn.dataset.expenseId || '';
             document.getElementById('expenseBookingLabel').textContent = btn.dataset.bookingLabel || '';
-            document.getElementById('expenseModalTitle').textContent = editing ? '@L["Edit Expense"]' : '@L["Add Expense"]';
+            document.getElementById('expenseModalTitle').textContent = editing ? '@L["Edit expense"]' : '@L["Add expense"]';
             document.getElementById('expenseAmount').value = editing ? btn.dataset.amount : '';
             document.getElementById('expenseCategory').value = btn.dataset.category || 'Other';
             document.getElementById('expenseNote').value = editing ? btn.dataset.note : '';

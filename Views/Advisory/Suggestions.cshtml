@@ -113,7 +113,7 @@
                         <i class="bi bi-broadcast me-1"></i>@(isBangla ? ws.BanglaCropStage : ws.CropStage)
                     </span>
                     <span class="badge bg-white bg-opacity-20 text-white px-2.5 py-1 rounded-pill small">
-                        @ws.District · @ws.Division @L["Division"]
+                        @L[ws.District] · @L[ws.Division] @L["Division"]
                     </span>
                     @if (ws.RainAlert)
                     {

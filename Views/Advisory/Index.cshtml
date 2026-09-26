@@ -6,6 +6,7 @@
     var bn = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
     var result = Model.Result;
     string Inv(double value) => value.ToString("0.#", CultureInfo.InvariantCulture);
+    string ToBn(object? val) => val is null ? "" : (bn ? string.Concat(val.ToString()!.Select(c => c >= '0' && c <= '9' ? (char)('০' + (c - '0')) : c)) : val.ToString()!);
 
     var soilLabels = new Dictionary<string, string>
     {
@@ -34,6 +35,110 @@
         FactorState.Partial => ("bi-circle-half", "text-warning-emphasis", L["partly met"].Value),
         _ => ("bi-x-circle-fill", "text-danger", L["not met"].Value)
     };
+
+    string FormatWeatherAlertTitle(string title, bool isBn)
+    {
+        if (!isBn || string.IsNullOrWhiteSpace(title)) return title;
+        var t = title;
+        if (t.StartsWith("Normal Weather Conditions in ", StringComparison.OrdinalIgnoreCase))
+        {
+            var dist = t.Replace("Normal Weather Conditions in ", "").Trim();
+            return $"{L[dist].Value}-এ স্বাভাবিক আবহাওয়া পরিস্থিতি";
+        }
+
+        var diseases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Rice Blast (Leaf & Neck Blast)"] = "রাইস ব্লাস্ট (পাতা ও শীষ ব্লাস্ট)",
+            ["Rice Blast"] = "রাইস ব্লাস্ট",
+            ["Bacterial Leaf Blight (BLB)"] = "ব্যাকটেরিয়াল পাতা পোড়া (বিএলবি)",
+            ["Bacterial Leaf Blight"] = "ব্যাকটেরিয়াল পাতা পোড়া",
+            ["Brown Plant Hopper (BPH)"] = "বাদামি গাছফড়িং (বিপিএইচ)",
+            ["Brown Plant Hopper"] = "বাদামি গাছফড়িং",
+            ["Potato Late Blight"] = "আলুর নাবি ধসা (লেট ব্লাইট)",
+            ["Mustard Aphid Infestation"] = "সরিষার জাবপোকা আক্রমণ",
+            ["Mustard Aphid"] = "সরিষার জাবপোকা",
+            ["Chili Anthracnose / Dieback"] = "মরিচের অ্যানথ্রাকনোজ / ডাইব্যাক রোগ",
+            ["Wheat Rust (Leaf & Stripe Rust)"] = "গমের মরিচা রোগ",
+            ["Wheat Rust"] = "গমের মরিচা রোগ",
+            ["Eggplant Fruit & Shoot Borer (FSB)"] = "বেগুনের ডগা ও ফল ছিদ্রকারী পোকা",
+            ["Corn / Maize Fall Armyworm"] = "ভুট্টার ফল আর্মিওয়ার্ম পোকা",
+            ["Tomato Early Blight"] = "টমেটোর আগাম ধসা (আর্লি ব্লাইট)",
+            ["Onion Purple Blotch"] = "পেঁয়াজের পার্পল ব্লচ (বেগুনি দাগ রোগ)",
+            ["Jute Stem Rot"] = "পাটের কাণ্ড পচা রোগ"
+        };
+
+        foreach (var kvp in diseases)
+        {
+            if (t.Contains(kvp.Key, StringComparison.OrdinalIgnoreCase))
+            {
+                t = t.Replace(kvp.Key, kvp.Value);
+            }
+        }
+
+        t = System.Text.RegularExpressions.Regex.Replace(t, @"Risk in\s+([A-Za-z\s']+?)(?=\s*\(|$)", m => $"{L[m.Groups[1].Value.Trim()].Value}-এ ঝুঁকি");
+        t = t.Replace("Humidity", "আর্দ্রতা").Replace("°C", "°সে.");
+        return t;
+    }
+
+    string FormatWeatherAlertMessage(string msg, bool isBn)
+    {
+        if (!isBn || string.IsNullOrWhiteSpace(msg)) return msg;
+        var m = msg;
+
+        m = System.Text.RegularExpressions.Regex.Replace(m, @"Triggered by\s+([0-9.]+°[C|সে\.]+)\s+temperature and\s+([0-9.]+%)\s+relative humidity in\s+([A-Za-z\s']+?)(?=\.|\s|$)",
+            match => $"{L[match.Groups[3].Value.Trim()].Value}-এ {match.Groups[1].Value} তাপমাত্রা ও {match.Groups[2].Value} আপেক্ষিক আর্দ্রতার কারণে সতর্কতা।",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        m = System.Text.RegularExpressions.Regex.Replace(m, @"Triggered by multi-day overcast/fog conditions with\s+([0-9.]+°[C|সে\.]+)\s+temp and\s+([0-9.]+%)\s+humidity in\s+([A-Za-z\s']+?)(?=\.|\s|$)",
+            match => $"{L[match.Groups[3].Value.Trim()].Value}-এ একাধিক দিন মেঘলা/কুয়াশাচ্ছন্ন আবহাওয়া এবং {match.Groups[1].Value} তাপমাত্রা ও {match.Groups[2].Value} আর্দ্রতার কারণে সতর্কতা।",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        var translations = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Symptoms: Spindle-shaped grayish-white spots on leaves with brown margins; blackened rotten neck node preventing grain filling."] = "লক্ষণ: পাতায় দুই প্রান্ত চোখা লম্বাটে ধূসর দাগ; শিষের গোড়া কালো হয়ে পচে যায় এবং চিটা হয়ে যায়।",
+            ["Primary Action: Immediately stop applying top-dressing Urea fertilizer to prevent disease escalation."] = "প্রাথমিক করণীয়: জমিতে ইউরিয়া সারের উপরিপ্রয়োগ তাৎক্ষণিকভাবে বন্ধ রাখুন।",
+            ["Symptoms: Water-soaked grayish-green lesions on leaf margins turning yellow with wavy margins; bacterial ooze beads early morning."] = "লক্ষণ: পাতার কিনারায় জলছাপের মতো দাগ যা ধীরে ধীরে হলুদ ও বাদামি হয়ে শুকিয়ে যায়।",
+            ["Primary Action: Apply Potash top-dressing (5 kg/bigha) and drain excess water for 3-4 days."] = "প্রাথমিক করণীয়: বিঘা প্রতি ৫ কেজি পটাশ সার প্রয়োগ করুন এবং ৩-৪ দিন পানি সরিয়ে রাখুন।",
+            ["Symptoms: Circular yellow-brown patches in field; plants dry up rapidly giving a burned appearance ('hopper burn')."] = "লক্ষণ: ক্ষেতের মাঝে মাঝে চাকা চাকা হয়ে ধান গাছ হলুদ হয়ে পুড়ে যাওয়ার মতো শুকিয়ে যায় (হপার বার্ন)।",
+            ["Primary Action: Immediately drain standing water completely from the field."] = "প্রাথমিক করণীয়: ক্ষেত থেকে অবিলম্বে সম্পূর্ণ পানি নিষ্কাশন করে দিন।",
+            ["Symptoms: Water-soaked dark lesions on leaf tips and margins; white velvety fungal growth on leaf undersides in morning fog; rapid rot."] = "লক্ষণ: পাতায় ভেজা কালো ছোপ এবং পাতার নিচে সাদা পাউডারের মতো ছত্রাক; দ্রুত গাছ পচে যায়।",
+            ["Primary Action: Apply protective Mancozeb 75WP (Indofil M-45) spray at 2.5 g/L immediately."] = "প্রাথমিক করণীয়: অবিলম্বে ম্যানকোজেব ৭৫ ডব্লিউপি (২.৫ গ্রাম/লিটার) স্প্রে করুন।",
+            ["Symptoms: Dense colonies of tiny green-black insects covering flowers, pods, and tender shoots; sticky honeydew attracting sooty mold."] = "লক্ষণ: ফুল ও কচি ডালে ছোট কালো-সবুজ পোকার ঝাঁক; মিষ্টি আঠালো রস নিঃসরণ করে।",
+            ["Primary Action: Spray Imidacloprid 20SL (Admire / Gain) at 0.5 ml/L or Malathion 57EC."] = "প্রাথমিক করণীয়: ইমিডাক্লোপ্রিড ২০ এসএল (০.৫ মিলি/লিটার) স্প্রে করুন।",
+            ["Symptoms: Dark sunken circular spots on fruits with concentric rings; dieback of growing tips drying from top downwards."] = "লক্ষণ: মরিচে গোল ভেজা দাগ এবং ডগা উপর থেকে শুকিয়ে নিচের দিকে মরে যাওয়া।",
+            ["Primary Action: Spray Azoxystrobin + Difenoconazole (Amistar Top) at 1 ml/L."] = "প্রাথমিক করণীয়: অ্যামিস্টার টপ (১ মিলি/লিটার) স্প্রে করুন।",
+            ["Symptoms: Yellowish-orange powdery pustules scattered randomly on leaf blades; chlorosis and premature leaf desiccation."] = "লক্ষণ: পাতায় হলুদ-কমলা রঙের গুঁড়া ছিটানো ফোস্কার মতো দাগ; পাতা শুকিয়ে যাওয়া।",
+            ["Primary Action: Spray Propiconazole 25EC (Tilt) at 1 ml/L at first sign of pustules."] = "প্রাথমিক করণীয়: টিল্ট ২৫ ইসি (১ মিলি/লিটার) স্প্রে করুন।",
+            ["Symptoms: Wilting and drooping of tender shoot tips; boreholes in brinjal fruit plugged with excreta."] = "লক্ষণ: কচি ডগা নুয়ে পড়া এবং বেগুনের গায়ে ছিদ্র ও বিষ্ঠা জমে থাকা।",
+            ["Primary Action: Clip and bury/destroy all infested drooping shoots weekly."] = "প্রাথমিক করণীয়: আক্রান্ত ডগা কেটে মাটির নিচে পুঁতে ফেলুন।",
+            ["Symptoms: Window pane leaf skeletonization, ragged large holes in leaves, moist yellowish frass in the central whorl."] = "লক্ষণ: পাতায় বড় বড় অনিয়মিত ছিদ্র এবং গাছের মাথায় ভিজা হলুদ মল।",
+            ["Primary Action: Apply Spinetoram 11.7SC (Radiant) at 0.4 ml/L or Emamectin Benzoate."] = "প্রাথমিক করণীয়: রেডিয়েন্ট (০.৪ মিলি/লিটার) স্প্রে করুন।",
+            ["Symptoms: Concentric dark brown target-like rings on older leaves; premature leaf drop and fruit stem rot."] = "লক্ষণ: নিচের পাতায় টার্গেট বোর্ডের মতো গোল গোল রিংয়ের দাগ; পাতা ঝরে পড়া।",
+            ["Primary Action: Spray Mancozeb 75WP at 2.5 g/L or Difenoconazole at 1 ml/L."] = "প্রাথমিক করণীয়: ম্যানকোজেব ৭৫ ডব্লিউপি (২.৫ গ্রাম/লিটার) স্প্রে করুন।",
+            ["Symptoms: Small water-soaked spots on leaves expanding into sunken purple centers with yellow halos."] = "লক্ষণ: পাতায় বেগুনি রঙের লম্বাটে ভেজা দাগ ও হলুদ বলয়।",
+            ["Primary Action: Spray Iprodione (Rovral 50WP) at 2 g/L mixed with Mancozeb."] = "প্রাথমিক করণীয়: রভরাল ৫০ ডব্লিউপি (২ গ্রাম/লিটার) স্প্রে করুন।",
+            ["Symptoms: Black lesions on stems near soil line; fiber shredded and plant wilts."] = "লক্ষণ: মাটির কাছে পাটের কাণ্ডে কালো দাগ; আঁশ নষ্ট হয়ে গাছ মরে যাওয়া।",
+            ["Primary Action: Spray Carbendazim 50WP (Autostin) at 1.5 g/L."] = "প্রাথমিক করণীয়: অটোস্টিন (১.৫ গ্রাম/লিটার) স্প্রে করুন।"
+        };
+
+        foreach (var kvp in translations)
+        {
+            m = m.Replace(kvp.Key, kvp.Value);
+        }
+
+        foreach (var dist in BangladeshGeo.AllDistricts)
+        {
+            if (m.Contains(dist, StringComparison.OrdinalIgnoreCase))
+            {
+                m = m.Replace(dist, L[dist].Value);
+            }
+        }
+
+        m = m.Replace("Symptoms:", "লক্ষণ:")
+             .Replace("Primary Action:", "প্রাথমিক করণীয়:");
+
+        return m;
+    }
 }
 
 <!-- Page Header & Tab Navigation -->
@@ -85,7 +190,7 @@
 <div class="card krishi-card border-0 shadow-sm p-4 mb-5" id="advisoryFormCard" style="border-radius: var(--krishi-radius-lg);">
     <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
         <div class="d-flex align-items-center justify-content-center rounded-circle text-white fw-bold"
-             style="width: 32px; height: 32px; background-color: var(--krishi-primary); font-size: 0.9rem;">1</div>
+             style="width: 32px; height: 32px; background-color: var(--krishi-primary); font-size: 0.9rem;">@(bn ? "১" : "1")</div>
         <h5 class="fw-bold mb-0 text-dark">@L["Enter Your Farm Details"]</h5>
     </div>
 
@@ -103,8 +208,8 @@
                     <partial name="_GeoSelector" model="@(new GeoSelectorViewModel {
                         SelectedDistrict = Model.District,
                         SelectedDivision = Model.Division,
-                        DivisionLabel = L["Division"].Value,
-                        DistrictLabel = L["District"].Value,
+                        DivisionLabel = "Division",
+                        DistrictLabel = "District",
                         Size = "lg",
                         IdPrefix = "advisor",
                         ColumnClass = "col-12 col-md-6"
@@ -165,7 +270,7 @@
             <div class="col-12 col-md-6 col-lg-4">
                 <label asp-for="LandSize" class="form-label small fw-bold text-dark">@L["Land Size"]</label>
                 <div class="input-group input-group-lg rounded-3 overflow-hidden">
-                    <input asp-for="LandSize" type="number" inputmode="decimal" class="form-control fs-6" placeholder='@L["e.g. 50"]' min="0.01" max="100000" step="0.01" />
+                    <input asp-for="LandSize" type="text" inputmode="decimal" class="form-control fs-6 bangla-num-field" value="@(Model.LandSize.HasValue ? ToBn(Model.LandSize.Value.ToString("0.##")) : ToBn(50))" placeholder='@L["e.g. 50"]' />
                     <select asp-for="LandUnit" class="form-select fs-6 krishi-unit-select" aria-label="@L["Land unit"]">
                         @foreach (var unit in UnitFormat.LandUnits)
                         {
@@ -346,12 +451,12 @@
     <section id="resultsSection" class="mb-5" aria-labelledby="resultsHeading">
         <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
             <div class="d-flex align-items-center justify-content-center rounded-circle text-white fw-bold"
-                 style="width: 32px; height: 32px; background-color: var(--krishi-accent); font-size: 0.9rem;">2</div>
+                 style="width: 32px; height: 32px; background-color: var(--krishi-accent); font-size: 0.9rem;">@(bn ? "২" : "2")</div>
             <h5 class="fw-bold mb-0 text-dark" id="resultsHeading">@L["Crops for your farm"]</h5>
         </div>
 
         <p class="text-muted small mb-3">
-            @L["{0} · {1} · {2} soil · {3}", result.Input.District, CropAdvisorScorer.SeasonLabel(result.Input.Season, L), soilLabels[result.Input.SoilType], result.Input.HasIrrigation ? L["irrigated"] : L["rainfed"]]
+            @L["{0} · {1} · {2} soil · {3}", L[result.Input.District].Value, CropAdvisorScorer.SeasonLabel(result.Input.Season, L), soilLabels[result.Input.SoilType], result.Input.HasIrrigation ? L["irrigated"] : L["rainfed"]]
             @if (result.Input.LandSizeDecimal is { } landSize)
             {
                 <text> · @UnitFormat.Land(landSize, Model.LandUnit, L)</text>
@@ -360,13 +465,15 @@
 
         @if (Model.WeatherAlert != null)
         {
+            var alertTitle = FormatWeatherAlertTitle(Model.WeatherAlert.Title, bn);
+            var alertMsg = FormatWeatherAlertMessage(Model.WeatherAlert.Message, bn);
             <div class="card border-0 shadow-sm mb-4 rounded-3 overflow-hidden" style="background-color: #fffbeb;">
                 <div class="card-body p-3 p-md-4">
                     <div class="d-flex align-items-center gap-2 mb-1">
-                        <span class="badge bg-warning text-dark small px-2 py-0.5">@Model.WeatherAlert.BadgeText</span>
-                        <h6 class="fw-bold mb-0 text-dark">@Model.WeatherAlert.Title</h6>
+                        <span class="badge bg-warning text-dark small px-2 py-0.5">@L[Model.WeatherAlert.BadgeText]</span>
+                        <h6 class="fw-bold mb-0 text-dark">@alertTitle</h6>
                     </div>
-                    <p class="mb-0 small text-secondary">@Model.WeatherAlert.Message</p>
+                    <p class="mb-0 small text-secondary">@alertMsg</p>
                 </div>
             </div>
         }

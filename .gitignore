@@ -56,6 +56,8 @@ ehthumbs.db
 !README*.md
 !prompt/
 !prompt/*.md
+!work/
+!work/*.md
 !COMMUNITY_*.md
 
 # Agent workspace configurations & skills

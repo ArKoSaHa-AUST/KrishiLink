@@ -1,7 +1,20 @@
-﻿@model KrishiLink.Models.ViewModels.EquipmentMaintenanceDashboardViewModel
+@model KrishiLink.Models.ViewModels.EquipmentMaintenanceDashboardViewModel
 @{
     ViewData["Title"] = $"{L["Health Tracker"]} — {Model.EquipmentName}";
     ViewData["BodyClass"] = "krishi-body-gradient";
+    var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+    string ToBn(object? val) => val is null ? "" : (isBangla ? string.Concat(val.ToString()!.Select(c => c >= '0' && c <= '9' ? (char)('০' + (c - '0')) : c)) : val.ToString()!);
+    string FormatRate(string? rate)
+    {
+        if (string.IsNullOrEmpty(rate)) return "";
+        var r = rate;
+        if (isBangla)
+        {
+            r = ToBn(r);
+            r = r.Replace("/ Day", "/ দিন").Replace("/Day", "/ দিন").Replace("/ Month", "/ মাস").Replace("/Month", "/ মাস").Replace("/ Hour", "/ ঘন্টা").Replace("/Hour", "/ ঘন্টা").Replace("/ Ton", "/ টন").Replace("/Ton", "/ টন");
+        }
+        return r;
+    }
 }
 
 <!-- Breadcrumb Navigation -->
@@ -28,7 +41,7 @@
             <h2 class="fw-bold text-white mb-1">@Model.EquipmentName</h2>
             <p class="text-white-50 mb-0 small d-flex align-items-center gap-3 flex-wrap">
                 <span><i class="bi bi-geo-alt-fill text-warning me-1"></i>@L[Model.Location]</span>
-                <span><i class="bi bi-tag-fill text-warning me-1"></i>@Model.DailyRate</span>
+                <span><i class="bi bi-tag-fill text-warning me-1"></i>@FormatRate(Model.DailyRate)</span>
                 <span>
                     @if (Model.IsAvailable)
                     {

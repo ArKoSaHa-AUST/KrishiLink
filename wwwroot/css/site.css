@@ -1822,3 +1822,39 @@ a:hover {
 }
 
 .krishi-offline { max-width: 42rem; }
+
+/* ==========================================================================
+   Independent Sticky Sidebar Scrolling Utility (.krishi-sticky-scroll)
+   Allows long sidebars to scroll independently when hovered/scrolled
+   ========================================================================== */
+.krishi-sticky-scroll {
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    top: 75px !important;
+    max-height: calc(100vh - 85px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    padding: 2px 4px 1.5rem 4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(45, 106, 79, 0.28) transparent;
+}
+
+.krishi-sticky-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.krishi-sticky-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.krishi-sticky-scroll::-webkit-scrollbar-thumb {
+    background-color: rgba(45, 106, 79, 0.25);
+    border-radius: 10px;
+}
+
+.krishi-sticky-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(45, 106, 79, 0.5);
+}
+

@@ -2,6 +2,8 @@
 @{
     ViewData["Title"] = Model.Name;
     ViewData["BodyClass"] = "krishi-body-gradient";
+    var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+    string ToBn(object? val) => val is null ? "" : (isBangla ? string.Concat(val.ToString()!.Select(c => c >= '0' && c <= '9' ? (char)('০' + (c - '0')) : c)) : val.ToString()!);
     var primaryImage = Model.ImageUrls.FirstOrDefault() ?? "";
     var bookingRequested = TempData.Peek("SuccessMessage") != null;
     var ownerMemberSinceParts = Model.OwnerMemberSince?.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
@@ -142,15 +144,15 @@
             <div class="row g-3 p-3 rounded-3 mb-4 bg-light text-dark border">
                 <div class="col-6 col-sm-4">
                     <span class="text-muted small d-block">@L["Monthly Rate"]</span>
-                    <span class="fs-4 fw-bold text-success">@L["Tk {0} / Ton / Month", Model.PricePerTonPerMonth.Replace("\u09f3", "").Replace(" / Ton / Month", "")]</span>
+                    <span class="fs-4 fw-bold text-success">@L["Tk {0} / Ton / Month", ToBn(Model.PricePerTonPerMonth.Replace("\u09f3", "").Replace(" / Ton / Month", "").Trim())]</span>
                 </div>
                 <div class="col-6 col-sm-4">
                     <span class="text-muted small d-block">@L["Daily Rate (Est.)"]</span>
-                    <span class="fs-5 fw-semibold text-dark">@L["Tk {0} / Ton / Day", Model.DailyRatePerTon.Replace("\u09f3", "").Replace(" / Ton / Day", "")]</span>
+                    <span class="fs-5 fw-semibold text-dark">@L["Tk {0} / Ton / Day", ToBn(Model.DailyRatePerTon.Replace("\u09f3", "").Replace(" / Ton / Day", "").Trim())]</span>
                 </div>
                 <div class="col-12 col-sm-4 border-start-sm pt-2 pt-sm-0">
                     <span class="text-muted small d-block">@L["Available Space"]</span>
-                    <span class="fw-bold text-success fs-5">@L["{0} / {1} Tons", Model.AvailableCapacityTons.ToString("N0"), Model.TotalCapacityTons.ToString("N0")]</span>
+                    <span class="fw-bold text-success fs-5">@L["{0} / {1} Tons", ToBn(Model.AvailableCapacityTons.ToString("N0")), ToBn(Model.TotalCapacityTons.ToString("N0"))]</span>
                 </div>
             </div>
 
@@ -411,7 +413,7 @@
 
     <!-- RIGHT COLUMN: Storage Booking Form -->
     <div class="col-12 col-lg-5 col-xl-4">
-        <div class="card krishi-card p-4 border-0 shadow-sm sticky-top" style="top: 85px; z-index: 10;" id="bookingFormContainer">
+        <div class="card krishi-card p-4 border-0 shadow-sm sticky-top krishi-sticky-scroll" style="z-index: 10;" id="bookingFormContainer">
             <div class="d-flex align-items-center justify-content-between mb-3 pb-3 border-bottom">
                 <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
                     <i class="bi bi-calendar-check text-success"></i> @L["Book Storage Space"]

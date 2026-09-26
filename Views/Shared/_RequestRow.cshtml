@@ -7,6 +7,19 @@
 *@
 @{
     var expandable = ViewData["Expandable"] as bool? ?? false;
+    var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+    string ToBn(object? val) => val is null ? "" : (isBangla ? string.Concat(val.ToString()!.Select(c => c >= '0' && c <= '9' ? (char)('০' + (c - '0')) : c)) : val.ToString()!);
+    string FormatRate(string? rate)
+    {
+        if (string.IsNullOrEmpty(rate)) return "";
+        var r = rate;
+        if (isBangla)
+        {
+            r = ToBn(r);
+            r = r.Replace("/ Day", "/ দিন").Replace("/Day", "/ দিন").Replace("/ Month", "/ মাস").Replace("/Month", "/ মাস").Replace("/ Hour", "/ ঘন্টা").Replace("/Hour", "/ ঘন্টা").Replace("/ Ton", "/ টন").Replace("/Ton", "/ টন");
+        }
+        return r;
+    }
     var badgeClass = Model.Status switch
     {
         "Accepted" => "krishi-badge-available",
@@ -15,7 +28,7 @@
         "Completed" => "krishi-badge-completed",
         _ => "krishi-badge-pending"
     };
-    var gross = "৳" + Model.AgreedGross.ToString("N0");
+    var gross = "৳" + ToBn(Model.AgreedGross.ToString("N0"));
 }
 @using KrishiLink.BLL.Services
 <div class="request-row border-bottom pending-request-row" data-request-id="@Model.Id"
@@ -162,7 +175,7 @@
                         <span class="small fw-semibold text-uppercase d-block mb-1" style="color: var(--krishi-text-muted); letter-spacing: 0.04em;">@L["Equipment Recap"]</span>
                         <ul class="list-unstyled small mb-0 d-flex flex-column gap-1" style="color: var(--krishi-text-primary);">
                             <li><i class="bi bi-tag text-success me-1"></i> @(Model.Units > 1 ? $"{Model.Units} × {L[Model.EquipmentCategory]}" : L[Model.EquipmentCategory].Value)</li>
-                            <li><i class="bi bi-cash-coin text-success me-1"></i> @Model.DailyRate <span style="color: var(--krishi-text-muted);">· @L["Total"] @gross</span></li>
+                            <li><i class="bi bi-cash-coin text-success me-1"></i> @FormatRate(Model.DailyRate) <span style="color: var(--krishi-text-muted);">· @L["Total"] @gross</span></li>
                             @if (!string.IsNullOrEmpty(Model.PricingNote))
                             {
                                 <li><i class="bi bi-info-circle text-success me-1"></i> <span class="fst-italic">@Model.PricingNote</span></li>
