@@ -29,11 +29,18 @@
 
 @if (emitShared)
 {
+    var localizedGeoLabels = BangladeshGeo.AllDistricts
+        .Concat(BangladeshGeo.Divisions)
+        .Distinct()
+        .ToDictionary(k => k, k => L[k].Value);
+
     <script type="application/json" id="bdGeoData">@Html.Raw(JsonSerializer.Serialize(BangladeshGeo.DistrictsByDivision))</script>
+    <script type="application/json" id="bdGeoLabels">@Html.Raw(JsonSerializer.Serialize(localizedGeoLabels))</script>
     <script>
         // Narrows a district <select> to the chosen division, keeping the current value when it still fits.
         window.krishiGeo = (function () {
             var map = JSON.parse(document.getElementById('bdGeoData').textContent);
+            var labels = JSON.parse(document.getElementById('bdGeoLabels')?.textContent || '{}');
             function attach(divisionId, districtId) {
                 var division = document.getElementById(divisionId);
                 var district = document.getElementById(districtId);
@@ -48,7 +55,10 @@
                     if (typeof anyLabel === 'string') {
                         district.add(new Option(anyLabel, ''));
                     }
-                    names.forEach(function (name) { district.add(new Option(name, name)); });
+                    names.forEach(function (name) {
+                        var display = labels[name] || name;
+                        district.add(new Option(display, name));
+                    });
                     district.value = names.indexOf(keep) >= 0 ? keep : '';
                     district.dispatchEvent(new Event('change', { bubbles: true }));
                 });

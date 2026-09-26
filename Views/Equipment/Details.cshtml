@@ -3,6 +3,45 @@
     ViewData["Title"] = Model.Name;
     var primaryImage = Model.ImageUrls.FirstOrDefault() ?? "";
     var bookedDatesJson = System.Text.Json.JsonSerializer.Serialize(Model.BookedDates.Select(d => d.ToString("yyyy-MM-dd")).ToList());
+    var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+    string ToBn(object? val) => val is null ? "" : (isBangla ? string.Concat(val.ToString()!.Select(c => c >= '0' && c <= '9' ? (char)('০' + (c - '0')) : c)) : val.ToString()!);
+    string FormatRate(string? rate)
+    {
+        if (string.IsNullOrWhiteSpace(rate)) return "—";
+        if (!isBangla) return rate;
+        var r = rate;
+        r = r.Replace("Tk ", "৳").Replace("Tk", "৳");
+        r = r.Replace("/ Day", "/ দিন").Replace("/Day", "/ দিন");
+        r = r.Replace("/ Hour", "/ ঘণ্টা").Replace("/Hour", "/ ঘণ্টা");
+        r = r.Replace("/ Month", "/ মাস").Replace("/Month", "/ মাস");
+        r = r.Replace("/ Ton", "/ টন").Replace("/Ton", "/ টন");
+        r = r.Replace("From ", "শুরু ");
+        return ToBn(r);
+    }
+    string TranslateDescription(string? desc)
+    {
+        if (!isBangla || string.IsNullOrWhiteSpace(desc)) return desc ?? "";
+        var d = desc;
+        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Heavy-duty walk-behind power tiller fitted with seed/fertilizer drill boxes and bed former. Ideal for minimum tillage, direct seeding, bed preparation, and line sowing of wheat, maize, pulses, and vegetables. Operates efficiently with low diesel consumption."]
+                = "বীজ/সার ড্রিল বক্স এবং বেড ফর্মার সহ শক্তিশালী ওয়াক-বিহাইন্ড পাওয়ার টিলার। ন্যূনতম চাষ, সরাসরি বীজ বপন, জমি তৈরি এবং গম, ভুট্টা, ডাল ও শাকসবজির সারি বপনের জন্য আদর্শ। কম ডিজেল খরচে অত্যন্ত দক্ষতার সাথে কাজ করে।",
+            ["High performance 4-wheel drive tractor suitable for deep tillage, puddling, land preparation, and heavy agricultural haulage. Fuel efficient with strong PTO output."]
+                = "গভীর চাষ, কাদা তৈরি, জমি প্রস্তুত এবং ভারী কৃষি পণ্য পরিবহনের উপযোগী উচ্চ কার্যক্ষমতাসম্পন্ন ৪-হুইল ড্রাইভ ট্র্যাক্টর। শক্তিশালী পিটিও আউটপুট সহ সাশ্রয়ী জ্বালানি ব্যবহার।",
+            ["Full-feed self-propelled combine harvester designed for paddy and wheat harvesting. Reaps, threshes, cleans, and bags grain simultaneously, drastically reducing harvest labor and crop losses."]
+                = "ধান ও গম কাটার জন্য নকশা করা সম্পূর্ণ স্বয়ংক্রিয় কম্বাইন হারভেস্টার। একই সাথে ফসল কাটা, মাড়াই, পরিষ্কার ও বস্তাবন্দী করে, যা ফসলের অপচয় ও শ্রম খরচ উল্লেখযোগ্যভাবে কমায়।",
+            ["High-capacity motorized power sprayer suitable for fast and uniform pesticide and fertilizer foliar application across large acreage."]
+                = "বৃহৎ ফসলি জমিতে দ্রুত ও সমহারে কীটনাশক এবং ফলিয়ার সার প্রয়োগের জন্য উপযোগী উচ্চ ক্ষমতার পাওয়ার স্প্রেয়ার।"
+        };
+        foreach (var kv in map)
+        {
+            if (d.Contains(kv.Key, StringComparison.OrdinalIgnoreCase))
+            {
+                d = d.Replace(kv.Key, kv.Value, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+        return d;
+    }
 }
 
 @section Styles {
@@ -148,18 +187,18 @@
             <div class="row g-3 p-3 rounded-3 mb-4 bg-light text-dark border">
                 <div class="col-6 col-sm-4">
                     <span class="text-muted small d-block">@L["Daily Rental Rate"]</span>
-                    <span class="fs-4 fw-bold text-success">@(!string.IsNullOrEmpty(Model.FromRateText) ? Model.FromRateText : Model.DailyRate)</span>
+                    <span class="fs-4 fw-bold text-success">@FormatRate(!string.IsNullOrEmpty(Model.FromRateText) ? Model.FromRateText : Model.DailyRate)</span>
                 </div>
                 <div class="col-6 col-sm-4">
                     <span class="text-muted small d-block">@L["Hourly Rate"]</span>
-                    <span class="fs-5 fw-semibold text-dark">@(string.IsNullOrEmpty(Model.HourlyRate) ? "—" : Model.HourlyRate)</span>
+                    <span class="fs-5 fw-semibold text-dark">@FormatRate(Model.HourlyRate)</span>
                 </div>
                 <div class="col-12 col-sm-4 border-start-sm pt-2 pt-sm-0">
                     <span class="text-muted small d-block">@L["Min. Duration"]</span>
                     <span class="fw-semibold text-dark">
                         @if (Model.MinRentalDays > 1)
                         {
-                            @L["{0} Days", Model.MinRentalDays]
+                            @L["{0} Days", ToBn(Model.MinRentalDays)]
                         }
                         else
                         {
@@ -201,7 +240,7 @@
                                         <span class="text-muted" style="font-size: 0.8rem;">(@L["Fri & Sat"])</span>
                                     }
                                 </span>
-                                <span class="fw-bold text-dark">৳@rule.DailyRate.ToString("N0") / @L["Day"]</span>
+                                <span class="fw-bold text-dark">৳@ToBn(rule.DailyRate.ToString("N0")) / @L["Day"]</span>
                             </div>
                         }
                     </div>
@@ -210,7 +249,7 @@
 
             <!-- Description -->
             <h5 class="fw-bold text-dark mb-2">@L["Equipment Description"]</h5>
-            <p class="text-secondary leading-relaxed mb-4">@Model.Description</p>
+            <p class="text-secondary leading-relaxed mb-4">@TranslateDescription(Model.Description)</p>
 
             <!-- Owner Info Card -->
             <div class="p-3 rounded-3 border bg-white d-flex align-items-center justify-content-between flex-wrap gap-3">
@@ -541,13 +580,13 @@
 
     <!-- RIGHT COLUMN: Sticky Rental Request Form (Desktop) -->
     <div class="col-12 col-lg-5 col-xl-4">
-        <div class="sticky-top" style="top: 90px; z-index: 1000;" id="requestFormContainer">
+        <div class="sticky-top krishi-sticky-scroll" style="z-index: 1000;" id="requestFormContainer">
             <div class="card krishi-card border-0 shadow p-4" style="border-radius: var(--krishi-radius-lg);">
                 <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
                     <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
                         @L["Rental Request Form"]
                     </h5>
-                    <span class="fs-5 fw-bold text-success">@(!string.IsNullOrEmpty(Model.FromRateText) ? Model.FromRateText : Model.DailyRate)</span>
+                    <span class="fs-5 fw-bold text-success">@FormatRate(!string.IsNullOrEmpty(Model.FromRateText) ? Model.FromRateText : Model.DailyRate)</span>
                 </div>
 
                 <form id="rentalRequestForm" asp-controller="Equipment" asp-action="SubmitRequest" method="post" data-onsubmit="handleFormSubmit(event)">
@@ -560,16 +599,16 @@
                                     @L["Quantity / Units Needed"] <span class="text-danger">*</span>
                                 </label>
                                 <span id="freeUnitsBadge" class="badge bg-success-subtle text-success border border-success-subtle small fw-medium">
-                                    @Model.UnitsAvailableText
+                                    @(isBangla ? $"{ToBn(Model.Quantity)} এর মধ্যে {ToBn(Model.Quantity)}টি" : Model.UnitsAvailableText)
                                 </span>
                             </div>
                             <div class="input-group">
                                 <span class="input-group-text bg-light text-muted"><i class="bi bi-boxes"></i></span>
-                                <input type="number" class="form-control form-control-lg rounded-end-3" id="unitsInput" name="Units"
-                                       value="1" min="1" max="@Model.Quantity" required data-onchange="onUnitsChanged()" data-oninput="onUnitsChanged()" />
+                                <input type="text" inputmode="numeric" class="form-control form-control-lg rounded-end-3 bangla-num-field" id="unitsInput" name="Units"
+                                       value="@ToBn(1)" min="1" max="@Model.Quantity" required data-onchange="onUnitsChanged()" data-oninput="onUnitsChanged()" />
                             </div>
                             <div class="form-text text-muted small mt-1">
-                                @L["Up to {0} units available concurrently.", Model.Quantity]
+                                @L["Up to {0} units available concurrently.", ToBn(Model.Quantity)]
                             </div>
                         </div>
                     }
@@ -721,7 +760,7 @@
     <div class="container d-flex align-items-center justify-content-between gap-2">
         <div>
             <span class="text-muted small d-block">@L["Daily Rate"]</span>
-            <span class="fw-bold text-success fs-5">@(!string.IsNullOrEmpty(Model.FromRateText) ? Model.FromRateText : Model.DailyRate)</span>
+            <span class="fw-bold text-success fs-5">@FormatRate(!string.IsNullOrEmpty(Model.FromRateText) ? Model.FromRateText : Model.DailyRate)</span>
         </div>
         <button type="button" id="mobileRequestBtn" class="btn btn-krishi-primary rounded-pill px-4 py-2.5 fw-bold" data-onclick="scrollToRequestForm()">
             @L["Request Equipment"]
@@ -1065,7 +1104,8 @@
             // Trigger debounced quote calculation from server
             if (quoteDebounceTimer) clearTimeout(quoteDebounceTimer);
             quoteDebounceTimer = setTimeout(() => {
-                const u = parseInt(unitsInput?.value || '1') || 1;
+                const rawUnits = typeof window.toAsciiDigits === 'function' ? window.toAsciiDigits(unitsInput?.value || '1') : (unitsInput?.value || '1');
+                const u = parseInt(rawUnits) || 1;
                 fetchQuote(startInput.value, endInput.value, u);
             }, 250);
 
@@ -1085,6 +1125,7 @@
             const noteEl = document.getElementById('summaryPricingNote');
             const unitsInput = document.getElementById('unitsInput');
             const freeUnitsBadge = document.getElementById('freeUnitsBadge');
+            const isBn = typeof window.toBanglaDigits === 'function' && ((document.documentElement && document.documentElement.lang === 'bn') || (document.body && document.body.classList.contains('lang-bn')));
 
             try {
                 const url = `/Equipment/Quote?id=${equipmentId}&start=${encodeURIComponent(startDateStr)}&end=${encodeURIComponent(endDateStr)}&units=${encodeURIComponent(units)}`;
@@ -1098,14 +1139,14 @@
                     currentDaysCount = data.days;
 
                     if (freeUnitsBadge && data.freeUnits !== undefined && data.quantity !== undefined) {
-                        freeUnitsBadge.textContent = `${data.freeUnits} of ${data.quantity} @L["units free"]`;
+                        freeUnitsBadge.textContent = isBn ? `${window.toBanglaDigits(data.freeUnits)} এর মধ্যে ${window.toBanglaDigits(data.quantity)}টি খালি` : `${data.freeUnits} of ${data.quantity} @L["units free"]`;
                     }
                     if (unitsInput && data.freeUnits !== undefined) {
                         unitsInput.max = data.freeUnits;
                         if (units > data.freeUnits) {
                             errorDiv.textContent = '@L["Only {0} of {1} units are available for the selected dates.", "__FREE__", "__QTY__"]'
-                                .replace('__FREE__', data.freeUnits)
-                                .replace('__QTY__', data.quantity);
+                                .replace('__FREE__', isBn ? window.toBanglaDigits(data.freeUnits) : data.freeUnits)
+                                .replace('__QTY__', isBn ? window.toBanglaDigits(data.quantity) : data.quantity);
                             errorDiv.classList.remove('d-none');
                             submitBtn.disabled = true;
                             return;
@@ -1233,7 +1274,7 @@
                     <h6 class="fw-bold text-dark mb-1">@Model.Name</h6>
                     <p class="small text-muted mb-1"><i class="bi bi-geo-alt text-success me-1"></i>@Model.Location</p>
                     <div class="d-flex align-items-center justify-content-between gap-2 mt-2">
-                        <span class="badge bg-success-subtle text-success fw-bold">@Model.DailyRate</span>
+                        <span class="badge bg-success-subtle text-success fw-bold">@FormatRate(Model.DailyRate)</span>
                         <a href="@Model.GoogleMapsUrl" target="_blank" class="btn btn-xs btn-outline-success rounded-pill px-2 py-0.5 small">@L["Directions"]</a>
                     </div>
                 </div>

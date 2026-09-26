@@ -1,13 +1,14 @@
 @using KrishiLink.Models.ViewModels
 @{
     ViewData["Title"] = L["Home"].Value;
+    var isBangla = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
     
     var sampleEquipment = new CardViewModel
     {
         Name = L["Mahindra 575 DI Tractor"].Value,
         Category = "Heavy Machinery",
         Location = L["Bogra Sadar, Bogra"].Value,
-        Price = L["Tk {0} / Day", "1,500"].Value,
+        Price = L["Tk {0} / Day", isBangla ? "১,৫০০" : "1,500"].Value,
         Status = "Available",
         ImageUrl = "/images/tractor.jpg",
         DetailUrl = Url.Action("Index", "Equipment")
@@ -18,7 +19,7 @@
         Name = L["Green Grain Cold Storage"].Value,
         Category = "Cold Storage Facility",
         Location = L["Dinajpur Sadar"].Value,
-        Price = L["Tk {0} / Ton / Month", "500"].Value,
+        Price = L["Tk {0} / Ton / Month", isBangla ? "৫০০" : "500"].Value,
         Status = "Available",
         ImageUrl = "/images/godown.jpg",
         DetailUrl = Url.Action("Index", "Godown")
@@ -29,7 +30,7 @@
         Name = L["Combine Harvester Model X"].Value,
         Category = "Harvesting",
         Location = L["Rangpur Sadar"].Value,
-        Price = L["Tk {0} / Day", "3,000"].Value,
+        Price = L["Tk {0} / Day", isBangla ? "৩,০০০" : "3,000"].Value,
         Status = "Available",
         ImageUrl = "/images/harvester.jpg",
         DetailUrl = Url.Action("Index", "Equipment")
@@ -68,7 +69,7 @@
             <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 48px; height: 48px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
                 <i class="bi bi-people-fill fs-5"></i>
             </div>
-            <h3 class="fw-bold mb-0 text-dark">1,250+</h3>
+            <h3 class="fw-bold mb-0 text-dark">@(isBangla ? "১,২৫০+" : "1,250+")</h3>
             <p class="text-muted small mb-0 fw-medium">@L["Active Farmers"]</p>
         </div>
     </div>
@@ -77,7 +78,7 @@
             <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 48px; height: 48px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
                 <i class="bi bi-truck-front-fill fs-5"></i>
             </div>
-            <h3 class="fw-bold mb-0 text-dark">380+</h3>
+            <h3 class="fw-bold mb-0 text-dark">@(isBangla ? "৩৮০+" : "380+")</h3>
             <p class="text-muted small mb-0 fw-medium">@L["Machinery Listed"]</p>
         </div>
     </div>
@@ -86,7 +87,7 @@
             <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 48px; height: 48px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
                 <i class="bi bi-building-check fs-5"></i>
             </div>
-            <h3 class="fw-bold mb-0 text-dark">12,500 <span class="fs-6 fw-normal">Ton</span></h3>
+            <h3 class="fw-bold mb-0 text-dark">@(isBangla ? "১২,৫০০" : "12,500") <span class="fs-6 fw-normal">@L["Ton"]</span></h3>
             <p class="text-muted small mb-0 fw-medium">@L["Storage Capacity"]</p>
         </div>
     </div>
@@ -95,7 +96,7 @@
             <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-2" style="width: 48px; height: 48px; background-color: var(--krishi-primary-light); color: var(--krishi-primary);">
                 <i class="bi bi-geo-alt-fill fs-5"></i>
             </div>
-            <h3 class="fw-bold mb-0 text-dark">64</h3>
+            <h3 class="fw-bold mb-0 text-dark">@(isBangla ? "৬৪" : "64")</h3>
             <p class="text-muted small mb-0 fw-medium">@L["Districts Connected"]</p>
         </div>
     </div>
@@ -117,7 +118,7 @@
                         <i class="bi bi-truck"></i>
                     </span>
                 </div>
-                <h5 class="fw-bold mb-2" style="color: var(--krishi-primary);">1. @L["Rent Equipment"]</h5>
+                <h5 class="fw-bold mb-2" style="color: var(--krishi-primary);">@(isBangla ? "১. " : "1. ")@L["Rent Equipment"]</h5>
                 <p class="text-muted small mb-3">@L["Browse nearby tractors, tillers, and harvesters. Book by day or season at affordable rates."]</p>
                 <a asp-controller="Equipment" asp-action="Index" class="btn btn-outline-success btn-sm rounded-pill mt-auto align-self-center px-3 py-1.5 fw-medium">
                     @L["Find Machinery"] <i class="bi bi-arrow-right"></i>
@@ -132,7 +133,7 @@
                         <i class="bi bi-building"></i>
                     </span>
                 </div>
-                <h5 class="fw-bold mb-2" style="color: var(--krishi-primary);">2. @L["Book Storage"]</h5>
+                <h5 class="fw-bold mb-2" style="color: var(--krishi-primary);">@(isBangla ? "২. " : "2. ")@L["Book Storage"]</h5>
                 <p class="text-muted small mb-3">@L["Find verified cold storages and warehouses to preserve your harvest and prevent post-harvest loss."]</p>
                 <a asp-controller="Godown" asp-action="Index" class="btn btn-outline-success btn-sm rounded-pill mt-auto align-self-center px-3 py-1.5 fw-medium">
                     @L["Find Godowns"] <i class="bi bi-arrow-right"></i>
@@ -147,7 +148,7 @@
                         <i class="bi bi-cloud-sun"></i>
                     </span>
                 </div>
-                <h5 class="fw-bold mb-2" style="color: var(--krishi-primary);">3. @L["Crop Advisory"]</h5>
+                <h5 class="fw-bold mb-2" style="color: var(--krishi-primary);">@(isBangla ? "৩. " : "3. ")@L["Crop Advisory"]</h5>
                 <p class="text-muted small mb-3">@L["Get localized soil, crop, and disease advisory from agricultural experts to maximize yield."]</p>
                 <a asp-controller="Advisory" asp-action="Index" class="btn btn-outline-success btn-sm rounded-pill mt-auto align-self-center px-3 py-1.5 fw-medium">
                     @L["Get Advisory"] <i class="bi bi-arrow-right"></i>

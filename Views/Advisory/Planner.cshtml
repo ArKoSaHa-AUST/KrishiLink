@@ -4,9 +4,11 @@
 @{
     ViewData["Title"] = L["Crop Planner"].Value;
     var bn = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "bn";
+    string ToBn(object? val) => val is null ? "" : (bn ? string.Concat(val.ToString()!.Select(c => c >= '0' && c <= '9' ? (char)('০' + (c - '0')) : c)) : val.ToString()!);
+    string[] bnMonths = new[] { "", "জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর" };
+    string Day(DateTime d) => bn ? $"{ToBn(d.Day)} {bnMonths[d.Month]} {ToBn(d.Year)}" : d.ToString("d MMM yyyy");
     string Name(CropCalendarEntry c) => bn && !string.IsNullOrWhiteSpace(c.BanglaName) ? c.BanglaName : c.Name;
     string Tips(CropCalendarEntry c) => bn && !string.IsNullOrWhiteSpace(c.KeyTipsBn) ? c.KeyTipsBn : c.KeyTips;
-    string Day(DateTime d) => d.ToString("d MMM yyyy");
     string Water(CropWaterNeed need) => need switch
     {
         CropWaterNeed.Low => L["Low"].Value,
@@ -86,7 +88,7 @@
         }
         <partial name="_CropNeeds" model="@(new CropNeedsStrip(week.Needs, context.District))" />
         <div class="d-flex flex-wrap gap-2">
-            <a href="@AppLinks.PestAlerts(context.District, PestAlertCrops.ForProfileCrop(week.Crop.ProfileCropName))" class="btn btn-sm btn-krishi-outline rounded-pill px-3">@L["Check pest risk in {0}", context.District]</a>
+            <a href="@AppLinks.PestAlerts(context.District, PestAlertCrops.ForProfileCrop(week.Crop.ProfileCropName))" class="btn btn-sm btn-krishi-outline rounded-pill px-3">@L["Check pest risk in {0}", L[context.District].Value]</a>
             <a href="@AppLinks.CalendarForCrop(week.Crop.Name)" class="btn btn-sm btn-outline-secondary rounded-pill px-3">@L["Open in crop calendar"]</a>
         </div>
     }
@@ -134,7 +136,7 @@
         <div class="mt-4 pt-3 border-top">
             <dl class="row mb-3">
                 <dt class="col-sm-4 text-muted">@L["Expected harvest"]</dt>
-                <dd class="col-sm-8 fw-semibold">@Day(sim.HarvestFrom) – @Day(sim.HarvestTo) <span class="text-muted fw-normal">(@sim.Crop.DurationDays)</span></dd>
+                <dd class="col-sm-8 fw-semibold">@Day(sim.HarvestFrom) – @Day(sim.HarvestTo) <span class="text-muted fw-normal">(@ToBn(sim.Crop.DurationDays))</span></dd>
                 <dt class="col-sm-4 text-muted">@L["DAE sowing window"]</dt>
                 <dd class="col-sm-8">
                     @CropAdvisorScorer.Months(sim.Crop.SowingMonths) ·
@@ -144,11 +146,11 @@
                     }
                     else if (sim.WeeksOutsideWindow > 0)
                     {
-                        <span class="text-danger fw-semibold"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>@L["about {0} week(s) late", sim.WeeksOutsideWindow]</span>
+                        <span class="text-danger fw-semibold"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>@L["about {0} week(s) late", ToBn(sim.WeeksOutsideWindow)]</span>
                     }
                     else
                     {
-                        <span class="text-warning-emphasis fw-semibold"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>@L["about {0} week(s) early", -sim.WeeksOutsideWindow]</span>
+                        <span class="text-warning-emphasis fw-semibold"><i class="bi bi-exclamation-triangle-fill me-1" aria-hidden="true"></i>@L["about {0} week(s) early", ToBn(-sim.WeeksOutsideWindow)]</span>
                     }
                 </dd>
             </dl>
@@ -171,13 +173,13 @@
 <!-- 3. CROP COMPARISON -->
 <section class="card krishi-card border-0 shadow-sm p-4 mb-5" id="comparison" aria-labelledby="compareHeading" style="border-radius: var(--krishi-radius-lg);">
     <h3 class="h5 fw-bold text-dark mb-1" id="compareHeading">@L["Compare crops"]</h3>
-    <p class="small text-muted mb-3">@L["Choose two or three crops. Pest warnings are for {0} today.", context.District]</p>
+    <p class="small text-muted mb-3">@L["Choose two or three crops. Pest warnings are for {0} today.", L[context.District].Value]</p>
     <form asp-controller="Advisory" asp-action="Planner" asp-fragment="comparison" method="get" class="row g-3 align-items-end">
         @for (var slot = 0; slot < 3; slot++)
         {
             var current = slot < Model.CompareIds.Count ? Model.CompareIds[slot] : (int?)null;
             <div class="col-12 col-md-3">
-                <label class="form-label small fw-bold" for="compare@(slot)">@L["Crop {0}", slot + 1]</label>
+                <label class="form-label small fw-bold" for="compare@(slot)">@L["Crop {0}", ToBn(slot + 1)]</label>
                 <select class="form-select" id="compare@(slot)" name="compare">
                     <option value="">@(slot < 2 ? L["Choose a crop"] : L["(Optional)"])</option>
                     @foreach (var crop in Model.Crops)
@@ -209,20 +211,20 @@
                     <tr><th scope="row">@L["Season"]</th>@foreach (var r in Model.Comparison) { <td>@CropAdvisorScorer.SeasonLabel(r.Crop.Season, L)</td> }</tr>
                     <tr><th scope="row">@L["Sowing"]</th>@foreach (var r in Model.Comparison) { <td>@CropAdvisorScorer.Months(r.Crop.SowingMonths)</td> }</tr>
                     <tr><th scope="row">@L["Harvest"]</th>@foreach (var r in Model.Comparison) { <td>@CropAdvisorScorer.Months(r.Crop.HarvestingMonths)</td> }</tr>
-                    <tr><th scope="row">@L["Duration"]</th>@foreach (var r in Model.Comparison) { <td>@(r.Duration is { } d ? L["{0}–{1} days", d.Min, d.Max].Value : r.Crop.DurationDays)</td> }</tr>
+                    <tr><th scope="row">@L["Duration"]</th>@foreach (var r in Model.Comparison) { <td>@(r.Duration is { } d ? L["{0}–{1} days", ToBn(d.Min), ToBn(d.Max)].Value : ToBn(r.Crop.DurationDays))</td> }</tr>
                     <tr><th scope="row">@L["Water need"]</th>@foreach (var r in Model.Comparison) { <td>@Water(r.Crop.WaterNeed)</td> }</tr>
                     <tr>
                         <th scope="row">@L["Indicative yield"]</th>
                         @foreach (var r in Model.Comparison)
                         {
-                            <td class="krishi-compare-num">@(r.Crop.TypicalYieldPerAcreMin is { } lo && r.Crop.TypicalYieldPerAcreMax is { } hi ? L["{0}–{1} t/acre", lo.ToString("0.#"), hi.ToString("0.#")].Value : "—")</td>
+                            <td class="krishi-compare-num">@(r.Crop.TypicalYieldPerAcreMin is { } lo && r.Crop.TypicalYieldPerAcreMax is { } hi ? L["{0}–{1} t/acre", ToBn(lo.ToString("0.#")), ToBn(hi.ToString("0.#"))].Value : "—")</td>
                         }
                     </tr>
                     <tr>
                         <th scope="row">@L["Soil pH"]</th>
                         @foreach (var r in Model.Comparison)
                         {
-                            <td class="krishi-compare-num">@(r.Crop.MinPh is { } lo && r.Crop.MaxPh is { } hi ? $"{lo:0.0}–{hi:0.0}" : "—")</td>
+                            <td class="krishi-compare-num">@(r.Crop.MinPh is { } lo && r.Crop.MaxPh is { } hi ? $"{ToBn(lo.ToString("0.0"))}–{ToBn(hi.ToString("0.0"))}" : "—")</td>
                         }
                     </tr>
                     <tr>
@@ -236,7 +238,7 @@
                                 }
                                 else if (r.ActiveWarnings > 0)
                                 {
-                                    <a class="text-danger fw-semibold" href="@AppLinks.PestAlerts(context.District, PestAlertCrops.ForProfileCrop(r.Crop.ProfileCropName))">@L["{0} active", r.ActiveWarnings]</a>
+                                    <a class="text-danger fw-semibold" href="@AppLinks.PestAlerts(context.District, PestAlertCrops.ForProfileCrop(r.Crop.ProfileCropName))">@L["{0} active", ToBn(r.ActiveWarnings)]</a>
                                 }
                                 else
                                 {

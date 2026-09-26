@@ -73,8 +73,12 @@
         if (!snapshot || !snapshot.district) { target.appendChild(el('p', 'text-muted mb-0', msg.msgNoForecast)); return; }
         stamp.textContent = msg.msgSaved.replace('{0}', when(snapshot.savedAt));
         target.appendChild(el('p', 'fw-semibold mb-2', bangla && snapshot.conditionBn ? snapshot.conditionBn : snapshot.condition));
+        const toBn = (n) => (bangla && window.toBanglaDigits ? window.toBanglaDigits(n) : n);
         target.appendChild(el('p', 'mb-0', msg.msgForecast
-            .replace('{0}', snapshot.district).replace('{1}', Math.round(snapshot.max)).replace('{2}', Math.round(snapshot.min))
-            .replace('{3}', Math.round(snapshot.humidity)).replace('{4}', Math.round(snapshot.rain))));
+            .replace('{0}', snapshot.district)
+            .replace('{1}', toBn(Math.round(snapshot.max)))
+            .replace('{2}', toBn(Math.round(snapshot.min)))
+            .replace('{3}', toBn(Math.round(snapshot.humidity)))
+            .replace('{4}', toBn(Math.round(snapshot.rain)))));
     })();
 })();

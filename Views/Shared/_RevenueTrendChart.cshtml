@@ -31,7 +31,7 @@
     var labelEvery = Model.Count > 12 ? 2 : 1;
 }
 
-<svg viewBox="0 0 @W @H" class="w-100 krishi-revenue-chart" role="img" aria-label="@L["Revenue trend"]" style="height: auto;">
+<svg viewBox="0 0 @W @H" class="w-100 krishi-revenue-chart" role="img" aria-label="@L["Revenue Trend"]" style="height: auto;">
     @for (var i = 0; i <= Steps; i++)
     {
         var y = PadT + plotH - plotH * i / Steps;
@@ -50,7 +50,7 @@
         var cx = PadL + slot * i + slot / 2;
         var isLast = i == Model.Count - 1;
         var tip = p.EscrowAmount > 0
-            ? $"{p.Label}: ৳{p.Amount:N0} {L["earned"].Value} + ৳{p.EscrowAmount:N0} {L["in escrow"].Value}"
+            ? $"{p.Label}: ৳{p.Amount:N0} {L["earned"].Value} + ৳{p.EscrowAmount:N0} {L["In escrow"].Value}"
             : $"{p.Label}: ৳{p.Amount:N0}";
 
         <g class="chart-bar-group">

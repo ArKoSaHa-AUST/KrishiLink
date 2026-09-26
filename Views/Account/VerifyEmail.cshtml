@@ -1,14 +1,14 @@
 @model KrishiLink.Models.ViewModels.VerifyEmailViewModel
 @{
-    ViewData["Title"] = "Verify email";
+    ViewData["Title"] = L["Verify email"].Value;
 }
 <div class="container py-5" style="max-width: 540px;">
-    <h1 class="h3">Verify your email</h1>
+    <h1 class="h3">@L["Verify your email"]</h1>
     <partial name="_AuthMessages" />
-    <p>Enter the code from your email. Codes expire and can only be used once.</p>
+    <p>@L["Enter the code from your email. Codes expire and can only be used once."]</p>
     @if (Model.Purpose == "email_change")
     {
-        <p>For an email change, enter the <strong>email address that received the code</strong>. If confirmation is required on both addresses, submit each address and its emailed code here, one at a time.</p>
+        <p>@L["For an email change, enter the"] <strong>@L["email address that received the code"]</strong>@L[". If confirmation is required on both addresses, submit each address and its emailed code here, one at a time."]</p>
     }
     <div asp-validation-summary="All" class="text-danger"></div>
     <form asp-action="VerifyEmail" method="post">
@@ -21,16 +21,16 @@
             <label asp-for="Code" class="form-label"></label>
             <input asp-for="Code" autocomplete="one-time-code" inputmode="numeric" class="form-control" required />
         </div>
-        <button class="btn btn-success" type="submit">Verify email</button>
+        <button class="btn btn-success" type="submit">@L["Verify email"]</button>
     </form>
     @if (Model.Purpose == "signup")
     {
         <hr />
         <form asp-action="ResendConfirmation" method="post">
-            <label for="resendEmail" class="form-label">Need another verification code?</label>
-            <input id="resendEmail" name="Email" type="email" autocomplete="email" class="form-control mb-2" placeholder="Your email address" required />
-            <button class="btn btn-outline-success" type="submit">Resend code</button>
+            <label for="resendEmail" class="form-label">@L["Need another verification code?"]</label>
+            <input id="resendEmail" name="Email" type="email" autocomplete="email" class="form-control mb-2" placeholder="@L["Your email address"]" required />
+            <button class="btn btn-outline-success" type="submit">@L["Resend code"]</button>
         </form>
     }
-    <p class="mt-3"><a asp-action="Login">Back to login</a></p>
+    <p class="mt-3"><a asp-action="Login">@L["Back to login"]</a></p>
 </div>
