@@ -469,6 +469,18 @@ Boot-time migration (when enabled), storage-bucket creation and reference seedin
 - **Offline support** is registered only over HTTPS outside Development. After changing what `wwwroot/sw.js` caches, bump its `VERSION` so installed copies drop the old caches.
 - CI (*Build, Test and Security Audit*) checks formatting, fails on vulnerable NuGet packages, checks that view utility classes exist, that `TempData` messages are localized and that event handlers are CSP-safe, that the service worker never caches private pages, runs the full test suite twice (default and sharded locks) against a disposable PostgreSQL, and validates the migration model/script — all without contacting your Supabase project.
 
+### Docker & Render Deployment (CI/CD)
+
+KrishiLink is fully containerized and configured for automated Continuous Integration and Continuous Deployment (CI/CD) to **Render**:
+
+- **One-Click Deploy**: The repository includes [`render.yaml`](./render.yaml) (Render Blueprint) that sets up the Web Service, environment configurations, health check probe (`/healthz`), and persistent volume mount for Data Protection keys (`/app/App_Data/keys`).
+- **Production Dockerfile**: Multi-stage, secure, non-root `.NET 8` image supporting dynamic port binding (`$PORT`) on Render or standard `8080`.
+- **Local Stack with Docker Compose**: Run the app and local PostgreSQL via `docker compose up -d --build`.
+- **Automated CI/CD**:
+  - `.github/workflows/ci.yml`: Runs formatting, security scans, unit & PostgreSQL integration test suites, EF Core migration checks, and verifies Docker image builds on every PR/push.
+  - `.github/workflows/deploy.yml`: Generates release bundles, produces idempotent `migrations.sql`, and automatically triggers zero-downtime deployment on Render via `RENDER_DEPLOY_HOOK_URL`.
+- **Complete Step-by-Step Guide**: See [`DEPLOYMENT_RENDER.md`](./DEPLOYMENT_RENDER.md) for full setup instructions, secret variable configuration, and persistent disk mounting.
+
 ### Security headers and Content-Security-Policy
 
 Every response carries `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` and `Permissions-Policy` (camera and geolocation are allowed for the site itself: the owner QR scanner and "use my location" need them). Scripts must come from the site, `cdn.jsdelivr.net` or `unpkg.com` (Leaflet); inline `<script>` blocks are allowed only through a per-request nonce that Razor adds to every `<script>` tag automatically. Inline `onclick=` / `onchange=` attributes are **blocked** — write `data-onclick="myFunction(this)"` instead and add the function name to `ALLOWED_CALLS` in `wwwroot/js/inline-handlers.js` (CI fails otherwise). Violations are reported to `/csp-report` and logged.

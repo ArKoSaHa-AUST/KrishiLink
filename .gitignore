@@ -59,6 +59,7 @@ ehthumbs.db
 !work/
 !work/*.md
 !COMMUNITY_*.md
+!DEPLOYMENT_*.md
 
 # Agent workspace configurations & skills
 .agents/
