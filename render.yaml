@@ -1,0 +1,46 @@
+# Render Blueprint Specification for KrishiLink
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: krishilink
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter # Change to your preferred plan (free, starter, standard)
+    region: singapore # Change to your preferred region (singapore, oregon, frankfurt, ohio)
+    branch: main
+    healthCheckPath: /healthz
+    disk:
+      name: dataprotection-keys
+      mountPath: /app/App_Data/keys
+      sizeGB: 1
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: Database__ApplyMigrationsOnStartup
+        value: "true"
+      - key: App__PublicBaseUrl
+        value: https://krishilink.onrender.com # Replace with your custom domain or Render service URL
+      - key: AllowedHosts
+        value: krishilink.onrender.com;localhost # Semicolon-separated list of allowed host headers
+      - key: ForwardedHeaders__KnownNetworks__0
+        value: 0.0.0.0/0
+      - key: ForwardedHeaders__KnownNetworks__1
+        value: ::/0
+      - key: DataProtection__KeyPath
+        value: /app/App_Data/keys
+      # Secrets to be configured in Render Dashboard (or synced from environment group)
+      - key: DATABASE_URL
+        sync: false # Set to your PostgreSQL session connection URI (e.g., from Supabase on port 5432)
+      - key: DIRECT_URL
+        sync: false # Set to direct connection URI (used for migrations and startup locks)
+      - key: SUPABASE_URL
+        sync: false # e.g. https://YOUR_PROJECT_REF.supabase.co
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

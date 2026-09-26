@@ -119,3 +119,9 @@ jobs:
       run: |
         dotnet ef migrations has-pending-model-changes --configuration Release --no-build
         dotnet ef migrations script --idempotent --configuration Release --no-build --output "$RUNNER_TEMP/krishilink-postgresql.sql"
+
+    - name: Verify Docker Image Build
+      run: |
+        echo "Validating Dockerfile build..."
+        docker build -t krishilink:ci .
+

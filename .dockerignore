@@ -1,0 +1,40 @@
+# Git and GitHub
+.git/
+.github/
+.agents/
+.config/
+
+# Build artifacts and caches
+**/bin/
+**/obj/
+**/publish/
+publish/
+publish_test/
+*.user
+*.suo
+*.userhost
+*.userosscache
+*.sln.docstates
+
+# Test suites and test outputs
+tests/
+*.trx
+*.log
+audit.log
+
+# Local environment and secret files
+.env
+.env.*
+!.env.example
+
+# Local Data Protection keys and runtime data (should be mounted via volume in production)
+App_Data/keys/*
+App_Data/keys/
+
+# User uploads and temporary files
+wwwroot/uploads/*
+wwwroot/uploads/
+
+# OS files
+.DS_Store
+Thumbs.db

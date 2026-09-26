@@ -372,6 +372,19 @@ Copy `.env.example` to `.env.local` to configure your environment.
 
 The project includes an exhaustive automated test suite with **1,041 unit, integration, and architecture invariant tests** across both default and sharded workflow locking modes.
 
+### Docker & Render Deployment (CI/CD)
+
+KrishiLink is fully containerized and configured for automated Continuous Integration and Continuous Deployment (CI/CD) to **Render**:
+
+- **One-Click Deploy**: The repository includes [`render.yaml`](./render.yaml) (Render Blueprint) that sets up the Web Service, environment configurations, health check probe (`/healthz`), and persistent volume mount for Data Protection keys (`/app/App_Data/keys`).
+- **Production Dockerfile**: Multi-stage, secure, non-root `.NET 8` image supporting dynamic port binding (`$PORT`) on Render or standard `8080`.
+- **Local Stack with Docker Compose**: Run the app and local PostgreSQL via `docker compose up -d --build`.
+- **Automated CI/CD**:
+  - `.github/workflows/ci.yml`: Runs formatting, security scans, unit & PostgreSQL integration test suites, EF Core migration checks, and verifies Docker image builds on every PR/push.
+  - `.github/workflows/deploy.yml`: Generates release bundles, produces idempotent `migrations.sql`, and automatically triggers zero-downtime deployment on Render via `RENDER_DEPLOY_HOOK_URL`.
+- **Complete Step-by-Step Guide**: See [`DEPLOYMENT_RENDER.md`](./DEPLOYMENT_RENDER.md) for full setup instructions, secret variable configuration, and persistent disk mounting.
+
+### Security headers and Content-Security-Policy
 ```bash
 # Run unit and architectural invariant tests
 dotnet test KrishiLink.sln

@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: krishilink-web
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Database__ApplyMigrationsOnStartup=true
+      - App__PublicBaseUrl=http://localhost:8080
+      - AllowedHosts=localhost;127.0.0.1;app
+      - ForwardedHeaders__KnownNetworks__0=0.0.0.0/0
+      # Connect to PostgreSQL container using standard connection string format
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=krishilink;Username=postgres;Password=postgres;SSL Mode=Disable
+      - ConnectionStrings__MigrationConnection=Host=db;Port=5432;Database=krishilink;Username=postgres;Password=postgres;SSL Mode=Disable
+      - DataProtection__KeyPath=/app/App_Data/keys
+      # External service credentials (optional for core operations or load from .env)
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY:-}
+      - SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    volumes:
+      - keys-data:/app/App_Data/keys
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    container_name: krishilink-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=krishilink
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d krishilink"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  postgres-data:
+    name: krishilink-postgres-data
+  keys-data:
+    name: krishilink-keys-data
