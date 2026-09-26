@@ -40,6 +40,7 @@ public class AuthorizationInvariantTests
         "Community.Index GET", "Community.Post GET", "Community.GetCommentsModal GET", "Community.GetFeedPartial GET",
         "Reviews.List GET",
         "Verify.Index GET", "Verify.Receipt GET",
+        "Realtime.GetRealtimeStream GET", "Realtime.IngestWebhook POST", "Realtime.GetStatus GET",
     };
 
     private static readonly Lazy<IReadOnlyList<ControllerActionDescriptor>> Actions = new(() =>

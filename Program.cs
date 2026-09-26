@@ -17,9 +17,14 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
 
 var builder = WebApplication.CreateBuilder(args);
 EnvironmentConfiguration.AddLocalEnvironmentFiles(builder.Configuration, builder.Environment.ContentRootPath, args);
+
+// Register Unicode-safe HTML encoder so Bengali/Unicode text is rendered naturally without &#x... entity escaping
+builder.Services.AddSingleton<HtmlEncoder>(HtmlEncoder.Create(UnicodeRanges.All));
 
 // QuestPDF community licence (free for organisations under USD 1M annual revenue)
 QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
@@ -162,6 +167,7 @@ builder.Services.AddScoped<IFarmerProfileService, FarmerProfileService>();
 builder.Services.AddScoped<IGodownRevenueService, GodownRevenueService>();
 builder.Services.AddScoped<IEquipmentRevenueService, EquipmentRevenueService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddSingleton<IRealtimeUpdateService, RealtimeUpdateService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ICropCalendarService, CropCalendarService>();
 builder.Services.AddScoped<ICropAdvisorService, CropAdvisorService>();

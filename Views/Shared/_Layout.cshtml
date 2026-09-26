@@ -465,6 +465,10 @@
 
     <!-- Custom site JS -->
     <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <!-- Realtime Webhook & SSE Stream Client for all pages -->
+    <script src="~/js/realtime-client.js" asp-append-version="true"></script>
+
     @if (User.Identity?.IsAuthenticated == true)
     {
         <script src="~/js/ai-agent.js" asp-append-version="true"></script>

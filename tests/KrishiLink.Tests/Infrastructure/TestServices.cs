@@ -65,6 +65,7 @@ public static class TestServices
 
         services.AddSingleton<IEmailQueue, DiscardingEmailQueue>();
         services.AddSingleton<IFileStorageService, UnavailableFileStorage>();
+        services.AddSingleton<IRealtimeUpdateService, RealtimeUpdateService>();
 
         configure?.Invoke(services);
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
