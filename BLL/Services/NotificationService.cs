@@ -49,6 +49,7 @@ namespace KrishiLink.BLL.Services
         private readonly IEmailQueue _emailQueue;
         private readonly IStringLocalizer<SharedResource> _localizer;
         private readonly AppOptions _appOptions;
+        private readonly IRealtimeUpdateService _realtime;
         private readonly ILogger<NotificationService> _logger;
 
         public NotificationService(
@@ -56,12 +57,14 @@ namespace KrishiLink.BLL.Services
             IEmailQueue emailQueue,
             IStringLocalizer<SharedResource> localizer,
             IOptions<AppOptions> appOptions,
+            IRealtimeUpdateService realtime,
             ILogger<NotificationService> logger)
         {
             _notifications = notifications;
             _emailQueue = emailQueue;
             _localizer = localizer;
             _appOptions = appOptions.Value;
+            _realtime = realtime;
             _logger = logger;
         }
 
@@ -108,6 +111,32 @@ namespace KrishiLink.BLL.Services
                 _notifications.Detach(notification);
                 _logger.LogError(ex, "Failed to save notification for user {UserId}", request.UserId);
                 return false;
+            }
+
+            // Realtime push notification to user's connected browser pages
+            try
+            {
+                await _realtime.PublishToUserAsync(request.UserId, new RealtimeEvent
+                {
+                    EventType = "notification",
+                    Title = resolvedTitle,
+                    Message = resolvedMessage,
+                    LinkUrl = notification.LinkUrl,
+                    TargetUserId = request.UserId,
+                    Data = new
+                    {
+                        id = notification.Id,
+                        type = notification.Type,
+                        title = resolvedTitle,
+                        message = resolvedMessage,
+                        linkUrl = notification.LinkUrl,
+                        createdAt = notification.CreatedAt
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to publish realtime notification to user {UserId}", request.UserId);
             }
 
             if (request.SendEmail && ApplicationUser.HasRealEmail(request.RecipientEmail))

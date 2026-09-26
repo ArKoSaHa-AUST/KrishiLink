@@ -5,7 +5,7 @@ using KrishiLink.Models.Entities;
 namespace KrishiLink.BLL.Services
 {
     /// <summary>Small formatting/parsing helpers shared by the listing and booking services.</summary>
-    internal static class ListingFormat
+    public static class ListingFormat
     {
         private const char Separator = '|';
 

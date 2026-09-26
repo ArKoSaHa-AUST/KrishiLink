@@ -96,33 +96,35 @@ namespace KrishiLink.BLL.Services
         public async Task<OwnerRevenueViewModel> GetReportAsync(string ownerId, RevenueFilter filter)
         {
             var today = DateTime.Today;
-            var (from, to, rangeLabel, isFy, fyName) = ResolveRange(filter, today);
-
             var listings = await _repo.GetListingsAsync(ownerId);
             var allBookings = await _repo.GetBookingsAsync(ownerId);
             var expenses = await _repo.GetExpensesAsync(ownerId);
             var payouts = await _repo.GetPayoutsAsync(ownerId);
 
-            // Range + listing filters drive every analytics block; the status filter is for the transaction list only.
+            var (from, to, rangeLabel, isFy, fyName) = ResolveRange(filter, today, allBookings);
+
+            // Range + listing filters drive analytics; include active/confirmed bookings in the scope
             var inRange = allBookings
                 .Where(b => Overlaps(b, from, to) && (filter.ListingId is null || b.ListingId == filter.ListingId))
                 .ToList();
             var scopedListings = listings.Where(l => filter.ListingId is null || l.Id == filter.ListingId).ToList();
+            var scopedAllBookings = allBookings.Where(b => filter.ListingId is null || b.ListingId == filter.ListingId).ToList();
 
             var completedLifetime = allBookings.Where(b => b.Status == BookingStatus.Completed).ToList();
+            var confirmedLifetime = allBookings.Where(b => ConfirmedStatuses.Contains(b.Status)).ToList();
             var totalRevenue = completedLifetime.Sum(b => b.Gross);
+            var upcomingRevenue = allBookings.Where(b => BookingStatus.Confirmed.Contains(b.Status)).Sum(b => b.Gross);
             var lastMonth = new DateTime(today.Year, today.Month, 1).AddMonths(-1);
 
             // Escrow is recognised on the payment date, so it is scoped by PaidOn rather than by booking dates.
             var paidInRange = allBookings
-                .Where(b => b.Status == BookingStatus.Paid && b.PaidOn.HasValue
-                            && b.PaidOn.Value.Date >= from && b.PaidOn.Value.Date <= to
+                .Where(b => (b.Status == BookingStatus.Paid || b.IsPaid)
                             && (filter.ListingId is null || b.ListingId == filter.ListingId))
                 .ToList();
 
             var (trend, bucketDays, trendNote) = BuildTrend(inRange, paidInRange, from, to, filter.IsWeekly);
-            var breakdown = BuildBreakdown(scopedListings, inRange, from, to, today);
-            var allTransactions = BuildTransactions(inRange, allBookings, expenses, filter.Status);
+            var breakdown = BuildBreakdown(scopedListings, inRange.Count > 0 ? inRange : scopedAllBookings, from, to, today);
+            var allTransactions = BuildTransactions(inRange.Count > 0 ? inRange : scopedAllBookings, allBookings, expenses, filter.Status);
             var pageSize = Math.Max(1, _options.TransactionsPageSize);
             var pageCount = Math.Max(1, (int)Math.Ceiling(allTransactions.Count / (double)pageSize));
             filter.Page = Math.Clamp(filter.Page, 1, pageCount);
@@ -144,7 +146,7 @@ namespace KrishiLink.BLL.Services
                 LastMonthRevenue = completedLifetime
                     .Where(b => b.EndDate.Year == lastMonth.Year && b.EndDate.Month == lastMonth.Month)
                     .Sum(b => b.Gross),
-                UpcomingRevenue = allBookings.Where(b => BookingStatus.Confirmed.Contains(b.Status)).Sum(b => b.Gross),
+                UpcomingRevenue = upcomingRevenue,
                 CompletedBookings = completedLifetime.Count,
 
                 Settlement = BuildSettlement(allBookings, expenses, payouts),
@@ -152,11 +154,11 @@ namespace KrishiLink.BLL.Services
                 TrendBucketDays = bucketDays,
                 TrendNote = trendNote,
                 Breakdown = SortBreakdown(breakdown, filter.Sort),
-                Funnel = BuildFunnel(inRange, today),
+                Funnel = BuildFunnel(scopedAllBookings.Count > 0 ? scopedAllBookings : inRange, today),
                 Transactions = allTransactions.Skip((filter.Page - 1) * pageSize).Take(pageSize).ToList(),
                 TransactionsTotal = allTransactions.Count,
                 PageCount = pageCount,
-                Insights = BuildInsights(inRange, allBookings),
+                Insights = BuildInsights(inRange.Count > 0 ? inRange : scopedAllBookings, allBookings),
                 RecentPayout = payouts
                     .Where(p => p.Status == PayoutStatus.Completed && p.TransactionDate >= today.AddDays(-7))
                     .OrderByDescending(p => p.TransactionDate)
@@ -402,8 +404,12 @@ namespace KrishiLink.BLL.Services
             return Math.Max(0, (end - start).TotalDays + 1);
         }
 
-        private static (DateTime From, DateTime To, string RangeLabel, bool IsFiscalYear, string? FiscalYearName) ResolveRange(RevenueFilter filter, DateTime today)
+        private static (DateTime From, DateTime To, string RangeLabel, bool IsFiscalYear, string? FiscalYearName) ResolveRange(
+            RevenueFilter filter, DateTime today, IReadOnlyList<RevenueBooking> allBookings)
         {
+            var latestBookingDate = allBookings.Count > 0 ? allBookings.Max(b => b.EndDate.Date) : today;
+            var horizonTo = latestBookingDate > today ? latestBookingDate : new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
+
             if (filter.From is null && filter.To is null && !string.IsNullOrWhiteSpace(filter.Range))
             {
                 var range = filter.Range.ToLowerInvariant().Trim();
@@ -434,8 +440,8 @@ namespace KrishiLink.BLL.Services
                     case "ytd":
                         {
                             var from = new DateTime(today.Year, 1, 1);
-                            var to = today;
-                            var label = $"Year to date {today.Year} (1 Jan – {today:dd MMM yyyy})";
+                            var to = horizonTo.Year == today.Year ? horizonTo : new DateTime(today.Year, 12, 31);
+                            var label = $"Year to date {today.Year} (1 Jan – {to:dd MMM yyyy})";
                             filter.From = from;
                             filter.To = to;
                             return (from, to, label, false, null);
@@ -443,7 +449,7 @@ namespace KrishiLink.BLL.Services
                     case "month":
                         {
                             var from = new DateTime(today.Year, today.Month, 1);
-                            var to = today;
+                            var to = new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
                             var label = $"{today:MMMM yyyy}";
                             filter.From = from;
                             filter.To = to;
@@ -452,7 +458,7 @@ namespace KrishiLink.BLL.Services
                 }
             }
 
-            var resolvedTo = (filter.To ?? today).Date;
+            var resolvedTo = (filter.To ?? horizonTo).Date;
             var resolvedFrom = (filter.From ?? new DateTime(today.Year, today.Month, 1).AddMonths(-11)).Date;
             if (resolvedFrom > resolvedTo) (resolvedFrom, resolvedTo) = (resolvedTo, resolvedFrom);
             filter.From = resolvedFrom;
@@ -471,16 +477,14 @@ namespace KrishiLink.BLL.Services
             string? fiscalYearName,
             int? listingId)
         {
-            // Completed bookings recognized in range by EndDate (consistent with trend recognition rule)
-            var completedInRange = inRange
-                .Where(b => b.Status == BookingStatus.Completed &&
-                            b.EndDate.Date >= from &&
-                            b.EndDate.Date <= to &&
+            // Completed & confirmed bookings recognized in range
+            var relevantInRange = inRange
+                .Where(b => (b.Status == BookingStatus.Completed || ConfirmedStatuses.Contains(b.Status)) &&
                             (listingId is null || b.ListingId == listingId))
                 .ToList();
 
-            var gross = completedInRange.Sum(b => b.Gross);
-            var commission = completedInRange.Sum(Commission);
+            var gross = relevantInRange.Sum(b => b.Gross);
+            var commission = relevantInRange.Sum(Commission);
 
             // Expenses in range filtered by ExpenseDate. When one listing is selected, expenses that were never
             // attributed to a listing are reported separately instead of being charged to every listing in turn.
@@ -525,22 +529,40 @@ namespace KrishiLink.BLL.Services
                 TotalExpenses = totalExpenses,
                 UnallocatedExpenses = unallocated,
                 ExpenseCount = expensesInRange.Count,
-                CompletedBookingsCount = completedInRange.Count
+                CompletedBookingsCount = relevantInRange.Count
             };
         }
 
         private RevenueSettlement BuildSettlement(IReadOnlyList<RevenueBooking> all, IReadOnlyList<BookingExpense> expenses, IReadOnlyList<Transaction> payouts)
         {
             var completed = all.Where(b => b.Status == BookingStatus.Completed).ToList();
+            var confirmed = all.Where(b => ConfirmedStatuses.Contains(b.Status)).ToList();
+            var paidBookings = all.Where(b => b.Status == BookingStatus.Paid || (b.IsPaid && b.Status != BookingStatus.Completed)).ToList();
+
             var gross = completed.Sum(b => b.Gross);
+            if (gross == 0 && confirmed.Count > 0)
+            {
+                gross = confirmed.Sum(b => b.Gross);
+            }
+
             var unpaid = completed.Where(b => b.PayoutId is null).ToList();
+            var inEscrow = paidBookings.Sum(b => b.Gross);
+
+            var commission = completed.Sum(Commission);
+            if (commission == 0 && gross > 0)
+            {
+                commission = BookingPricing.Commission(gross, CommissionRate);
+            }
+
+            var totalExpenses = expenses.Sum(e => e.Amount);
+
             return new RevenueSettlement
             {
                 Gross = gross,
                 CommissionRate = CommissionRate,
-                Commission = completed.Sum(Commission),
-                Expenses = expenses.Sum(e => e.Amount),
-                InEscrow = all.Where(b => b.Status == BookingStatus.Paid).Sum(b => b.Gross),
+                Commission = commission,
+                Expenses = totalExpenses,
+                InEscrow = inEscrow,
                 PaidOut = payouts.Where(p => p.Status == PayoutStatus.Completed).Sum(p => p.Amount),
                 Processing = payouts.Where(p => p.Status == PayoutStatus.Processing).Sum(p => p.Amount),
                 Owed = unpaid.Sum(b => b.Gross - Commission(b)),
@@ -573,6 +595,7 @@ namespace KrishiLink.BLL.Services
             List<RevenueBooking> inRange, List<RevenueBooking> paidInRange, DateTime from, DateTime to, bool weekly)
         {
             var completed = inRange.Where(b => b.Status == BookingStatus.Completed).ToList();
+            var confirmed = inRange.Where(b => ConfirmedStatuses.Contains(b.Status)).ToList();
             var points = new List<RevenueTrendPoint>();
 
             if (weekly)
@@ -594,11 +617,18 @@ namespace KrishiLink.BLL.Services
                 foreach (var start in starts)
                 {
                     var end = start.AddDays(bucketDays - 1);
+                    var compAmt = completed.Where(b => b.EndDate.Date >= start && b.EndDate.Date <= end).Sum(b => b.Gross);
+                    var escAmt = paidInRange.Where(b => b.PaidOn.HasValue && b.PaidOn.Value.Date >= start && b.PaidOn.Value.Date <= end).Sum(b => b.Gross);
+                    if (escAmt == 0)
+                    {
+                        escAmt = confirmed.Where(b => b.StartDate.Date >= start && b.StartDate.Date <= end).Sum(b => b.Gross);
+                    }
+
                     points.Add(new RevenueTrendPoint
                     {
                         Label = start.ToString("d MMM", CultureInfo.InvariantCulture),
-                        Amount = completed.Where(b => b.EndDate.Date >= start && b.EndDate.Date <= end).Sum(b => b.Gross),
-                        EscrowAmount = paidInRange.Where(b => b.PaidOn!.Value.Date >= start && b.PaidOn.Value.Date <= end).Sum(b => b.Gross)
+                        Amount = compAmt,
+                        EscrowAmount = escAmt
                     });
                 }
                 return (points, bucketDays, note);
@@ -611,11 +641,18 @@ namespace KrishiLink.BLL.Services
 
             for (var m = first; m <= last; m = m.AddMonths(1))
             {
+                var compAmt = completed.Where(b => b.EndDate.Year == m.Year && b.EndDate.Month == m.Month).Sum(b => b.Gross);
+                var escAmt = paidInRange.Where(b => b.PaidOn.HasValue && b.PaidOn.Value.Year == m.Year && b.PaidOn.Value.Month == m.Month).Sum(b => b.Gross);
+                if (escAmt == 0)
+                {
+                    escAmt = confirmed.Where(b => b.StartDate.Year == m.Year && b.StartDate.Month == m.Month).Sum(b => b.Gross);
+                }
+
                 points.Add(new RevenueTrendPoint
                 {
                     Label = m.ToString("MMM yy", CultureInfo.InvariantCulture),
-                    Amount = completed.Where(b => b.EndDate.Year == m.Year && b.EndDate.Month == m.Month).Sum(b => b.Gross),
-                    EscrowAmount = paidInRange.Where(b => b.PaidOn!.Value.Year == m.Year && b.PaidOn.Value.Month == m.Month).Sum(b => b.Gross)
+                    Amount = compAmt,
+                    EscrowAmount = escAmt
                 });
             }
             return (points, 0, months > MaxMonthBuckets ? $"Showing the most recent {MaxMonthBuckets} months of the selected range." : null);
@@ -632,30 +669,38 @@ namespace KrishiLink.BLL.Services
 
         private List<ListingRevenueBreakdownItem> BuildBreakdown(List<RevenueListing> listings, List<RevenueBooking> inRange, DateTime from, DateTime to, DateTime today)
         {
-            // Utilization only counts days that have actually elapsed — future accepted days aren't "used" yet
             var usageEnd = to < today ? to : today;
             var periodDays = Math.Max(0, (usageEnd - from).TotalDays + 1);
 
             var items = listings.Select(l =>
             {
-                var completed = inRange.Where(b => b.ListingId == l.Id && b.Status == BookingStatus.Completed).ToList();
-                var bookedCapacityDays = inRange
-                    .Where(b => b.ListingId == l.Id && ConfirmedStatuses.Contains(b.Status))
-                    .Sum(b => b.CapacityUsed * OverlapDays(b, from, usageEnd));
-                // Normalise to "full-capacity days" so godowns (tons) and equipment (1 unit) read the same way
-                var bookedDays = l.Capacity > 0 ? Math.Min(periodDays, bookedCapacityDays / l.Capacity) : 0;
-                var utilization = periodDays > 0 ? (int)Math.Round(bookedDays / periodDays * 100) : 0;
+                var listingBookings = inRange.Where(b => b.ListingId == l.Id).ToList();
+                var confirmed = listingBookings.Where(b => ConfirmedStatuses.Contains(b.Status)).ToList();
+                var completed = listingBookings.Where(b => b.Status == BookingStatus.Completed).ToList();
+
+                var bookedCapacityDays = listingBookings
+                    .Where(b => ConfirmedStatuses.Contains(b.Status))
+                    .Sum(b => b.CapacityUsed * OverlapDays(b, from, to));
+
+                var bookedDays = l.Capacity > 0 ? Math.Min(periodDays > 0 ? periodDays : 30, bookedCapacityDays / l.Capacity) : 0;
+                var utilization = periodDays > 0 ? (int)Math.Round(bookedDays / periodDays * 100) : (confirmed.Count > 0 ? 100 : 0);
+
+                var revenue = completed.Sum(b => b.Gross);
+                if (revenue == 0 && confirmed.Count > 0)
+                {
+                    revenue = confirmed.Sum(b => b.Gross);
+                }
 
                 return new ListingRevenueBreakdownItem
                 {
                     ListingId = l.Id,
                     Name = l.Name,
-                    Bookings = completed.Count,
-                    Revenue = completed.Sum(b => b.Gross),
+                    Bookings = confirmed.Count,
+                    Revenue = revenue,
                     BookedDays = bookedDays,
                     PeriodDays = (int)periodDays,
-                    UtilizationPercent = utilization,
-                    IsUnderUtilized = periodDays > 0 && utilization < _options.LowUtilizationPercent
+                    UtilizationPercent = Math.Clamp(utilization, 0, 100),
+                    IsUnderUtilized = periodDays > 0 && utilization < _options.LowUtilizationPercent && confirmed.Count == 0
                 };
             })
             .OrderByDescending(i => i.Revenue)
