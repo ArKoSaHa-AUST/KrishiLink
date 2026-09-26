@@ -52,9 +52,6 @@ echo "✅ Code validation passed"
 echo "🐳 Checking Docker..."
 docker --version
 
-# Enable BuildKit
-export DOCKER_BUILDKIT=1
-
 # -----------------------------
 # 5. BUILD DOCKER IMAGE
 # -----------------------------
