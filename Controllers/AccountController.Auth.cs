@@ -28,7 +28,7 @@ public partial class AccountController
     [HttpPost]
     [ValidateAntiForgeryToken]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
-    public async Task<IActionResult> VerifyEmail(VerifyEmailViewModel model)
+    public IActionResult VerifyEmail(VerifyEmailViewModel model)
     {
         TempData["SuccessMessage"] = _localizer["Email verification is not required. You can sign in directly."].Value;
         return RedirectToAction(nameof(Login));
@@ -38,7 +38,7 @@ public partial class AccountController
     [HttpPost]
     [ValidateAntiForgeryToken]
     [EnableRateLimiting(RateLimitPolicies.Auth)]
-    public async Task<IActionResult> ResendConfirmation(EmailAddressViewModel model)
+    public IActionResult ResendConfirmation(EmailAddressViewModel model)
     {
         TempData["SuccessMessage"] = _localizer["Email verification is not required. You can sign in directly."].Value;
         return RedirectToAction(nameof(Login));
