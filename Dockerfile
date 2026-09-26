@@ -2,7 +2,6 @@
 
 # Stage 1: Runtime Base
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER app
 WORKDIR /app
 EXPOSE 8080
 ENV ASPNETCORE_HTTP_PORTS=8080
@@ -29,8 +28,13 @@ RUN dotnet publish "KrishiLink.csproj" -c Release -o /app/publish /p:UseAppHost=
 FROM base AS final
 WORKDIR /app
 
-COPY --from=publish /app/publish .
-COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+# Ensure App_Data/keys directory exists and is owned by the non-root app user
+USER root
+RUN mkdir -p /app/App_Data/keys && chown -R app:app /app
+
+COPY --chown=app:app --from=publish /app/publish .
+COPY --chown=app:app docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
 # Run as non-root app user for defense in depth
 USER app
